@@ -469,15 +469,11 @@ function TopNav({ navRef, locked, killCount, setSelectedNexus, setSelectedUser }
   const location = useLocation();
   const { logout } = useAuthStore();
 
-  const navItems = [];
-  if (location.pathname !== "/") {
-    navItems.push({ icon: "◀", label: "BACK", path: "/", highlight: true });
-  }
-  navItems.push(
+  const navItems = [
     { icon: "⚙", label: "CONFIG", path: "/settings" },
     { icon: "👤", label: "STATUS", path: "/profile" },
     { icon: "→", label: "OFFLINE", action: "logout" }
-  );
+  ];
 
   const handleNav = (item) => {
     if (item.action === "logout") {
@@ -524,15 +520,29 @@ function TopNav({ navRef, locked, killCount, setSelectedNexus, setSelectedUser }
           </div>
         </div>
       </div>
-
       {/* Nav Actions */}
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <div style={{ display: "none" }} className="md:flex">
-          <div style={{ textAlign: "right", marginRight: 12 }}>
-            <div style={{ fontSize: 7, color: "rgba(0,245,212,0.5)", fontFamily: "'Orbitron',monospace" }}>SYSTEM TIME</div>
-            <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 10, color: "rgba(0,245,212,0.8)", letterSpacing: "0.05em" }}>{time}</div>
-          </div>
-        </div>
+        {/* Back to Main Button (Conditional) */}
+        {(location.pathname === "/settings" || location.pathname === "/profile") && (
+          <button 
+            onClick={() => navigate("/")}
+            style={{ 
+              display: "flex", alignItems: "center", gap: 6, 
+              background: "rgba(0,245,212,0.1)", 
+              border: "1.5px solid #00f5d4", 
+              borderRadius: 4, padding: "5px 12px", 
+              cursor: "pointer", fontSize: 10, fontWeight: 900, 
+              color: "#00f5d4", fontFamily: "'Orbitron',monospace", 
+              transition: "all 0.2s",
+              boxShadow: "0 0 10px rgba(0,245,212,0.3)",
+              marginRight: 4
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,245,212,0.2)"; e.currentTarget.style.boxShadow = "0 0 15px rgba(0,245,212,0.5)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,245,212,0.1)"; e.currentTarget.style.boxShadow = "0 0 10px rgba(0,245,212,0.3)"; }}
+          >
+            <span>←</span> BACK TO MAIN
+          </button>
+        )}
 
         {navItems.map((item) => (
           <button key={item.label} onClick={() => handleNav(item)} style={{ display: "flex", alignItems: "center", gap: 6, background: item.highlight ? "rgba(255,45,120,0.2)" : "rgba(255,255,255,0.05)", border: `1.5px solid ${item.highlight ? "#ff2d78" : "rgba(255,255,255,0.15)"}`, borderRadius: 4, padding: "5px 10px", cursor: "pointer", fontSize: 10, fontWeight: 900, color: item.highlight ? "#ff2d78" : "#fff", fontFamily: "'Orbitron',monospace", transition: "all 0.2s" }}
@@ -969,9 +979,9 @@ export default function OrbitGrind({ children }) {
   }, []);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", fontFamily: "'Rajdhani',system-ui,sans-serif", background: "#060412" }}>
+    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#040212" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         @keyframes debrisFloat{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-8px) rotate(10deg);}}
         @keyframes starBlink{0%,100%{opacity:0.55;transform:scale(1);}50%{opacity:1;transform:scale(1.2);}}
         @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
@@ -981,8 +991,8 @@ export default function OrbitGrind({ children }) {
         *{box-sizing:border-box;} button:focus{outline:none;}
         ::-webkit-scrollbar{width:3px;height:3px;} 
         ::-webkit-scrollbar-track{background:rgba(0,0,0,0.5);}
-        ::-webkit-scrollbar-thumb{background:rgba(0,245,212,0.2);border-radius:99px;transition:all 0.3s;}
-        ::-webkit-scrollbar-thumb:hover{background:rgba(0,245,212,0.5);}
+        ::-webkit-scrollbar-thumb{background:rgba(0,245,212,0.25);border-radius:0;}
+        ::-webkit-scrollbar-thumb:hover{background:rgba(0,245,212,0.55);}
 
         /* ── Gamer Battle-Station Chat Theme ── */
         .gamer-chat-env .nexus-chat-container {
@@ -1083,7 +1093,7 @@ export default function OrbitGrind({ children }) {
         />
 
         {/* Main */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
           <MainCircuits />
 
           {children ? (
@@ -1095,11 +1105,11 @@ export default function OrbitGrind({ children }) {
               <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
             </div>
           ) : nexusSelected ? (
-            <div className="gamer-chat-env" style={{ flex: 1, position: "relative", zIndex: 10, display: "flex", flexDirection: "column" }}>
+            <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
               <UniversalChatContainer type="nexus" />
             </div>
           ) : userSelected ? (
-            <div className="gamer-chat-env" style={{ flex: 1, position: "relative", zIndex: 10, display: "flex", flexDirection: "column" }}>
+            <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
               <UniversalChatContainer type="dm" />
             </div>
           ) : (

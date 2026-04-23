@@ -37,7 +37,7 @@ const METRICS = [
    INLINE KEYFRAMES
 ───────────────────────────────────────────── */
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
   @keyframes ncbPulse{0%,100%{opacity:1}50%{opacity:0.4}}
   @keyframes ncbSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
   @keyframes ncbSpinR{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
@@ -52,7 +52,7 @@ const STYLES = `
   *{box-sizing:border-box;} button:focus{outline:none;}
   ::-webkit-scrollbar{width:3px;height:3px;} 
   ::-webkit-scrollbar-track{background:rgba(0,0,0,0.4);}
-  ::-webkit-scrollbar-thumb{background:rgba(0,255,245,0.2);border-radius:99px;transition:background 0.3s;}
+  ::-webkit-scrollbar-thumb{background:rgba(0,255,245,0.2);border-radius:0;border-top:1px solid rgba(0,255,245,0.08);}
   ::-webkit-scrollbar-thumb:hover{background:rgba(0,255,245,0.5);}
 
   .ncb-glitch-text:hover { position: relative; animation: ncbGlitch1 0.4s infinite; }
@@ -993,7 +993,7 @@ export default function OrbitNeonCyberpunk({ children }) {
   }, []);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", fontFamily: "'Rajdhani',system-ui,sans-serif", background: "#090014" }}>
+    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#060010" }}>
       <style>{STYLES}</style>
 
       {/* Nebula backgrounds */}

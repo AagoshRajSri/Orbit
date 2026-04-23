@@ -13,26 +13,26 @@ import { useChatStore } from "../store/useChatStore";
 import { THEMES, THEME_LABELS } from "../constants";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 const LUXURY_COLORS = {
-  canvas: "#F7F5F0",
+  canvas: "#F8F5EF",
   surface: "#FFFFFF",
-  surfaceHover: "#FAFAFA",
+  surfaceHover: "#FAFAF8",
   textPrimary: "#1C1C1C",
-  textSecondary: "#6E6B68",
+  textSecondary: "#6B6560",
   goldLight: "#E8D5B5",
-  goldMedium: "#CFAE84",
-  goldDark: "#A88257",
-  borderSubtle: "#EAE5DC",
-  accentMute: "#EBE5DF",
+  goldMedium: "#C9A87C",
+  goldDark: "#9E7A4F",
+  borderSubtle: "#EAE4D8",
+  accentMute: "#ECEADE",
   accentPink: "#E8D0D0",
-  shadowSoft: "0 10px 30px rgba(160, 145, 130, 0.08)",
-  shadowMedium: "0 15px 40px rgba(160, 145, 130, 0.15)",
+  shadowSoft: "0 8px 24px rgba(150, 135, 118, 0.07)",
+  shadowMedium: "0 14px 36px rgba(150, 135, 118, 0.13)",
 };
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
 .luxury-root {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', 'Outfit', sans-serif;
   color: ${LUXURY_COLORS.textPrimary};
   background-color: ${LUXURY_COLORS.canvas};
   min-height: 100vh;
@@ -46,8 +46,8 @@ const CSS = `
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('https://www.transparenttextures.com/patterns/cream-paper.png');
-  opacity: 0.35;
+  backgroundImage: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.5;
   pointer-events: none;
   z-index: 0;
 }
@@ -88,9 +88,10 @@ const CSS = `
 }
 
 /* Custom Scrollbar */
-.luxury-scroll::-webkit-scrollbar { width: 6px; }
+.luxury-scroll::-webkit-scrollbar { width: 4px; }
 .luxury-scroll::-webkit-scrollbar-track { background: transparent; }
-.luxury-scroll::-webkit-scrollbar-thumb { background: ${LUXURY_COLORS.goldLight}; border-radius: 10px; }
+.luxury-scroll::-webkit-scrollbar-thumb { background: ${LUXURY_COLORS.goldMedium}; border-radius: 0; opacity: 0.5; }
+.luxury-scroll::-webkit-scrollbar-thumb:hover { background: ${LUXURY_COLORS.goldDark}; }
 
 .luxury-card {
   background: ${LUXURY_COLORS.surface};

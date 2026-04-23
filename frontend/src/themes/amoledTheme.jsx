@@ -14,7 +14,7 @@ import { API_URL } from "../config";
 
 /* ─────────────────────────────── KEYFRAMES ─────────────────────────────── */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
 
 @keyframes oa-cw       { from{transform:rotate(0deg)}   to{transform:rotate(360deg)} }
 @keyframes oa-ccw      { from{transform:rotate(360deg)} to{transform:rotate(0deg)} }
@@ -93,11 +93,11 @@ const CSS = `
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: #000; }
 ::-webkit-scrollbar-thumb { 
-  background: rgba(198, 160, 110, 0.15); 
-  border-radius: 10px; 
-  transition: all 0.3s;
+  background: rgba(198, 160, 110, 0.2); 
+  border-radius: 0;
+  border-left: 1px solid rgba(198,160,110,0.08);
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(198, 160, 110, 0.35); }
+::-webkit-scrollbar-thumb:hover { background: rgba(198, 160, 110, 0.4); }
 
 /* ── AMOLED Void Chat Theme ── */
 .amoled-chat-env .nxc-shell {
@@ -623,7 +623,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       {/* Root */}
-      <div style={{ width: "100%", height: "100vh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "Rajdhani,sans-serif", position: "relative" }}>
+      <div style={{ width: "100%", height: "100vh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter','Rajdhani',sans-serif", position: "relative" }}>
 
         <TopBar title={title} />
 

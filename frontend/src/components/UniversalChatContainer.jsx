@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { THEMES, Ico, I, Toast, CallOverlay, Btn3D, TBtn, Typing, MsgBubble, VoiceBubble, ImgBubble, FileBubble, InfoPanel, ParticleCanvas, Wave, MediaPanel } from "./ChatCoreUI";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
@@ -94,6 +95,7 @@ export default function UniversalChatContainer({ type }) {
   const { theme } = useThemeStore();
   const themeId = THEME_BRIDGE[theme] || "vampire";
   const t       = THEMES[themeId];
+  const navigate = useNavigate();
 
   const authUser = useAuthStore(s => s.authUser);
 
@@ -209,7 +211,7 @@ export default function UniversalChatContainer({ type }) {
     } else if (!isNexus && selectedUser?._id) {
       getMessages(selectedUser._id);
     }
-  }, [isNexus, activeNexus?._id, selectedUser?._id, getNexusMessages, getMessages, t.acc, nexusMessages.length]);
+  }, [isNexus, activeNexus?._id, selectedUser?._id, getNexusMessages, getMessages, t.acc]);
 
   // ── Auto scroll ──
   useEffect(() => {
@@ -371,10 +373,7 @@ export default function UniversalChatContainer({ type }) {
       <div className="nexus-chat-header" style={{ background: t.headerGrad, borderBottom: `1px solid ${t.border}`, padding: "0 20px", display: "flex", alignItems: "center", gap: 12, height: 64, flexShrink: 0, zIndex: 10, position: "relative" }}>
         {/* Back Button */}
         <button
-          onClick={() => {
-            if (isNexus) setSelectedNexus(null);
-            else setSelectedUser(null);
-          }}
+          onClick={() => navigate("/")}
           style={{
             background: "none", border: "none", color: t.txt2, cursor: "pointer",
             width: 32, height: 32, display: "flex", alignItems: "center",

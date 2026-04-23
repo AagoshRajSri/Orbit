@@ -552,9 +552,10 @@ function MsgBubble({msg,t,onReact,isMe}) {
             background:isMe?t.msgOut:t.msgIn,
             border:`1px solid ${isMe?t.msgOutBrd:t.border}`,
             borderRadius:18, borderBottomRightRadius:isMe?3:18, borderBottomLeftRadius:isMe?18:3,
-            padding:"10px 16px", paddingBottom:26, minWidth:95, minHeight:46, maxWidth:520, color:t.txt, fontSize:15, lineHeight:1.5, fontFamily:t.font,
+            padding:"10px 14px", minWidth:95, maxWidth:520, color:t.txt, fontSize:15, lineHeight:1.5, fontFamily:t.font,
             boxShadow: hov?`0 10px 40px ${t.glow}`:isMe?`0 2px 12px ${t.glow2}`:"none",
-            transition:"all .25s ease", position:"relative", overflow: "visible"
+            transition:"all .25s ease", position:"relative", overflow: "visible",
+            display: "flex", flexDirection: "column", gap: 4
           }}
         >
           {/* Status Glow Overlay */}
@@ -564,23 +565,20 @@ function MsgBubble({msg,t,onReact,isMe}) {
               pointerEvents: "none", zIndex: 0, transition: "background 0.8s ease" 
           }} />}
           
-          <div style={{ position: "relative", zIndex: 1 }}>{msg.text}</div>
+          <div style={{ position: "relative", zIndex: 1, wordBreak: "break-word" }}>{msg.text}</div>
 
           <div style={{ 
-            position: "absolute", bottom: 7, left: 14, opacity: 0.5, zIndex: 1,
-            pointerEvents: "none"
+            display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6,
+            opacity: 0.65, zIndex: 1, marginTop: -2
           }}>
-            <span style={{fontSize:9, color:t.txt2, fontFamily:t.font, letterSpacing:".03em", fontWeight: 700}}>{msg.time}</span>
-          </div>
-
-          {isMe && (
-            <div style={{ position: "absolute", bottom: 6, right: 10, zIndex: 1 }}>
+            <span style={{fontSize:9.5, color:t.txt2, fontFamily:t.font, letterSpacing:".04em", fontWeight: 700}}>{msg.time}</span>
+            {isMe && (
               <MessageStatusRing 
                 status={msg.status||'delivered'} 
                 colorOverride={msg.status==='read' ? t.acc : (msg.status==='failed' ? '#FF5252' : undefined)} 
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       {msg.reactions&&Object.entries(msg.reactions).map(([e,n])=>(

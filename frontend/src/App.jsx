@@ -128,6 +128,9 @@ const DynamicRouteHandler = (props) => {
           setSelectedNexus(null);
         }
       }
+    } else if (!nexusId && !userId) {
+      if (selectedNexus) setSelectedNexus(null);
+      if (selectedUser) setSelectedUser(null);
     }
   }, [nexusId, userId, nexuses, users, selectedNexus, selectedUser, setSelectedNexus, setSelectedUser]);
 

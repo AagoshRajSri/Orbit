@@ -18,7 +18,7 @@ import { API_URL } from "../config";
 // Fonts loaded via @import inside the style tag below
 
 const style = `
-  @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap');
 
   /* ── Subtle Scrollbar (Global for Theme) ── */
   * {
@@ -26,14 +26,14 @@ const style = `
     scrollbar-color: rgba(139, 0, 0, 0.4) var(--void);
   }
 
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: var(--void); }
   ::-webkit-scrollbar-thumb { 
-    background: rgba(139, 0, 0, 0.25); 
-    border-radius: 10px; 
-    border: 1px solid var(--void);
+    background: rgba(139, 0, 0, 0.3); 
+    border-radius: 0;
+    border-left: 1px solid rgba(220,20,60,0.08);
   }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(220, 20, 60, 0.5); }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(220, 20, 60, 0.55); }
 
   :root {
     --blood:      #8B0000;

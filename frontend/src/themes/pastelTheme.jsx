@@ -73,15 +73,18 @@ function SparkleClick() {
 function BgClouds() {
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-      <div style={{ position: "absolute", left: "-8%", top: "5%", width: 420, height: 340, background: "radial-gradient(ellipse, rgba(255,160,210,0.6) 0%, transparent 70%)", filter: "blur(32px)" }} />
-      <div style={{ position: "absolute", left: "5%", top: "-5%", width: 320, height: 260, background: "radial-gradient(ellipse, rgba(220,190,255,0.45) 0%, transparent 70%)", filter: "blur(26px)" }} />
-      <div style={{ position: "absolute", left: "18%", top: "0%", width: 360, height: 230, background: "radial-gradient(ellipse, rgba(255,200,230,0.4) 0%, transparent 70%)", filter: "blur(28px)" }} />
-      <div style={{ position: "absolute", right: "-5%", top: "10%", width: 300, height: 320, background: "radial-gradient(ellipse, rgba(180,220,255,0.38) 0%, transparent 70%)", filter: "blur(26px)" }} />
-      <div style={{ position: "absolute", left: "-2%", bottom: "5%", width: 370, height: 260, background: "radial-gradient(ellipse, rgba(255,150,205,0.45) 0%, transparent 70%)", filter: "blur(30px)" }} />
-      <div style={{ position: "absolute", right: "5%", bottom: "0%", width: 310, height: 230, background: "radial-gradient(ellipse, rgba(170,245,215,0.32) 0%, transparent 70%)", filter: "blur(25px)" }} />
-      <div style={{ position: "absolute", left: "35%", top: "30%", width: 360, height: 290, background: "radial-gradient(ellipse, rgba(200,235,255,0.28) 0%, transparent 70%)", filter: "blur(30px)" }} />
-      {/* extra hot-pink bloom top-right */}
-      <div style={{ position: "absolute", right: "15%", top: "-8%", width: 260, height: 200, background: "radial-gradient(ellipse, rgba(255,130,200,0.3) 0%, transparent 70%)", filter: "blur(28px)" }} />
+      {/* Grain texture overlay */}
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E\")", opacity: 0.6, zIndex: 1 }} />
+      {/* Morning light from top-left */}
+      <div style={{ position: "absolute", left: "-10%", top: "-8%", width: 500, height: 400, background: "radial-gradient(ellipse, rgba(242,196,208,0.55) 0%, transparent 68%)", filter: "blur(40px)" }} />
+      {/* Faded lilac mid-right */}
+      <div style={{ position: "absolute", right: "-5%", top: "15%", width: 380, height: 340, background: "radial-gradient(ellipse, rgba(200,169,212,0.38) 0%, transparent 70%)", filter: "blur(34px)" }} />
+      {/* Sage mint counterpoint — the human choice */}
+      <div style={{ position: "absolute", right: "8%", bottom: "5%", width: 300, height: 240, background: "radial-gradient(ellipse, rgba(168,213,186,0.28) 0%, transparent 70%)", filter: "blur(30px)" }} />
+      {/* Warm cream centre */}
+      <div style={{ position: "absolute", left: "30%", top: "25%", width: 420, height: 320, background: "radial-gradient(ellipse, rgba(232,213,192,0.22) 0%, transparent 70%)", filter: "blur(36px)" }} />
+      {/* Dusty rose lower-left */}
+      <div style={{ position: "absolute", left: "-3%", bottom: "8%", width: 360, height: 260, background: "radial-gradient(ellipse, rgba(242,196,208,0.4) 0%, transparent 70%)", filter: "blur(32px)" }} />
     </div>
   );
 }
@@ -117,6 +120,336 @@ function CuteBadge({ label, color }) {
   );
 }
 
+function BarbieTrainAnimation() {
+  return (
+    <svg width="100%" height="100%" viewBox="0 0 8000 220" preserveAspectRatio="xMinYMid slice" role="img" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <style>
+          {`
+            .track { stroke: #C0A0C8; stroke-width: 3; fill: none; }
+            .tie { stroke: #9B59B0; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+
+            @keyframes moveTrain {
+              0%   { transform: translateX(-800px); }
+              66.66% { transform: translateX(8000px); }
+              100% { transform: translateX(8000px); }
+            }
+            @keyframes smoke1 {
+              0%   { opacity: 0.9; transform: translate(0px, 0px) scale(0.5); }
+              100% { opacity: 0; transform: translate(-30px, -60px) scale(2); }
+            }
+            @keyframes smoke2 {
+              0%   { opacity: 0.8; transform: translate(0px, 0px) scale(0.4); }
+              100% { opacity: 0; transform: translate(-15px, -70px) scale(1.8); }
+            }
+            @keyframes smoke3 {
+              0%   { opacity: 0.7; transform: translate(0px, 0px) scale(0.3); }
+              100% { opacity: 0; transform: translate(-40px, -55px) scale(1.5); }
+            }
+            @keyframes wheelSpin {
+              0%   { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            .train-group {
+              animation: moveTrain 25s linear infinite;
+            }
+            .smoke-puff1 { animation: smoke1 1s ease-out infinite; }
+            .smoke-puff2 { animation: smoke2 1s ease-out 0.3s infinite; }
+            .smoke-puff3 { animation: smoke3 1s ease-out 0.6s infinite; }
+            .smoke-puff4 { animation: smoke1 1s ease-out 0.9s infinite; }
+            .wheel { animation: wheelSpin 0.4s linear infinite; }
+
+            @keyframes sparkle {
+              0%, 100% { opacity: 1; transform: scale(1); }
+              50% { opacity: 0.3; transform: scale(0.5); }
+            }
+            .sparkle1 { animation: sparkle 0.8s ease-in-out infinite; }
+            .sparkle2 { animation: sparkle 0.8s ease-in-out 0.3s infinite; }
+            .sparkle3 { animation: sparkle 0.8s ease-in-out 0.6s infinite; }
+          `}
+        </style>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FFE8F5" />
+          <stop offset="100%" stopColor="#FFF0FB" />
+        </linearGradient>
+        <linearGradient id="engineGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FF6EB4" />
+          <stop offset="100%" stopColor="#E0399A" />
+        </linearGradient>
+        <linearGradient id="carGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FF9ED4" />
+          <stop offset="100%" stopColor="#FF69B4" />
+        </linearGradient>
+        <linearGradient id="roofGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FF1493" />
+          <stop offset="100%" stopColor="#C71585" />
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="162" x2="8000" y2="162" className="track" />
+      <line x1="0" y1="172" x2="8000" y2="172" className="track" />
+
+      <pattern id="tiesPattern" x="0" y="0" width="34" height="220" patternUnits="userSpaceOnUse">
+        <line x1="20" y1="162" x2="20" y2="172" className="tie" />
+      </pattern>
+      <rect x="0" y="162" width="8000" height="10" fill="url(#tiesPattern)" />
+
+      <g className="train-group">
+        {/* Blue Smoke from chimney */}
+        <circle className="smoke-puff1" cx="38" cy="68" r="12" fill="#B3E5FC" opacity="0.85" />
+        <circle className="smoke-puff2" cx="38" cy="68" r="10" fill="#81D4FA" opacity="0.75" />
+        <circle className="smoke-puff3" cx="38" cy="68" r="8" fill="#4FC3F7" opacity="0.65" />
+        <circle className="smoke-puff4" cx="38" cy="68" r="6" fill="#29B6F6" opacity="0.55" />
+
+        <rect x="20" y="95" width="55" height="60" rx="6" fill="url(#engineGrad)" stroke="#C71585" strokeWidth="1.5" />
+        <rect x="20" y="85" width="55" height="18" rx="4" fill="url(#roofGrad)" stroke="#A0006E" strokeWidth="1" />
+
+        <rect x="30" y="72" width="12" height="24" rx="3" fill="#FF69B4" stroke="#C71585" strokeWidth="1" />
+        <rect x="34" y="68" width="6" height="6" rx="2" fill="#FF1493" />
+
+        <rect x="28" y="105" width="18" height="14" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <rect x="50" y="105" width="16" height="14" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="58" y="116" fontSize="10" fill="#FF1493" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">♡</text>
+
+        <rect x="55" y="125" width="15" height="18" rx="2" fill="#FF69B4" stroke="#C71585" strokeWidth="1" />
+        <text x="62" y="138" fontSize="10" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">B</text>
+
+        <g className="wheel" style={{ transformOrigin: "30px 153px" }}>
+          <circle cx="30" cy="153" r="10" fill="#FF69B4" stroke="#C71585" strokeWidth="1.5" />
+          <line x1="30" y1="143" x2="30" y2="163" stroke="#C71585" strokeWidth="1.5" />
+          <line x1="20" y1="153" x2="40" y2="153" stroke="#C71585" strokeWidth="1.5" />
+          <circle cx="30" cy="153" r="3" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "60px 153px" }}>
+          <circle cx="60" cy="153" r="10" fill="#FF69B4" stroke="#C71585" strokeWidth="1.5" />
+          <line x1="60" y1="143" x2="60" y2="163" stroke="#C71585" strokeWidth="1.5" />
+          <line x1="50" y1="153" x2="70" y2="153" stroke="#C71585" strokeWidth="1.5" />
+          <circle cx="60" cy="153" r="3" fill="#FFF0FB" />
+        </g>
+
+        {/* Coupler: Engine → Car1 */}
+        <line x1="75" y1="145" x2="83" y2="145" stroke="#E05090" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Car 1 (XOXO) x=83..133 */}
+        <rect x="83" y="100" width="50" height="55" rx="5" fill="url(#carGrad)" stroke="#E05090" strokeWidth="1.5" />
+        <rect x="83" y="90" width="50" height="17" rx="3" fill="#FF1493" stroke="#C71585" strokeWidth="1" />
+        <rect x="87" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="95" y="119" fontSize="9" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">♡</text>
+        <rect x="110" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="118" y="119" fontSize="8" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">✿</text>
+        <text x="108" y="136" fontSize="9" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">XOXO</text>
+        <g className="wheel" style={{ transformOrigin: "93px 153px" }}>
+          <circle cx="93" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="93" y1="144" x2="93" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="84" y1="153" x2="102" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="93" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "120px 153px" }}>
+          <circle cx="120" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="120" y1="144" x2="120" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="111" y1="153" x2="129" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="120" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+
+        {/* Coupler: Car1 → Car2 */}
+        <line x1="133" y1="145" x2="141" y2="145" stroke="#E05090" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Car 2 (GLAM) x=141..191 */}
+        <rect x="141" y="100" width="50" height="55" rx="5" fill="url(#carGrad)" stroke="#E05090" strokeWidth="1.5" />
+        <rect x="141" y="90" width="50" height="17" rx="3" fill="#FF69B4" stroke="#E05090" strokeWidth="1" />
+        <rect x="145" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="153" y="119" fontSize="8" fill="#FF1493" textAnchor="middle" fontFamily="sans-serif">★</text>
+        <rect x="168" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="176" y="119" fontSize="9" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">♡</text>
+        <text x="166" y="136" fontSize="9" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">GLAM</text>
+        <g className="wheel" style={{ transformOrigin: "151px 153px" }}>
+          <circle cx="151" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="151" y1="144" x2="151" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="142" y1="153" x2="160" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="151" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "178px 153px" }}>
+          <circle cx="178" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="178" y1="144" x2="178" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="169" y1="153" x2="187" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="178" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+
+        {/* Coupler: Car2 → Car3 */}
+        <line x1="191" y1="145" x2="199" y2="145" stroke="#E05090" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Car 3 (LOVE) x=199..249 */}
+        <rect x="199" y="100" width="50" height="55" rx="5" fill="url(#carGrad)" stroke="#E05090" strokeWidth="1.5" />
+        <rect x="199" y="90" width="50" height="17" rx="3" fill="#FF1493" stroke="#C71585" strokeWidth="1" />
+        <rect x="203" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="211" y="119" fontSize="9" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">♡</text>
+        <rect x="226" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="234" y="119" fontSize="8" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">✿</text>
+        <text x="224" y="136" fontSize="9" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">LOVE</text>
+        <g className="wheel" style={{ transformOrigin: "209px 153px" }}>
+          <circle cx="209" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="209" y1="144" x2="209" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="200" y1="153" x2="218" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="209" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "236px 153px" }}>
+          <circle cx="236" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="236" y1="144" x2="236" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="227" y1="153" x2="245" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="236" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+
+        {/* Coupler: Car3 → Car4 */}
+        <line x1="249" y1="145" x2="257" y2="145" stroke="#E05090" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Car 4 (CUTE) x=257..307 */}
+        <rect x="257" y="100" width="50" height="55" rx="5" fill="url(#carGrad)" stroke="#E05090" strokeWidth="1.5" />
+        <rect x="257" y="90" width="50" height="17" rx="3" fill="#FF69B4" stroke="#E05090" strokeWidth="1" />
+        <rect x="261" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="269" y="119" fontSize="8" fill="#FF1493" textAnchor="middle" fontFamily="sans-serif">★</text>
+        <rect x="284" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="292" y="119" fontSize="9" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">♡</text>
+        <text x="282" y="136" fontSize="9" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">CUTE</text>
+        <g className="wheel" style={{ transformOrigin: "267px 153px" }}>
+          <circle cx="267" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="267" y1="144" x2="267" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="258" y1="153" x2="276" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="267" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "294px 153px" }}>
+          <circle cx="294" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="294" y1="144" x2="294" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="285" y1="153" x2="303" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="294" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+
+        {/* Coupler: Car4 → Car5 */}
+        <line x1="307" y1="145" x2="315" y2="145" stroke="#E05090" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Car 5 (CHILL) x=315..365 */}
+        <rect x="315" y="100" width="50" height="55" rx="5" fill="url(#carGrad)" stroke="#E05090" strokeWidth="1.5" />
+        <rect x="315" y="90" width="50" height="17" rx="3" fill="#FF1493" stroke="#C71585" strokeWidth="1" />
+        <rect x="319" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="327" y="119" fontSize="9" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">♡</text>
+        <rect x="342" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="350" y="119" fontSize="8" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">✿</text>
+        <text x="340" y="136" fontSize="9" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">CHILL</text>
+        <g className="wheel" style={{ transformOrigin: "325px 153px" }}>
+          <circle cx="325" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="325" y1="144" x2="325" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="316" y1="153" x2="334" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="325" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "352px 153px" }}>
+          <circle cx="352" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="352" y1="144" x2="352" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="343" y1="153" x2="361" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="352" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+
+        {/* Coupler: Car5 → Car6 */}
+        <line x1="365" y1="145" x2="373" y2="145" stroke="#E05090" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Car 6 (STAR) x=373..423 */}
+        <rect x="373" y="100" width="50" height="55" rx="5" fill="url(#carGrad)" stroke="#E05090" strokeWidth="1.5" />
+        <rect x="373" y="90" width="50" height="17" rx="3" fill="#FF1493" stroke="#C71585" strokeWidth="1" />
+        <rect x="377" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="385" y="119" fontSize="9" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">★</text>
+        <rect x="400" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="408" y="119" fontSize="8" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">♡</text>
+        <text x="398" y="136" fontSize="9" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">STAR</text>
+        <g className="wheel" style={{ transformOrigin: "383px 153px" }}>
+          <circle cx="383" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="383" y1="144" x2="383" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="374" y1="153" x2="392" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="383" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "410px 153px" }}>
+          <circle cx="410" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="410" y1="144" x2="410" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="401" y1="153" x2="419" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="410" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+
+        {/* Coupler: Car6 → Car7 */}
+        <line x1="423" y1="145" x2="431" y2="145" stroke="#E05090" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Car 7 (PINK) x=431..481 */}
+        <rect x="431" y="100" width="50" height="55" rx="5" fill="url(#carGrad)" stroke="#E05090" strokeWidth="1.5" />
+        <rect x="431" y="90" width="50" height="17" rx="3" fill="#FF69B4" stroke="#E05090" strokeWidth="1" />
+        <rect x="435" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="443" y="119" fontSize="9" fill="#FF1493" textAnchor="middle" fontFamily="sans-serif">♡</text>
+        <rect x="458" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="466" y="119" fontSize="8" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">✿</text>
+        <text x="456" y="136" fontSize="9" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">PINK</text>
+        <g className="wheel" style={{ transformOrigin: "441px 153px" }}>
+          <circle cx="441" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="441" y1="144" x2="441" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="432" y1="153" x2="450" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="441" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "468px 153px" }}>
+          <circle cx="468" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="468" y1="144" x2="468" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="459" y1="153" x2="477" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="468" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+
+        {/* Coupler: Car7 → Car8 */}
+        <line x1="481" y1="145" x2="489" y2="145" stroke="#E05090" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Car 8 (DREAM) x=489..539 */}
+        <rect x="489" y="100" width="50" height="55" rx="5" fill="url(#carGrad)" stroke="#E05090" strokeWidth="1.5" />
+        <rect x="489" y="90" width="50" height="17" rx="3" fill="#FF1493" stroke="#C71585" strokeWidth="1" />
+        <rect x="493" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="501" y="119" fontSize="8" fill="#FF1493" textAnchor="middle" fontFamily="sans-serif">★</text>
+        <rect x="516" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="524" y="119" fontSize="9" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">♡</text>
+        <text x="514" y="136" fontSize="8" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">DREAM</text>
+        <g className="wheel" style={{ transformOrigin: "499px 153px" }}>
+          <circle cx="499" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="499" y1="144" x2="499" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="490" y1="153" x2="508" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="499" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "526px 153px" }}>
+          <circle cx="526" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="526" y1="144" x2="526" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="517" y1="153" x2="535" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="526" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+
+        {/* Coupler: Car8 → Car9 */}
+        <line x1="539" y1="145" x2="547" y2="145" stroke="#E05090" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Car 9 (GLTR) x=547..597 */}
+        <rect x="547" y="100" width="50" height="55" rx="5" fill="url(#carGrad)" stroke="#E05090" strokeWidth="1.5" />
+        <rect x="547" y="90" width="50" height="17" rx="3" fill="#FF69B4" stroke="#E05090" strokeWidth="1" />
+        <rect x="551" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="559" y="119" fontSize="9" fill="#FF69B4" textAnchor="middle" fontFamily="sans-serif">✦</text>
+        <rect x="574" y="107" width="16" height="18" rx="3" fill="#FFF0FB" stroke="#FF69B4" strokeWidth="1" />
+        <text x="582" y="119" fontSize="8" fill="#FF1493" textAnchor="middle" fontFamily="sans-serif">★</text>
+        <text x="572" y="136" fontSize="9" fill="#FFF0FB" textAnchor="middle" fontFamily="sans-serif" fontWeight="700">GLTR</text>
+        <g className="wheel" style={{ transformOrigin: "557px 153px" }}>
+          <circle cx="557" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="557" y1="144" x2="557" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="548" y1="153" x2="566" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="557" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+        <g className="wheel" style={{ transformOrigin: "584px 153px" }}>
+          <circle cx="584" cy="153" r="9" fill="#FF69B4" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="584" y1="144" x2="584" y2="162" stroke="#E05090" strokeWidth="1.5" />
+          <line x1="575" y1="153" x2="593" y2="153" stroke="#E05090" strokeWidth="1.5" />
+          <circle cx="584" cy="153" r="2.5" fill="#FFF0FB" />
+        </g>
+
+        <circle className="sparkle1" cx="5" cy="100" r="3" fill="#FF1493" />
+        <circle className="sparkle2" cx="-5" cy="115" r="2" fill="#FFB6D9" />
+        <circle className="sparkle3" cx="2" cy="128" r="2.5" fill="#FF69B4" />
+      </g>
+    </svg>
+  );
+}
+
 function TopNav({ navRef }) {
   const navigate = useNavigate();
   const { authUser, logout } = useAuthStore();
@@ -129,14 +462,14 @@ function TopNav({ navRef }) {
 
   const navBtnBase = {
     display: "flex", alignItems: "center", gap: 5,
-    background: "rgba(255,255,255,0.35)",
-    border: "1px solid rgba(255,180,220,0.25)",
+    background: "rgba(255,255,255,0.4)",
+    border: "1px solid rgba(242,196,208,0.4)",
     cursor: "pointer",
-    fontSize: 11, fontWeight: 800, letterSpacing: "0.05em",
-    color: "rgba(180,80,150,0.85)", padding: "5px 11px", borderRadius: 20,
-    fontFamily: "inherit", transition: "all 0.22s",
+    fontSize: 11, fontWeight: 600, letterSpacing: "0.02em",
+    color: "#8B6B8A", padding: "5px 12px", borderRadius: 6,
+    fontFamily: "'DM Sans', inherit", transition: "all 0.18s",
     backdropFilter: "blur(4px)",
-    boxShadow: "0 1px 6px rgba(255,150,200,0.12)",
+    boxShadow: "0 1px 4px rgba(200,169,212,0.1)",
   };
 
   return (
@@ -144,15 +477,15 @@ function TopNav({ navRef }) {
       position: "absolute", top: 0, left: 0, right: 0, height: 50,
       display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "0 18px", zIndex: 30,
-      borderBottom: "1px solid rgba(255,180,220,0.3)",
-      background: "rgba(255,240,248,0.55)",
+      borderBottom: "1px solid rgba(242,196,208,0.35)",
+      background: "rgba(247,232,240,0.62)",
       backdropFilter: "blur(20px)",
       WebkitBackdropFilter: "blur(20px)",
-      boxShadow: "0 2px 20px rgba(255,150,200,0.15)",
+      boxShadow: "0 1px 16px rgba(200,169,212,0.12)",
     }}>
 
       {/* ── Left: Logo + user info ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
         {/* Logo pill */}
         <div style={{
           display: "flex", alignItems: "center", gap: 7,
@@ -215,8 +548,13 @@ function TopNav({ navRef }) {
         </div>
       </div>
 
+      {/* ── Center: Barbie Train Animation ── */}
+      <div style={{ flex: 1, margin: "0 20px", height: "100%", position: "relative", overflow: "hidden", pointerEvents: "none", opacity: 0.9 }}>
+        <BarbieTrainAnimation />
+      </div>
+
       {/* ── Right: Nav links + logout ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
         {[
           { label: "Home", icon: "🏠", path: "/" },
           { label: "Spotify", icon: "🎵", path: "/spotify" },
@@ -228,18 +566,18 @@ function TopNav({ navRef }) {
             onClick={() => navigate(path)}
             style={navBtnBase}
             onMouseEnter={e => {
-              e.currentTarget.style.background = "linear-gradient(135deg, rgba(255,180,230,0.5), rgba(200,160,255,0.4))";
-              e.currentTarget.style.borderColor = "rgba(255,140,200,0.5)";
-              e.currentTarget.style.color = "#c040a0";
+              e.currentTarget.style.background = "rgba(255,255,255,0.65)";
+              e.currentTarget.style.borderColor = "rgba(200,169,212,0.5)";
+              e.currentTarget.style.color = "#8B6B8A";
               e.currentTarget.style.transform = "translateY(-1px)";
-              e.currentTarget.style.boxShadow = "0 4px 14px rgba(255,130,200,0.25)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(200,169,212,0.2)";
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.35)";
-              e.currentTarget.style.borderColor = "rgba(255,180,220,0.25)";
-              e.currentTarget.style.color = "rgba(180,80,150,0.85)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.4)";
+              e.currentTarget.style.borderColor = "rgba(242,196,208,0.4)";
+              e.currentTarget.style.color = "#8B6B8A";
               e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 1px 6px rgba(255,150,200,0.12)";
+              e.currentTarget.style.boxShadow = "0 1px 4px rgba(200,169,212,0.1)";
             }}
           >
             <span style={{ fontSize: 12 }}>{icon}</span>
@@ -409,7 +747,7 @@ function Sidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, user
       <div className="flex-1 overflow-y-auto pr-1" style={{ position: "relative", zIndex: 2 }}>
         {activeTab === "orbits" ? (
           isNexusesLoading ? (
-             <div style={{ padding: 12, fontSize: 11, color: "#d596ba", textAlign: "center" }}>💖 Syncing...</div>
+            <div style={{ padding: 12, fontSize: 11, color: "#d596ba", textAlign: "center" }}>💖 Syncing...</div>
           ) : nexuses.length === 0 ? (
             <div style={{ padding: 12, fontSize: 11, color: "#d596ba", textAlign: "center", lineHeight: 1.5 }}>
               No Orbits Yet!<br />Bloom One Below.
@@ -436,68 +774,68 @@ function Sidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, user
                   )}
 
                   {pinnedNexuses.includes(n._id) && (
-                      <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>📌</div>
+                    <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>📌</div>
                   )}
 
-                  <div 
-                      onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveMenuId(activeMenuId === n._id ? null : n._id);
-                          setActiveColorPickerId(null);
-                      }}
-                      style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                      onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenuId(activeMenuId === n._id ? null : n._id);
+                      setActiveColorPickerId(null);
+                    }}
+                    style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                    onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
                   >
-                      🌷
+                    🌷
                   </div>
                 </div>
 
                 {/* Context Menu Inline Expansion */}
                 {activeMenuId === n._id && (
-                    <div 
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(255,255,255,0.3)`, display: 'flex', flexDirection: 'column', gap: 8 }}
-                    >
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
-                                }}
-                                style={{ flex: 1, padding: '6px', background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,182,193,0.3)", borderRadius: 10, fontSize: 11, color: "#8a7585", fontFamily: "inherit", fontWeight: 700, cursor: 'pointer' }}
-                            >
-                                Mark 🎨
-                            </button>
-                            <button 
-                                onClick={(e) => togglePin(n._id, e)}
-                                style={{ flex: 1, padding: '6px', background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,182,193,0.3)", borderRadius: 10, fontSize: 11, color: "#8a7585", fontFamily: "inherit", fontWeight: 700, cursor: 'pointer' }}
-                            >
-                                {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
-                            </button>
-                        </div>
-
-                        {activeColorPickerId === n._id && (
-                            <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(255,255,255,0.5)", borderRadius: 10, border: "1px solid rgba(255,182,193,0.2)", overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
-                                {[
-                                    "transparent", // Default
-                                    "rgba(255,182,193,0.4)", // Light Pink
-                                    "rgba(255,228,225,0.5)", // Misty Rose
-                                    "rgba(240,230,140,0.4)", // Khaki/Yellowish
-                                    "rgba(152,251,152,0.4)", // Pale Green
-                                    "rgba(175,238,238,0.4)", // Pale Turquoise
-                                    "rgba(230,230,250,0.6)", // Lavender
-                                    "rgba(255,218,185,0.5)", // Peach
-                                ].map(c => (
-                                    <div 
-                                        key={c}
-                                        onClick={(e) => updateColor(n._id, c, e)}
-                                        style={{ minWidth: 20, height: 20, borderRadius: '50%', background: c, border: c === "transparent" ? "1px solid rgba(0,0,0,0.1)" : `1px solid rgba(255,255,255,0.8)`, cursor: 'pointer', flexShrink: 0 }}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(255,255,255,0.3)`, display: 'flex', flexDirection: 'column', gap: 8 }}
+                  >
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
+                        }}
+                        style={{ flex: 1, padding: '6px', background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,182,193,0.3)", borderRadius: 10, fontSize: 11, color: "#8a7585", fontFamily: "inherit", fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Mark 🎨
+                      </button>
+                      <button
+                        onClick={(e) => togglePin(n._id, e)}
+                        style={{ flex: 1, padding: '6px', background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,182,193,0.3)", borderRadius: 10, fontSize: 11, color: "#8a7585", fontFamily: "inherit", fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                      </button>
                     </div>
+
+                    {activeColorPickerId === n._id && (
+                      <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(255,255,255,0.5)", borderRadius: 10, border: "1px solid rgba(255,182,193,0.2)", overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
+                        {[
+                          "transparent", // Default
+                          "rgba(255,182,193,0.4)", // Light Pink
+                          "rgba(255,228,225,0.5)", // Misty Rose
+                          "rgba(240,230,140,0.4)", // Khaki/Yellowish
+                          "rgba(152,251,152,0.4)", // Pale Green
+                          "rgba(175,238,238,0.4)", // Pale Turquoise
+                          "rgba(230,230,250,0.6)", // Lavender
+                          "rgba(255,218,185,0.5)", // Peach
+                        ].map(c => (
+                          <div
+                            key={c}
+                            onClick={(e) => updateColor(n._id, c, e)}
+                            style={{ minWidth: 20, height: 20, borderRadius: '50%', background: c, border: c === "transparent" ? "1px solid rgba(0,0,0,0.1)" : `1px solid rgba(255,255,255,0.8)`, cursor: 'pointer', flexShrink: 0 }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))
@@ -668,19 +1006,18 @@ function FeatureCard({ cfg, cardRef }) {
 function HeroTitle() {
   return (
     <h1 style={{
-      margin: "0 0 5px 0", fontSize: 36, fontWeight: 900,
-      letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1.05,
-      background: "linear-gradient(90deg, #d060c8 0%, #e870b0 25%, #b860e8 55%, #78b8e8 100%)",
-      WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+      margin: "0 0 5px 0", fontSize: 38, fontWeight: 600,
+      fontFamily: "'Cormorant Garamond', 'Georgia', serif",
+      fontStyle: "italic",
+      letterSpacing: "0.02em", lineHeight: 1.1,
+      color: "#8B6B8A",
       position: "relative", display: "inline-block",
-      filter: "drop-shadow(0 2px 8px rgba(220,100,200,0.25))",
     }}>Welcome to Orbit
       <span style={{
         position: "absolute", top: -4, right: -18,
-        fontSize: 16, WebkitTextFillColor: "initial", color: "#ffcc44",
-        filter: "drop-shadow(0 1px 3px rgba(255,180,0,0.5))",
-        animation: "starPulse 2s ease-in-out infinite",
-      }}>👑</span>
+        fontSize: 14, color: "#A8D5BA",
+        animation: "starPulse 2.8s ease-in-out infinite",
+      }}>✦</span>
     </h1>
   );
 }
@@ -726,12 +1063,12 @@ export default function PastelApp({ children }) {
   return (
     <div style={{
       position: "relative", width: "100%", height: "100vh", overflow: "hidden",
-      fontFamily: "'Nunito', 'Varela Round', system-ui, sans-serif",
-      background: "linear-gradient(145deg, #ffd4ee 0%, #f8c0dc 8%, #f0ccf8 18%, #d0d4f8 32%, #bce4f8 46%, #c0eee8 62%, #ccf0d8 78%, #d8f4e4 100%)",
-      cursor: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='3' fill='%23ff88cc' opacity='0.8'/%3E%3C/svg%3E\") 12 12, auto",
+      fontFamily: "'DM Sans', 'Nunito', system-ui, sans-serif",
+      background: "#F7E8F0",
+      cursor: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='3' fill='%23C8A9D4' opacity='0.8'/%3E%3C/svg%3E\") 12 12, auto",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes starPulse {
           0%,100%{ opacity:0.45; transform:scale(1) rotate(0deg); }
           50%{ opacity:0.9; transform:scale(1.18) rotate(14deg); }
@@ -752,8 +1089,7 @@ export default function PastelApp({ children }) {
         *{ box-sizing:border-box; }
         button:focus{ outline:none; }
         ::-webkit-scrollbar{ width:4px; }
-        ::-webkit-scrollbar-thumb{ background:rgba(255,150,200,0.35); border-radius:99px; }
-        ::-webkit-scrollbar-thumb{ background:rgba(255,150,200,0.35); border-radius:99px; }
+        ::-webkit-scrollbar-thumb{ background:rgba(200,169,212,0.4); border-radius:99px; }
 
         /* ── Pastel Dream Chat Theme ── */
         .pastel-chat-env .nexus-chat-container {
@@ -843,8 +1179,8 @@ export default function PastelApp({ children }) {
       <TopNav navRef={navRef} />
 
       <div style={{ position: "absolute", top: 50, left: 0, right: 0, bottom: 0, display: "flex" }}>
-        <Sidebar 
-          sidebarRef={sidebarRef} 
+        <Sidebar
+          sidebarRef={sidebarRef}
           nexuses={nexuses}
           isNexusesLoading={isNexusesLoading}
           setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
@@ -906,7 +1242,7 @@ export default function PastelApp({ children }) {
 export function PastelProfile() {
   const navigate = useNavigate();
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
-  
+
   const [profileDraft, setProfileDraft] = useState({
     username: "",
     email: "",
@@ -981,10 +1317,10 @@ export function PastelProfile() {
       </div>
 
       <div style={{ position: "absolute", top: 70, bottom: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 40, zIndex: 10 }}>
-        
+
         {/* Wrapper for Card + Animals so they scale and position together */}
         <div style={{ position: "relative", width: "100%", maxWidth: 1100, height: "100%", maxHeight: 650 }}>
-          
+
           {/* Peeking Animals */}
           <div style={{ position: "absolute", top: -30, right: 80, fontSize: 50, animation: "peekTop 4s ease-in-out infinite", zIndex: 0, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.1))" }}>🐱</div>
           <div style={{ position: "absolute", bottom: -30, left: 60, fontSize: 55, animation: "peekBottom 5s ease-in-out infinite 1s", zIndex: 0, filter: "drop-shadow(0 -4px 6px rgba(0,0,0,0.1))" }}>🐰</div>
@@ -1012,23 +1348,23 @@ export function PastelProfile() {
 
           {/* Main Horizontal Container */}
           <div style={{ position: "absolute", inset: 0, display: "flex", background: "rgba(255,255,255,0.65)", backdropFilter: "blur(25px)", borderRadius: 40, border: "3px solid rgba(255,255,255,0.9)", boxShadow: "0 25px 60px rgba(230,190,220,0.5)", overflow: "hidden", zIndex: 10 }}>
-            
+
             {/* Left Column: Avatar & Quick Info */}
             <div style={{ width: 400, background: "linear-gradient(180deg, rgba(255,230,240,0.6) 0%, rgba(240,220,255,0.6) 100%)", padding: "40px 30px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRight: "3px solid rgba(255,255,255,0.7)", position: "relative" }}>
-              
+
               <div style={{ position: "relative", marginBottom: 20 }}>
                 <div style={{ width: 190, height: 190, borderRadius: "50%", background: "linear-gradient(135deg, #fff, #fdebf3)", padding: 8, animation: isEditing ? "none" : "avatarPulse 3s infinite" }}>
                   <img src={profileDraft.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(244,114,182,0.2)" }} />
                 </div>
-                <label style={{ position: "absolute", bottom: 8, right: 8, background: "linear-gradient(135deg, #f472b6, #c084fc)", color: "#fff", width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: isEditing ? "pointer" : "not-allowed", opacity: isEditing ? 1 : 0.6, border: "4px solid #fff", boxShadow: "0 4px 15px rgba(244,114,182,0.5)", fontSize: 22, transition: "transform 0.2s" }} onMouseEnter={e => { if(isEditing) e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"}} onMouseLeave={e => { if(isEditing) e.currentTarget.style.transform = "scale(1) rotate(0deg)"}}>
+                <label style={{ position: "absolute", bottom: 8, right: 8, background: "linear-gradient(135deg, #f472b6, #c084fc)", color: "#fff", width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: isEditing ? "pointer" : "not-allowed", opacity: isEditing ? 1 : 0.6, border: "4px solid #fff", boxShadow: "0 4px 15px rgba(244,114,182,0.5)", fontSize: 22, transition: "transform 0.2s" }} onMouseEnter={e => { if (isEditing) e.currentTarget.style.transform = "scale(1.1) rotate(10deg)" }} onMouseLeave={e => { if (isEditing) e.currentTarget.style.transform = "scale(1) rotate(0deg)" }}>
                   📸
                   <input type="file" style={{ display: "none" }} onChange={handleImageUpload} disabled={!isEditing || isUpdatingProfile} />
                 </label>
               </div>
-              
+
               <h3 style={{ margin: "0 0 8px 0", fontSize: 32, color: "#a855f7", fontWeight: 900, textShadow: "0 2px 5px rgba(168,85,247,0.2)" }}>{authUser.username}</h3>
               <p style={{ margin: 0, color: "#d060a8", fontSize: 14, fontWeight: 800, background: "rgba(255,255,255,0.8)", padding: "6px 20px", borderRadius: 25, border: "2px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 15px rgba(200,150,180,0.15)" }}>Status: Magical ✨</p>
-              
+
               <div style={{ marginTop: 30, width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ background: "rgba(255,255,255,0.5)", borderRadius: 20, padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "inset 0 2px 5px rgba(255,255,255,0.5)" }}>
                   <span style={{ fontSize: 13, fontWeight: 800, color: "#d060a8" }}>🎀 Charm Level</span>
@@ -1058,9 +1394,9 @@ export function PastelProfile() {
               <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "relative", zIndex: 1 }}>
                 <div>
                   <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Persona Name</label>
-                  <input 
-                    value={profileDraft.username} 
-                    onChange={e => setProfileDraft({...profileDraft, username: e.target.value})}
+                  <input
+                    value={profileDraft.username}
+                    onChange={e => setProfileDraft({ ...profileDraft, username: e.target.value })}
                     disabled={!isEditing}
                     style={{ width: "100%", padding: "12px 18px", background: isEditing ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.5)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 20, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", transition: "all 0.3s", boxShadow: isEditing ? "inset 0 4px 10px rgba(244,114,182,0.1), 0 4px 15px rgba(255,255,255,0.5)" : "none" }}
                   />
@@ -1068,9 +1404,9 @@ export function PastelProfile() {
 
                 <div>
                   <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Magical Mail (Email)</label>
-                  <input 
-                    value={profileDraft.email} 
-                    onChange={e => setProfileDraft({...profileDraft, email: e.target.value})}
+                  <input
+                    value={profileDraft.email}
+                    onChange={e => setProfileDraft({ ...profileDraft, email: e.target.value })}
                     disabled={!isEditing}
                     style={{ width: "100%", padding: "12px 18px", background: isEditing ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.5)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 20, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", transition: "all 0.3s", boxShadow: isEditing ? "inset 0 4px 10px rgba(244,114,182,0.1), 0 4px 15px rgba(255,255,255,0.5)" : "none" }}
                   />
@@ -1078,9 +1414,9 @@ export function PastelProfile() {
 
                 <div>
                   <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Dreamy Bio</label>
-                  <textarea 
-                    value={profileDraft.bio} 
-                    onChange={e => setProfileDraft({...profileDraft, bio: e.target.value})}
+                  <textarea
+                    value={profileDraft.bio}
+                    onChange={e => setProfileDraft({ ...profileDraft, bio: e.target.value })}
                     disabled={!isEditing}
                     rows={3}
                     style={{ width: "100%", padding: "12px 18px", background: isEditing ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.5)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 20, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", resize: "none", transition: "all 0.3s", boxShadow: isEditing ? "inset 0 4px 10px rgba(244,114,182,0.1), 0 4px 15px rgba(255,255,255,0.5)" : "none" }}
@@ -1090,9 +1426,9 @@ export function PastelProfile() {
 
               {isEditing && (
                 <div style={{ marginTop: 20, display: "flex", gap: 20, justifyContent: "flex-end", position: "relative", zIndex: 1 }}>
-                  <button 
+                  <button
                     onClick={() => {
-                      setProfileDraft({ username: authUser.username||"", email: authUser.email||"", bio: authUser.bio||"", profilePic: authUser.profilePic||"" });
+                      setProfileDraft({ username: authUser.username || "", email: authUser.email || "", bio: authUser.bio || "", profilePic: authUser.profilePic || "" });
                       setSelectedImg(null);
                       setIsEditing(false);
                     }}
@@ -1102,12 +1438,12 @@ export function PastelProfile() {
                   >
                     CANCEL
                   </button>
-                  <button 
+                  <button
                     onClick={handleSave}
                     disabled={!hasChanges || isUpdatingProfile}
                     style={{ padding: "16px 40px", background: hasChanges ? "linear-gradient(90deg, #f472b6, #c084fc)" : "#e2e8f0", border: "none", color: "#fff", borderRadius: 30, fontWeight: 900, fontSize: 15, cursor: hasChanges ? "pointer" : "default", boxShadow: hasChanges ? "0 10px 30px rgba(192,132,252,0.5)" : "none", transition: "all 0.2s" }}
-                    onMouseEnter={e => { if(hasChanges) e.currentTarget.style.transform = "translateY(-3px)" }}
-                    onMouseLeave={e => { if(hasChanges) e.currentTarget.style.transform = "translateY(0)" }}
+                    onMouseEnter={e => { if (hasChanges) e.currentTarget.style.transform = "translateY(-3px)" }}
+                    onMouseLeave={e => { if (hasChanges) e.currentTarget.style.transform = "translateY(0)" }}
                   >
                     {isUpdatingProfile ? "SAVING MAGIC..." : "SAVE CHANGES ✨"}
                   </button>
@@ -1188,7 +1524,7 @@ export function PastelSettings({
 
           {/* Main Horizontal Container */}
           <div style={{ position: "absolute", inset: 0, display: "flex", background: "rgba(255,255,255,0.65)", backdropFilter: "blur(25px)", borderRadius: 40, border: "3px solid rgba(255,255,255,0.9)", boxShadow: "0 25px 60px rgba(230,190,220,0.5)", overflow: "hidden", zIndex: 10 }}>
-            
+
             {/* Sidebar */}
             <div style={{ width: 300, background: "linear-gradient(180deg, rgba(255,240,245,0.6) 0%, rgba(245,230,255,0.6) 100%)", padding: "40px 30px", display: "flex", flexDirection: "column", gap: 12, borderRight: "3px solid rgba(255,255,255,0.7)" }}>
               <h2 style={{ fontSize: 26, fontWeight: 900, color: "#d060a8", paddingLeft: 12, marginBottom: 20 }}>Settings 🎀</h2>
@@ -1210,14 +1546,14 @@ export function PastelSettings({
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Persona Name</label>
-                    <input 
+                    <input
                       value={draftDisplayName} onChange={e => setDraftDisplayName(e.target.value)}
                       style={{ width: "100%", padding: "16px 24px", background: "rgba(255,255,255,0.6)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 25, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", transition: "all 0.3s", boxShadow: "inset 0 4px 10px rgba(244,114,182,0.05)" }}
                     />
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Dreamy Bio</label>
-                    <textarea 
+                    <textarea
                       value={draftBio} onChange={e => setDraftBio(e.target.value)} rows={4}
                       style={{ width: "100%", padding: "16px 24px", background: "rgba(255,255,255,0.6)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 25, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", resize: "none", transition: "all 0.3s", boxShadow: "inset 0 4px 10px rgba(244,114,182,0.05)" }}
                     />
@@ -1244,15 +1580,15 @@ export function PastelSettings({
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
                     <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Magical Sound Effects 🎵</div>
-                    <input type="checkbox" checked={draftSoundSettings.effectsEnabled} onChange={e => setDraftSoundSettings({...draftSoundSettings, effectsEnabled: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                    <input type="checkbox" checked={draftSoundSettings.effectsEnabled} onChange={e => setDraftSoundSettings({ ...draftSoundSettings, effectsEnabled: e.target.checked })} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
                   <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
                     <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Message Chimes 📩</div>
-                    <input type="checkbox" checked={draftSoundSettings.messageSound} onChange={e => setDraftSoundSettings({...draftSoundSettings, messageSound: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                    <input type="checkbox" checked={draftSoundSettings.messageSound} onChange={e => setDraftSoundSettings({ ...draftSoundSettings, messageSound: e.target.checked })} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
                   <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
                     <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Click Sparkles ✨</div>
-                    <input type="checkbox" checked={draftSoundSettings.clickSound} onChange={e => setDraftSoundSettings({...draftSoundSettings, clickSound: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                    <input type="checkbox" checked={draftSoundSettings.clickSound} onChange={e => setDraftSoundSettings({ ...draftSoundSettings, clickSound: e.target.checked })} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
                 </div>
               )}
@@ -1262,11 +1598,11 @@ export function PastelSettings({
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
                     <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Desktop Alerts 🖥️</div>
-                    <input type="checkbox" checked={draftNotifications.desktop} onChange={e => setDraftNotifications({...draftNotifications, desktop: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                    <input type="checkbox" checked={draftNotifications.desktop} onChange={e => setDraftNotifications({ ...draftNotifications, desktop: e.target.checked })} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
                   <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
                     <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Sound Alerts 🔊</div>
-                    <input type="checkbox" checked={draftNotifications.sound} onChange={e => setDraftNotifications({...draftNotifications, sound: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                    <input type="checkbox" checked={draftNotifications.sound} onChange={e => setDraftNotifications({ ...draftNotifications, sound: e.target.checked })} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
                 </div>
               )}
@@ -1276,11 +1612,11 @@ export function PastelSettings({
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
                     <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Show Friendship Rings 🪐</div>
-                    <input type="checkbox" checked={draftOrbitBehavior.showRings} onChange={e => setDraftOrbitBehavior({...draftOrbitBehavior, showRings: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                    <input type="checkbox" checked={draftOrbitBehavior.showRings} onChange={e => setDraftOrbitBehavior({ ...draftOrbitBehavior, showRings: e.target.checked })} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
                   <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
                     <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Auto-pause on Hover ⏸️</div>
-                    <input type="checkbox" checked={draftOrbitBehavior.autoPauseOnHover} onChange={e => setDraftOrbitBehavior({...draftOrbitBehavior, autoPauseOnHover: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                    <input type="checkbox" checked={draftOrbitBehavior.autoPauseOnHover} onChange={e => setDraftOrbitBehavior({ ...draftOrbitBehavior, autoPauseOnHover: e.target.checked })} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
                 </div>
               )}
@@ -1293,7 +1629,7 @@ export function PastelSettings({
                     <input type="checkbox" checked={draftShowOnlineStatus} onChange={e => setDraftShowOnlineStatus(e.target.checked)} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
                   <div style={{ marginTop: 20 }}>
-                    <button style={{ padding: "18px 40px", background: "rgba(255,100,150,0.1)", border: "3px solid #ff7799", borderRadius: 30, color: "#ff7799", fontWeight: 900, fontSize: 16, cursor: "not-allowed", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(255,100,150,0.2)"} onMouseLeave={e => e.currentTarget.style.background="rgba(255,100,150,0.1)"}>
+                    <button style={{ padding: "18px 40px", background: "rgba(255,100,150,0.1)", border: "3px solid #ff7799", borderRadius: 30, color: "#ff7799", fontWeight: 900, fontSize: 16, cursor: "not-allowed", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,100,150,0.2)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,100,150,0.1)"}>
                       CHANGE PASSWORD 🔒 (SOON)
                     </button>
                   </div>
