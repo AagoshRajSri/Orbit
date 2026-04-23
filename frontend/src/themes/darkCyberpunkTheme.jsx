@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
@@ -487,6 +487,51 @@ function Sidebar({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, i
   const navigate = useNavigate();
   const { play } = useSoundManager();
 
+  const [pinnedNexuses, setPinnedNexuses] = useState(() => {
+    return JSON.parse(localStorage.getItem('cyberpunk_pinned_nexuses') || '[]');
+  });
+  const [nexusColors, setNexusColors] = useState(() => {
+    return JSON.parse(localStorage.getItem('cyberpunk_nexus_colors') || '{}');
+  });
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [activeColorPickerId, setActiveColorPickerId] = useState(null);
+
+  const togglePin = (id, e) => {
+    e.stopPropagation();
+    const next = pinnedNexuses.includes(id) ? pinnedNexuses.filter(pid => pid !== id) : [...pinnedNexuses, id];
+    setPinnedNexuses(next);
+    localStorage.setItem('cyberpunk_pinned_nexuses', JSON.stringify(next));
+    setActiveMenuId(null);
+  };
+
+  const updateColor = (id, color, e) => {
+    e.stopPropagation();
+    const next = { ...nexusColors, [id]: color };
+    setNexusColors(next);
+    localStorage.setItem('cyberpunk_nexus_colors', JSON.stringify(next));
+    setActiveColorPickerId(null);
+    setActiveMenuId(null);
+  };
+
+  const sortedNexuses = useMemo(() => {
+    return [...nexuses].sort((a, b) => {
+      const aPinned = pinnedNexuses.includes(a._id);
+      const bPinned = pinnedNexuses.includes(b._id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+  }, [nexuses, pinnedNexuses]);
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveMenuId(null);
+      setActiveColorPickerId(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
   const tabStyle = (active, color) => ({
     flex: 1, border: `1px solid ${active ? color : "rgba(100,100,150,0.35)"}`,
     borderRadius: 3, padding: "5px 0", cursor: "pointer",
@@ -500,7 +545,7 @@ function Sidebar({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, i
 
   return (
     <div ref={sidebarRef} className="ncb-sidebar" style={{
-      width: 215, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8,
+      width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8,
       borderRight: `1px solid ${P}33`,
       background: "rgba(6,0,16,0.7)", backdropFilter: "blur(8px)",
       padding: "10px", position: "relative", overflow: "hidden", overflowY: "auto",
@@ -534,22 +579,90 @@ function Sidebar({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, i
               NO_NODES_FOUND<br />[ACTION_REQUIRED: JOIN/CREATE]
             </div>
           ) : (
-            nexuses.map(n => (
+            sortedNexuses.map(n => (
               <div key={n._id}
                 onClick={() => { play("click"); setSelectedNexus(n); setSelectedUser(null); setNexusActionView(null); }}
-                style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 4, cursor: "pointer", transition: "all 0.2s", background: `${M}08`, border: "1px solid transparent" }}
-                onMouseEnter={e => { e.currentTarget.style.background = `${M}12`; e.currentTarget.style.borderColor = `${M}44`; }}
-                onMouseLeave={e => { e.currentTarget.style.background = `${M}08`; e.currentTarget.style.borderColor = "transparent"; }}
+                style={{ display: "flex", flexDirection: "column", padding: "8px 10px", borderRadius: 4, cursor: "pointer", transition: "all 0.2s", background: nexusColors[n._id] || `${M}08`, border: "1px solid transparent", position: "relative" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${M}44`; e.currentTarget.style.boxShadow = `inset 0 0 10px ${M}44`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.boxShadow = "none"; }}
               >
-                <div style={{ width: 30, height: 30, borderRadius: 6, background: `${M}12`, border: `1px solid ${M}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, overflow: "hidden" }}>
-                  {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "⬡"}
+                <div style={{ display: "flex", alignItems: "center", gap: 9, width: "100%" }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 6, background: `${M}12`, border: `1px solid ${M}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, overflow: "hidden" }}>
+                    {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "⬡"}
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: M, fontFamily: "'Orbitron',monospace", letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textShadow: `0 0 5px ${M}44` }}>{n.name}</div>
+                    <div style={{ fontSize: 8, color: `${M}66`, fontFamily: "'Share Tech Mono'" }}>NODES: {n.members?.length || 0}</div>
+                  </div>
+                  {nexusUnread[n._id] > 0 && (
+                     <div style={{ background: M, color: "white", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 4, boxShadow: `0 0 8px ${M}` }}>{nexusUnread[n._id]}</div>
+                  )}
+
+                  {pinnedNexuses.includes(n._id) && (
+                      <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>📌</div>
+                  )}
+
+                  <div 
+                      onClick={(e) => {
+                          e.stopPropagation();
+                          play("click");
+                          setActiveMenuId(activeMenuId === n._id ? null : n._id);
+                          setActiveColorPickerId(null);
+                      }}
+                      style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                      onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+                  >
+                      🔮
+                  </div>
                 </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: M, fontFamily: "'Orbitron',monospace", letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textShadow: `0 0 5px ${M}44` }}>{n.name}</div>
-                  <div style={{ fontSize: 8, color: `${M}66`, fontFamily: "'Share Tech Mono'" }}>NODES: {n.members?.length || 0}</div>
-                </div>
-                {nexusUnread[n._id] > 0 && (
-                   <div style={{ background: M, color: "white", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 4, boxShadow: `0 0 8px ${M}` }}>{nexusUnread[n._id]}</div>
+
+                {/* Context Menu Inline Expansion */}
+                {activeMenuId === n._id && (
+                    <div 
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid ${M}33`, display: 'flex', flexDirection: 'column', gap: 8 }}
+                    >
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    play("click");
+                                    setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
+                                }}
+                                style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
+                            >
+                                Mark 🎨
+                            </button>
+                            <button 
+                                onClick={(e) => { play("click"); togglePin(n._id, e); }}
+                                style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
+                            >
+                                {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                            </button>
+                        </div>
+
+                        {activeColorPickerId === n._id && (
+                            <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(0,0,0,0.5)", borderRadius: 4, border: `1px solid ${M}33`, overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
+                                {[
+                                    "transparent", // Default
+                                    "rgba(255,0,200,0.2)", // Mute Magenta
+                                    "rgba(0,255,245,0.2)", // Mute Cyan
+                                    "rgba(176,38,255,0.2)", // Mute Purple
+                                    "rgba(255,230,0,0.2)", // Mute Yellow
+                                    "rgba(255,0,0,0.2)", // Red Warning
+                                    "rgba(0,255,0,0.2)", // Green Matrix
+                                    "rgba(0,0,0,0.8)", // Void
+                                ].map(c => (
+                                    <div 
+                                        key={c}
+                                        onClick={(e) => updateColor(n._id, c, e)}
+                                        style={{ minWidth: 20, height: 20, borderRadius: '50%', background: c, border: c === "transparent" ? "1px solid rgba(255,255,255,0.2)" : `1px solid ${M}`, cursor: 'pointer', flexShrink: 0 }}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 )}
               </div>
             ))

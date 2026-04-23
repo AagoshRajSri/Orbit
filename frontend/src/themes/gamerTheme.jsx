@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
@@ -92,7 +92,7 @@ function MainCircuits() {
 function NeonCard({ color = "#00f5d4", children, style = {} }) {
   const [hover, setHover] = useState(false);
   return (
-    <div 
+    <div
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{ border: `1.5px solid ${color}`, borderRadius: 8, boxShadow: hover ? `0 0 15px ${color},0 0 30px ${color}66,inset 0 0 15px ${color}33` : `0 0 8px ${color},0 0 20px ${color}44,inset 0 0 8px ${color}11`, background: "rgba(8,6,20,0.82)", backdropFilter: "blur(6px)", position: "relative", overflow: "hidden", transition: "all 0.3s ease", transform: hover ? "translateY(-2px)" : "translateY(0)", ...style }}>
@@ -253,8 +253,18 @@ function Gears() {
 /* ─────────────────────────────────────────────
    XP BAR
 ───────────────────────────────────────────── */
-function XPBar({ xp = 7340, maxXp = 10000, level = 47 }) {
+function XPBar({ xp = 7340, maxXp = 10000, level = 47, compact = false }) {
   const pct = (xp / maxXp) * 100;
+  if (compact) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 120 }}>
+        <span style={{ fontSize: 8, fontWeight: 900, color: "#ffe600", fontFamily: "'Orbitron',monospace" }}>L{level}</span>
+        <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(255,230,0,0.1)", border: "1px solid rgba(255,230,0,0.2)", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, width: `${pct}%`, background: "#ffe600", boxShadow: "0 0 4px #ffe600" }} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <span style={{ fontSize: 9, fontWeight: 900, color: "#ffe600", letterSpacing: "0.1em", whiteSpace: "nowrap", fontFamily: "'Orbitron',monospace", textShadow: "0 0 6px #ffe600" }}>LVL {level}</span>
@@ -270,9 +280,24 @@ function XPBar({ xp = 7340, maxXp = 10000, level = 47 }) {
 /* ─────────────────────────────────────────────
    RANK BADGE
 ───────────────────────────────────────────── */
-function RankBadge({ rank = "DIAMOND", rp = 1847, nextRp = 2000 }) {
+function RankBadge({ rank = "DIAMOND", rp = 1847, nextRp = 2000, compact = false }) {
   const color = RANK_COLORS[rank] || "#fff";
   const pct = Math.round((rp / nextRp) * 100);
+  if (compact) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 8px", background: "rgba(0,0,0,0.3)", borderRadius: 4, border: `1px solid ${color}44` }}>
+        <span style={{ fontSize: 14, filter: `drop-shadow(0 0 4px ${color})` }}>
+          {rank === "IRON" ? "⬡" : rank === "BRONZE" ? "🔶" : rank === "SILVER" ? "💠" : rank === "GOLD" ? "👑" : rank === "PLATINUM" ? "💎" : rank === "DIAMOND" ? "💎" : rank === "MASTER" ? "⭐" : rank === "GRANDMASTER" ? "🔥" : "✦"}
+        </span>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ fontSize: 7, fontWeight: 900, color, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace" }}>{rank}</div>
+          <div style={{ height: 2, width: 40, background: "rgba(255,255,255,0.1)", borderRadius: 1, marginTop: 1, position: "relative" }}>
+            <div style={{ height: "100%", width: `${pct}%`, background: color, boxShadow: `0 0 4px ${color}` }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <NeonCard color={color} style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -437,62 +462,82 @@ function Scanlines() {
 /* ─────────────────────────────────────────────
    TOP NAV
 ───────────────────────────────────────────── */
-function TopNav({ navRef, locked, killCount }) {
+function TopNav({ navRef, locked, killCount, setSelectedNexus, setSelectedUser }) {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }));
   useEffect(() => { const iv = setInterval(() => setTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })), 1000); return () => clearInterval(iv); }, []);
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuthStore();
-  
+
   const navItems = [];
   if (location.pathname !== "/") {
-    navItems.push({ icon: "◀", label: "Go back", path: "/", highlight: true });
+    navItems.push({ icon: "◀", label: "BACK", path: "/", highlight: true });
   }
   navItems.push(
-    { icon: "⚙", label: "Settings", path: "/settings" },
-    { icon: "👤", label: "Profile", path: "/profile" },
-    { icon: "→", label: "Logout", action: "logout" }
+    { icon: "⚙", label: "CONFIG", path: "/settings" },
+    { icon: "👤", label: "STATUS", path: "/profile" },
+    { icon: "→", label: "OFFLINE", action: "logout" }
   );
 
+  const handleNav = (item) => {
+    if (item.action === "logout") {
+      logout();
+      return;
+    }
+    // Clear selection when navigating to Home or other top-level pages
+    if (typeof setSelectedNexus === "function") setSelectedNexus(null);
+    if (typeof setSelectedUser === "function") setSelectedUser(null);
+    navigate(item.path);
+  };
+
   return (
-    <div ref={navRef} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 42, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", zIndex: 40, background: "rgba(4,2,18,0.9)", borderBottom: "1px solid rgba(0,245,212,0.2)", backdropFilter: "blur(8px)" }}>
-      {/* Logo + mode */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 26, height: 26, borderRadius: "50%", border: "1.5px solid #ff2d78", boxShadow: "0 0 8px #ff2d78,0 0 16px #ff2d7844", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,45,120,0.12)", fontSize: 12 }}>🌀</div>
-        <span style={{ fontSize: 14, fontWeight: 900, letterSpacing: "0.18em", color: "#00f5d4", textShadow: "0 0 10px #00f5d4,0 0 20px #00f5d488", fontFamily: "'Orbitron',monospace" }}>ORBIT</span>
-        {locked && <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 3, background: "rgba(255,45,120,0.15)", border: "1px solid rgba(255,45,120,0.5)", animation: "lockedPulse 2s infinite" }}>
-          <span style={{ fontSize: 8 }}>🔒</span>
-          <span style={{ fontSize: 8, fontWeight: 900, color: "#ff2d78", letterSpacing: "0.15em", fontFamily: "'Orbitron',monospace" }}>GRIND MODE</span>
-        </div>}
+    <div ref={navRef} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 48, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", zIndex: 40, background: "rgba(4,2,18,0.95)", borderBottom: "2px solid rgba(0,245,212,0.3)", backdropFilter: "blur(12px)", boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
+      {/* Logo Section */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 30, height: 30, borderRadius: "50%", border: "2px solid #ff2d78", boxShadow: "0 0 10px #ff2d78", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,45,120,0.15)", fontSize: 14 }}>🌀</div>
+        <span style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.2em", color: "#00f5d4", textShadow: "0 0 10px #00f5d4", fontFamily: "'Orbitron',monospace" }}>ORBIT</span>
       </div>
-      {/* Center HUD stats */}
-      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 7, color: "rgba(0,245,212,0.5)", letterSpacing: "0.15em", fontFamily: "'Orbitron',monospace" }}>SESSION KILLS</div>
-          <div style={{ fontSize: 13, fontWeight: 900, color: "#ff2d78", fontFamily: "'Orbitron',monospace", textShadow: "0 0 8px #ff2d78" }}>{killCount}</div>
-        </div>
-        <div style={{ width: 1, height: 22, background: "rgba(0,245,212,0.2)" }} />
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 7, color: "rgba(0,245,212,0.5)", letterSpacing: "0.15em", fontFamily: "'Orbitron',monospace" }}>K/D RATIO</div>
-          <div style={{ fontSize: 13, fontWeight: 900, color: "#ffe600", fontFamily: "'Orbitron',monospace", textShadow: "0 0 8px #ffe600" }}>4.2</div>
-        </div>
-        <div style={{ width: 1, height: 22, background: "rgba(0,245,212,0.2)" }} />
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 7, color: "rgba(0,245,212,0.5)", letterSpacing: "0.15em", fontFamily: "'Orbitron',monospace" }}>WIN RATE</div>
-          <div style={{ fontSize: 13, fontWeight: 900, color: "#00f5d4", fontFamily: "'Orbitron',monospace", textShadow: "0 0 8px #00f5d4" }}>68%</div>
-        </div>
-        <div style={{ width: 1, height: 22, background: "rgba(0,245,212,0.2)" }} />
-        <div style={{ width: 75, textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center" }}>
-          <div style={{ fontSize: 7, color: "rgba(0,245,212,0.5)", letterSpacing: "0.15em", fontFamily: "'Orbitron',monospace" }}>LOCAL TIME</div>
-          <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 11, color: "rgba(0,245,212,0.6)", letterSpacing: "0.08em", fontVariantNumeric: "tabular-nums" }}>{time}</div>
+
+      {/* Center HUD Stats - Combined with Rank/XP */}
+      <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+        {/* Rank Section */}
+        <RankBadge rank="DIAMOND" rp={1847} nextRp={2000} compact={true} />
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.1)" }} />
+
+        {/* XP Section */}
+        <XPBar xp={7340} maxXp={10000} level={47} compact={true} />
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.1)" }} />
+
+        {/* Session Stats */}
+        <div style={{ display: "flex", gap: 16 }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 7, color: "rgba(0,245,212,0.5)", letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace" }}>KILLS</div>
+            <div style={{ fontSize: 12, fontWeight: 900, color: "#ff2d78", fontFamily: "'Orbitron',monospace" }}>{killCount}</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 7, color: "rgba(0,245,212,0.5)", letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace" }}>K/D</div>
+            <div style={{ fontSize: 12, fontWeight: 900, color: "#ffe600", fontFamily: "'Orbitron',monospace" }}>4.2</div>
+          </div>
         </div>
       </div>
-      {/* Nav */}
-      <div style={{ display: "flex", gap: 5 }}>
+
+      {/* Nav Actions */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "none" }} className="md:flex">
+          <div style={{ textAlign: "right", marginRight: 12 }}>
+            <div style={{ fontSize: 7, color: "rgba(0,245,212,0.5)", fontFamily: "'Orbitron',monospace" }}>SYSTEM TIME</div>
+            <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 10, color: "rgba(0,245,212,0.8)", letterSpacing: "0.05em" }}>{time}</div>
+          </div>
+        </div>
+
         {navItems.map((item) => (
-          <button key={item.label} onClick={item.action === "logout" ? logout : () => navigate(item.path)} style={{ display: "flex", alignItems: "center", gap: 4, background: item.highlight ? "rgba(255,45,120,0.15)" : "rgba(0,245,212,0.06)", border: `1px solid ${item.highlight ? "rgba(255,45,120,0.5)" : "rgba(0,245,212,0.35)"}`, borderRadius: 4, padding: "4px 8px", cursor: "pointer", fontSize: 10, fontWeight: 900, letterSpacing: "0.08em", color: item.highlight ? "#ff2d78" : "#a0f0e8", fontFamily: "'Orbitron',monospace", transition: "all 0.2s", textTransform: "uppercase" }}
-            onMouseEnter={e => { e.currentTarget.style.background = item.highlight ? "rgba(255,45,120,0.3)" : "rgba(0,245,212,0.18)"; e.currentTarget.style.boxShadow = `0 0 10px ${item.highlight ? "rgba(255,45,120,0.5)" : "rgba(0,245,212,0.4)"}`; }}
-            onMouseLeave={e => { e.currentTarget.style.background = item.highlight ? "rgba(255,45,120,0.15)" : "rgba(0,245,212,0.06)"; e.currentTarget.style.boxShadow = "none"; }}>
+          <button key={item.label} onClick={() => handleNav(item)} style={{ display: "flex", alignItems: "center", gap: 6, background: item.highlight ? "rgba(255,45,120,0.2)" : "rgba(255,255,255,0.05)", border: `1.5px solid ${item.highlight ? "#ff2d78" : "rgba(255,255,255,0.15)"}`, borderRadius: 4, padding: "5px 10px", cursor: "pointer", fontSize: 10, fontWeight: 900, color: item.highlight ? "#ff2d78" : "#fff", fontFamily: "'Orbitron',monospace", transition: "all 0.2s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = item.highlight ? "rgba(255,45,120,0.3)" : "rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor = item.highlight ? "#ff2d78" : "#00f5d4"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = item.highlight ? "rgba(255,45,120,0.2)" : "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = item.highlight ? "#ff2d78" : "rgba(255,255,255,0.15)"; }}>
             <span>{item.icon}</span>{item.label}
           </button>
         ))}
@@ -504,109 +549,233 @@ function TopNav({ navRef, locked, killCount }) {
 /* ─────────────────────────────────────────────
    SIDEBAR
 ───────────────────────────────────────────── */
-function Sidebar({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView }) {
+function Sidebar({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses, isNexusesLoading, selectedNexus, selectedNexusId, setSelectedNexus, users, selectedUser, selectedUserId, setSelectedUser, nexusUnread, setNexusActionView }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("orbits");
-  const activeSt = (color) => ({ flex: 1, border: `1px solid ${color}`, borderRadius: 3, padding: "5px 0", cursor: "pointer", fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: `rgba(${color === "#ff2d78" ? "255,45,120" : "0,245,212"},0.12)`, color, boxShadow: `0 0 8px ${color}66`, transition: "all 0.2s" });
-  const ghostSt = () => ({ flex: 1, border: "1px solid rgba(100,100,150,0.4)", borderRadius: 3, padding: "5px 0", cursor: "pointer", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: "rgba(255,255,255,0.03)", color: "rgba(150,150,200,0.6)", transition: "all 0.2s" });
+
+  const [pinnedNexuses, setPinnedNexuses] = useState(() => {
+    return JSON.parse(localStorage.getItem('gamer_pinned_nexuses') || '[]');
+  });
+  const [nexusColors, setNexusColors] = useState(() => {
+    return JSON.parse(localStorage.getItem('gamer_nexus_colors') || '{}');
+  });
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [activeColorPickerId, setActiveColorPickerId] = useState(null);
+
+  const togglePin = (id, e) => {
+    e.stopPropagation();
+    const next = pinnedNexuses.includes(id) ? pinnedNexuses.filter(pid => pid !== id) : [...pinnedNexuses, id];
+    setPinnedNexuses(next);
+    localStorage.setItem('gamer_pinned_nexuses', JSON.stringify(next));
+    setActiveMenuId(null);
+  };
+
+  const updateColor = (id, color, e) => {
+    e.stopPropagation();
+    const next = { ...nexusColors, [id]: color };
+    setNexusColors(next);
+    localStorage.setItem('gamer_nexus_colors', JSON.stringify(next));
+    setActiveColorPickerId(null);
+    setActiveMenuId(null);
+  };
+
+  const sortedNexuses = useMemo(() => {
+    return [...nexuses].sort((a, b) => {
+      const aPinned = pinnedNexuses.includes(a._id);
+      const bPinned = pinnedNexuses.includes(b._id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+  }, [nexuses, pinnedNexuses]);
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveMenuId(null);
+      setActiveColorPickerId(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
+  const activeSt = (color) => ({ flex: 1, border: `1.5px solid ${color}`, borderRadius: 4, padding: "7px 0", cursor: "pointer", fontSize: 10, fontWeight: 900, letterSpacing: "0.12em", fontFamily: "'Orbitron',monospace", background: `rgba(${color === "#ff2d78" ? "255,45,120" : "0,245,212"},0.2)`, color: "#fff", textShadow: `0 0 8px ${color}`, boxShadow: `0 0 12px ${color}44`, transition: "all 0.2s" });
+  const ghostSt = () => ({ flex: 1, border: "1.5px solid rgba(255,255,255,0.1)", borderRadius: 4, padding: "7px 0", cursor: "pointer", fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", fontFamily: "'Orbitron',monospace", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.4)", transition: "all 0.2s" });
+
   return (
-    <div ref={sidebarRef} style={{ width: 215, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8, borderRight: "1px solid rgba(0,245,212,0.2)", background: "rgba(4,2,18,0.7)", backdropFilter: "blur(8px)", padding: "10px 10px 10px 10px", position: "relative", overflow: "hidden", overflowY: "auto" }}>
+    <div ref={sidebarRef} style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12, borderRight: "2px solid rgba(0,245,212,0.25)", background: "rgba(4,2,18,0.85)", backdropFilter: "blur(16px)", padding: "16px", position: "relative", overflow: "hidden", boxShadow: "4px 0 30px rgba(0,0,0,0.6)" }}>
       <CircuitLines />
-      <div style={{ display: "flex", gap: 4, position: "relative", zIndex: 2 }}>
+
+      {/* Tab Switcher */}
+      <div style={{ display: "flex", gap: 8, position: "relative", zIndex: 2 }}>
         <button onClick={() => setTab("orbits")} style={tab === "orbits" ? activeSt("#ff2d78") : ghostSt()}># ORBITS</button>
-        <button onClick={() => setTab("contacts")} style={tab === "contacts" ? activeSt("#00f5d4") : ghostSt()}><span style={{ fontSize: 8, marginRight: 2 }}>👤</span>CONTACTS</button>
+        <button onClick={() => setTab("contacts")} style={tab === "contacts" ? activeSt("#00f5d4") : ghostSt()}>👤 CONTACTS</button>
       </div>
-      <div style={{ display: "flex", gap: 4, position: "relative", zIndex: 2 }}>
-        <button onClick={onJoin} style={{ flex: 1, border: "1px solid rgba(0,245,212,0.4)", borderRadius: 3, padding: "5px 0", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: "rgba(0,245,212,0.06)", color: "#60d8cc", cursor: "pointer" }}>JOIN</button>
-        <button onClick={onNexus} style={{ flex: 1, border: "1px solid rgba(0,207,255,0.5)", borderRadius: 3, padding: "5px 0", fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: "linear-gradient(90deg,rgba(0,207,255,0.18),rgba(180,80,255,0.18))", color: "#00cfff", cursor: "pointer", boxShadow: "0 0 8px rgba(0,207,255,0.3)" }}>+ NEXUS</button>
+
+      {/* Action Hub */}
+      <div style={{ display: "flex", gap: 8, position: "relative", zIndex: 2 }}>
+        <button onClick={onJoin} style={{ flex: 1, border: "1.5px solid rgba(0,245,212,0.4)", borderRadius: 4, padding: "7px 0", fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: "rgba(0,245,212,0.1)", color: "#00f5d4", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,245,212,0.2)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(0,245,212,0.1)"}>JOIN</button>
+        <button onClick={onNexus} style={{ flex: 1, border: "1.5px solid rgba(255,45,120,0.5)", borderRadius: 4, padding: "7px 0", fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: "rgba(255,45,120,0.15)", color: "#ff2d78", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,45,120,0.25)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,45,120,0.15)"}>+ NEXUS</button>
       </div>
+
       {/* Nexus / Contact List */}
-      <div style={{ flex: 1, overflowY: "auto", position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+      <div style={{ flex: 1, overflowY: "auto", position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: 6, paddingRight: 4 }}>
         {tab === "orbits" ? (
           isNexusesLoading ? (
-            <div style={{ padding: 12, fontSize: 10, color: "rgba(0,245,212,0.5)", fontFamily: "'Orbitron',monospace", textAlign: "center" }}>SCANNING...</div>
+            <div style={{ padding: 24, fontSize: 11, color: "rgba(0,245,212,0.5)", fontFamily: "'Orbitron',monospace", textAlign: "center", letterSpacing: "0.2em" }}>SCANNING_NODES...</div>
           ) : nexuses.length === 0 ? (
-            <div style={{ padding: 12, fontSize: 10, color: "rgba(0,245,212,0.4)", fontFamily: "'Orbitron',monospace", textAlign: "center", lineHeight: 1.6 }}>NO NEXUS NODES DETECTED<br />JOIN OR CREATE ONE</div>
+            <div style={{ padding: 24, fontSize: 11, color: "rgba(0,245,212,0.4)", fontFamily: "'Orbitron',monospace", textAlign: "center", lineHeight: 1.8 }}>NO ACTIVE NODES<br />INITIATE UPLINK</div>
           ) : (
-            nexuses.map(n => (
-              <div key={n._id}
-                onClick={() => { setSelectedNexus(n); }}
-                style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", borderRadius: 6, cursor: "pointer", transition: "background 0.2s", background: "rgba(0,245,212,0.03)", border: "1px solid transparent" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,245,212,0.1)"; e.currentTarget.style.borderColor = "rgba(0,245,212,0.3)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,245,212,0.03)"; e.currentTarget.style.borderColor = "transparent"; }}
-              >
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(0,207,255,0.12)", border: "1px solid rgba(0,245,212,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, overflow: "hidden" }}>
-                  {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "⬡"}
+            <>
+              {pinnedNexuses.length > 0 && (
+                <div style={{ fontSize: 8, fontWeight: 900, color: "rgba(255,45,120,0.6)", letterSpacing: "0.2em", padding: "4px 8px", fontFamily: "'Orbitron',monospace" }}>// PINNED_NODES</div>
+              )}
+              {sortedNexuses.map(n => (
+                <div key={n._id}>
+                  {/* Separator if transitioning from pinned to unpinned */}
+                  {!pinnedNexuses.includes(n._id) && pinnedNexuses.length > 0 && sortedNexuses.indexOf(n) === pinnedNexuses.length && (
+                    <div style={{ fontSize: 8, fontWeight: 900, color: "rgba(0,245,212,0.6)", letterSpacing: "0.2em", padding: "12px 8px 4px 8px", fontFamily: "'Orbitron',monospace" }}>// ALL_NODES</div>
+                  )}
+                  <div
+                    onClick={() => { 
+                      setSelectedNexus(n); 
+                      setSelectedUser(null); 
+                      setNexusActionView(null);
+                      navigate(`/nexus/${n._id}`);
+                    }}
+                    style={{
+                      display: "flex", flexDirection: "column", padding: "10px", borderRadius: 6, cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      background: (selectedNexus?._id === n._id || selectedNexusId === n._id)
+                        ? (nexusColors[n._id] || "rgba(0,245,212,0.15)")
+                        : "rgba(255,255,255,0.03)",
+                      border: `1.5px solid ${(selectedNexus?._id === n._id || selectedNexusId === n._id) ? "#00f5d4" : "rgba(255,255,255,0.08)"}`,
+                      position: "relative",
+                      boxShadow: (selectedNexus?._id === n._id || selectedNexusId === n._id) ? "0 0 15px rgba(0,245,212,0.2)" : "none",
+                      zIndex: 10
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#ff2d78"; e.currentTarget.style.transform = "translateX(6px)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = (selectedNexus?._id === n._id || selectedNexusId === n._id) ? "#00f5d4" : "rgba(255,255,255,0.08)"; e.currentTarget.style.transform = "translateX(0)"; }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 6, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                        {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "⬡"}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 900, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>{n.name.toUpperCase()}</div>
+                        <div style={{ fontSize: 9, color: "rgba(0,245,212,0.6)", fontFamily: "'Orbitron',monospace", marginTop: 2 }}>{n.members?.length || 0} NODES // ONLINE</div>
+                      </div>
+                      {nexusUnread[n._id] > 0 && (
+                        <div style={{ background: "#ff2d78", color: "#fff", fontSize: 9, fontWeight: 900, padding: "2px 6px", borderRadius: 2, transform: "skewX(-15deg)", boxShadow: "0 0 10px #ff2d78" }}>{nexusUnread[n._id]}</div>
+                      )}
+
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(activeMenuId === n._id ? null : n._id);
+                          setActiveColorPickerId(null);
+                        }}
+                        style={{ fontSize: 16, padding: "4px", opacity: 0.6, transition: "all 0.2s" }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={e => e.currentTarget.style.opacity = 0.6}
+                      >
+                        🎮
+                      </div>
+                      {pinnedNexuses.includes(n._id) && (
+                        <div style={{ position: 'absolute', top: -4, right: -4, fontSize: 10, filter: "drop-shadow(0 0 4px #ffe600)" }}>📌</div>
+                      )}
+                    </div>
+
+                    {/* Context Menu Inline Expansion */}
+                    {activeMenuId === n._id && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: '100%', marginTop: 12, paddingTop: 12, borderTop: `1px solid rgba(255,255,255,0.1)`, display: 'flex', flexDirection: 'column', gap: 8 }}
+                      >
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
+                            }}
+                            style={{ flex: 1, padding: '6px', background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.3)", borderRadius: 4, fontSize: 10, color: "#00f5d4", fontFamily: "'Orbitron', monospace", fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            MARK
+                          </button>
+                          <button
+                            onClick={(e) => togglePin(n._id, e)}
+                            style={{ flex: 1, padding: '6px', background: "rgba(255,45,120,0.1)", border: "1px solid rgba(255,45,120,0.3)", borderRadius: 4, fontSize: 10, color: "#ff2d78", fontFamily: "'Orbitron', monospace", fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            {pinnedNexuses.includes(n._id) ? "UNPIN" : "PIN"}
+                          </button>
+                        </div>
+
+                        {activeColorPickerId === n._id && (
+                          <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(0,0,0,0.4)", borderRadius: 4, border: "1px solid rgba(255,255,255,0.1)", overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
+                            {[
+                              "transparent",
+                              "rgba(255,45,120,0.25)",
+                              "rgba(0,245,212,0.25)",
+                              "rgba(0,207,255,0.25)",
+                              "rgba(255,230,0,0.25)",
+                              "rgba(155,89,182,0.25)",
+                              "rgba(255,80,0,0.25)",
+                              "rgba(0,255,100,0.25)",
+                            ].map(c => (
+                              <div
+                                key={c}
+                                onClick={(e) => updateColor(n._id, c, e)}
+                                style={{ minWidth: 22, height: 22, borderRadius: 4, background: c, border: c === "transparent" ? "1px solid rgba(255,255,255,0.3)" : `1px solid ${c.replace('0.25', '1')}`, cursor: 'pointer', flexShrink: 0, boxShadow: c === "transparent" ? "none" : `0 0 8px ${c}` }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "#00f5d4", fontFamily: "'Orbitron',monospace", letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.name}</div>
-                  <div style={{ fontSize: 9, color: "rgba(0,245,212,0.5)", fontFamily: "'Orbitron',monospace" }}>{n.members?.length || 0} MEMBERS</div>
-                </div>
-                {nexusUnread[n._id] > 0 && (
-                  <div style={{ width: 18, height: 18, background: "#ff2d78", color: "#fff", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, boxShadow: "0 0 10px #ff2d78" }}>{nexusUnread[n._id]}</div>
-                )}
-              </div>
-            ))
+              ))}
+            </>
           )
         ) : (
-          users.length === 0 ? (
-            <div style={{ padding: 12, fontSize: 10, color: "rgba(0,245,212,0.4)", fontFamily: "'Orbitron',monospace", textAlign: "center" }}>NO CONTACTS</div>
+          (users || []).length === 0 ? (
+            <div style={{ padding: 24, fontSize: 11, color: "rgba(0,245,212,0.4)", fontFamily: "'Orbitron',monospace", textAlign: "center" }}>NO CONTACTS DETECTED</div>
           ) : (
-            users.map(u => (
-              <div key={u._id}
-                onClick={() => { setSelectedUser(u); }}
-                style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", borderRadius: 6, cursor: "pointer", transition: "background 0.2s" }}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(0,207,255,0.08)"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            (users || []).map(u => (
+              <div key={u._id} 
+                onClick={() => { 
+                  setSelectedUser(u); 
+                  setSelectedNexus(null); 
+                  setNexusActionView(null); 
+                  navigate(`/chat/${u._id}`);
+                }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: "10px", borderRadius: 6, cursor: "pointer", transition: "all 0.2s",
+                  background: (selectedUser?._id === u._id || selectedUserId === u._id) ? "rgba(0,245,212,0.15)" : "rgba(255,255,255,0.03)",
+                  border: `1.5px solid ${(selectedUser?._id === u._id || selectedUserId === u._id) ? "#00f5d4" : "rgba(255,255,255,0.08)"}`,
+                  position: "relative",
+                  zIndex: 10
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "#00f5d4"; e.currentTarget.style.background = "rgba(0,245,212,0.08)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = (selectedUser?._id === u._id || selectedUserId === u._id) ? "#00f5d4" : "rgba(255,255,255,0.08)"; e.currentTarget.style.background = (selectedUser?._id === u._id || selectedUserId === u._id) ? "rgba(0,245,212,0.15)" : "rgba(255,255,255,0.03)"; }}
               >
-                <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "1px solid rgba(0,245,212,0.4)" }}>
-                  {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", background: "rgba(0,207,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#00cfff", fontFamily: "'Orbitron',monospace" }}>{u.username?.[0]?.toUpperCase()}</div>}
+                <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", overflow: "hidden", flexShrink: 0 }}>
+                  {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#00f5d4", fontFamily: "'Orbitron',monospace" }}>{u.username?.[0]?.toUpperCase()}</div>}
                 </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#00f5d4", fontFamily: "'Orbitron',monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "'Rajdhani',monospace", letterSpacing: "0.05em" }}>{u.username}</div>
               </div>
             ))
           )
         )}
       </div>
 
-      {/* Rank Badge */}
-      <div style={{ position: "relative", zIndex: 2 }}>
-        <RankBadge rank="DIAMOND" rp={1847} nextRp={2000} />
-      </div>
-
-      {/* XP Bar */}
-      <div style={{ position: "relative", zIndex: 2, padding: "4px 0" }}>
-        <XPBar />
-      </div>
-
-      {/* Squad Status */}
-      <div style={{ position: "relative", zIndex: 2 }}>
-        <NeonCard color="#00f5d4" style={{ padding: "8px 10px" }}>
-          <SquadStatus />
-        </NeonCard>
-      </div>
-
-      {/* Kill Feed */}
-      <div style={{ position: "relative", zIndex: 2 }}>
-        <NeonCard color="#ff2d78" style={{ padding: "8px 10px" }}>
-          <KillFeed />
-        </NeonCard>
-      </div>
-
-      {/* Lock In */}
-      <div style={{ position: "relative", zIndex: 2 }}>
-        <LockInButton locked={locked} onToggle={onToggleLocked} />
-      </div>
-
-      {/* Enter Orbit */}
-      <div style={{ marginTop: "auto", borderRadius: 6, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8, background: "linear-gradient(90deg,rgba(0,207,255,0.12),rgba(180,80,255,0.1))", border: "1.5px solid #00cfff", cursor: "pointer", boxShadow: "0 0 10px rgba(0,207,255,0.3)", position: "relative", zIndex: 2, flexShrink: 0, overflow: "hidden", transition: "all 0.2s" }}
+      {/* Footer / Orbit Mode */}
+      <div style={{ marginTop: "auto", borderRadius: 6, padding: "10px", display: "flex", alignItems: "center", gap: 10, background: "rgba(0,245,212,0.08)", border: "2.5px solid #00f5d4", cursor: "pointer", boxShadow: "0 0 15px rgba(0,245,212,0.3)", position: "relative", zIndex: 2, transition: "all 0.3s" }}
         onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))}
-        onMouseEnter={e => e.currentTarget.style.boxShadow = "0 0 20px rgba(0,207,255,0.6)"}
-        onMouseLeave={e => e.currentTarget.style.boxShadow = "0 0 10px rgba(0,207,255,0.3)"}>
-        <div style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,207,255,0.5)", background: "rgba(0,207,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, boxShadow: "0 0 8px rgba(0,207,255,0.3)" }}>🌀</div>
+        onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 0 25px rgba(0,245,212,0.5)"; e.currentTarget.style.transform = "scale(1.02)"; }}
+        onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 0 15px rgba(0,245,212,0.3)"; e.currentTarget.style.transform = "scale(1)"; }}>
+        <div style={{ width: 36, height: 36, borderRadius: 8, background: "#00f5d4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, color: "#000", boxShadow: "0 0 10px #00f5d4" }}>🌀</div>
         <div>
-          <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: "0.12em", color: "#00cfff", textTransform: "uppercase", textShadow: "0 0 6px #00cfff", fontFamily: "'Orbitron',monospace" }}>ENTER YOUR ORBIT</div>
-          <div style={{ fontSize: 7.5, color: "rgba(0,207,255,0.55)", letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace" }}>88 FPS GALAXY ENGINE</div>
+          <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: "0.15em", color: "#fff", textTransform: "uppercase", fontFamily: "'Orbitron',monospace" }}>LAUNCH_ORBIT</div>
+          <div style={{ fontSize: 8, color: "rgba(0,245,212,0.8)", fontFamily: "'Orbitron',monospace" }}>88 FPS ENGINE_ACTIVE</div>
         </div>
       </div>
     </div>
@@ -619,7 +788,7 @@ function Sidebar({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses,
 function AudioCard() {
   const [playing, setPlaying] = useState(true);
   const navigate = useNavigate();
-  
+
   return (
     <NeonCard color="#00f5d4" style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -755,8 +924,10 @@ export default function OrbitGrind({ children }) {
   const [locked, setLocked] = useState(false);
   const [killCount, setKillCount] = useState(14);
   const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
+  const { users, selectedUser, selectedUserId, setSelectedUser } = useChatStore();
+
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
-  const { users, selectedUser, setSelectedUser } = useChatStore();
+  const userSelected = Boolean(selectedUser || selectedUserId);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -774,7 +945,7 @@ export default function OrbitGrind({ children }) {
       if (nav) tl.to(nav, { opacity: 1, y: 0, duration: 0.5 });
       if (sidebar) tl.to(sidebar, { opacity: 1, x: 0, duration: 0.45 }, "-=0.3");
       if (hero) tl.to(hero, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25");
-      
+
       if (cards.length > 0) {
         tl.to(cards, { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.09 }, "-=0.2");
       }
@@ -883,19 +1054,29 @@ export default function OrbitGrind({ children }) {
 
       <Scanlines />
       <DebrisLayer />
-      <TopNav navRef={navRef} locked={locked} killCount={killCount} />
+      <TopNav 
+        navRef={navRef} 
+        locked={locked} 
+        killCount={killCount} 
+        setSelectedNexus={setSelectedNexus}
+        setSelectedUser={setSelectedUser}
+      />
 
-      <div style={{ position: "absolute", top: 42, left: 0, right: 0, bottom: 0, display: "flex" }}>
-        <Sidebar 
-          sidebarRef={sidebarRef} 
-          locked={locked} 
-          onToggleLocked={handleLockIn} 
+      <div style={{ position: "absolute", top: 48, left: 0, right: 0, bottom: 0, display: "flex" }}>
+        <Sidebar
+          sidebarRef={sidebarRef}
+          locked={locked}
+          onToggleLocked={handleLockIn}
           onJoin={() => setNexusActionView("join")}
           onNexus={() => setNexusActionView("create")}
           nexuses={nexuses}
           isNexusesLoading={isNexusesLoading}
+          selectedNexus={selectedNexus}
+          selectedNexusId={selectedNexusId}
           setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
           users={users || []}
+          selectedUser={selectedUser}
+          selectedUserId={selectedUserId}
           setSelectedUser={(u) => { setSelectedUser(u); setSelectedNexus(null); }}
           nexusUnread={nexusUnread || {}}
           setNexusActionView={setNexusActionView}
@@ -914,11 +1095,11 @@ export default function OrbitGrind({ children }) {
               <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
             </div>
           ) : nexusSelected ? (
-            <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+            <div className="gamer-chat-env" style={{ flex: 1, position: "relative", zIndex: 10, display: "flex", flexDirection: "column" }}>
               <UniversalChatContainer type="nexus" />
             </div>
-          ) : selectedUser ? (
-            <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+          ) : userSelected ? (
+            <div className="gamer-chat-env" style={{ flex: 1, position: "relative", zIndex: 10, display: "flex", flexDirection: "column" }}>
               <UniversalChatContainer type="dm" />
             </div>
           ) : (
@@ -959,7 +1140,7 @@ function ToggleSwitch({ label, checked, onChange, color = "#00cfff" }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)" }}>
       <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{label}</span>
-      <div 
+      <div
         onClick={() => onChange(!checked)}
         style={{ width: 36, height: 20, borderRadius: 10, background: checked ? color : "rgba(255,255,255,0.1)", position: "relative", cursor: "pointer", transition: "all 0.2s", boxShadow: checked ? `0 0 10px ${color}` : "none" }}>
         <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: checked ? 19 : 3, transition: "all 0.2s" }} />
@@ -980,7 +1161,7 @@ export function GamerSettings({
   isDirty, handleSave, handleReset, authUser
 }) {
   const [focusedTheme, setFocusedTheme] = useState(draftTheme);
-  
+
   return (
     <OrbitGrind>
       <div style={{ display: "flex", gap: 20, height: "100%" }}>
@@ -1006,17 +1187,17 @@ export function GamerSettings({
         {/* Content Area */}
         <NeonCard color="#00cfff" style={{ flex: 1, padding: 32, overflowY: "auto" }}>
           <h2 style={{ fontSize: 24, fontWeight: 900, color: "#00cfff", fontFamily: "'Orbitron',monospace", marginBottom: 24, textShadow: "0 0 10px #00cfff", letterSpacing: "0.15em" }}>SYSTEM_PREFERENCES // {activeSection.toUpperCase()}</h2>
-          
+
           {activeSection === "appearance" && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 16 }}>
               {THEMES.map(t => {
                 const isSelected = focusedTheme === t;
                 const isApplied = draftTheme === t;
-                
+
                 // Fixed preview colors for each theme
                 let previewPrimary = "#ff2d78"; // default (gamer pink)
                 let previewBg = "#080614";
-                
+
                 if (t === "light") { previewPrimary = "#3b82f6"; previewBg = "#ffffff"; }
                 else if (t === "dark") { previewPrimary = "#ef4444"; previewBg = "#0a0a0a"; }
                 else if (t === "neon-cyberpunk") { previewPrimary = "#8b5cf6"; previewBg = "#0c0e14"; }
@@ -1027,8 +1208,8 @@ export function GamerSettings({
                 return (
                   <div key={t} onClick={() => setFocusedTheme(t)} style={{ padding: 16, borderRadius: 12, border: isSelected ? "2px solid #00f5d4" : "1px solid rgba(255,255,255,0.1)", background: isSelected ? "rgba(0,245,212,0.1)" : "rgba(255,255,255,0.03)", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", transition: "all 0.2s" }}>
                     <div style={{ width: "100%", height: 40, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: previewBg, display: "flex", overflow: "hidden" }}>
-                       <div style={{ flex: 1, background: previewPrimary }} />
-                       <div style={{ flex: 1, background: previewBg }} />
+                      <div style={{ flex: 1, background: previewPrimary }} />
+                      <div style={{ flex: 1, background: previewBg }} />
                     </div>
                     <div style={{ textAlign: "center" }}>
                       <div style={{ fontSize: 10, color: isSelected ? "#00f5d4" : "rgba(255,255,255,0.5)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{THEME_LABELS[t] || t.toUpperCase()}</div>
@@ -1053,10 +1234,10 @@ export function GamerSettings({
                 <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 16, fontFamily: "'Orbitron', monospace", letterSpacing: "0.1em" }}>MASTER GAIN: {(draftSoundSettings.volume * 100).toFixed(0)}%</div>
                 <input type="range" min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={(e) => setDraftSoundSettings(p => ({ ...p, volume: parseFloat(e.target.value) }))} style={{ width: "100%", accentColor: "#00cfff" }} />
               </div>
-              <ToggleSwitch label="GLOBAL EFFECTS" checked={draftSoundSettings.effectsEnabled} onChange={v => setDraftSoundSettings(p => ({...p, effectsEnabled: v}))} color="#00cfff" />
-              <ToggleSwitch label="TRANSMISSION PINGS" checked={draftSoundSettings.messageSound} onChange={v => setDraftSoundSettings(p => ({...p, messageSound: v}))} color="#00cfff" />
-              <ToggleSwitch label="HAPTIC CLICKS" checked={draftSoundSettings.clickSound} onChange={v => { setDraftSoundSettings(p => ({...p, clickSound: v})); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) {} }} color="#00cfff" />
-              <ToggleSwitch label="BACKGROUND AMBIENCE" checked={draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true} onChange={v => { setDraftSoundSettings(p => ({...p, ambientStorm: v, orbitAmbientEnabled: v})); try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) {} }} color="#00cfff" />
+              <ToggleSwitch label="GLOBAL EFFECTS" checked={draftSoundSettings.effectsEnabled} onChange={v => setDraftSoundSettings(p => ({ ...p, effectsEnabled: v }))} color="#00cfff" />
+              <ToggleSwitch label="TRANSMISSION PINGS" checked={draftSoundSettings.messageSound} onChange={v => setDraftSoundSettings(p => ({ ...p, messageSound: v }))} color="#00cfff" />
+              <ToggleSwitch label="HAPTIC CLICKS" checked={draftSoundSettings.clickSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, clickSound: v })); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) { } }} color="#00cfff" />
+              <ToggleSwitch label="BACKGROUND AMBIENCE" checked={draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true} onChange={v => { setDraftSoundSettings(p => ({ ...p, ambientStorm: v, orbitAmbientEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) { } }} color="#00cfff" />
             </div>
           )}
 
@@ -1064,22 +1245,22 @@ export function GamerSettings({
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               <div style={{ background: "rgba(255,255,255,0.03)", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)" }}>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em", display: "block", marginBottom: 12 }}>HANDLE ALIAS</span>
-                <input 
-                  type="text" 
-                  value={draftDisplayName} 
-                  onChange={e => setDraftDisplayName(e.target.value)} 
+                <input
+                  type="text"
+                  value={draftDisplayName}
+                  onChange={e => setDraftDisplayName(e.target.value)}
                   placeholder={authUser?.username || "Guest"}
-                  style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(0,207,255,0.4)", color: "#00cfff", padding: "12px 16px", borderRadius: 8, fontFamily: "'Rajdhani', monospace", fontSize: 16, outline: "none", boxShadow: "inset 0 0 10px rgba(0,207,255,0.1)" }} 
+                  style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(0,207,255,0.4)", color: "#00cfff", padding: "12px 16px", borderRadius: 8, fontFamily: "'Rajdhani', monospace", fontSize: 16, outline: "none", boxShadow: "inset 0 0 10px rgba(0,207,255,0.1)" }}
                 />
               </div>
 
               <div style={{ background: "rgba(255,255,255,0.03)", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)" }}>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em", display: "block", marginBottom: 12 }}>MISSION BIO</span>
-                <textarea 
-                  value={draftBio} 
-                  onChange={e => setDraftBio(e.target.value)} 
+                <textarea
+                  value={draftBio}
+                  onChange={e => setDraftBio(e.target.value)}
                   placeholder="Enter mission status..."
-                  style={{ width: "100%", height: 80, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(0,207,255,0.4)", color: "#00cfff", padding: "12px 16px", borderRadius: 8, fontFamily: "'Rajdhani', monospace", fontSize: 15, outline: "none", boxShadow: "inset 0 0 10px rgba(0,207,255,0.1)", resize: "none" }} 
+                  style={{ width: "100%", height: 80, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(0,207,255,0.4)", color: "#00cfff", padding: "12px 16px", borderRadius: 8, fontFamily: "'Rajdhani', monospace", fontSize: 15, outline: "none", boxShadow: "inset 0 0 10px rgba(0,207,255,0.1)", resize: "none" }}
                 />
               </div>
               <ToggleSwitch label="BROADCAST PRESENCE" checked={draftShowOnlineStatus} onChange={setDraftShowOnlineStatus} color="#ff2d78" />
@@ -1088,19 +1269,19 @@ export function GamerSettings({
 
           {activeSection === "notifications" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              <ToggleSwitch label="DESKTOP OVERLAYS" checked={draftNotifications.desktop} onChange={v => setDraftNotifications(p => ({...p, desktop: v}))} color="#ffe600" />
-              <ToggleSwitch label="AUDIO CUES" checked={draftNotifications.sound} onChange={v => setDraftNotifications(p => ({...p, sound: v}))} color="#ffe600" />
-              <ToggleSwitch label="EMAIL DIGESTS" checked={draftNotifications.email} onChange={v => setDraftNotifications(p => ({...p, email: v}))} color="#ffe600" />
+              <ToggleSwitch label="DESKTOP OVERLAYS" checked={draftNotifications.desktop} onChange={v => setDraftNotifications(p => ({ ...p, desktop: v }))} color="#ffe600" />
+              <ToggleSwitch label="AUDIO CUES" checked={draftNotifications.sound} onChange={v => setDraftNotifications(p => ({ ...p, sound: v }))} color="#ffe600" />
+              <ToggleSwitch label="EMAIL DIGESTS" checked={draftNotifications.email} onChange={v => setDraftNotifications(p => ({ ...p, email: v }))} color="#ffe600" />
             </div>
           )}
 
           {activeSection === "orbit" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              <ToggleSwitch label="RENDER RINGS" checked={draftOrbitBehavior.showRings} onChange={v => setDraftOrbitBehavior(p => ({...p, showRings: v}))} color="#9b59b6" />
-              <ToggleSwitch label="MOMENTUM PAUSE" checked={draftOrbitBehavior.autoPauseOnHover} onChange={v => setDraftOrbitBehavior(p => ({...p, autoPauseOnHover: v}))} color="#9b59b6" />
+              <ToggleSwitch label="RENDER RINGS" checked={draftOrbitBehavior.showRings} onChange={v => setDraftOrbitBehavior(p => ({ ...p, showRings: v }))} color="#9b59b6" />
+              <ToggleSwitch label="MOMENTUM PAUSE" checked={draftOrbitBehavior.autoPauseOnHover} onChange={v => setDraftOrbitBehavior(p => ({ ...p, autoPauseOnHover: v }))} color="#9b59b6" />
               <div style={{ background: "rgba(255,255,255,0.03)", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", gap: 12 }}>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>INTERACTION FILTER</span>
-                <select value={draftOrbitBehavior.interactionFilter} onChange={(e) => setDraftOrbitBehavior(p => ({...p, interactionFilter: e.target.value}))} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(155,89,182,0.4)", color: "#9b59b6", padding: "12px 16px", borderRadius: 8, fontFamily: "'Rajdhani', monospace", fontSize: 16, outline: "none" }}>
+                <select value={draftOrbitBehavior.interactionFilter} onChange={(e) => setDraftOrbitBehavior(p => ({ ...p, interactionFilter: e.target.value }))} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(155,89,182,0.4)", color: "#9b59b6", padding: "12px 16px", borderRadius: 8, fontFamily: "'Rajdhani', monospace", fontSize: 16, outline: "none" }}>
                   <option value="all">ALL NODES</option>
                   <option value="active">ACTIVE NODES ONLY</option>
                   <option value="mutual">MUTUAL ORBITS ONLY</option>
@@ -1108,7 +1289,7 @@ export function GamerSettings({
               </div>
               <div style={{ background: "rgba(255,255,255,0.03)", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", gap: 12 }}>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>KINEMATIC THEME</span>
-                <select value={draftOrbitBehavior.theme} onChange={(e) => setDraftOrbitBehavior(p => ({...p, theme: e.target.value}))} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(155,89,182,0.4)", color: "#9b59b6", padding: "12px 16px", borderRadius: 8, fontFamily: "'Rajdhani', monospace", fontSize: 16, outline: "none" }}>
+                <select value={draftOrbitBehavior.theme} onChange={(e) => setDraftOrbitBehavior(p => ({ ...p, theme: e.target.value }))} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(155,89,182,0.4)", color: "#9b59b6", padding: "12px 16px", borderRadius: 8, fontFamily: "'Rajdhani', monospace", fontSize: 16, outline: "none" }}>
                   <option value="nebula">NEBULA</option>
                   <option value="aurora">AURORA</option>
                   <option value="cosmic">COSMIC</option>
@@ -1144,7 +1325,7 @@ export function GamerProfile() {
             <span>WIN RATE</span><span style={{ color: "#ffe600", fontWeight: "bold" }}>68%</span>
           </div>
         </NeonCard>
-        
+
         <NeonCard color="#00f5d4" style={{ flex: 1, padding: 24 }}>
           <h2 style={{ fontSize: 24, fontWeight: 900, color: "#00f5d4", fontFamily: "'Orbitron',monospace", marginBottom: 20, textShadow: "0 0 10px #00f5d4", letterSpacing: "0.1em" }}>PLAYER RECORD</h2>
           <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", fontFamily: "'Rajdhani',monospace", lineHeight: 1.6 }}>
@@ -1159,7 +1340,7 @@ export function GamerProfile() {
 export function GamerSpotify() {
   const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore();
   const [playing, setPlaying] = useState(isPlaying || true);
-  
+
   useEffect(() => {
     setPlaying(isPlaying);
   }, [isPlaying]);
@@ -1168,7 +1349,7 @@ export function GamerSpotify() {
     <OrbitGrind>
       <NeonCard color="#1DB954" style={{ flex: 1, padding: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 30 }}>
         <h2 style={{ fontSize: 32, fontWeight: 900, color: "#1DB954", fontFamily: "'Orbitron',monospace", textShadow: "0 0 20px rgba(29,185,84,0.5)", letterSpacing: "0.15em" }}>SPOTIFY SYNC</h2>
-        
+
         {!spotifyLinked ? (
           <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
             <div style={{ fontSize: 16, color: "rgba(255,255,255,0.7)", fontFamily: "'Rajdhani',monospace", maxWidth: 400, lineHeight: 1.5 }}>
@@ -1188,7 +1369,7 @@ export function GamerSpotify() {
                 <svg width="240" height="240" viewBox="0 0 52 52"><rect width="52" height="52" fill="#1a1a1a" /><rect x="0" y="8" width="52" height="16" fill="rgba(29,185,84,0.3)" /><rect x="0" y="30" width="52" height="12" fill="rgba(29,185,84,0.2)" /><line x1="13" y1="0" x2="13" y2="52" stroke="rgba(255,255,255,0.1)" strokeWidth="1" /><line x1="30" y1="0" x2="30" y2="52" stroke="rgba(255,255,255,0.05)" strokeWidth="1" /></svg>
               )}
             </div>
-            
+
             <div style={{ textAlign: "center", minHeight: 60 }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: "#fff", textShadow: "0 0 10px rgba(255,255,255,0.5)", fontFamily: "'Rajdhani',monospace" }}>
                 {currentTrack ? currentTrack.name : "Awaiting Frequency..."}
@@ -1197,20 +1378,20 @@ export function GamerSpotify() {
                 {currentTrack ? currentTrack.artist : "Unknown Signal"}
               </div>
             </div>
-            
+
             <div style={{ width: "100%", maxWidth: 400, marginTop: 10, height: 60 }}>
               <AudioViz playing={playing && !!currentTrack} />
             </div>
-            
+
             <div style={{ display: "flex", alignItems: "center", gap: 30, marginTop: 10 }}>
-              <button onClick={() => {}} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 24, transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color="#fff"} onMouseLeave={e => e.currentTarget.style.color="rgba(255,255,255,0.6)"}>⏮</button>
-              <button 
-                onClick={() => playing ? pausePlayback() : playTrack()} 
+              <button onClick={() => { }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 24, transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#fff"} onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}>⏮</button>
+              <button
+                onClick={() => playing ? pausePlayback() : playTrack()}
                 style={{ width: 64, height: 64, borderRadius: "50%", background: "#1DB954", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 24, boxShadow: "0 0 20px rgba(29,185,84,0.6)", transition: "transform 0.1s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
                 {playing ? "⏸" : "▶"}
               </button>
-              <button onClick={() => {}} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 24, transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color="#fff"} onMouseLeave={e => e.currentTarget.style.color="rgba(255,255,255,0.6)"}>⏭</button>
+              <button onClick={() => { }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 24, transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#fff"} onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}>⏭</button>
             </div>
           </>
         )}

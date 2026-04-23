@@ -119,6 +119,15 @@ app.get("/health", async (req, res) => {
   });
 });
 
+// ── Static Files (Production) ────────────────────────────────────────────────
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static("public"));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
+    res.sendFile("index.html", { root: "public" });
+  });
+}
+
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });

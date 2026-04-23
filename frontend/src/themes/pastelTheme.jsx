@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { THEMES, THEME_LABELS } from "../constants";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate } from "react-router-dom";
 import { useNexusStore } from "../store/useNexusStore";
@@ -311,6 +312,51 @@ function Sidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, user
   const [activeTab, setActiveTab] = useState("orbits");
   const { play } = useSoundManager();
   const { setNexusActionView } = useNexusStore();
+
+  const [pinnedNexuses, setPinnedNexuses] = useState(() => {
+    return JSON.parse(localStorage.getItem('pastel_pinned_nexuses') || '[]');
+  });
+  const [nexusColors, setNexusColors] = useState(() => {
+    return JSON.parse(localStorage.getItem('pastel_nexus_colors') || '{}');
+  });
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [activeColorPickerId, setActiveColorPickerId] = useState(null);
+
+  const togglePin = (id, e) => {
+    e.stopPropagation();
+    const next = pinnedNexuses.includes(id) ? pinnedNexuses.filter(pid => pid !== id) : [...pinnedNexuses, id];
+    setPinnedNexuses(next);
+    localStorage.setItem('pastel_pinned_nexuses', JSON.stringify(next));
+    setActiveMenuId(null);
+  };
+
+  const updateColor = (id, color, e) => {
+    e.stopPropagation();
+    const next = { ...nexusColors, [id]: color };
+    setNexusColors(next);
+    localStorage.setItem('pastel_nexus_colors', JSON.stringify(next));
+    setActiveColorPickerId(null);
+    setActiveMenuId(null);
+  };
+
+  const sortedNexuses = useMemo(() => {
+    return [...nexuses].sort((a, b) => {
+      const aPinned = pinnedNexuses.includes(a._id);
+      const bPinned = pinnedNexuses.includes(b._id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+  }, [nexuses, pinnedNexuses]);
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveMenuId(null);
+      setActiveColorPickerId(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
   const tabStyle = (active) => ({
     flex: 1, border: "none", cursor: "pointer", padding: "8px 0", borderRadius: 16,
     fontSize: 11, fontWeight: 900, letterSpacing: "0.08em", fontFamily: "inherit",
@@ -321,7 +367,7 @@ function Sidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, user
   });
 
   return (
-    <div ref={sidebarRef} className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#ffb4dc]/15 bg-gradient-to-b from-[#ffdcf3] to-[#fef4f9] px-3 py-[14px]">
+    <div ref={sidebarRef} className="w-[290px] flex-shrink-0 flex flex-col border-r border-[#ffb4dc]/15 bg-gradient-to-b from-[#ffdcf3] to-[#fef4f9] px-3 py-[14px]">
       {/* Sidebar Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22, paddingLeft: 4 }}>
         <div style={{
@@ -369,22 +415,89 @@ function Sidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, user
               No Orbits Yet!<br />Bloom One Below.
             </div>
           ) : (
-            nexuses.map(n => (
-              <div key={n._id}
+            sortedNexuses.map(n => (
+              <div
+                key={n._id}
                 onClick={() => { play("click"); setSelectedNexus(n); }}
                 style={{
-                  display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", borderRadius: 14, marginBottom: 6, cursor: "pointer",
-                  background: "rgba(255,255,255,0.45)", border: "1.5px solid rgba(255,180,220,0.15)", transition: "all 0.2s"
+                  display: "flex", flexDirection: "column", padding: "8px 10px", borderRadius: 14, cursor: "pointer", transition: "all 0.25s",
+                  background: nexusColors[n._id] || "rgba(255,255,255,0.45)", position: "relative"
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,180,220,0.15)"; e.currentTarget.style.borderColor = "rgba(255,150,200,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.45)"; e.currentTarget.style.borderColor = "rgba(255,180,220,0.15)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.7)"; e.currentTarget.style.transform = "translateX(3px)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = nexusColors[n._id] || "rgba(255,255,255,0.45)"; e.currentTarget.style.transform = "translateX(0)"; }}
               >
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#fff", border: "1.5px solid #ffb8d8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0, overflow: "hidden" }}>
-                  {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "◈"}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#fff", border: "1.5px solid #ffb8d8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0, overflow: "hidden" }}>
+                    {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "◈"}
+                  </div>
+                  <div style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, fontWeight: 700, color: "#e880b8" }}>{n.name}</div>
+                  {nexusUnread[n._id] > 0 && (
+                    <div style={{ background: "#ff66aa", color: "#fff", fontSize: 9, fontWeight: 900, width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(255,102,170,0.4)" }}>{nexusUnread[n._id]}</div>
+                  )}
+
+                  {pinnedNexuses.includes(n._id) && (
+                      <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>📌</div>
+                  )}
+
+                  <div 
+                      onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(activeMenuId === n._id ? null : n._id);
+                          setActiveColorPickerId(null);
+                      }}
+                      style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                      onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+                  >
+                      🌷
+                  </div>
                 </div>
-                <div style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, fontWeight: 700, color: "#e880b8" }}>{n.name}</div>
-                {nexusUnread[n._id] > 0 && (
-                  <div style={{ background: "#ff66aa", color: "#fff", fontSize: 9, fontWeight: 900, width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(255,102,170,0.4)" }}>{nexusUnread[n._id]}</div>
+
+                {/* Context Menu Inline Expansion */}
+                {activeMenuId === n._id && (
+                    <div 
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(255,255,255,0.3)`, display: 'flex', flexDirection: 'column', gap: 8 }}
+                    >
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
+                                }}
+                                style={{ flex: 1, padding: '6px', background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,182,193,0.3)", borderRadius: 10, fontSize: 11, color: "#8a7585", fontFamily: "inherit", fontWeight: 700, cursor: 'pointer' }}
+                            >
+                                Mark 🎨
+                            </button>
+                            <button 
+                                onClick={(e) => togglePin(n._id, e)}
+                                style={{ flex: 1, padding: '6px', background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,182,193,0.3)", borderRadius: 10, fontSize: 11, color: "#8a7585", fontFamily: "inherit", fontWeight: 700, cursor: 'pointer' }}
+                            >
+                                {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                            </button>
+                        </div>
+
+                        {activeColorPickerId === n._id && (
+                            <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(255,255,255,0.5)", borderRadius: 10, border: "1px solid rgba(255,182,193,0.2)", overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
+                                {[
+                                    "transparent", // Default
+                                    "rgba(255,182,193,0.4)", // Light Pink
+                                    "rgba(255,228,225,0.5)", // Misty Rose
+                                    "rgba(240,230,140,0.4)", // Khaki/Yellowish
+                                    "rgba(152,251,152,0.4)", // Pale Green
+                                    "rgba(175,238,238,0.4)", // Pale Turquoise
+                                    "rgba(230,230,250,0.6)", // Lavender
+                                    "rgba(255,218,185,0.5)", // Peach
+                                ].map(c => (
+                                    <div 
+                                        key={c}
+                                        onClick={(e) => updateColor(n._id, c, e)}
+                                        style={{ minWidth: 20, height: 20, borderRadius: '50%', background: c, border: c === "transparent" ? "1px solid rgba(0,0,0,0.1)" : `1px solid rgba(255,255,255,0.8)`, cursor: 'pointer', flexShrink: 0 }}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 )}
               </div>
             ))
@@ -783,6 +896,411 @@ export default function PastelApp({ children }) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PastelProfile() {
+  const navigate = useNavigate();
+  const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
+  
+  const [profileDraft, setProfileDraft] = useState({
+    username: "",
+    email: "",
+    bio: "",
+    profilePic: "",
+  });
+  const [selectedImg, setSelectedImg] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (!authUser) return;
+    setProfileDraft({
+      username: authUser.username || "",
+      email: authUser.email || "",
+      bio: authUser.bio || "",
+      profilePic: authUser.profilePic || "",
+    });
+  }, [authUser]);
+
+  const hasChanges = useMemo(() => {
+    if (!authUser) return false;
+    return (
+      profileDraft.username !== authUser.username ||
+      profileDraft.email !== authUser.email ||
+      profileDraft.bio !== (authUser.bio || "") ||
+      selectedImg !== null
+    );
+  }, [profileDraft, authUser, selectedImg]);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      setSelectedImg(reader.result);
+      setProfileDraft(p => ({ ...p, profilePic: reader.result }));
+    };
+  };
+
+  const handleSave = async () => {
+    if (!profileDraft.username.trim() || !profileDraft.email.trim()) return;
+    const payload = {
+      username: profileDraft.username.trim(),
+      email: profileDraft.email.trim(),
+      bio: profileDraft.bio,
+    };
+    if (selectedImg) payload.profilePic = selectedImg;
+    await updateProfile(payload);
+    setIsEditing(false);
+    setSelectedImg(null);
+  };
+
+  if (!authUser) return <div style={{ padding: 40, color: "#d060a8", textAlign: "center" }}>Loading magical profile... ✨</div>;
+
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100vh", background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", overflow: "hidden", fontFamily: "'Nunito', sans-serif" }}>
+      {/* Background decorations */}
+      <BgClouds />
+      <Floaties />
+      <SparkleClick />
+
+      {/* Top Nav */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 70, display: "flex", alignItems: "center", padding: "0 40px", background: "rgba(255,255,255,0.4)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.6)", zIndex: 50 }}>
+        <button onClick={() => navigate("/")} style={{ background: "rgba(255,255,255,0.8)", border: "2px solid rgba(255,183,178,0.5)", color: "#d060a8", padding: "10px 20px", borderRadius: 25, cursor: "pointer", fontWeight: 800, fontSize: 13, boxShadow: "0 4px 15px rgba(255,183,178,0.2)", display: "flex", alignItems: "center", gap: 8, transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+          <span>◀</span> BACK TO DREAMLAND
+        </button>
+        <div style={{ flex: 1 }} />
+        <div style={{ background: "rgba(255,255,255,0.6)", padding: "8px 20px", borderRadius: 20, color: "#d060a8", fontSize: 16, fontWeight: 800, letterSpacing: 1, border: "2px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 15px rgba(230,190,220,0.3)" }}>
+          {authUser.username}'s Profile 🌸
+        </div>
+      </div>
+
+      <div style={{ position: "absolute", top: 70, bottom: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 40, zIndex: 10 }}>
+        
+        {/* Wrapper for Card + Animals so they scale and position together */}
+        <div style={{ position: "relative", width: "100%", maxWidth: 1100, height: "100%", maxHeight: 650 }}>
+          
+          {/* Peeking Animals */}
+          <div style={{ position: "absolute", top: -30, right: 80, fontSize: 50, animation: "peekTop 4s ease-in-out infinite", zIndex: 0, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.1))" }}>🐱</div>
+          <div style={{ position: "absolute", bottom: -30, left: 60, fontSize: 55, animation: "peekBottom 5s ease-in-out infinite 1s", zIndex: 0, filter: "drop-shadow(0 -4px 6px rgba(0,0,0,0.1))" }}>🐰</div>
+          <div style={{ position: "absolute", top: -25, left: 240, fontSize: 45, animation: "peekTop 6s ease-in-out infinite 0.5s", zIndex: 0, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.1))" }}>🐻</div>
+          <div style={{ position: "absolute", top: "50%", right: -25, fontSize: 45, animation: "peekRight 4.5s ease-in-out infinite 2s", zIndex: 0, filter: "drop-shadow(-4px 0 6px rgba(0,0,0,0.1))" }}>🐸</div>
+
+          <style>{`
+            @keyframes peekTop {
+              0%, 100% { transform: translateY(15px) rotate(10deg); opacity: 0.9; }
+              50% { transform: translateY(-5px) rotate(-5deg); opacity: 1; }
+            }
+            @keyframes peekBottom {
+              0%, 100% { transform: translateY(-15px) rotate(-10deg); opacity: 0.9; }
+              50% { transform: translateY(5px) rotate(5deg); opacity: 1; }
+            }
+            @keyframes peekRight {
+              0%, 100% { transform: translateX(-15px) rotate(-90deg); opacity: 0.9; }
+              50% { transform: translateX(5px) rotate(-85deg); opacity: 1; }
+            }
+            @keyframes avatarPulse {
+              0%, 100% { transform: scale(1); box-shadow: 0 15px 35px rgba(200,150,180,0.3); }
+              50% { transform: scale(1.03); box-shadow: 0 20px 45px rgba(244,114,182,0.5); }
+            }
+          `}</style>
+
+          {/* Main Horizontal Container */}
+          <div style={{ position: "absolute", inset: 0, display: "flex", background: "rgba(255,255,255,0.65)", backdropFilter: "blur(25px)", borderRadius: 40, border: "3px solid rgba(255,255,255,0.9)", boxShadow: "0 25px 60px rgba(230,190,220,0.5)", overflow: "hidden", zIndex: 10 }}>
+            
+            {/* Left Column: Avatar & Quick Info */}
+            <div style={{ width: 400, background: "linear-gradient(180deg, rgba(255,230,240,0.6) 0%, rgba(240,220,255,0.6) 100%)", padding: "40px 30px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRight: "3px solid rgba(255,255,255,0.7)", position: "relative" }}>
+              
+              <div style={{ position: "relative", marginBottom: 20 }}>
+                <div style={{ width: 190, height: 190, borderRadius: "50%", background: "linear-gradient(135deg, #fff, #fdebf3)", padding: 8, animation: isEditing ? "none" : "avatarPulse 3s infinite" }}>
+                  <img src={profileDraft.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(244,114,182,0.2)" }} />
+                </div>
+                <label style={{ position: "absolute", bottom: 8, right: 8, background: "linear-gradient(135deg, #f472b6, #c084fc)", color: "#fff", width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: isEditing ? "pointer" : "not-allowed", opacity: isEditing ? 1 : 0.6, border: "4px solid #fff", boxShadow: "0 4px 15px rgba(244,114,182,0.5)", fontSize: 22, transition: "transform 0.2s" }} onMouseEnter={e => { if(isEditing) e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"}} onMouseLeave={e => { if(isEditing) e.currentTarget.style.transform = "scale(1) rotate(0deg)"}}>
+                  📸
+                  <input type="file" style={{ display: "none" }} onChange={handleImageUpload} disabled={!isEditing || isUpdatingProfile} />
+                </label>
+              </div>
+              
+              <h3 style={{ margin: "0 0 8px 0", fontSize: 32, color: "#a855f7", fontWeight: 900, textShadow: "0 2px 5px rgba(168,85,247,0.2)" }}>{authUser.username}</h3>
+              <p style={{ margin: 0, color: "#d060a8", fontSize: 14, fontWeight: 800, background: "rgba(255,255,255,0.8)", padding: "6px 20px", borderRadius: 25, border: "2px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 15px rgba(200,150,180,0.15)" }}>Status: Magical ✨</p>
+              
+              <div style={{ marginTop: 30, width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ background: "rgba(255,255,255,0.5)", borderRadius: 20, padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "inset 0 2px 5px rgba(255,255,255,0.5)" }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#d060a8" }}>🎀 Charm Level</span>
+                  <span style={{ fontSize: 14, fontWeight: 900, color: "#a855f7" }}>9,999</span>
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.5)", borderRadius: 20, padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "inset 0 2px 5px rgba(255,255,255,0.5)" }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#d060a8" }}>☁️ Cloud Jumps</span>
+                  <span style={{ fontSize: 14, fontWeight: 900, color: "#a855f7" }}>42</span>
+                </div>
+              </div>
+
+              <div style={{ marginTop: "auto", width: "100%", paddingTop: 20 }}>
+                <button onClick={() => setIsEditing(!isEditing)} style={{ width: "100%", padding: 16, background: isEditing ? "linear-gradient(135deg, #c084fc, #a855f7)" : "rgba(255,255,255,0.9)", color: isEditing ? "#fff" : "#c084fc", border: isEditing ? "none" : "3px solid #c084fc", borderRadius: 25, fontWeight: 900, fontSize: 16, cursor: "pointer", transition: "all 0.3s", boxShadow: "0 8px 25px rgba(192,132,252,0.3)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                  {isEditing ? "✨ VIEW MAGICAL PROFILE" : "🌸 EDIT PROFILE"}
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column: Form Fields */}
+            <div style={{ flex: 1, padding: "40px 50px", display: "flex", flexDirection: "column", justifyContent: "center", overflowY: "auto", position: "relative" }}>
+
+              <div style={{ marginBottom: 20, position: "relative", zIndex: 1 }}>
+                <h2 style={{ fontSize: 40, margin: "0 0 10px 0", color: "#d060a8", fontWeight: 900, textShadow: "0 4px 15px rgba(208,96,168,0.2)" }}>Identity Details</h2>
+                <p style={{ margin: 0, color: "#a855f7", fontSize: 17, fontWeight: 700 }}>Sprinkle some magic on your persona! 🪄</p>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "relative", zIndex: 1 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Persona Name</label>
+                  <input 
+                    value={profileDraft.username} 
+                    onChange={e => setProfileDraft({...profileDraft, username: e.target.value})}
+                    disabled={!isEditing}
+                    style={{ width: "100%", padding: "12px 18px", background: isEditing ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.5)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 20, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", transition: "all 0.3s", boxShadow: isEditing ? "inset 0 4px 10px rgba(244,114,182,0.1), 0 4px 15px rgba(255,255,255,0.5)" : "none" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Magical Mail (Email)</label>
+                  <input 
+                    value={profileDraft.email} 
+                    onChange={e => setProfileDraft({...profileDraft, email: e.target.value})}
+                    disabled={!isEditing}
+                    style={{ width: "100%", padding: "12px 18px", background: isEditing ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.5)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 20, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", transition: "all 0.3s", boxShadow: isEditing ? "inset 0 4px 10px rgba(244,114,182,0.1), 0 4px 15px rgba(255,255,255,0.5)" : "none" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Dreamy Bio</label>
+                  <textarea 
+                    value={profileDraft.bio} 
+                    onChange={e => setProfileDraft({...profileDraft, bio: e.target.value})}
+                    disabled={!isEditing}
+                    rows={3}
+                    style={{ width: "100%", padding: "12px 18px", background: isEditing ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.5)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 20, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", resize: "none", transition: "all 0.3s", boxShadow: isEditing ? "inset 0 4px 10px rgba(244,114,182,0.1), 0 4px 15px rgba(255,255,255,0.5)" : "none" }}
+                  />
+                </div>
+              </div>
+
+              {isEditing && (
+                <div style={{ marginTop: 20, display: "flex", gap: 20, justifyContent: "flex-end", position: "relative", zIndex: 1 }}>
+                  <button 
+                    onClick={() => {
+                      setProfileDraft({ username: authUser.username||"", email: authUser.email||"", bio: authUser.bio||"", profilePic: authUser.profilePic||"" });
+                      setSelectedImg(null);
+                      setIsEditing(false);
+                    }}
+                    style={{ padding: "16px 32px", background: "rgba(255,255,255,0.5)", border: "3px solid #f472b6", color: "#f472b6", borderRadius: 30, fontWeight: 900, fontSize: 15, cursor: "pointer", transition: "all 0.2s", backdropFilter: "blur(10px)" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(244,114,182,0.15)" }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.5)" }}
+                  >
+                    CANCEL
+                  </button>
+                  <button 
+                    onClick={handleSave}
+                    disabled={!hasChanges || isUpdatingProfile}
+                    style={{ padding: "16px 40px", background: hasChanges ? "linear-gradient(90deg, #f472b6, #c084fc)" : "#e2e8f0", border: "none", color: "#fff", borderRadius: 30, fontWeight: 900, fontSize: 15, cursor: hasChanges ? "pointer" : "default", boxShadow: hasChanges ? "0 10px 30px rgba(192,132,252,0.5)" : "none", transition: "all 0.2s" }}
+                    onMouseEnter={e => { if(hasChanges) e.currentTarget.style.transform = "translateY(-3px)" }}
+                    onMouseLeave={e => { if(hasChanges) e.currentTarget.style.transform = "translateY(0)" }}
+                  >
+                    {isUpdatingProfile ? "SAVING MAGIC..." : "SAVE CHANGES ✨"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PastelSettings({
+  activeSection, setActiveSection,
+  draftTheme, setDraftTheme,
+  draftDisplayName, setDraftDisplayName,
+  draftBio, setDraftBio,
+  draftNotifications, setDraftNotifications,
+  draftShowOnlineStatus, setDraftShowOnlineStatus,
+  draftOrbitBehavior, setDraftOrbitBehavior,
+  draftSoundSettings, setDraftSoundSettings,
+  isDirty, handleSave, handleReset, authUser, navigate
+}) {
+
+  const tabs = [
+    { id: "profile", label: "Identity", icon: "🌸" },
+    { id: "sound", label: "Acoustics", icon: "🎵" },
+    { id: "appearance", label: "Aesthetics", icon: "🎀" },
+    { id: "notifications", label: "Alerts", icon: "🔔" },
+    { id: "orbit", label: "Magic Rules", icon: "✨" },
+    { id: "security", label: "Protection", icon: "🛡️" }
+  ];
+
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100vh", background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", overflow: "hidden", fontFamily: "'Nunito', sans-serif" }}>
+      <BgClouds />
+      <Floaties />
+      <SparkleClick />
+
+      {/* Top Nav */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 70, display: "flex", alignItems: "center", padding: "0 40px", background: "rgba(255,255,255,0.4)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.6)", zIndex: 50 }}>
+        <button onClick={() => navigate("/")} style={{ background: "rgba(255,255,255,0.8)", border: "2px solid rgba(255,183,178,0.5)", color: "#d060a8", padding: "10px 20px", borderRadius: 25, cursor: "pointer", fontWeight: 800, fontSize: 13, boxShadow: "0 4px 15px rgba(255,183,178,0.2)", display: "flex", alignItems: "center", gap: 8, transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+          <span>◀</span> BACK TO DREAMLAND
+        </button>
+        <div style={{ flex: 1 }} />
+        <div style={{ display: "flex", gap: 12 }}>
+          <button onClick={handleReset} disabled={!isDirty} style={{ padding: "8px 24px", background: "rgba(255,255,255,0.6)", border: "2px solid #f472b6", color: "#f472b6", borderRadius: 20, fontWeight: 800, fontSize: 13, cursor: isDirty ? "pointer" : "default", opacity: isDirty ? 1 : 0.5 }}>
+            RESET MAGIC
+          </button>
+          <button onClick={() => handleSave()} disabled={!isDirty} style={{ padding: "8px 24px", background: isDirty ? "linear-gradient(90deg, #f472b6, #c084fc)" : "rgba(255,255,255,0.8)", border: "none", color: isDirty ? "#fff" : "#cbd5e1", borderRadius: 20, fontWeight: 800, fontSize: 13, cursor: isDirty ? "pointer" : "default", boxShadow: isDirty ? "0 4px 15px rgba(192,132,252,0.4)" : "none" }}>
+            SAVE DREAMS ✨
+          </button>
+        </div>
+      </div>
+
+      <div style={{ position: "absolute", top: 70, bottom: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "30px 40px", zIndex: 10 }}>
+        <div style={{ position: "relative", width: "100%", maxWidth: 1100, height: "100%", maxHeight: 650 }}>
+          {/* Peeking Animals */}
+          <div style={{ position: "absolute", top: -30, right: 100, fontSize: 50, animation: "peekTop 4s ease-in-out infinite", zIndex: 0, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.1))" }}>🐶</div>
+          <div style={{ position: "absolute", bottom: -30, left: 100, fontSize: 55, animation: "peekBottom 5s ease-in-out infinite 1s", zIndex: 0, filter: "drop-shadow(0 -4px 6px rgba(0,0,0,0.1))" }}>🐼</div>
+          <div style={{ position: "absolute", top: "50%", right: -25, fontSize: 45, animation: "peekRight 4.5s ease-in-out infinite 2s", zIndex: 0, filter: "drop-shadow(-4px 0 6px rgba(0,0,0,0.1))" }}>🦊</div>
+
+          <style>{`
+            @keyframes peekTop {
+              0%, 100% { transform: translateY(15px) rotate(10deg); opacity: 0.9; }
+              50% { transform: translateY(-5px) rotate(-5deg); opacity: 1; }
+            }
+            @keyframes peekBottom {
+              0%, 100% { transform: translateY(-15px) rotate(-10deg); opacity: 0.9; }
+              50% { transform: translateY(5px) rotate(5deg); opacity: 1; }
+            }
+            @keyframes peekRight {
+              0%, 100% { transform: translateX(-15px) rotate(-90deg); opacity: 0.9; }
+              50% { transform: translateX(5px) rotate(-85deg); opacity: 1; }
+            }
+          `}</style>
+
+          {/* Main Horizontal Container */}
+          <div style={{ position: "absolute", inset: 0, display: "flex", background: "rgba(255,255,255,0.65)", backdropFilter: "blur(25px)", borderRadius: 40, border: "3px solid rgba(255,255,255,0.9)", boxShadow: "0 25px 60px rgba(230,190,220,0.5)", overflow: "hidden", zIndex: 10 }}>
+            
+            {/* Sidebar */}
+            <div style={{ width: 300, background: "linear-gradient(180deg, rgba(255,240,245,0.6) 0%, rgba(245,230,255,0.6) 100%)", padding: "40px 30px", display: "flex", flexDirection: "column", gap: 12, borderRight: "3px solid rgba(255,255,255,0.7)" }}>
+              <h2 style={{ fontSize: 26, fontWeight: 900, color: "#d060a8", paddingLeft: 12, marginBottom: 20 }}>Settings 🎀</h2>
+              {tabs.map(t => (
+                <button key={t.id} onClick={() => setActiveSection(t.id)} style={{ padding: "16px 20px", background: activeSection === t.id ? "rgba(255,255,255,0.9)" : "transparent", border: "none", borderRadius: 20, color: activeSection === t.id ? "#a855f7" : "#d060a8", fontSize: 16, fontWeight: 800, textAlign: "left", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", transition: "all 0.2s", boxShadow: activeSection === t.id ? "0 4px 15px rgba(200,150,180,0.2)" : "none" }}>
+                  <span style={{ fontSize: 22 }}>{t.icon}</span> {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Content Area */}
+            <div style={{ flex: 1, padding: "50px 60px", overflowY: "auto", position: "relative" }}>
+              <h2 style={{ fontSize: 36, fontWeight: 900, color: "#a855f7", marginBottom: 30, textShadow: "0 2px 10px rgba(168,85,247,0.2)" }}>
+                {tabs.find(t => t.id === activeSection)?.label}
+              </h2>
+
+              {/* PROFILE */}
+              {activeSection === "profile" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Persona Name</label>
+                    <input 
+                      value={draftDisplayName} onChange={e => setDraftDisplayName(e.target.value)}
+                      style={{ width: "100%", padding: "16px 24px", background: "rgba(255,255,255,0.6)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 25, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", transition: "all 0.3s", boxShadow: "inset 0 4px 10px rgba(244,114,182,0.05)" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Dreamy Bio</label>
+                    <textarea 
+                      value={draftBio} onChange={e => setDraftBio(e.target.value)} rows={4}
+                      style={{ width: "100%", padding: "16px 24px", background: "rgba(255,255,255,0.6)", border: "3px solid rgba(244,114,182,0.3)", borderRadius: 25, color: "#a855f7", fontSize: 18, fontWeight: 800, outline: "none", resize: "none", transition: "all 0.3s", boxShadow: "inset 0 4px 10px rgba(244,114,182,0.05)" }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* APPEARANCE */}
+              {activeSection === "appearance" && (
+                <div>
+                  <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 20 }}>Select Your World</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                    {THEMES.map(th => (
+                      <div key={th} onClick={() => setDraftTheme(th)} style={{ padding: "20px", background: draftTheme === th ? "linear-gradient(135deg, #f472b6, #c084fc)" : "rgba(255,255,255,0.6)", borderRadius: 25, border: draftTheme === th ? "none" : "3px solid rgba(244,114,182,0.3)", color: draftTheme === th ? "#fff" : "#a855f7", fontSize: 16, fontWeight: 800, cursor: "pointer", transition: "all 0.2s", boxShadow: draftTheme === th ? "0 8px 20px rgba(192,132,252,0.4)" : "none", textAlign: "center" }}>
+                        {THEME_LABELS[th] || th}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SOUND */}
+              {activeSection === "sound" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
+                    <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Magical Sound Effects 🎵</div>
+                    <input type="checkbox" checked={draftSoundSettings.effectsEnabled} onChange={e => setDraftSoundSettings({...draftSoundSettings, effectsEnabled: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                  </label>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
+                    <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Message Chimes 📩</div>
+                    <input type="checkbox" checked={draftSoundSettings.messageSound} onChange={e => setDraftSoundSettings({...draftSoundSettings, messageSound: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                  </label>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
+                    <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Click Sparkles ✨</div>
+                    <input type="checkbox" checked={draftSoundSettings.clickSound} onChange={e => setDraftSoundSettings({...draftSoundSettings, clickSound: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                  </label>
+                </div>
+              )}
+
+              {/* NOTIFICATIONS */}
+              {activeSection === "notifications" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
+                    <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Desktop Alerts 🖥️</div>
+                    <input type="checkbox" checked={draftNotifications.desktop} onChange={e => setDraftNotifications({...draftNotifications, desktop: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                  </label>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
+                    <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Sound Alerts 🔊</div>
+                    <input type="checkbox" checked={draftNotifications.sound} onChange={e => setDraftNotifications({...draftNotifications, sound: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                  </label>
+                </div>
+              )}
+
+              {/* ORBIT */}
+              {activeSection === "orbit" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
+                    <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Show Friendship Rings 🪐</div>
+                    <input type="checkbox" checked={draftOrbitBehavior.showRings} onChange={e => setDraftOrbitBehavior({...draftOrbitBehavior, showRings: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                  </label>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
+                    <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Auto-pause on Hover ⏸️</div>
+                    <input type="checkbox" checked={draftOrbitBehavior.autoPauseOnHover} onChange={e => setDraftOrbitBehavior({...draftOrbitBehavior, autoPauseOnHover: e.target.checked})} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                  </label>
+                </div>
+              )}
+
+              {/* SECURITY */}
+              {activeSection === "security" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
+                    <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Show Online Status 🟢</div>
+                    <input type="checkbox" checked={draftShowOnlineStatus} onChange={e => setDraftShowOnlineStatus(e.target.checked)} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
+                  </label>
+                  <div style={{ marginTop: 20 }}>
+                    <button style={{ padding: "18px 40px", background: "rgba(255,100,150,0.1)", border: "3px solid #ff7799", borderRadius: 30, color: "#ff7799", fontWeight: 900, fontSize: 16, cursor: "not-allowed", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(255,100,150,0.2)"} onMouseLeave={e => e.currentTarget.style.background="rgba(255,100,150,0.1)"}>
+                      CHANGE PASSWORD 🔒 (SOON)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
           </div>
         </div>
       </div>

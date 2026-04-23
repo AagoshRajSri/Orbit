@@ -2,7 +2,7 @@ import { useState, useEffect, memo, useMemo } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import toast from "react-hot-toast";
+import toast from "../lib/toast";
 import { THEMES, THEME_LABELS } from "../constants";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { useNexusStore } from "../store/useNexusStore";
@@ -347,6 +347,51 @@ const Sidebar = ({ activeTab, setActiveTab, setShowOrbitExplorer, onJoin, onNexu
   const { authUser } = useAuthStore();
   const orbits = ["# NEXUS PRIME", "# DARKWEB", "# CONSTELLATION", "# SHADOW OPS"];
   const contacts = [["CIPHER", "⚡", "#C6A06E"], ["NOVA", "◈", "#4ECDC4"], ["PHANTOM", "☽", "#9B59B6"], ["AXIOM", "▲", "#E74C3C"]];
+
+  const [pinnedNexuses, setPinnedNexuses] = useState(() => {
+    return JSON.parse(localStorage.getItem('amoled_pinned_nexuses') || '[]');
+  });
+  const [nexusColors, setNexusColors] = useState(() => {
+    return JSON.parse(localStorage.getItem('amoled_nexus_colors') || '{}');
+  });
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [activeColorPickerId, setActiveColorPickerId] = useState(null);
+
+  const togglePin = (id, e) => {
+    e.stopPropagation();
+    const next = pinnedNexuses.includes(id) ? pinnedNexuses.filter(pid => pid !== id) : [...pinnedNexuses, id];
+    setPinnedNexuses(next);
+    localStorage.setItem('amoled_pinned_nexuses', JSON.stringify(next));
+    setActiveMenuId(null);
+  };
+
+  const updateColor = (id, color, e) => {
+    e.stopPropagation();
+    const next = { ...nexusColors, [id]: color };
+    setNexusColors(next);
+    localStorage.setItem('amoled_nexus_colors', JSON.stringify(next));
+    setActiveColorPickerId(null);
+    setActiveMenuId(null);
+  };
+
+  const sortedNexuses = useMemo(() => {
+    return [...nexuses].sort((a, b) => {
+      const aPinned = pinnedNexuses.includes(a._id);
+      const bPinned = pinnedNexuses.includes(b._id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+  }, [nexuses, pinnedNexuses]);
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveMenuId(null);
+      setActiveColorPickerId(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
   return (
     <div className="oa-sidebar" style={{ width: 280, background: "#020202", borderRight: "1px solid rgba(198,160,110,.12)", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", flexShrink: 0 }}>
       <StarField count={30} />
@@ -387,19 +432,85 @@ const Sidebar = ({ activeTab, setActiveTab, setShowOrbitExplorer, onJoin, onNexu
             ) : nexuses.length === 0 ? (
                <div style={{ color: "rgba(198,160,110,.3)", fontSize: 11, textAlign: "center", padding: "20px 10px", lineHeight: 1.5 }}>NO CHANNELS DETECTED.<br/>INITIALIZE NEXUS.</div>
             ) : (
-              nexuses.map((n) => (
-                <div key={n._id} onClick={() => { setSelectedNexus(n); }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", color: "#C6A06E", background: "rgba(198,160,110,.05)", border: "1px solid rgba(198,160,110,.1)", transition: "all .2s", fontFamily: "Rajdhani,sans-serif", fontSize: 15, fontWeight: 600, letterSpacing: 1 }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(198,160,110,.12)"; e.currentTarget.style.borderColor = "rgba(198,160,110,.3)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(198,160,110,.05)"; e.currentTarget.style.borderColor = "rgba(198,160,110,.1)"; }}
+              sortedNexuses.map((n) => (
+                <div key={n._id} onClick={() => { setSelectedNexus(n); }} style={{ display: "flex", flexDirection: "column", padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", color: "#C6A06E", background: nexusColors[n._id] || "rgba(198,160,110,.05)", border: "1px solid rgba(198,160,110,.1)", transition: "all .2s", fontFamily: "Rajdhani,sans-serif", fontSize: 15, fontWeight: 600, letterSpacing: 1, position: "relative" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(198,160,110,.3)"; e.currentTarget.style.boxShadow = "inset 0 0 10px rgba(198,160,110,.2)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(198,160,110,.1)"; e.currentTarget.style.boxShadow = "none"; }}
                 >
-                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(198,160,110,0.1)", border: "1px solid rgba(198,160,110,0.3)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                    {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "◈"}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(198,160,110,0.1)", border: "1px solid rgba(198,160,110,0.3)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                      {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "◈"}
+                    </div>
+                    <div style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.name}</div>
+                    {nexusUnread[n._id] > 0 && (
+                       <div style={{ background: "#C6A06E", color: "#000", fontSize: 10, fontWeight: 900, padding: "1px 6px", borderRadius: 4, boxShadow: "0 0 10px rgba(198,160,110,0.4)" }}>{nexusUnread[n._id]}</div>
+                    )}
+                    <span style={{ fontSize: 10, color: "rgba(198,160,110,0.5)", background: "rgba(198,160,110,.1)", padding: "2px 6px", borderRadius: 4 }}>{n.members?.length || 0}</span>
+                  
+                    {pinnedNexuses.includes(n._id) && (
+                        <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>📌</div>
+                    )}
+
+                    <div 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(activeMenuId === n._id ? null : n._id);
+                            setActiveColorPickerId(null);
+                        }}
+                        style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+                    >
+                        💎
+                    </div>
                   </div>
-                  <div style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.name}</div>
-                  {nexusUnread[n._id] > 0 && (
-                     <div style={{ background: "#C6A06E", color: "#000", fontSize: 10, fontWeight: 900, padding: "1px 6px", borderRadius: 4, boxShadow: "0 0 10px rgba(198,160,110,0.4)" }}>{nexusUnread[n._id]}</div>
+
+                  {/* Context Menu Inline Expansion */}
+                  {activeMenuId === n._id && (
+                      <div 
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(198,160,110,.2)`, display: 'flex', flexDirection: 'column', gap: 8 }}
+                      >
+                          <div style={{ display: 'flex', gap: 8 }}>
+                              <button 
+                                  onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
+                                  }}
+                                  style={{ flex: 1, padding: '6px', background: "rgba(198,160,110,.1)", border: "1px solid rgba(198,160,110,.4)", borderRadius: 4, fontSize: 11, color: "#C6A06E", fontFamily: "Orbitron, sans-serif", cursor: 'pointer' }}
+                              >
+                                  Mark 🎨
+                              </button>
+                              <button 
+                                  onClick={(e) => togglePin(n._id, e)}
+                                  style={{ flex: 1, padding: '6px', background: "rgba(198,160,110,.1)", border: "1px solid rgba(198,160,110,.4)", borderRadius: 4, fontSize: 11, color: "#C6A06E", fontFamily: "Orbitron, sans-serif", cursor: 'pointer' }}
+                              >
+                                  {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                              </button>
+                          </div>
+
+                          {activeColorPickerId === n._id && (
+                              <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(0,0,0,0.5)", borderRadius: 4, border: "1px solid rgba(198,160,110,.2)", overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
+                                  {[
+                                      "transparent", // Default
+                                      "rgba(198,160,110,.2)", // Gold
+                                      "rgba(78,205,196,.2)", // Teal
+                                      "rgba(155,89,182,.2)", // Purple
+                                      "rgba(255,100,100,.2)", // Red
+                                      "rgba(100,150,255,.2)", // Blue
+                                      "rgba(50,255,150,.2)", // Green
+                                      "rgba(10,10,10,0.8)", // Black void
+                                  ].map(c => (
+                                      <div 
+                                          key={c}
+                                          onClick={(e) => updateColor(n._id, c, e)}
+                                          style={{ minWidth: 20, height: 20, borderRadius: '50%', background: c, border: c === "transparent" ? "1px solid rgba(255,255,255,0.2)" : `1px solid rgba(198,160,110,.5)`, cursor: 'pointer', flexShrink: 0 }}
+                                      />
+                                  ))}
+                              </div>
+                          )}
+                      </div>
                   )}
-                  <span style={{ fontSize: 10, color: "rgba(198,160,110,0.5)", background: "rgba(198,160,110,.1)", padding: "2px 6px", borderRadius: 4 }}>{n.members?.length || 0}</span>
                 </div>
               ))
             )}

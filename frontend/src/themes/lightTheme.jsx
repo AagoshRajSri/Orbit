@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -290,6 +290,52 @@ function LuxurySidebar() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('orbits');
 
+  const [pinnedNexuses, setPinnedNexuses] = useState(() => {
+    return JSON.parse(localStorage.getItem('luxury_pinned_nexuses') || '[]');
+  });
+  const [nexusColors, setNexusColors] = useState(() => {
+    return JSON.parse(localStorage.getItem('luxury_nexus_colors') || '{}');
+  });
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [activeColorPickerId, setActiveColorPickerId] = useState(null);
+
+  const togglePin = (id, e) => {
+    e.stopPropagation();
+    const next = pinnedNexuses.includes(id) ? pinnedNexuses.filter(pid => pid !== id) : [...pinnedNexuses, id];
+    setPinnedNexuses(next);
+    localStorage.setItem('luxury_pinned_nexuses', JSON.stringify(next));
+    setActiveMenuId(null);
+  };
+
+  const updateColor = (id, color, e) => {
+    e.stopPropagation();
+    const next = { ...nexusColors, [id]: color };
+    setNexusColors(next);
+    localStorage.setItem('luxury_nexus_colors', JSON.stringify(next));
+    setActiveColorPickerId(null);
+    setActiveMenuId(null);
+  };
+
+  const sortedNexuses = useMemo(() => {
+    return [...nexuses].sort((a, b) => {
+      const aPinned = pinnedNexuses.includes(a._id);
+      const bPinned = pinnedNexuses.includes(b._id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+  }, [nexuses, pinnedNexuses]);
+
+  // Click outside handler for menus
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveMenuId(null);
+      setActiveColorPickerId(null);
+    };
+    window.addEventListener("click", handleGlobalClick);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, []);
+
   return (
     <div style={{ width: 320, borderRight: `1px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', flexDirection: 'column', background: '#FDFCFB', zIndex: 10 }}>
       {/* Tabs */}
@@ -325,9 +371,9 @@ function LuxurySidebar() {
       {/* List Area */}
       <div className="luxury-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 24px' }}>
         {tab === 'orbits' ? (
-          nexuses.length > 0 ? (
+          sortedNexuses.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {nexuses.map((nexus) => (
+              {sortedNexuses.map((nexus) => (
                 <div 
                   key={nexus._id}
                   onClick={() => {
@@ -341,25 +387,123 @@ function LuxurySidebar() {
                     padding: '12px 16px', 
                     cursor: 'pointer', 
                     display: 'flex', 
+                    flexDirection: 'column',
                     alignItems: 'center', 
-                    gap: 12,
-                    background: selectedNexus?._id === nexus._id ? LUXURY_COLORS.accentMute : LUXURY_COLORS.surface,
-                    borderColor: selectedNexus?._id === nexus._id ? LUXURY_COLORS.goldMedium : LUXURY_COLORS.borderSubtle
+                    gap: 0,
+                    background: selectedNexus?._id === nexus._id ? LUXURY_COLORS.accentMute : (nexusColors[nexus._id] || LUXURY_COLORS.surface),
+                    borderColor: selectedNexus?._id === nexus._id ? LUXURY_COLORS.goldMedium : LUXURY_COLORS.borderSubtle,
+                    position: 'relative'
                   }}
                 >
-                  <img 
-                    src={nexus.avatar || "/nexus-avatar.png"} 
-                    alt={nexus.name} 
-                    style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover', border: `1px solid ${LUXURY_COLORS.borderSubtle}` }} 
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: LUXURY_COLORS.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {nexus.name}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+                    <img 
+                      src={nexus.avatar || "/nexus-avatar.png"} 
+                      alt={nexus.name} 
+                      style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover', border: `1px solid ${LUXURY_COLORS.borderSubtle}` }} 
+                    />
+                    <div style={{ flex: 1, minWidth: 0, paddingRight: 30 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: LUXURY_COLORS.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {nexus.name}
+                      </div>
+                      <div style={{ fontSize: 10, color: LUXURY_COLORS.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {nexus.members?.length || 0} Members
+                      </div>
                     </div>
-                    <div style={{ fontSize: 10, color: LUXURY_COLORS.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {nexus.members?.length || 0} Members
+
+                    {/* Pin Indicator */}
+                    {pinnedNexuses.includes(nexus._id) && (
+                      <div style={{ position: 'absolute', top: 6, left: 6, fontSize: 12, transform: 'rotate(-45deg)' }}>📌</div>
+                    )}
+
+                    {/* Context Menu Trigger */}
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuId(activeMenuId === nexus._id ? null : nexus._id);
+                        setActiveColorPickerId(null);
+                      }}
+                      style={{ position: 'absolute', right: 12, top: 24, transform: "translateY(-50%)", cursor: 'pointer', fontSize: 18, zIndex: 5, padding: 4, opacity: 0.8, transition: 'opacity 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                      onMouseLeave={e => e.currentTarget.style.opacity = 0.8}
+                    >
+                      ⚜️
                     </div>
                   </div>
+
+                  {/* Context Menu Inline Expansion */}
+                  {activeMenuId === nexus._id && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        width: '100%', marginTop: 12, paddingTop: 12, borderTop: `1px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 10
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveColorPickerId(activeColorPickerId === nexus._id ? null : nexus._id);
+                          }}
+                          style={{ flex: 1, padding: '8px 12px', background: LUXURY_COLORS.surfaceHover, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color: LUXURY_COLORS.textPrimary, cursor: 'pointer', transition: 'all 0.2s' }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor = LUXURY_COLORS.goldMedium}
+                          onMouseLeave={e => e.currentTarget.style.borderColor = LUXURY_COLORS.borderSubtle}
+                        >
+                          Mark 🎨
+                        </button>
+                        <button 
+                          onClick={(e) => togglePin(nexus._id, e)}
+                          style={{ flex: 1, padding: '8px 12px', background: LUXURY_COLORS.surfaceHover, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color: LUXURY_COLORS.textPrimary, cursor: 'pointer', transition: 'all 0.2s' }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor = LUXURY_COLORS.goldMedium}
+                          onMouseLeave={e => e.currentTarget.style.borderColor = LUXURY_COLORS.borderSubtle}
+                        >
+                          {pinnedNexuses.includes(nexus._id) ? "Unpin 📌" : "Pin 📌"}
+                        </button>
+                      </div>
+
+                      {activeColorPickerId === nexus._id && (
+                        <div style={{ 
+                          display: 'flex', 
+                          gap: 10, 
+                          padding: '12px', 
+                          background: LUXURY_COLORS.surfaceHover, 
+                          borderRadius: 8, 
+                          border: `1px solid ${LUXURY_COLORS.goldLight}`,
+                          overflowX: 'auto',
+                          width: '100%',
+                          scrollbarWidth: 'none'
+                        }} className="luxury-scroll">
+                          {[
+                            "#FFFFFF", // White
+                            "#F5F5F5", // Smoke
+                            "#FFF9E6", "#FFF3E0", "#FFEBE0", "#FFE0E0", "#FFEBEE", // Reds/Oranges
+                            "#FCE4EC", "#F8BBD0", "#F3E5F5", "#EDE7F6", "#E8EAF6", // Pinks/Purples
+                            "#E3F2FD", "#E1F5FE", "#E0F7FA", "#E0F2F1", "#E8F5E9", // Blues/Teals
+                            "#F1F8E9", "#F9FBE7", "#FFFDE7", "#FFF9C4", "#FFF59D", // Greens/Yellows
+                            "#D7CCC8", "#F5F5DC", "#EFEBE9", "#FAFAFA", "#ECEFF1"  // Neutrals
+                          ].map(c => (
+                            <div 
+                              key={c}
+                              onClick={(e) => updateColor(nexus._id, c, e)}
+                              style={{ 
+                                minWidth: 26, 
+                                height: 26, 
+                                borderRadius: '50%', 
+                                background: c, 
+                                border: `1px solid ${LUXURY_COLORS.borderSubtle}`, 
+                                cursor: 'pointer', 
+                                transition: 'transform 0.1s', 
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                flexShrink: 0
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 </div>
               ))}
             </div>

@@ -264,38 +264,9 @@ const NoChatSelected = () => {
   if (theme === "pastel-dream") {
     return <TruePastelDashboard />;
   }
-  if (theme === "amoled-dark") {
-    return createPortal(
-      <div style={{ position: "fixed", inset: 0, zIndex: 120 }}>
-        <OrbitApp />
-      </div>,
-      document.body
-    );
-  }
-  if (theme === "gamer-high-energy") {
-    return createPortal(
-      <div style={{ position: "fixed", inset: 0, zIndex: 120 }}>
-        <OrbitGrind />
-      </div>,
-      document.body
-    );
-  }
-  if (theme === "dark") {
-    return createPortal(
-      <div style={{ position: "fixed", inset: 0, zIndex: 120 }}>
-        <OrbitVampire />
-      </div>,
-      document.body
-    );
-  }
-  if (theme === "neon-cyberpunk") {
-    return createPortal(
-      <div style={{ position: "fixed", inset: 0, zIndex: 120 }}>
-        <OrbitNeonCyberpunk />
-      </div>,
-      document.body
-    );
-  }
+
+  // All other themes (gamer, amoled, dark, neon) use the default dashboard content 
+  // if no chat is selected. The shell is already provided by the theme loader.
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-transparent overflow-auto relative">

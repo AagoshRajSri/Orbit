@@ -26,6 +26,7 @@ import { AmoledSettings } from "../themes/amoledTheme";
 import { GamerSettings } from "../themes/gamerTheme";
 import { CyberpunkSettings } from "../themes/darkCyberpunkTheme";
 import { LightSettings } from "../themes/lightTheme";
+import { PastelSettings } from "../themes/pastelTheme";
 import { useNavigate } from "react-router-dom";
 import AnimalEasterEggs, {
   FlyingBirdTrigger,
@@ -416,6 +417,21 @@ const SettingsPage = () => {
   if (currentTheme === "dark") {
     return (
       <VampireSettings 
+        activeSection={activeSection} setActiveSection={setActiveSection}
+        draftTheme={draftTheme} setDraftTheme={setDraftTheme}
+        draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
+        draftBio={draftBio} setDraftBio={setDraftBio}
+        draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
+        draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
+        draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
+        draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
+        isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser} navigate={navigate}
+      />
+    );
+  }
+  if (currentTheme === "pastel-dream") {
+    return (
+      <PastelSettings 
         activeSection={activeSection} setActiveSection={setActiveSection}
         draftTheme={draftTheme} setDraftTheme={setDraftTheme}
         draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}

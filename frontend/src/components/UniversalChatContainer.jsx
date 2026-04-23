@@ -126,8 +126,11 @@ export default function UniversalChatContainer({ type }) {
     if (!isNexus) return null;
     if (selectedNexus) return selectedNexus;
     if (selectedNexusId && nexuses.length > 0) {
-      return nexuses.find(n => (n._id?.toString() === selectedNexusId?.toString()));
+      const found = nexuses.find(n => (n._id?.toString() === selectedNexusId?.toString()));
+      if (found) return found;
     }
+    // Fallback: if we only have selectedNexusId, return a stub so it doesn't crash
+    if (selectedNexusId) return { _id: selectedNexusId, name: "Loading Nexus...", members: [] };
     return null;
   }, [isNexus, selectedNexus, selectedNexusId, nexuses]);
 
@@ -170,24 +173,24 @@ export default function UniversalChatContainer({ type }) {
 
   // ── Load messages when entity changes ──
   useEffect(() => {
-    if (isNexus && selectedNexus?._id) {
-      getNexusMessages(selectedNexus._id);
+    if (isNexus && activeNexus?._id) {
+      getNexusMessages(activeNexus._id);
       // Build local group state for InfoPanel from live nexus data
       setLocalNexusGroup({
-        name: selectedNexus.name,
-        description: selectedNexus.description || "",
+        name: activeNexus.name,
+        description: activeNexus.description || "",
         icon: "🌐",
-        privacy: selectedNexus.privacy || "private",
+        privacy: activeNexus.privacy || "private",
         notifications: "all",
         slowMode: 0,
-        maxMembers: selectedNexus.maxMembers || 50,
+        maxMembers: activeNexus.maxMembers || 50,
         disappearingMessages: 0,
-        pinnedMsg: selectedNexus.pinnedMessage || "No pinned message",
+        pinnedMsg: activeNexus.pinnedMessage || "No pinned message",
         roles: ["Owner", "Admin", "Moderator", "Member"],
-        members: (selectedNexus.members || []).map((m, idx) => ({
+        members: (activeNexus.members || []).map((m, idx) => ({
           id: m._id || idx,
           name: m.username || m.email || "Member",
-          role: selectedNexus.adminIds?.includes(m._id) ? "Admin" : "Member",
+          role: activeNexus.adminIds?.includes(m._id) ? "Admin" : "Member",
           status: "online",
           muted: false,
           banned: false,
@@ -195,10 +198,10 @@ export default function UniversalChatContainer({ type }) {
         })),
         media: [],
         links: [],
-        tags: [selectedNexus.joinCode ? `#${selectedNexus.joinCode}` : "#nexus"],
+        tags: [activeNexus.joinCode ? `#${activeNexus.joinCode}` : "#nexus"],
         color: t.acc,
-        inviteLink: `nexus.app/join/${selectedNexus.joinCode || selectedNexus._id}`,
-        createdAt: selectedNexus.createdAt?.slice(0, 10) || "—",
+        inviteLink: `nexus.app/join/${activeNexus.joinCode || activeNexus._id}`,
+        createdAt: activeNexus.createdAt?.slice(0, 10) || "—",
         messageCount: nexusMessages.length,
         voiceActive: false,
       });
@@ -206,7 +209,7 @@ export default function UniversalChatContainer({ type }) {
     } else if (!isNexus && selectedUser?._id) {
       getMessages(selectedUser._id);
     }
-  }, [isNexus, selectedNexus?._id, selectedUser?._id]);
+  }, [isNexus, activeNexus?._id, selectedUser?._id, getNexusMessages, getMessages, t.acc, nexusMessages.length]);
 
   // ── Auto scroll ──
   useEffect(() => {
@@ -329,9 +332,9 @@ export default function UniversalChatContainer({ type }) {
     ? (nexusTypingUsers?.filter(u => u.userId !== authUser?._id?.toString()).length > 0)
     : !!selectedUser?.isTyping;
 
-  const entityName = isNexus ? (selectedNexus?.name || "Nexus") : (selectedUser?.username || selectedUser?.fullName || "User");
+  const entityName = isNexus ? (activeNexus?.name || "Nexus") : (selectedUser?.username || selectedUser?.fullName || "User");
   const entitySub  = isNexus
-    ? `${selectedNexus?.members?.length || 0} members`
+    ? `${activeNexus?.members?.length || 0} members`
     : (selectedUser?.isTyping ? "typing…" : "Online");
 
   const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -365,7 +368,7 @@ export default function UniversalChatContainer({ type }) {
       style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", position: "relative", overflow: "hidden", background: t.bg, ...cssVars }}
     >
       {/* ── HEADER ── */}
-      <div style={{ background: t.headerGrad, borderBottom: `1px solid ${t.border}`, padding: "0 20px", display: "flex", alignItems: "center", gap: 12, height: 64, flexShrink: 0, zIndex: 10, position: "relative" }}>
+      <div className="nexus-chat-header" style={{ background: t.headerGrad, borderBottom: `1px solid ${t.border}`, padding: "0 20px", display: "flex", alignItems: "center", gap: 12, height: 64, flexShrink: 0, zIndex: 10, position: "relative" }}>
         {/* Back Button */}
         <button
           onClick={() => {
@@ -414,7 +417,7 @@ export default function UniversalChatContainer({ type }) {
 
         {/* Name + sub */}
         <div style={{ flex: 1, cursor: "pointer" }} onClick={() => setShowInfo(x => !x)}>
-          <div style={{ color: t.txt, fontWeight: 800, fontSize: 16, fontFamily: t.font, letterSpacing: ".04em" }}>
+          <div className="nxc-name" style={{ color: t.txt, fontWeight: 800, fontSize: 16, fontFamily: t.font, letterSpacing: ".04em" }}>
             {entityName}
           </div>
           <div style={{ color: t.txt2, fontSize: 12, fontFamily: t.font, letterSpacing: ".02em", transition: "color .2s" }}>
@@ -423,7 +426,7 @@ export default function UniversalChatContainer({ type }) {
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: "flex", gap: 4 }}>
+        <div className="nxc-utility-group" style={{ display: "flex", gap: 4 }}>
           <TBtn t={t} d={I.search} label="Search" active={searchOpen} onClick={() => { setSearchOpen(x => !x); setSearchQ(""); }} />
           <TBtn t={t} d={I.phone} label="Voice call" onClick={() => setCallType("voice")} sz={19} />
           <TBtn t={t} d={I.video} label="Video call" onClick={() => setCallType("video")} sz={19} />
@@ -544,8 +547,8 @@ export default function UniversalChatContainer({ type }) {
         <div ref={endRef} />
       </div>
 
-      {/* ── COMPOSER ── */}
-      <div style={{ background: t.header, borderTop: `1px solid ${t.border}`, flexShrink: 0, position: "relative" }}>
+      {/* ── INPUT AREA ── */}
+      <div className="nxi-shell" style={{ borderTop: `1px solid ${t.border}`, background: t.inputBar, position: "relative", zIndex: 10, flexShrink: 0 }}>
 
         {/* Media/Emoji panel */}
         {mediaPanel && (
@@ -583,12 +586,14 @@ export default function UniversalChatContainer({ type }) {
         <div style={{ display: "flex", alignItems: "center", padding: "6px 16px 14px", gap: 10 }}>
           {/* Text field */}
           <div
+            className="nxi-textarea-wrapper"
             style={{ flex: 1, display: "flex", alignItems: "center", background: t.input, border: `1.5px solid ${t.inputBrd}`, borderRadius: 16, padding: "0 14px", gap: 8, transition: "border-color .2s, box-shadow .2s" }}
             onFocusCapture={e => { e.currentTarget.style.borderColor = t.acc; e.currentTarget.style.boxShadow = `0 0 0 3px ${t.glow2}`; }}
-            onBlurCapture={e => { e.currentTarget.style.borderColor = t.inputBrd; e.currentTarget.style.boxShadow = "none"; }}
+            onBlurCapture={e => { e.currentTarget.style.borderColor = t.inputBrd; e.currentTarget.style.shadow = "none"; }}
           >
             <input
               ref={inputRef}
+              className="nxi-textarea"
               value={input}
               onChange={handleInputChange}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMsg(input); } }}
@@ -616,6 +621,7 @@ export default function UniversalChatContainer({ type }) {
           {input.trim() && (
             <Btn3D
               onClick={() => sendMsg(input)}
+              className={`nxi-send ${input.trim() ? 'ready' : ''}`}
               style={{ width: 46, height: 46, borderRadius: "50%", border: "none", background: t.send, color: t.sendTxt, flexShrink: 0, boxShadow: `0 4px 24px ${t.glow}`, animation: "popIn .2s ease" }}
               title="Send message"
             >

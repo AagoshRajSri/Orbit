@@ -546,14 +546,17 @@ function MsgBubble({msg,t,onReact,isMe}) {
           </div>
         )}
         {showPicker && <EmojiPickerOverlay t={t} onSelect={(e) => onReact(msg.id, e)} onClose={() => setShowPicker(false)} isMe={isMe} />}
-        <div style={{
-          background:isMe?t.msgOut:t.msgIn,
-          border:`1px solid ${isMe?t.msgOutBrd:t.border}`,
-          borderRadius:18, borderBottomRightRadius:isMe?3:18, borderBottomLeftRadius:isMe?18:3,
-          padding:"10px 16px", paddingBottom:26, minWidth:95, minHeight:46, maxWidth:520, color:t.txt, fontSize:15, lineHeight:1.5, fontFamily:t.font,
-          boxShadow: hov?`0 10px 40px ${t.glow}`:isMe?`0 2px 12px ${t.glow2}`:"none",
-          transition:"all .25s ease", position:"relative", overflow: "visible"
-        }}>
+        <div 
+          className={isMe ? "msg-bubble-mine" : "msg-bubble-other"}
+          style={{
+            background:isMe?t.msgOut:t.msgIn,
+            border:`1px solid ${isMe?t.msgOutBrd:t.border}`,
+            borderRadius:18, borderBottomRightRadius:isMe?3:18, borderBottomLeftRadius:isMe?18:3,
+            padding:"10px 16px", paddingBottom:26, minWidth:95, minHeight:46, maxWidth:520, color:t.txt, fontSize:15, lineHeight:1.5, fontFamily:t.font,
+            boxShadow: hov?`0 10px 40px ${t.glow}`:isMe?`0 2px 12px ${t.glow2}`:"none",
+            transition:"all .25s ease", position:"relative", overflow: "visible"
+          }}
+        >
           {/* Status Glow Overlay */}
           {isMe && <div style={{ 
               position: "absolute", inset: 0, borderRadius: "inherit", 

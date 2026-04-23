@@ -13,7 +13,7 @@ import {
   Compass,
   Flower,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "../lib/toast";
 import { useSoundManager } from "../hooks/useSoundManager";
 import { useThemeStore } from "../store/useThemeStore";
 import { AmoledProfile } from "../themes/amoledTheme";
@@ -21,7 +21,7 @@ import { GamerProfile } from "../themes/gamerTheme";
 import { VampireProfile } from "../themes/darkTheme";
 import { CyberpunkProfile } from "../themes/darkCyberpunkTheme";
 import { LightProfile } from "../themes/lightTheme";
-
+import { PastelProfile } from "../themes/pastelTheme";
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { authUser, isUpdatingProfile, updateProfile, deleteAccount } =
@@ -141,6 +141,10 @@ const ProfilePage = () => {
 
   if (theme === "neon-cyberpunk") {
     return <CyberpunkProfile />;
+  }
+
+  if (theme === "pastel-dream") {
+    return <PastelProfile />;
   }
 
 

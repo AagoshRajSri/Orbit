@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, Fragment } from "react";
+import React, { useEffect, useRef, useState, Fragment, useMemo } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { createPortal } from "react-dom";
 import { useThemeStore } from "../store/useThemeStore";
@@ -1079,6 +1079,52 @@ export default function OrbitVampire({ children }) {
     const nexusSelected = Boolean(selectedNexus || selectedNexusId);
     const { users, selectedUser, setSelectedUser } = useChatStore();
     const [activeTab, setActiveTab] = useState("orbits");
+
+    const [pinnedNexuses, setPinnedNexuses] = useState(() => {
+        return JSON.parse(localStorage.getItem('vampire_pinned_nexuses') || '[]');
+    });
+    const [nexusColors, setNexusColors] = useState(() => {
+        return JSON.parse(localStorage.getItem('vampire_nexus_colors') || '{}');
+    });
+    const [activeMenuId, setActiveMenuId] = useState(null);
+    const [activeColorPickerId, setActiveColorPickerId] = useState(null);
+
+    const togglePin = (id, e) => {
+        e.stopPropagation();
+        const next = pinnedNexuses.includes(id) ? pinnedNexuses.filter(pid => pid !== id) : [...pinnedNexuses, id];
+        setPinnedNexuses(next);
+        localStorage.setItem('vampire_pinned_nexuses', JSON.stringify(next));
+        setActiveMenuId(null);
+    };
+
+    const updateColor = (id, color, e) => {
+        e.stopPropagation();
+        const next = { ...nexusColors, [id]: color };
+        setNexusColors(next);
+        localStorage.setItem('vampire_nexus_colors', JSON.stringify(next));
+        setActiveColorPickerId(null);
+        setActiveMenuId(null);
+    };
+
+    const sortedNexuses = useMemo(() => {
+        return [...nexuses].sort((a, b) => {
+            const aPinned = pinnedNexuses.includes(a._id);
+            const bPinned = pinnedNexuses.includes(b._id);
+            if (aPinned && !bPinned) return -1;
+            if (!aPinned && bPinned) return 1;
+            return 0;
+        });
+    }, [nexuses, pinnedNexuses]);
+
+    useEffect(() => {
+        const handleGlobalClick = () => {
+            setActiveMenuId(null);
+            setActiveColorPickerId(null);
+        };
+        window.addEventListener('click', handleGlobalClick);
+        return () => window.removeEventListener('click', handleGlobalClick);
+    }, []);
+
     const [isPlaying, setIsPlaying] = useState(false);
     const [volume, setVolume] = useState(70);
 
@@ -1197,18 +1243,23 @@ export default function OrbitVampire({ children }) {
 
                     <div className="sidebar-actions">
                         <button className="action-btn join" onClick={() => setNexusActionView("join")}># JOIN</button>
-                        <button className="action-btn nexus" onClick={() => setNexusActionView("create")}>+ NEXUS</button>
+                                                <button className="action-btn nexus" onClick={() => setNexusActionView("create")}>+ NEXUS</button>
                     </div>
+
                     <div className="sidebar-list">
-                        {activeTab === "orbits" ? (
-                            isNexusesLoading ? (
-                                <div className="sidebar-empty"><em>Loading...</em></div>
-                            ) : nexuses.length === 0 ? (
-                                <div className="sidebar-empty">
-                                    <em>"The night is vast.<br />Join or create a Nexus<br />to begin your communion."</em>
-                                </div>
-                            ) : (
-                                nexuses.map(n => (
+                        {(() => {
+                            if (activeTab === "orbits") {
+                                if (isNexusesLoading) {
+                                    return <div className="sidebar-empty"><em>Loading...</em></div>;
+                                }
+                                if (nexuses.length === 0) {
+                                    return (
+                                        <div className="sidebar-empty">
+                                            <em>"The night is vast.<br />Join or create a Nexus<br />to begin your communion."</em>
+                                        </div>
+                                    );
+                                }
+                                return sortedNexuses.map(n => (
                                     <div
                                         key={n._id}
                                         className="sidebar-item"
@@ -1217,28 +1268,114 @@ export default function OrbitVampire({ children }) {
                                             setSelectedUser(null);
                                             setNexusActionView(null);
                                         }}
-                                        style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", cursor:"pointer", borderBottom:"1px solid rgba(139,0,0,0.15)", transition:"background 0.2s" }}
-                                        onMouseEnter={e => e.currentTarget.style.background="rgba(139,0,0,0.12)"}
-                                        onMouseLeave={e => e.currentTarget.style.background="transparent"}
+                                        style={{ 
+                                            display:"flex", 
+                                            flexDirection: "column", 
+                                            padding:"10px 14px", 
+                                            cursor:"pointer", 
+                                            borderBottom:"1px solid rgba(139,0,0,0.15)", 
+                                            transition:"all 0.2s ease",
+                                            background: (selectedNexus?._id === n._id || selectedNexusId === n._id)
+                                                ? "rgba(139,0,0,0.25)" 
+                                                : nexusColors[n._id] || "transparent",
+                                            borderLeft: (selectedNexus?._id === n._id || selectedNexusId === n._id)
+                                                ? "3px solid #dc143c"
+                                                : "3px solid transparent",
+                                            position: "relative"
+                                        }}
+                                        onMouseEnter={e => {
+                                            if (selectedNexus?._id !== n._id && selectedNexusId !== n._id) {
+                                                e.currentTarget.style.background = "rgba(139,0,0,0.12)";
+                                            }
+                                        }}
+                                        onMouseLeave={e => {
+                                            if (selectedNexus?._id !== n._id && selectedNexusId !== n._id) {
+                                                e.currentTarget.style.background = nexusColors[n._id] || "transparent";
+                                            }
+                                        }}
                                     >
-                                        <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(139,0,0,0.3)", border:"1.5px solid rgba(220,20,60,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0, overflow:"hidden" }}>
-                                            {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"50%" }} /> : "⬡"}
+                                        <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+                                            <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(139,0,0,0.3)", border:"1.5px solid rgba(220,20,60,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0, overflow:"hidden" }}>
+                                                {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"50%" }} /> : "⬡"}
+                                            </div>
+                                            <div style={{ minWidth:0, flex:1 }}>
+                                                <div style={{ fontSize:13, fontWeight:600, color:"#F0E6D3", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.name}</div>
+                                                <div style={{ fontSize:10, color:"rgba(168,155,176,0.6)", fontFamily:"serif" }}>{n.members?.length || 0} members</div>
+                                            </div>
+                                            {nexusUnread[n._id] > 0 && (
+                                                <div style={{ background:"rgba(220,20,60,0.8)", color:"white", fontSize:10, fontWeight:900, padding:"1px 6px", borderRadius:4, fontFamily:"'Cinzel',serif", boxShadow:"0 0 10px rgba(220,20,60,0.4)" }}>{nexusUnread[n._id]}</div>
+                                            )}
+
+                                            {pinnedNexuses.includes(n._id) && (
+                                                <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>📌</div>
+                                            )}
+
+                                            <div 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveMenuId(activeMenuId === n._id ? null : n._id);
+                                                    setActiveColorPickerId(null);
+                                                }}
+                                                style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
+                                                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                                                onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+                                            >
+                                                🦇
+                                            </div>
                                         </div>
-                                        <div style={{ minWidth:0, flex:1 }}>
-                                            <div style={{ fontSize:13, fontWeight:600, color:"#F0E6D3", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.name}</div>
-                                            <div style={{ fontSize:10, color:"rgba(168,155,176,0.6)", fontFamily:"serif" }}>{n.members?.length || 0} members</div>
-                                        </div>
-                                        {nexusUnread[n._id] > 0 && (
-                                            <div style={{ background:"rgba(220,20,60,0.8)", color:"white", fontSize:10, fontWeight:900, padding:"1px 6px", borderRadius:4, fontFamily:"'Cinzel',serif", boxShadow:"0 0 10px rgba(220,20,60,0.4)" }}>{nexusUnread[n._id]}</div>
+
+                                        {activeMenuId === n._id && (
+                                            <div 
+                                                onClick={(e) => e.stopPropagation()}
+                                                style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(139,0,0,0.2)`, display: 'flex', flexDirection: 'column', gap: 8 }}
+                                            >
+                                                <div style={{ display: 'flex', gap: 8 }}>
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
+                                                        }}
+                                                        style={{ flex: 1, padding: '6px', background: "rgba(139,0,0,0.2)", border: "1px solid rgba(139,0,0,0.4)", borderRadius: 4, fontSize: 9, color: "#F0E6D3", fontFamily: "'Cinzel', serif", letterSpacing: '1px', cursor: 'pointer' }}
+                                                    >
+                                                        Mark 🎨
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => togglePin(n._id, e)}
+                                                        style={{ flex: 1, padding: '6px', background: "rgba(139,0,0,0.2)", border: "1px solid rgba(139,0,0,0.4)", borderRadius: 4, fontSize: 9, color: "#F0E6D3", fontFamily: "'Cinzel', serif", letterSpacing: '1px', cursor: 'pointer' }}
+                                                    >
+                                                        {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                                                    </button>
+                                                </div>
+
+                                                {activeColorPickerId === n._id && (
+                                                    <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(0,0,0,0.5)", borderRadius: 4, border: "1px solid rgba(139,0,0,0.3)", overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
+                                                        {[
+                                                            "transparent", // Default
+                                                            "rgba(139,0,0,0.3)", // Blood Red
+                                                            "rgba(80,0,0,0.4)", // Deep Crimson
+                                                            "rgba(60,20,60,0.4)", // Dark Purple
+                                                            "rgba(20,20,32,0.6)", // Midnight Blue
+                                                            "rgba(40,40,40,0.6)", // Shadow Gray
+                                                            "rgba(0,0,0,0.8)", // Void
+                                                            "rgba(184,134,11,0.2)", // Dark Gold
+                                                        ].map(c => (
+                                                            <div 
+                                                                key={c}
+                                                                onClick={(e) => updateColor(n._id, c, e)}
+                                                                style={{ minWidth: 20, height: 20, borderRadius: '50%', background: c, border: c === "transparent" ? "1px solid rgba(255,255,255,0.2)" : `1px solid var(--crimson)`, cursor: 'pointer', flexShrink: 0 }}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
-                                ))
-                            )
-                        ) : (
-                            (users || []).length === 0 ? (
-                                <div className="sidebar-empty"><em>No contacts yet.</em></div>
-                            ) : (
-                                (users || []).map(u => (
+                                ));
+                            } else {
+                                if ((users || []).length === 0) {
+                                    return <div className="sidebar-empty"><em>No contacts yet.</em></div>;
+                                }
+                                return (users || []).map(u => (
                                     <div
                                         key={u._id}
                                         onClick={() => {
@@ -1246,18 +1383,35 @@ export default function OrbitVampire({ children }) {
                                             setSelectedNexus(null);
                                             setNexusActionView(null);
                                         }}
-                                        style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", cursor:"pointer", transition:"background 0.2s" }}
-                                        onMouseEnter={e => e.currentTarget.style.background="rgba(139,0,0,0.12)"}
-                                        onMouseLeave={e => e.currentTarget.style.background="transparent"}
+                                        style={{ 
+                                            display:"flex", 
+                                            alignItems:"center", 
+                                            gap:10, 
+                                            padding:"10px 14px", 
+                                            cursor:"pointer", 
+                                            transition:"all 0.2s ease",
+                                            background: (selectedUser?._id === u._id) ? "rgba(139,0,0,0.18)" : "transparent",
+                                            borderLeft: (selectedUser?._id === u._id) ? "3px solid #dc143c" : "3px solid transparent"
+                                        }}
+                                        onMouseEnter={e => {
+                                            if (selectedUser?._id !== u._id) {
+                                                e.currentTarget.style.background = "rgba(139,0,0,0.12)";
+                                            }
+                                        }}
+                                        onMouseLeave={e => {
+                                            if (selectedUser?._id !== u._id) {
+                                                e.currentTarget.style.background = "transparent";
+                                            }
+                                        }}
                                     >
                                         <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(139,0,0,0.2)", border:"1px solid rgba(220,20,60,0.4)", overflow:"hidden", flexShrink:0 }}>
                                             {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"rgba(220,20,60,0.8)" }}>{u.username?.[0]?.toUpperCase()}</div>}
                                         </div>
                                         <div style={{ fontSize:13, color:"#F0E6D3", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.username}</div>
                                     </div>
-                                ))
-                            )
-                        )}
+                                ));
+                            }
+                        })()}
                     </div>
 
                     <div className="sidebar-footer">
@@ -1512,9 +1666,7 @@ export function VampireProfile() {
                                 {isUpdatingProfile ? "SAVING..." : "✔ SAVE PROFILE"}
                             </button>
                         )}
-                        <button onClick={useAuthStore.getState().logout} className="nav-btn" style={{ background: 'rgba(139,0,0,0.1)', border: '1px solid var(--crimson)', padding: '8px 16px', borderRadius: '4px', color: 'var(--crimson)' }}>
-                            LOGOUT
-                        </button>
+
                         <button className="nav-btn" onClick={() => navigate("/")} style={{ border: '1px solid rgba(139,0,0,0.3)', padding: '8px 18px', borderRadius: 20 }}>◀ GO BACK</button>
                     </div>
                 </div>
@@ -1752,9 +1904,6 @@ export function VampireSettings({
                     <div style={{ display: 'flex', gap: 12 }}>
                         <button className="nav-btn" onClick={() => navigate("/")} style={{ border: '1px solid rgba(139,0,0,0.3)', padding: '8px 16px', borderRadius: '4px' }}>
                             <span>◀</span> GO BACK
-                        </button>
-                        <button onClick={useAuthStore.getState().logout} className="nav-btn" style={{ background: 'rgba(139,0,0,0.1)', border: '1px solid var(--crimson)', padding: '8px 16px', borderRadius: '4px', color: 'var(--crimson)' }}>
-                            LOGOUT
                         </button>
                     </div>
                 </div>
@@ -2059,9 +2208,7 @@ export function VampireSpotify() {
                             <button className="nav-btn" onClick={() => (window.location.href = "/")} style={{ border: '1px solid rgba(139,0,0,0.3)', padding: '8px 16px', borderRadius: '4px' }}>
                                 ◀ RETURN
                             </button>
-                            <button onClick={useAuthStore.getState().logout} className="nav-btn" style={{ background: 'rgba(139,0,0,0.1)', border: '1px solid var(--crimson)', padding: '8px 16px', borderRadius: '4px', color: 'var(--crimson)' }}>
-                                LOGOUT
-                            </button>
+
                         </div>
                     </div>
 
