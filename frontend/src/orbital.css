@@ -1,0 +1,302 @@
+/* Orbital Dashboard Glassmorphism & Theme Styles */
+
+/* Background & Base Layers */
+.orbital-nebula-bg {
+  background: url("https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1920&q=80")
+    center/cover no-repeat fixed;
+}
+
+.orbital-overlay {
+  background: var(--color-chat-bg-gradient);
+  opacity: 0.95;
+}
+
+/* Core Glassmorphism Components */
+@layer components {
+  /* Glass containers */
+  .orbital-glass {
+    @apply bg-[var(--glass-bg)] backdrop-blur-[20px] border border-[var(--glass-border)] rounded-[1rem];
+  }
+
+  .orbital-glass-sm {
+    @apply bg-[var(--glass-bg)] backdrop-blur-[10px] border border-[var(--glass-border)];
+  }
+
+  .orbital-glass-lg {
+    @apply bg-[var(--glass-bg)] backdrop-blur-[30px] border border-[var(--glass-border)] rounded-2xl;
+  }
+
+  .orbital-glass-card {
+    @apply bg-[var(--glass-bg)] backdrop-blur-[20px] border border-[var(--color-chat-primary)]/20 rounded-xl;
+  }
+
+  /* Primary buttons */
+  .orbital-button {
+    @apply relative transition-all duration-200;
+  }
+
+  .orbital-button:hover {
+    @apply shadow-[0_0_20px_rgba(168,85,247,0.3)];
+  }
+
+  .orbital-button:active {
+    @apply scale-[0.98];
+  }
+
+  .orbital-btn-primary {
+    @apply px-6 py-3 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary)]/80 hover:from-[var(--color-primary)]/90 hover:to-[var(--color-primary)]/70 text-[var(--color-primary-content)] font-semibold transition-all shadow-lg shadow-[var(--color-primary)]/40 flex items-center justify-center gap-2;
+  }
+
+  .orbital-btn-secondary {
+    @apply px-6 py-3 rounded-lg bg-[var(--glass-bg)] backdrop-blur-[20px] border border-[var(--glass-border)] hover:bg-white/5 text-[var(--chat-text)] font-semibold transition-all;
+  }
+
+  .orbital-btn-ghost {
+    @apply px-4 py-2 rounded-lg text-[var(--chat-muted)] hover:text-[var(--chat-text)] hover:bg-white/5 transition-all;
+  }
+
+  /* Tab navigation */
+  .orbital-tab-active {
+    @apply text-[var(--chat-primary)] border-b-2 border-[var(--chat-primary)];
+    text-shadow: 0 0 10px
+      color-mix(in srgb, var(--color-chat-primary) 50%, transparent);
+  }
+
+  .orbital-tab {
+    @apply pb-2 transition-all text-[var(--chat-muted)] hover:text-[var(--chat-text)];
+  }
+
+  /* Glow effects */
+  .orbital-glow-border {
+    border-left: 3px solid var(--color-chat-primary);
+    box-shadow:
+      inset 0 0 15px
+        color-mix(in srgb, var(--color-chat-primary) 20%, transparent),
+      0 0 15px color-mix(in srgb, var(--color-chat-primary) 15%, transparent);
+  }
+
+  .orbital-glow-bg {
+    @apply shadow-[0_0_30px_var(--chat-primary)/20] border border-[var(--chat-primary)]/30;
+  }
+
+  /* Typography badges */
+  .orbital-id-badge {
+    font-family: "Courier New", monospace;
+    @apply text-[0.65rem] text-[rgba(168,85,247,0.5)] tracking-[0.05em];
+  }
+
+  .orbital-subtitle {
+    @apply text-xs text-gray-400 font-light tracking-widest uppercase;
+  }
+
+  /* Form Elements */
+  .orbital-input {
+    @apply w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[var(--chat-text)] placeholder-[var(--chat-muted)] focus:outline-none focus:border-[var(--chat-primary)] focus:shadow-[0_0_15px_var(--chat-primary)] transition-all;
+  }
+
+  .orbital-input::placeholder {
+    @apply text-[var(--chat-muted)];
+  }
+
+  .orbital-textarea {
+    @apply w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[var(--chat-text)] placeholder-[var(--chat-muted)] focus:outline-none focus:border-[var(--chat-primary)] focus:shadow-[0_0_15px_var(--chat-primary)] transition-all resize-none;
+  }
+
+  .orbital-label {
+    @apply block text-sm font-semibold mb-2;
+    color: var(--chat-text);
+  }
+
+  /* Grid & Layout */
+  .orbital-grid-item {
+    @apply bg-[var(--glass-bg)] backdrop-blur-[20px] border border-[var(--glass-border)] rounded-[1rem] p-4 rounded-lg hover:shadow-[0_0_20px_var(--chat-primary)/15] transition-all;
+  }
+
+  /* Status indicators */
+  .orbital-status-badge {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--glass-bg)] backdrop-blur-[20px] border border-[var(--glass-border)] text-xs font-semibold;
+  }
+
+  .orbital-status-online {
+    @apply text-green-500 before:content-[''] before:inline-block before:w-2 before:h-2 before:bg-green-500 before:rounded-full before:animate-pulse;
+  }
+
+  .orbital-status-offline {
+    @apply text-[var(--chat-muted)] before:content-[''] before:inline-block before:w-2 before:h-2 before:bg-[var(--chat-muted)] before:rounded-full;
+  }
+
+  /* Divider with glow */
+  .orbital-divider {
+    width: 1px;
+    height: 1.5rem;
+    background: linear-gradient(
+      to bottom,
+      rgba(242, 242, 242, 0),
+      rgba(242, 242, 242, 0.3),
+      rgba(242, 242, 242, 0)
+    );
+  }
+
+  /* Content sections */
+  .orbital-section {
+    @apply bg-[var(--glass-bg)] backdrop-blur-[20px] border border-[var(--glass-border)] rounded-[1rem] p-6 rounded-xl;
+  }
+
+  .orbital-section-title {
+    @apply text-lg font-bold text-[var(--chat-text)] mb-4 flex items-center gap-2;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   PREMIUM AUTH FORM SYSTEM
+   Sleek, glass-themed form components for standard auth
+   ═══════════════════════════════════════════════════════ */
+@layer components {
+
+  /* ── Field group wrapper ── */
+  .auth-field-group {
+    @apply flex flex-col gap-0;
+  }
+
+  /* ── Label ── */
+  .auth-field-label {
+    @apply flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase mb-1.5;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.08em;
+  }
+
+  .auth-field-label--center {
+    @apply justify-center;
+  }
+
+  /* ── Input wrapper (provides the animated border ring) ── */
+  .auth-field-wrap {
+    @apply relative rounded-xl transition-all duration-200;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .auth-field-wrap--focused {
+    border-color: rgba(168, 85, 247, 0.55);
+    background: rgba(168, 85, 247, 0.04);
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.3),
+      0 0 0 3px rgba(168, 85, 247, 0.12),
+      0 0 20px rgba(168, 85, 247, 0.08);
+  }
+
+  .auth-field-wrap--error {
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.3),
+      0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+  }
+
+  /* ── The actual <input> element ── */
+  .auth-field-input {
+    @apply w-full px-4 py-2.5 bg-transparent rounded-xl text-sm text-white outline-none transition-all duration-200;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  .auth-field-input::placeholder {
+    color: rgba(255, 255, 255, 0.22);
+    font-weight: 400;
+  }
+
+  .auth-field-input--active {
+    color: #ffffff;
+  }
+
+  /* OTP big digit input */
+  .auth-field-input--otp {
+    @apply text-center text-3xl font-bold tracking-[0.35em] py-4;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.35em;
+  }
+
+  /* ── Hint text below field ── */
+  .auth-field-hint {
+    @apply text-[11px] mt-1.5;
+    color: rgba(255, 255, 255, 0.25);
+  }
+
+  /* ── Eye toggle button inside password field ── */
+  .auth-eye-toggle {
+    @apply absolute inset-y-0 right-0 flex items-center px-3.5 transition-colors duration-150;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .auth-eye-toggle:hover {
+    color: rgba(168, 85, 247, 0.8);
+  }
+
+  /* ── Primary submit button ── */
+  .auth-submit-btn {
+    @apply relative w-full flex items-center justify-center gap-2 py-2.5 px-6 rounded-xl text-sm font-semibold text-white transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 60%, #6366f1 100%);
+    box-shadow:
+      0 4px 16px rgba(168, 85, 247, 0.35),
+      0 1px 0 rgba(255, 255, 255, 0.1) inset;
+    letter-spacing: 0.02em;
+  }
+
+  .auth-submit-btn:not(:disabled):hover {
+    background: linear-gradient(135deg, #b670fa 0%, #8b5cf6 60%, #818cf8 100%);
+    box-shadow:
+      0 6px 24px rgba(168, 85, 247, 0.5),
+      0 1px 0 rgba(255, 255, 255, 0.15) inset;
+    transform: translateY(-1px);
+  }
+
+  .auth-submit-btn:not(:disabled):active {
+    box-shadow:
+      0 2px 8px rgba(168, 85, 247, 0.3),
+      0 1px 0 rgba(255, 255, 255, 0.1) inset;
+    transform: translateY(0);
+  }
+
+  /* ── Horizontal divider ── */
+  .auth-divider {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.07) 30%,
+      rgba(255, 255, 255, 0.07) 70%,
+      transparent 100%
+    );
+  }
+
+  /* ── "or" separator for constellation auth ── */
+  .auth-constellation-sep {
+    @apply flex items-center gap-3;
+  }
+
+  .auth-constellation-sep__line {
+    @apply flex-1 h-px;
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .auth-constellation-sep__text {
+    @apply text-[11px] font-medium tracking-widest uppercase;
+    color: rgba(255, 255, 255, 0.22);
+  }
+
+  /* ── Constellation auth button ── */
+  .auth-constellation-btn {
+    @apply w-full flex items-center justify-center gap-2 py-2.5 px-6 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98];
+    color: rgba(168, 85, 247, 0.9);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    background: rgba(168, 85, 247, 0.05);
+    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0);
+  }
+
+  .auth-constellation-btn:hover {
+    background: rgba(168, 85, 247, 0.1);
+    border-color: rgba(168, 85, 247, 0.4);
+    color: #c084fc;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+  }
+}

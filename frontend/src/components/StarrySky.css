@@ -1,0 +1,76 @@
+.starry-sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(180deg, #020617 0%, #030712 55%, #000000 100%);
+}
+
+.starry-sky__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.35) 0.45px, transparent 0.45px);
+  background-size: 3px 3px;
+  mix-blend-mode: soft-light;
+}
+
+.starry-sky__stars,
+.starry-sky__shooting-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.starry-sky__stars { z-index: 1; }
+.starry-sky__shooting-layer { z-index: 2; }
+
+.starry-sky--soft .starry-sky__grain {
+  opacity: 0.04;
+}
+
+.starry-sky--soft .starry-sky__star {
+  opacity: 0.65 !important;
+}
+
+.starry-sky--soft .starry-sky__shooting {
+  box-shadow: 0 0 9px rgba(191, 219, 254, 0.55);
+}
+
+.starry-sky--soft .starry-sky__shooting-tail {
+  opacity: 0.65;
+}
+
+.starry-sky__star {
+  position: absolute;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.45) 60%, transparent 100%);
+  transform: translateZ(0);
+}
+
+.starry-sky__shooting {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #f8fbff;
+  box-shadow: 0 0 18px rgba(219, 234, 254, 0.98);
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.starry-sky__shooting-tail {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 120px;
+  height: 2px;
+  transform: translate(-100%, -50%);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.01) 0%,
+    rgba(191, 219, 254, 0.18) 36%,
+    rgba(239, 246, 255, 0.85) 100%
+  );
+  filter: blur(0.25px);
+}

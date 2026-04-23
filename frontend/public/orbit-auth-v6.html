@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbit Auth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#03020c;
+  --surface:rgba(14,11,32,0.82);
+  --surface-2:rgba(255,255,255,0.03);
+  --border:rgba(255,255,255,0.06);
+  --border-lit:rgba(167,139,250,0.28);
+  --accent:#a78bfa;
+  --accent-dim:rgba(167,139,250,0.14);
+  --accent2:#38bdf8;
+  --ok:#34d399;
+  --err:#f87171;
+  --text:#ffffff;
+  --text-2:#c4b8e8;
+  --text-3:#8878b8;
+  --mono:'DM Mono',monospace;
+  --display:'Cabinet Grotesk',sans-serif;
+  --r:20px;
+  --panel-w:340px;
+}
+
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--display)}
+canvas{position:fixed;inset:0;pointer-events:none}
+#bg-canvas{z-index:1}
+#fx-canvas{z-index:2}
+#star-canvas{z-index:3;pointer-events:all;cursor:crosshair}
+
+/* ── AUTH CONTAINER — right 50%, full height ── */
+#ui{
+  position:fixed;top:0;right:0;bottom:0;left:50%;z-index:10;
+  display:flex;flex-direction:column;
+  background:var(--surface);
+  border-left:1px solid var(--border);
+  backdrop-filter:blur(40px) saturate(1.6);
+  box-shadow:inset 1px 0 0 rgba(167,139,250,.07),-24px 0 80px rgba(0,0,0,.5);
+  pointer-events:all;
+  overflow:hidden;
+}
+
+/* ── AUTH INNER — centered content column ── */
+#auth-inner{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:48px 64px 52px;
+  overflow-y:auto;
+  position:relative;
+}
+
+/* ── VIEW CROSSFADE — signup/login share the same slot ── */
+.view{
+  position:absolute;inset:48px 64px 52px;
+  display:flex;flex-direction:column;justify-content:center;
+  transition:opacity .35s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.4,0,.2,1);
+  will-change:opacity,transform;
+  overflow-y:auto;
+}
+.view.hidden{
+  opacity:0;transform:translateX(18px);pointer-events:none;
+}
+.view.out{
+  opacity:0;transform:translateX(-18px);pointer-events:none;
+}
+
+/* ── LOGO ── */
+.logo-orb{
+  width:52px;height:52px;border-radius:50%;
+  background:radial-gradient(circle at 40% 38%, rgba(167,139,250,.22) 0%, transparent 70%);
+  border:1px solid rgba(167,139,250,.25);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.logo-orb svg{width:26px;height:26px}
+.logo-wordmark{display:flex;flex-direction:column;gap:2px}
+.logo-name{font-size:36px;font-weight:900;letter-spacing:-.8px;color:var(--text);line-height:1}
+.logo-tag{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-2);margin-top:3px}
+
+/* ── PROGRESS STEPS ── */
+.steps{display:flex;gap:5px;margin-bottom:26px}
+.step{height:2px;border-radius:2px;background:var(--border);transition:all .45s cubic-bezier(.4,0,.2,1);flex:1}
+.step.active{background:var(--accent);box-shadow:0 0 6px rgba(167,139,250,.5)}
+.step.done{background:rgba(167,139,250,.3)}
+
+/* ── TYPE ── */
+#auth-inner h1{font-size:23px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px;line-height:1.2;color:var(--text)}
+#auth-inner .sub{font-size:13.5px;color:var(--text-2);font-family:var(--mono);line-height:1.6;margin-bottom:22px}
+
+/* ── STAR COUNTER ── */
+.counter-row{display:flex;align-items:flex-end;gap:8px;margin:6px 0 8px}
+.counter-num{font-size:44px;font-weight:900;letter-spacing:-3px;color:var(--accent);line-height:1;font-family:var(--display)}
+.counter-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2);padding-bottom:6px}
+
+/* ── ENTROPY ── */
+.ebar-wrap{margin-bottom:20px}
+.ebar{height:2px;border-radius:2px;background:var(--border);overflow:visible;margin-bottom:5px;position:relative}
+.ebar-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,#38bdf8,#a78bfa 50%,#34d399);
+  transition:width .55s cubic-bezier(.4,0,.2,1);width:0%;
+  position:relative;
+}
+.ebar-fill::after{
+  content:'';position:absolute;right:-1px;top:-2px;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 8px var(--accent);
+  opacity:0;transition:opacity .3s;
+}
+.ebar-fill.has-val::after{opacity:1}
+.ebar-label{font-family:var(--mono);font-size:11px;color:var(--text-2);letter-spacing:.08em;display:flex;justify-content:space-between}
+.ebar-label span{color:var(--text-2)}
+
+/* ── DIVIDER ── */
+.div{height:1px;background:var(--border);margin:20px 0}
+
+/* ── CONNECTING STATUS ── */
+.conn-status{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-radius:10px;
+  background:var(--surface-2);border:1px solid var(--border);
+  margin-bottom:14px;font-family:var(--mono);font-size:12.5px;color:var(--text-2);
+}
+.conn-status .from{color:var(--text);font-weight:500}
+.conn-arrow{color:var(--text-3);flex-shrink:0}
+
+/* ── CONN LIST ── */
+.clist{margin:0 0 4px;max-height:130px;overflow-y:auto}
+.clist::-webkit-scrollbar{width:2px}
+.clist::-webkit-scrollbar-thumb{background:var(--border-lit);border-radius:2px}
+.citem{
+  display:flex;align-items:center;gap:10px;
+  padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);
+  font-family:var(--mono);font-size:12.5px;color:var(--text-2);
+}
+.citem:last-child{border-bottom:none}
+.cdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.citem-idx{color:var(--text-2);font-size:11px;width:14px;flex-shrink:0}
+
+/* ── HASH ── */
+.hash-box{
+  font-family:var(--mono);font-size:10px;color:var(--text-2);
+  word-break:break-all;background:rgba(0,0,0,.4);
+  border:1px solid var(--border);border-radius:10px;
+  padding:12px;margin-top:12px;line-height:1.7;letter-spacing:.04em;
+}
+.hash-label{font-family:var(--mono);font-size:10px;color:var(--text-2);margin-top:7px;letter-spacing:.06em}
+
+/* ── BUTTONS ── */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:13px 20px;border-radius:11px;
+  border:1px solid var(--border-lit);
+  background:var(--accent-dim);
+  color:var(--accent);
+  font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:.01em;
+  cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);
+  margin-bottom:9px;
+}
+.btn:hover{background:rgba(167,139,250,.24);border-color:rgba(167,139,250,.55);transform:translateY(-1px);box-shadow:0 4px 20px rgba(167,139,250,.15)}
+.btn:active{transform:none}
+.btn:disabled{opacity:.2;cursor:not-allowed;transform:none;box-shadow:none}
+.btn.ghost{background:transparent;border-color:var(--border);color:var(--text-2);font-weight:500;font-size:12.5px}
+.btn.ghost:hover{border-color:rgba(255,255,255,.15);color:var(--text);background:rgba(255,255,255,.03);box-shadow:none}
+
+/* ── HINT TAG ── */
+.hint-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:11px;color:var(--text-2);
+  border:1px solid var(--border);border-radius:20px;
+  padding:4px 11px;margin-bottom:18px;background:rgba(0,0,0,.25);
+}
+
+/* ── PANEL HEADER — tabs live inside the panel ── */
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:36px;
+  flex-shrink:0;
+}
+.tab-group{
+  display:flex;gap:2px;
+  background:rgba(0,0,0,.3);
+  border:1px solid var(--border);border-radius:11px;padding:3px;
+}
+.tbtn{
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--text-2);
+  background:transparent;border:none;
+  padding:7px 18px;border-radius:9px;cursor:pointer;transition:all .2s;
+}
+.tbtn.active{color:var(--accent);background:var(--accent-dim)}
+
+/* ── SECURITY BADGE — inside panel header ── */
+#sec-badge{
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+  color:var(--text-2);
+  display:flex;align-items:center;gap:7px;
+  background:rgba(0,0,0,.25);border:1px solid var(--border);
+  border-radius:20px;padding:5px 12px;
+  pointer-events:none;
+}
+.sec-dot{width:5px;height:5px;border-radius:50%;background:var(--ok);flex-shrink:0}
+.sec-dot.warn{background:var(--err)}
+@keyframes pulse-ok{0%,100%{opacity:.4}50%{opacity:1}}
+.sec-dot:not(.warn){animation:pulse-ok 2.2s ease-in-out infinite}
+
+/* ── STAR ZONE SAFE AREA — prevent toggle clashing with stars ── */
+#star-safe-top{
+  position:fixed;top:0;left:0;right:50%;height:72px;z-index:4;
+  pointer-events:none;
+  background:linear-gradient(to bottom,rgba(4,3,14,.72) 0%,transparent 100%);
+  backdrop-filter:blur(0px);
+}
+
+/* ── TOAST — centered in left half ── */
+#toast{
+  position:fixed;bottom:32px;left:25%;
+  transform:translateX(-50%) translateY(0);
+  background:rgba(10,8,25,.9);
+  border:1px solid var(--border);
+  backdrop-filter:blur(24px);border-radius:12px;
+  padding:11px 24px;font-family:var(--mono);
+  font-size:12px;color:var(--text);z-index:40;
+  transition:opacity .3s, transform .3s cubic-bezier(.4,0,.2,1);
+  white-space:nowrap;pointer-events:none;opacity:1;
+}
+
+/* ── SUCCESS OVERLAY ── */
+#success{
+  position:fixed;inset:0;z-index:50;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  background:radial-gradient(ellipse 80% 65% at 50% 50%,rgba(60,35,140,.28) 0%,rgba(3,2,12,.97) 65%);
+  opacity:0;pointer-events:none;transition:opacity .8s;
+}
+#success.show{opacity:1;pointer-events:all}
+.success-glyph{font-size:56px;animation:float 3.8s ease-in-out infinite;filter:drop-shadow(0 0 24px rgba(167,139,250,.6))}
+.success-h{font-size:30px;font-weight:900;letter-spacing:-1px;text-align:center}
+.success-s{font-family:var(--mono);font-size:11.5px;color:var(--text-2);letter-spacing:.04em}
+.reset-a{font-family:var(--mono);font-size:11px;color:var(--text-3);cursor:pointer;text-decoration:underline;margin-top:4px;transition:color .2s}
+.reset-a:hover{color:var(--accent)}
+
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  #ui{left:0;top:55%;border-left:none;border-top:1px solid var(--border);}
+  #star-safe-top{right:0;height:60px;}
+  #auth-inner{padding:32px 28px 36px;}
+  .view{inset:32px 28px 36px;}
+  #toast{left:50%;}
+  canvas{height:55%!important;}
+}
+@media(max-width:480px){
+  #auth-inner{padding:24px 20px 28px;}
+  .view{inset:24px 20px 28px;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<canvas id="fx-canvas"></canvas>
+<canvas id="star-canvas"></canvas>
+
+<!-- Safe gradient fade at top of star field so no star clips under anything -->
+<div id="star-safe-top"></div>
+
+<!-- ═══ AUTH PANEL (right 50%) ═══ -->
+<div id="ui">
+
+  <!-- Single header bar: tabs | logo centred | badge -->
+  <div style="flex-shrink:0;padding:28px 48px 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;">
+    <!-- Left: tabs -->
+    <div class="tab-group" style="justify-self:start;">
+      <button class="tbtn active" id="btn-signup" onclick="setMode('signup')">Sign up</button>
+      <button class="tbtn" id="btn-login" onclick="setMode('login')">Log in</button>
+    </div>
+    <!-- Centre: logo -->
+    <div style="display:flex;align-items:center;gap:14px;justify-self:center;">
+      <div class="logo-orb">
+        <svg viewBox="0 0 18 18" fill="none" style="width:26px;height:26px">
+          <circle cx="9" cy="9" r="8" stroke="rgba(167,139,250,0.4)" stroke-width="1"/>
+          <circle cx="9" cy="9" r="2" fill="#a78bfa"/>
+          <circle cx="9" cy="2.5" r="1.2" fill="rgba(167,139,250,.7)"/>
+          <circle cx="15" cy="12" r=".9" fill="rgba(96,165,250,.6)"/>
+          <circle cx="3.5" cy="13" r=".8" fill="rgba(52,211,153,.5)"/>
+        </svg>
+      </div>
+      <div class="logo-wordmark">
+        <div class="logo-name">Orbit</div>
+        <div class="logo-tag">constellation auth</div>
+      </div>
+    </div>
+    <!-- Right: badge -->
+    <div style="justify-self:end;">
+      <div id="sec-badge">
+        <div class="sec-dot" id="rate-dot"></div>
+        <span id="rate-label">secure</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crossfading content area -->
+  <div id="auth-inner">
+
+    <!-- ── SIGNUP VIEW ── -->
+    <div class="view" id="panel-signup">
+
+      <!-- Step 1: Select -->
+      <div id="su1">
+        <div class="steps"><div class="step active"></div><div class="step"></div><div class="step"></div></div>
+        <h1>Pick your stars</h1>
+        <p class="sub">Select 4–7 stars from the field.<br>Each has a unique color and label — remember them.</p>
+        <div class="hint-tag">⟡ Stars are color-coded &amp; labeled</div>
+        <div class="counter-row">
+          <span class="counter-num" id="su-count">0</span>
+          <span class="counter-label">of 7 selected</span>
+        </div>
+        <div class="ebar-wrap">
+          <div class="ebar"><div class="ebar-fill" id="ebar"></div></div>
+          <div class="ebar-label"><span>entropy</span><span id="entropy-pct">0%</span></div>
+        </div>
+        <div class="div"></div>
+        <button class="btn" id="su-btn1" onclick="goConnect()" disabled>Connect stars →</button>
+      </div>
+
+      <!-- Step 2: Connect -->
+      <div id="su2" style="display:none">
+        <div class="steps"><div class="step done"></div><div class="step active"></div><div class="step"></div></div>
+        <h1>Draw a pattern</h1>
+        <p class="sub">Click pairs of your stars to connect them in sequence. This becomes your key.</p>
+        <div class="conn-status">
+          <span class="from" id="su-from">—</span>
+          <span class="conn-arrow">→</span>
+          <span style="color:var(--text-3)">click next star</span>
+        </div>
+        <div class="clist" id="su-clist"></div>
+        <div class="div"></div>
+        <button class="btn" id="su-btn2" onclick="goSeal()" disabled>Seal identity →</button>
+        <button class="btn ghost" onclick="backToSelect()">← Re-select stars</button>
+      </div>
+
+      <!-- Step 3: Sealed -->
+      <div id="su3" style="display:none">
+        <div class="steps"><div class="step done"></div><div class="step done"></div><div class="step active"></div></div>
+        <h1>Sealed ✦</h1>
+        <p class="sub">Your constellation is locked. Positions are never stored — only your pattern.</p>
+        <div class="hash-box" id="su-hash"></div>
+        <p class="hash-label">argon2id fingerprint · demo only</p>
+        <div class="div"></div>
+        <button class="btn" onclick="setMode('login')">Try logging in →</button>
+      </div>
+    </div>
+
+    <!-- ── LOGIN VIEW ── -->
+    <div class="view hidden" id="panel-login">
+
+      <!-- Step 1: Find -->
+      <div id="li1">
+        <div class="steps"><div class="step active"></div><div class="step"></div></div>
+        <h1>Find your stars</h1>
+        <p class="sub">Stars have shifted. Identify yours by color and label, then select them.</p>
+        <div class="hint-tag">↻ Layout reshuffled every attempt</div>
+        <div class="counter-row">
+          <span class="counter-num" id="li-count">0</span>
+          <span class="counter-label">recognised</span>
+        </div>
+        <div class="div"></div>
+        <button class="btn" id="li-btn1" onclick="goLoginConnect()" disabled>Reconnect →</button>
+      </div>
+
+      <!-- Step 2: Connect -->
+      <div id="li2" style="display:none">
+        <div class="steps"><div class="step done"></div><div class="step active"></div></div>
+        <h1>Redraw pattern</h1>
+        <p class="sub">Connect in the same order as signup.</p>
+        <div class="conn-status">
+          <span style="color:var(--text-2);font-family:var(--mono);font-size:12px">
+            connection <strong id="li-conn-n" style="color:var(--text)">1</strong> of <strong id="li-conn-total" style="color:var(--text)">?</strong>
+          </span>
+        </div>
+        <div class="clist" id="li-clist"></div>
+        <div class="div"></div>
+        <button class="btn" id="li-btn2" onclick="verifyConstellation()" disabled>Verify →</button>
+        <button class="btn ghost" onclick="backToLoginSelect()">← Re-select</button>
+      </div>
+    </div>
+
+  </div><!-- /auth-inner -->
+</div><!-- /ui -->
+
+<div id="toast" style="opacity:0;transform:translateX(-50%) translateY(8px)"></div>
+
+<div id="success">
+  <div class="success-glyph">✦</div>
+  <div class="success-h">Welcome back</div>
+  <div class="success-s">constellation verified · identity confirmed</div>
+  <div class="reset-a" onclick="fullReset()">Start over</div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════════════
+// CANVAS SETUP
+// ═══════════════════════════════════════════════════════════════
+const bgC = document.getElementById('bg-canvas');
+const fxC = document.getElementById('fx-canvas');
+const stC = document.getElementById('star-canvas');
+const bgX = bgC.getContext('2d');
+const fxX = fxC.getContext('2d');
+const ctx = stC.getContext('2d');
+
+let W = 0, H = 0;
+function resize() {
+  W = bgC.width = fxC.width = stC.width = window.innerWidth;
+  H = bgC.height = fxC.height = stC.height = window.innerHeight;
+  drawBg();
+  if (stars.length) placeStars(); // re-place on resize
+}
+window.addEventListener('resize', resize);
+
+// ═══════════════════════════════════════════════════════════════
+// BACKGROUND — drawn once
+// ═══════════════════════════════════════════════════════════════
+let bgStars = [];
+function initBgStars() {
+  bgStars = [];
+  for (let i = 0; i < 260; i++) {
+    bgStars.push({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.1 + 0.15,
+      a: Math.random() * 0.45 + 0.08,
+      sp: 0.006 + Math.random() * 0.018,
+      ph: Math.random() * Math.PI * 2
+    });
+  }
+}
+function drawBg() {
+  bgX.clearRect(0, 0, W, H);
+  bgX.fillStyle = '#04030e';
+  bgX.fillRect(0, 0, W, H);
+  // Nebula glows
+  const addNebula = (cx, cy, cr, r, g, b, a) => {
+    const g2 = bgX.createRadialGradient(cx*W, cy*H, 0, cx*W, cy*H, cr*Math.max(W,H));
+    g2.addColorStop(0, `rgba(${r},${g},${b},${a})`);
+    g2.addColorStop(1, 'transparent');
+    bgX.fillStyle = g2;
+    bgX.fillRect(0, 0, W, H);
+  };
+  addNebula(.38, .30, .55, 55, 30, 110, .14);
+  addNebula(.72, .68, .42, 18, 45, 90,  .10);
+  addNebula(.18, .75, .35, 30, 10, 70,  .08);
+  bgStars.forEach(s => {
+    bgX.beginPath();
+    bgX.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+    bgX.fillStyle = `rgba(210,195,255,${s.a})`;
+    bgX.fill();
+  });
+}
+let bgT = 0, bgRaf;
+function animateBg() {
+  bgT += 0.016;
+  bgX.clearRect(0, 0, W, H);
+  bgX.fillStyle = '#04030e';
+  bgX.fillRect(0, 0, W, H);
+  const addNebula = (cx, cy, cr, r, g, b, a) => {
+    const g2 = bgX.createRadialGradient(cx*W, cy*H, 0, cx*W, cy*H, cr*Math.max(W,H));
+    g2.addColorStop(0, `rgba(${r},${g},${b},${a})`);
+    g2.addColorStop(1, 'transparent');
+    bgX.fillStyle = g2;
+    bgX.fillRect(0, 0, W, H);
+  };
+  addNebula(.38, .30, .55, 55, 30, 110, .12);
+  addNebula(.72, .68, .42, 18, 45, 90,  .09);
+  addNebula(.18, .75, .35, 30, 10, 70,  .07);
+  bgStars.forEach(s => {
+    const a = s.a * (.65 + .35 * Math.sin(bgT * s.sp * 60 + s.ph));
+    bgX.beginPath();
+    bgX.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+    bgX.fillStyle = `rgba(210,195,255,${a})`;
+    bgX.fill();
+  });
+  bgRaf = requestAnimationFrame(animateBg);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STAR PALETTE — 10 distinct hues, light enough on dark bg
+// ═══════════════════════════════════════════════════════════════
+const PALETTE = [
+  { r:167,g:139,b:250, name:'violet'  },
+  { r: 96,g:165,b:250, name:'azure'   },
+  { r: 52,g:211,b:153, name:'mint'    },
+  { r:251,g:191,b: 36, name:'amber'   },
+  { r:248,g:113,b:113, name:'rose'    },
+  { r: 34,g:211,b:238, name:'cyan'    },
+  { r:249,g:115,b: 22, name:'ember'   },
+  { r:163,g:230,b: 53, name:'lime'    },
+  { r:232,g:121,b:249, name:'fuchsia' },
+  { r: 20,g:184,b:166, name:'sea'     },
+];
+function pc(id, a=1) { const c=PALETTE[id%PALETTE.length]; return `rgba(${c.r},${c.g},${c.b},${a})`; }
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL EXCLUSION ZONE — computed from actual panel DOM rect
+// ═══════════════════════════════════════════════════════════════
+function getExclusionZone(pad=120) {
+  // Panel is on the right 50% — stars are constrained to left 50% in poissonDisk,
+  // so no exclusion zone needed here.
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// POISSON DISK SAMPLING with exclusion zone
+// ═══════════════════════════════════════════════════════════════
+function poissonDisk(count, minDist, zone, maxTries=40) {
+  const pts = [];
+  const grid = {};
+  const cell = minDist / Math.SQRT2;
+
+  function cellKey(x, y) { return `${Math.floor(x/cell)},${Math.floor(y/cell)}`; }
+  function tooClose(x, y) {
+    const cx = Math.floor(x/cell), cy = Math.floor(y/cell);
+    for (let dx=-2; dx<=2; dx++) for (let dy=-2; dy<=2; dy++) {
+      const p = grid[`${cx+dx},${cy+dy}`];
+      if (p) { const d=Math.hypot(x-p.x,y-p.y); if(d<minDist) return true; }
+    }
+    return false;
+  }
+  function inZone(x, y) {
+    if (!zone) return false;
+    return x>=zone.x && x<=zone.x+zone.w && y>=zone.y && y<=zone.y+zone.h;
+  }
+  function valid(x, y) {
+    const mX = 32;          // horizontal margin — keep labels inside left edge
+    const mTop = 88;        // below top gradient + safe header area
+    const mBot = 52;        // label hangs ~20px below centre, pill adds ~14px more
+    const mRight = 56;      // label can extend right of star centre
+    return x > mX && x < (W/2) - mRight && y > mTop && y < H - mBot && !inZone(x,y) && !tooClose(x,y);
+  }
+
+  // seed
+  let seed;
+  for (let t=0; t<200; t++) {
+    const x=Math.random()*W, y=Math.random()*H;
+    if (valid(x,y)) { seed={x,y}; break; }
+  }
+  if (!seed) seed={x:W/4, y:H/4};
+  pts.push(seed);
+  grid[cellKey(seed.x,seed.y)] = seed;
+  let active=[seed];
+
+  while (active.length && pts.length < count*3) {
+    const i = Math.floor(Math.random()*active.length);
+    const base = active[i];
+    let found=false;
+    for (let k=0; k<maxTries; k++) {
+      const angle=Math.random()*Math.PI*2;
+      const dist=minDist*(1+Math.random());
+      const nx=base.x+Math.cos(angle)*dist;
+      const ny=base.y+Math.sin(angle)*dist;
+      if (valid(nx,ny)) {
+        const p={x:nx,y:ny};
+        pts.push(p);
+        grid[cellKey(nx,ny)]=p;
+        active.push(p);
+        found=true;
+        if(pts.length>=count*3) break;
+      }
+    }
+    if (!found) active.splice(i,1);
+  }
+  // Trim & shuffle for variety
+  return pts.sort(()=>Math.random()-.5).slice(0,count);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STAR STATE
+// ═══════════════════════════════════════════════════════════════
+
+// Full label pool: A0–Z9 (260 total)
+const FULL_LABEL_POOL = (() => {
+  const pool = [];
+  for (let l = 0; l < 26; l++)
+    for (let n = 0; n < 10; n++)
+      pool.push({ label: String.fromCharCode(65 + l) + n, colorIdx: l % 10 });
+  return pool;
+})();
+
+// How many stars to show per session — random between 90 and 130
+// Must be ≥ the number the user can select (max 7) + heavy decoy padding
+const MIN_DIST = 72;
+
+// Fisher-Yates shuffle
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Pick a random session subset from the full pool, with cryptographic seeding
+function pickSessionSubset(count, mustIncludeLabels = []) {
+  const shuffled = shuffle(FULL_LABEL_POOL);
+  // Ensure must-include labels are in the subset
+  const must = mustIncludeLabels.map(lbl => FULL_LABEL_POOL.find(p => p.label === lbl)).filter(Boolean);
+  const rest = shuffled.filter(p => !mustIncludeLabels.includes(p.label));
+  const needed = Math.max(0, count - must.length);
+  return shuffle([...must, ...rest.slice(0, needed)]);
+}
+
+let stars = [];
+let selectedIds = new Set();
+let connections = [];
+let connectMode = false;
+let connectFirst = null;
+let mode = 'signup';
+let savedConstellation = null;
+let loginSelectedIds = new Set();
+let loginConnections = [];
+let loginConnectMode = false;
+let loginConnectFirst = null;
+let hovered = null;
+let particles = [];
+let mouseX = 0, mouseY = 0;
+
+// Smooth drag-line
+let dragLineTarget = {x:0,y:0};
+let dragLineCurrent = {x:0,y:0};
+
+// How many stars to render this session
+function sessionStarCount() {
+  return 90 + Math.floor(Math.random() * 41); // 90–130
+}
+
+function buildStarObjects(positions, labelPool) {
+  return positions.map((p, i) => {
+    const identity = labelPool[i] || labelPool[i % labelPool.length];
+    return {
+      id: i,
+      label: identity.label,
+      colorIdx: identity.colorIdx,
+      x: p.x, y: p.y,
+      r: 5.0 + Math.random() * 4.0,
+      ph: Math.random() * Math.PI * 2,
+      sp: 0.012 + Math.random() * 0.020,
+      displayX: p.x, displayY: p.y,
+      tx: p.x, ty: p.y,
+      alpha: 0,       // starts invisible — staggered entrance
+      born: false
+    };
+  });
+}
+
+// Staggered entrance: stars pop in one by one in random order
+function staggerEntrance(starList, baseDelay = 0) {
+  const order = shuffle(starList.map((_, i) => i));
+  order.forEach((idx, rank) => {
+    setTimeout(() => {
+      starList[idx].born = true;
+    }, baseDelay + rank * 18 + Math.random() * 12);
+  });
+}
+
+function placeStars() {
+  const zone = getExclusionZone();
+  const count = sessionStarCount();
+  const positions = poissonDisk(count, MIN_DIST, zone);
+  const labelPool = pickSessionSubset(positions.length);
+  stars = buildStarObjects(positions, labelPool);
+  staggerEntrance(stars, 60);
+}
+
+function animateStarTransition(onDone) {
+  const start = performance.now();
+  const dur = 700;
+  function step(now) {
+    const t = Math.min((now - start) / dur, 1);
+    const ease = t<.5 ? 2*t*t : -1+(4-2*t)*t;
+    stars.forEach(s => {
+      s.displayX = s.x + (s.tx - s.x) * ease;
+      s.displayY = s.y + (s.ty - s.y) * ease;
+    });
+    if (t < 1) requestAnimationFrame(step);
+    else {
+      stars.forEach(s => { s.x = s.tx; s.y = s.ty; s.displayX = s.x; s.displayY = s.y; });
+      if (onDone) onDone();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function repositionForLogin() {
+  // Build fresh field: always include the saved stars' labels + heavy decoy padding
+  const zone = getExclusionZone();
+  const count = sessionStarCount();
+  const positions = poissonDisk(count, MIN_DIST, zone);
+
+  // Saved labels that MUST appear
+  const savedLabels = savedConstellation
+    ? savedConstellation.starIds.map(id => {
+        const s = stars.find(x => x.id === id);
+        return s ? s.label : null;
+      }).filter(Boolean)
+    : [];
+
+  const labelPool = pickSessionSubset(positions.length, savedLabels);
+
+  // Fade out, replace, stagger in
+  const oldStars = stars;
+  oldStars.forEach(s => { s._fadeOut = true; });
+
+  setTimeout(() => {
+    stars = buildStarObjects(positions, labelPool);
+    // Remap savedConstellation.starIds → new star ids by label
+    if (savedConstellation) {
+      const labelToId = new Map(stars.map(s => [s.label, s.id]));
+      savedConstellation._loginLabelToId = labelToId;
+    }
+    staggerEntrance(stars, 0);
+  }, 350);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════════════════════
+let animT = 0, renderRaf;
+function render() {
+  animT += 0.016;
+  ctx.clearRect(0, 0, W, H);
+
+  // Smooth drag line interpolation
+  if (connectFirst !== null || loginConnectFirst !== null) {
+    dragLineCurrent.x += (mouseX - dragLineCurrent.x) * 0.18;
+    dragLineCurrent.y += (mouseY - dragLineCurrent.y) * 0.18;
+  }
+
+  const activeConns = mode === 'signup' ? connections : loginConnections;
+
+  // ── Connections ──────────────────────────────────
+  activeConns.forEach((c, i) => {
+    const a = stars[c.from], b = stars[c.to];
+    const ax = a.displayX ?? a.x, ay = a.displayY ?? a.y;
+    const bx = b.displayX ?? b.x, by = b.displayY ?? b.y;
+
+    const grd = ctx.createLinearGradient(ax, ay, bx, by);
+    grd.addColorStop(0, pc(a.colorIdx, .85));
+    grd.addColorStop(1, pc(b.colorIdx, .75));
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.strokeStyle = grd;
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = pc(a.colorIdx, .55);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Traveling bead
+    const t = (animT * 0.35 + i * 0.28) % 1;
+    const px = ax + (bx - ax) * t, py = ay + (by - ay) * t;
+    ctx.beginPath();
+    ctx.arc(px, py, 3, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,.98)';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = pc(a.colorIdx, .9);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  // ── Draft connection line (smooth) ───────────────
+  const firstId = mode === 'signup' ? connectFirst : loginConnectFirst;
+  if (firstId !== null) {
+    const a = stars[firstId];
+    const ax = a.displayX ?? a.x, ay = a.displayY ?? a.y;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(dragLineCurrent.x, dragLineCurrent.y);
+    ctx.strokeStyle = pc(a.colorIdx, .35);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5,4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── Stars ─────────────────────────────────────────
+  stars.forEach(s => {
+    // Staggered entrance fade-in
+    if (!s.born) return;
+    s.alpha = Math.min(1, (s.alpha || 0) + 0.055);
+    const globalA = s.alpha;
+
+    const sx = s.displayX ?? s.x, sy = s.displayY ?? s.y;
+    const sel = mode==='signup' ? selectedIds.has(s.id) : loginSelectedIds.has(s.id);
+    const hov = hovered === s.id;
+    const pulse = .5 + .5 * Math.sin(animT * s.sp * 60 + s.ph);
+    const c = PALETTE[s.colorIdx % PALETTE.length];
+
+    ctx.save();
+    ctx.globalAlpha = globalA;
+
+    // ── Layer 1: Wide ambient halo (always on, subtle) ──
+    {
+      const haloR = s.r * 3.8 + pulse * 4;
+      const grd = ctx.createRadialGradient(sx, sy, 0, sx, sy, haloR);
+      grd.addColorStop(0,   `rgba(${c.r},${c.g},${c.b},${sel ? .22 : hov ? .14 : .07})`);
+      grd.addColorStop(0.5, `rgba(${c.r},${c.g},${c.b},${sel ? .08 : .03})`);
+      grd.addColorStop(1,   'transparent');
+      ctx.beginPath();
+      ctx.arc(sx, sy, haloR, 0, Math.PI*2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+    }
+
+    // ── Layer 2: Mid glow ring (always on) ──
+    {
+      const midR = s.r * 2.2 + pulse * 2.5;
+      const grd = ctx.createRadialGradient(sx, sy, s.r * .6, sx, sy, midR);
+      grd.addColorStop(0,   `rgba(${c.r},${c.g},${c.b},${sel ? .55 : hov ? .4 : .22})`);
+      grd.addColorStop(0.6, `rgba(${c.r},${c.g},${c.b},${sel ? .18 : .07})`);
+      grd.addColorStop(1,   'transparent');
+      ctx.beginPath();
+      ctx.arc(sx, sy, midR, 0, Math.PI*2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+    }
+
+    // ── Layer 3: Selected pulse ring ──
+    if (sel) {
+      ctx.beginPath();
+      ctx.arc(sx, sy, s.r + 9 + pulse * 5, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(${c.r},${c.g},${c.b},${.2 + pulse * .15})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // ── Layer 4: Hover accent ring ──
+    if (hov && !sel) {
+      ctx.beginPath();
+      ctx.arc(sx, sy, s.r + 8, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(${c.r},${c.g},${c.b},.32)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // ── Layer 5: Star core body ──
+    const br = sel ? s.r + 2 + pulse * 1.5 : s.r;
+    ctx.beginPath();
+    ctx.arc(sx, sy, br, 0, Math.PI*2);
+
+    // Core fill: bright center fading to color
+    const coreGrd = ctx.createRadialGradient(sx - br*.25, sy - br*.25, 0, sx, sy, br);
+    if (sel) {
+      coreGrd.addColorStop(0, '#ffffff');
+      coreGrd.addColorStop(0.45, `rgba(${c.r},${c.g},${c.b},1)`);
+      coreGrd.addColorStop(1,   `rgba(${c.r},${c.g},${c.b},.85)`);
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = `rgba(${c.r},${c.g},${c.b},.9)`;
+    } else if (hov) {
+      coreGrd.addColorStop(0, `rgba(255,255,255,.95)`);
+      coreGrd.addColorStop(0.4, `rgba(${c.r},${c.g},${c.b},.95)`);
+      coreGrd.addColorStop(1,   `rgba(${c.r},${c.g},${c.b},.75)`);
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = `rgba(${c.r},${c.g},${c.b},.7)`;
+    } else {
+      const baseA = .55 + pulse * .2;
+      coreGrd.addColorStop(0, `rgba(255,255,255,${baseA * .85})`);
+      coreGrd.addColorStop(0.5, `rgba(${c.r},${c.g},${c.b},${baseA})`);
+      coreGrd.addColorStop(1,   `rgba(${c.r},${c.g},${c.b},${baseA * .7})`);
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = `rgba(${c.r},${c.g},${c.b},.45)`;
+    }
+    ctx.fillStyle = coreGrd;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // ── Layer 6: Cross diffraction spikes (selected) ──
+    if (sel) {
+      const spikeLen = br * 3.5;
+      ctx.save();
+      ctx.globalAlpha = .45 + pulse * .2;
+      for (let angle = 0; angle < Math.PI; angle += Math.PI/2) {
+        ctx.beginPath();
+        ctx.moveTo(sx + Math.cos(angle) * br, sy + Math.sin(angle) * br);
+        const ex = sx + Math.cos(angle) * spikeLen;
+        const ey = sy + Math.sin(angle) * spikeLen;
+        const grd2 = ctx.createLinearGradient(sx, sy, ex, ey);
+        grd2.addColorStop(0, `rgba(${c.r},${c.g},${c.b},.7)`);
+        grd2.addColorStop(1, 'transparent');
+        ctx.lineTo(ex, ey);
+        ctx.strokeStyle = grd2;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        // opposite direction
+        ctx.beginPath();
+        ctx.moveTo(sx - Math.cos(angle) * br, sy - Math.sin(angle) * br);
+        const ex2 = sx - Math.cos(angle) * spikeLen;
+        const ey2 = sy - Math.sin(angle) * spikeLen;
+        const grd3 = ctx.createLinearGradient(sx, sy, ex2, ey2);
+        grd3.addColorStop(0, `rgba(${c.r},${c.g},${c.b},.7)`);
+        grd3.addColorStop(1, 'transparent');
+        ctx.lineTo(ex2, ey2);
+        ctx.strokeStyle = grd3;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // ── Layer 7: Label — clean, readable, no glow ──
+    const labelAlpha = sel ? 1 : hov ? 0.95 : 0.82;
+    const labelSize = sel ? 13 : hov ? 12 : 11;
+    const labelPillH = labelSize + 8; // total pill height
+    const lyRaw = sy + br + 18;
+    // Clamp so pill never exits canvas
+    const ly = Math.min(lyRaw, H - labelPillH / 2 - 6);
+
+    ctx.font = `600 ${labelSize}px 'Inter', 'DM Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const lw = ctx.measureText(s.label).width;
+    const padH = 6, padV = 4;
+    const pillW = lw + padH * 2;
+    // Clamp pill X so it never exits left or right of star zone
+    const pillX = Math.max(pillW / 2 + 4, Math.min(sx, W/2 - pillW/2 - 4));
+    // Pill background
+    ctx.fillStyle = `rgba(3,2,12,${labelAlpha * .88})`;
+    ctx.beginPath();
+    ctx.roundRect(pillX - pillW/2, ly - labelSize/2 - padV + 1, pillW, labelSize + padV*2 - 2, 5);
+    ctx.fill();
+    // Border
+    ctx.strokeStyle = `rgba(${c.r},${c.g},${c.b},${sel ? 0.65 : hov ? 0.45 : 0.28})`;
+    ctx.lineWidth = .8;
+    ctx.stroke();
+    // Text — crisp, no shadow/glow
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = sel
+      ? `rgba(255,255,255,1)`
+      : hov
+      ? `rgba(255,255,255,0.95)`
+      : `rgba(220,210,255,0.85)`;
+    ctx.fillText(s.label, pillX, ly);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  });
+
+  // ── Particles ─────────────────────────────────────
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    p.vx *= .96; p.vy *= .96;
+    p.life -= .025; p.r *= .965;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, Math.max(0, p.r), 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${p.cr},${p.cg},${p.cb},${p.life * .75})`;
+    ctx.fill();
+  });
+
+  renderRaf = requestAnimationFrame(render);
+}
+
+function burst(x, y, colorIdx) {
+  const c = PALETTE[colorIdx % PALETTE.length];
+  for (let i = 0; i < 14; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 1.2 + Math.random() * 2.8;
+    particles.push({ x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, r:2.2+Math.random()*2.8, life:1, cr:c.r, cg:c.g, cb:c.b });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MOUSE
+// ═══════════════════════════════════════════════════════════════
+stC.addEventListener('mousemove', e => {
+  mouseX = e.clientX; mouseY = e.clientY;
+  dragLineCurrent.x = mouseX; dragLineCurrent.y = mouseY;
+  hovered = null;
+  for (const s of stars) {
+    const sx = s.displayX??s.x, sy = s.displayY??s.y;
+    if (Math.hypot(sx-mouseX, sy-mouseY) < s.r + 18) { hovered = s.id; break; }
+  }
+  stC.style.cursor = hovered !== null ? 'pointer' : 'crosshair';
+});
+stC.addEventListener('mouseleave', () => { hovered = null; });
+
+// Interaction timestamps — for timing sanity check
+const clickLog = [];
+stC.addEventListener('click', e => {
+  if (isRateLimited()) { toast('Too many attempts — wait a moment', 'err'); return; }
+  const x = e.clientX, y = e.clientY;
+  let clicked = null;
+  for (const s of stars) {
+    const sx = s.displayX??s.x, sy = s.displayY??s.y;
+    if (Math.hypot(sx-x, sy-y) < s.r + 18) { clicked = s.id; break; }
+  }
+  if (clicked === null) return;
+
+  // Timing sanity: reject robotic-speed clicks (< 80ms apart)
+  const now = Date.now();
+  clickLog.push(now);
+  if (clickLog.length > 2) {
+    const last = clickLog[clickLog.length-2];
+    if (now - last < 80) { toast('Slow down — not a robot', 'err'); return; }
+  }
+  // Keep only last 30
+  if (clickLog.length > 30) clickLog.shift();
+
+  if (mode === 'signup') {
+    connectMode ? handleSignupConnect(clicked, x, y) : handleSignupSelect(clicked, x, y);
+  } else {
+    loginConnectMode ? handleLoginConnect(clicked, x, y) : handleLoginSelect(clicked, x, y);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RATE LIMITING
+// ═══════════════════════════════════════════════════════════════
+let attemptLog = []; // timestamps of full verification attempts
+let locked = false;
+let lockTimer;
+
+function isRateLimited() { return locked; }
+
+function recordAttempt() {
+  const now = Date.now();
+  attemptLog.push(now);
+  // Keep only last 10
+  attemptLog = attemptLog.filter(t => now - t < 60000);
+  const dot = document.getElementById('rate-dot');
+  const lbl = document.getElementById('rate-label');
+  if (attemptLog.length >= 5) {
+    locked = true;
+    dot.className = 'rate-dot warn';
+    lbl.textContent = 'locked 30s';
+    clearTimeout(lockTimer);
+    lockTimer = setTimeout(() => {
+      locked = false;
+      attemptLog = [];
+      dot.className = 'rate-dot';
+      lbl.textContent = 'secure';
+    }, 30000);
+  } else if (attemptLog.length >= 3) {
+    dot.className = 'rate-dot warn';
+    lbl.textContent = `${5 - attemptLog.length} tries left`;
+  } else {
+    dot.className = 'rate-dot';
+    lbl.textContent = 'secure';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIGNUP LOGIC
+// ═══════════════════════════════════════════════════════════════
+function handleSignupSelect(id, x, y) {
+  if (selectedIds.has(id)) {
+    selectedIds.delete(id);
+    toast(`Star deselected`, '');
+  } else if (selectedIds.size < 7) {
+    selectedIds.add(id);
+    burst(x, y, stars[id].colorIdx);
+    toast(`${stars[id].label} selected ✦`, 'ok');
+  } else {
+    toast('Maximum 7 stars', 'err'); return;
+  }
+  updateSignupUI();
+}
+
+function updateSignupUI() {
+  const n = selectedIds.size;
+  document.getElementById('su-count').textContent = n;
+  const pct = Math.min(100, Math.round((n/7)*100));
+  const fill = document.getElementById('ebar');
+  fill.style.width = pct + '%';
+  if (pct > 0) fill.classList.add('has-val'); else fill.classList.remove('has-val');
+  document.getElementById('entropy-pct').textContent = pct + '%';
+  document.getElementById('su-btn1').disabled = n < 4;
+}
+
+function goConnect() {
+  connectMode = true;
+  connections = [];
+  connectFirst = null;
+  dragLineCurrent = {x:mouseX, y:mouseY};
+  show('su1', false); show('su2', true);
+  updateConnectUI();
+}
+
+function handleSignupConnect(id, x, y) {
+  if (!selectedIds.has(id)) { toast('Only connect your selected stars', 'err'); return; }
+  if (connectFirst === null) {
+    connectFirst = id;
+    dragLineCurrent = {x, y};
+    document.getElementById('su-from').textContent = stars[id].label;
+    burst(x, y, stars[id].colorIdx);
+  } else {
+    if (connectFirst === id) { connectFirst = null; document.getElementById('su-from').textContent='—'; return; }
+    const dup = connections.some(c=>(c.from===connectFirst&&c.to===id)||(c.from===id&&c.to===connectFirst));
+    if (dup) { toast('Already connected', 'err'); connectFirst = null; return; }
+    connections.push({from:connectFirst, to:id});
+    burst(x, y, stars[id].colorIdx);
+    toast(`${stars[connectFirst].label} → ${stars[id].label} ✦`, 'ok');
+    connectFirst = null;
+    document.getElementById('su-from').textContent = '—';
+    updateConnectUI();
+  }
+}
+
+function updateConnectUI() {
+  document.getElementById('su-clist').innerHTML = connections.map((c,i) =>
+    `<div class="citem">
+      <div class="cdot" style="background:${pc(stars[c.from].colorIdx,.9)}"></div>
+      <span>${i+1}. ${stars[c.from].label} → ${stars[c.to].label}</span>
+    </div>`
+  ).join('');
+  const minC = Math.max(2, selectedIds.size - 2);
+  document.getElementById('su-btn2').disabled = connections.length < minC;
+}
+
+function goSeal() {
+  // Save by LABEL (not positional id) so identity persists across reshuffle
+  const selectedLabels = [...selectedIds].map(id => stars[id].label);
+  const connectionLabels = connections.map(c => ({
+    from: stars[c.from].label,
+    to: stars[c.to].label
+  }));
+  const hash = buildHash(selectedLabels, connectionLabels);
+  savedConstellation = {
+    starLabels: selectedLabels,
+    connectionLabels,
+    hash,
+    // keep numeric for current session backwards compat
+    starIds: [...selectedIds],
+    connections: [...connections]
+  };
+  connectMode = false;
+  show('su2', false); show('su3', true);
+  document.getElementById('su-hash').textContent =
+    `$argon2id$v=19$m=65536,t=3,p=4$${hash.slice(0,22)}==$${hash.slice(22,65)}`;
+  toast('✦ Constellation sealed', 'ok');
+}
+
+function buildHash(labels, connLabels) {
+  const ids = labels.slice().sort().join(',');
+  const conns = connLabels.map(c=>`${c.from}:${c.to}`).join('-');
+  const raw = ids + '|' + conns + '|orbit_v3_' + Date.now();
+  let h = 5381n;
+  for (let i=0;i<raw.length;i++) h = ((h<<5n)+h) ^ BigInt(raw.charCodeAt(i));
+  return (h < 0n ? -h : h).toString(36).padEnd(65,'x') + Date.now().toString(36);
+}
+
+function backToSelect() {
+  connectMode=false; connectFirst=null; connections=[];
+  show('su2',false); show('su1',true);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOGIN LOGIC — label-based (ids change each reshuffle)
+// ═══════════════════════════════════════════════════════════════
+function handleLoginSelect(id, x, y) {
+  if (!savedConstellation) { toast('Sign up first!', 'err'); return; }
+  if (loginSelectedIds.has(id)) {
+    loginSelectedIds.delete(id);
+  } else if (loginSelectedIds.size < savedConstellation.starLabels.length) {
+    loginSelectedIds.add(id);
+    burst(x, y, stars[id].colorIdx);
+    const isCorrect = savedConstellation.starLabels.includes(stars[id].label);
+    toast(isCorrect ? `✦ Star recognised` : 'Star selected', isCorrect ? 'ok' : '');
+  } else {
+    toast(`Select exactly ${savedConstellation.starLabels.length} stars`, 'err'); return;
+  }
+  document.getElementById('li-count').textContent = loginSelectedIds.size;
+  document.getElementById('li-btn1').disabled = loginSelectedIds.size !== savedConstellation.starLabels.length;
+}
+
+function goLoginConnect() {
+  loginConnectMode = true;
+  loginConnections = [];
+  loginConnectFirst = null;
+  dragLineCurrent = {x:mouseX, y:mouseY};
+  document.getElementById('li-conn-total').textContent = savedConstellation.connectionLabels.length;
+  show('li1',false); show('li2',true);
+  updateLoginConnectUI();
+}
+
+function handleLoginConnect(id, x, y) {
+  if (!loginSelectedIds.has(id)) { toast('Only connect your selected stars', 'err'); return; }
+  if (loginConnectFirst === null) {
+    loginConnectFirst = id;
+    dragLineCurrent = {x, y};
+    burst(x, y, stars[id].colorIdx);
+  } else {
+    if (loginConnectFirst === id) { loginConnectFirst = null; return; }
+    const dup = loginConnections.some(c=>(c.from===loginConnectFirst&&c.to===id)||(c.from===id&&c.to===loginConnectFirst));
+    if (dup) { toast('Already connected', 'err'); loginConnectFirst = null; return; }
+    loginConnections.push({from:loginConnectFirst, to:id});
+    burst(x, y, stars[id].colorIdx);
+    toast(`${stars[loginConnectFirst].label} → ${stars[id].label}`, 'ok');
+    loginConnectFirst = null;
+    updateLoginConnectUI();
+  }
+}
+
+function updateLoginConnectUI() {
+  document.getElementById('li-clist').innerHTML = loginConnections.map((c,i) =>
+    `<div class="citem">
+      <div class="cdot" style="background:${pc(stars[c.from].colorIdx,.9)}"></div>
+      <span>${i+1}. ${stars[c.from].label} → ${stars[c.to].label}</span>
+    </div>`
+  ).join('');
+  document.getElementById('li-conn-n').textContent = loginConnections.length + 1;
+  document.getElementById('li-btn2').disabled = loginConnections.length < savedConstellation.connectionLabels.length;
+}
+
+function backToLoginSelect() {
+  loginConnectMode=false; loginConnectFirst=null; loginConnections=[];
+  show('li2',false); show('li1',true);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VERIFICATION — compare by label, not by id
+// ═══════════════════════════════════════════════════════════════
+function verifyConstellation() {
+  if (!savedConstellation) return;
+  recordAttempt();
+  if (isRateLimited() && attemptLog.length > 5) return;
+
+  // Compare selected labels
+  const savedLabelSet = new Set(savedConstellation.starLabels);
+  const loginLabelSet = new Set([...loginSelectedIds].map(id => stars[id].label));
+  const idsMatch = savedLabelSet.size === loginLabelSet.size &&
+    [...savedLabelSet].every(lbl => loginLabelSet.has(lbl));
+
+  // Compare connection labels (order-insensitive per pair)
+  const savedConns = savedConstellation.connectionLabels;
+  const loginConns = loginConnections.map(c => ({
+    from: stars[c.from].label, to: stars[c.to].label
+  }));
+  let connsMatch = savedConns.length === loginConns.length;
+  if (connsMatch) {
+    for (let i = 0; i < savedConns.length; i++) {
+      const sc = savedConns[i], lc = loginConns[i];
+      if (!((sc.from===lc.from&&sc.to===lc.to)||(sc.from===lc.to&&sc.to===lc.from))) {
+        connsMatch = false; break;
+      }
+    }
+  }
+
+  if (idsMatch && connsMatch) {
+    document.getElementById('success').classList.add('show');
+  } else {
+    flashError();
+    setTimeout(() => {
+      loginConnections = [];
+      loginConnectFirst = null;
+      loginSelectedIds.clear();
+      loginConnectMode = false;
+      show('li2', false);
+      show('li1', true);
+      document.getElementById('li-count').textContent = '0';
+      document.getElementById('li-btn1').disabled = true;
+      document.getElementById('li-btn2').disabled = true;
+      // Anti-bruteforce: completely reshuffle star field after each failed attempt
+      repositionForLogin();
+    }, 350);
+  }
+}
+
+function flashError() {
+  fxX.fillStyle = 'rgba(248,113,113,0.1)';
+  fxX.fillRect(0,0,W,H);
+  toast('✗ Constellation mismatch — stars have shifted', 'err');
+  setTimeout(() => fxX.clearRect(0,0,W,H), 400);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODE SWITCHING — crossfade animation, container stays fixed
+// ═══════════════════════════════════════════════════════════════
+function setMode(m) {
+  if (mode === m) return;
+  const prev = mode;
+  mode = m;
+
+  const outEl  = document.getElementById(prev  === 'signup' ? 'panel-signup' : 'panel-login');
+  const inEl   = document.getElementById(m     === 'signup' ? 'panel-signup' : 'panel-login');
+
+  // Slide outgoing view left, fade out
+  outEl.classList.remove('hidden');
+  outEl.classList.add('out');
+  setTimeout(() => {
+    outEl.classList.add('hidden');
+    outEl.classList.remove('out');
+  }, 370);
+
+  // Slide incoming view in from right, fade in
+  inEl.classList.add('hidden');
+  inEl.classList.remove('out');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      inEl.classList.remove('hidden');
+    });
+  });
+
+  // Tab state
+  document.getElementById('btn-signup').classList.toggle('active', m==='signup');
+  document.getElementById('btn-login').classList.toggle('active', m==='login');
+
+  if (m === 'login') {
+    loginSelectedIds.clear();
+    loginConnections=[];
+    loginConnectMode=false;
+    loginConnectFirst=null;
+    show('li1',true); show('li2',false);
+    document.getElementById('li-count').textContent='0';
+    document.getElementById('li-btn1').disabled=true;
+    setTimeout(() => repositionForLogin(), 50);
+    if (!savedConstellation) toast('Sign up first to test login', 'err');
+  }
+}
+
+function fullReset() {
+  document.getElementById('success').classList.remove('show');
+  selectedIds.clear(); connections=[];
+  connectMode=false; connectFirst=null;
+  loginSelectedIds.clear(); loginConnections=[];
+  loginConnectMode=false; loginConnectFirst=null;
+  savedConstellation=null;
+  show('su1',true); show('su2',false); show('su3',false);
+  document.getElementById('su-count').textContent='0';
+  document.getElementById('ebar').style.width='0%';
+  document.getElementById('su-btn1').disabled=true;
+  attemptLog=[]; locked=false;
+  document.getElementById('rate-dot').className='rate-dot';
+  document.getElementById('rate-label').textContent='secure';
+  setMode('signup');
+  // Fresh star field
+  stars=[];
+  placeStars();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.borderColor = type==='ok' ? 'rgba(52,211,153,.5)' : type==='err' ? 'rgba(248,113,113,.4)' : 'rgba(255,255,255,.07)';
+  el.style.color = type==='ok' ? '#34d399' : type==='err' ? '#f87171' : '#ede9f6';
+  el.style.opacity = '1';
+  el.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) translateY(8px)';
+  }, 2400);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function show(id, visible) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = visible ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════
+initBgStars();
+resize();
+// Wait for fonts + layout before placing stars
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    placeStars();
+    animateBg();
+    render();
+  });
+});
+</script>
+
+
+</body>
+</html>

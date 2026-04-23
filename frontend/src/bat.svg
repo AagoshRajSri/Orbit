@@ -1,0 +1,306 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 680" width="500" height="500">
+  <defs>
+    <radialGradient id="body" cx="50%" cy="20%" r="80%">
+      <stop offset="0%" stop-color="#3e2418"/>
+      <stop offset="50%" stop-color="#1c0e08"/>
+      <stop offset="100%" stop-color="#060202"/>
+    </radialGradient>
+    <radialGradient id="wingL" cx="70%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#2c1810"/>
+      <stop offset="60%" stop-color="#0a0504"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+    <radialGradient id="wingR" cx="30%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#2c1810"/>
+      <stop offset="60%" stop-color="#0a0504"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <!-- IRIS: deep bloody vampire red -->
+    <radialGradient id="irisL" cx="38%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#ff5555"/>
+      <stop offset="22%" stop-color="#dd0000"/>
+      <stop offset="60%" stop-color="#880000"/>
+      <stop offset="100%" stop-color="#1e0000"/>
+    </radialGradient>
+    <radialGradient id="irisR" cx="62%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#ff5555"/>
+      <stop offset="22%" stop-color="#dd0000"/>
+      <stop offset="60%" stop-color="#880000"/>
+      <stop offset="100%" stop-color="#1e0000"/>
+    </radialGradient>
+
+    <!-- Eye socket blend halos -->
+    <radialGradient id="eyeHaloL" cx="50%" cy="52%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="45%" stop-color="#080000" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.88"/>
+    </radialGradient>
+    <radialGradient id="eyeHaloR" cx="50%" cy="52%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="45%" stop-color="#080000" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.88"/>
+    </radialGradient>
+
+    <!-- Lid skin -->
+    <radialGradient id="lidSkin" cx="50%" cy="30%" r="90%">
+      <stop offset="0%" stop-color="#2e1a10"/>
+      <stop offset="100%" stop-color="#140a06"/>
+    </radialGradient>
+
+    <!-- Eye glow — red tinted -->
+    <filter id="eyeGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feFlood flood-color="#cc0000" flood-opacity="0.25" result="redTint"/>
+      <feComposite in="redTint" in2="b" operator="in" result="tinted"/>
+      <feMerge><feMergeNode in="tinted"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Soft blur for blending halos -->
+    <filter id="haloBlur" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="11"/>
+    </filter>
+    <filter id="ambGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <filter id="fur">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7 0.8" numOctaves="4" seed="5" result="n"/>
+      <feColorMatrix type="saturate" values="0" in="n" result="g"/>
+      <feBlend in="SourceGraphic" in2="g" mode="multiply" result="bl"/>
+      <feComposite in="bl" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="redRingGlow" x="-5%" y="-5%" width="110%" height="110%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Clip to circle -->
+    <clipPath id="circleClip">
+      <circle cx="340" cy="340" r="326"/>
+    </clipPath>
+  </defs>
+
+  <!-- BACKGROUND — pitch black -->
+  <circle cx="340" cy="340" r="330" fill="#000000"/>
+
+  <!-- BAT: scaled up 3.1× with face centred at (340,340)
+       Face centre was at (340, 522). Scale=3.1, pivot=(340,522)
+       transform: translate(340,340) scale(3.1) translate(-340,-522)
+  -->
+  <g clip-path="url(#circleClip)">
+    <g transform="translate(340,340) scale(3.1) translate(-340,-522)">
+
+      <!-- breathing -->
+      <animateTransform attributeName="transform" type="scale" additive="sum"
+        values="1 1;1.005 1.007;1 1" dur="4.8s" repeatCount="indefinite"
+        calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1"/>
+
+      <!-- ====== LEFT WING ====== -->
+      <path d="M340 50
+               C300 70, 180 100, 60 160
+               C10 190, -10 240, 20 300
+               C50 370, 130 440, 200 510
+               C240 550, 290 580, 340 600
+               L340 600"
+            fill="url(#wingL)"/>
+      <path d="M340 80 C290 120, 150 180, 30 220" stroke="#3a2010" stroke-width="1.5" fill="none" opacity="0.5"/>
+      <path d="M340 120 C280 160, 140 230, 40 290" stroke="#3a2010" stroke-width="1" fill="none" opacity="0.35"/>
+      <path d="M340 170 C290 200, 160 270, 80 360" stroke="#3a2010" stroke-width="0.9" fill="none" opacity="0.3"/>
+
+      <!-- ====== RIGHT WING ====== -->
+      <path d="M340 50
+               C380 70, 500 100, 620 160
+               C670 190, 690 240, 660 300
+               C630 370, 550 440, 480 510
+               C440 550, 390 580, 340 600
+               L340 600"
+            fill="url(#wingR)"/>
+      <path d="M340 80 C390 120, 530 180, 650 220" stroke="#3a2010" stroke-width="1.5" fill="none" opacity="0.5"/>
+      <path d="M340 120 C400 160, 540 230, 640 290" stroke="#3a2010" stroke-width="1" fill="none" opacity="0.35"/>
+      <path d="M340 170 C390 200, 520 270, 600 360" stroke="#3a2010" stroke-width="0.9" fill="none" opacity="0.3"/>
+
+      <!-- ====== BODY ====== -->
+      <ellipse cx="340" cy="380" rx="105" ry="290" fill="url(#body)" filter="url(#fur)"/>
+      <ellipse cx="340" cy="320" rx="45" ry="90" fill="#3e2215" opacity="0.35"/>
+
+      <!-- ====== HEAD ====== -->
+      <ellipse cx="340" cy="530" rx="95" ry="82" fill="#1e0e08" filter="url(#fur)"/>
+      <ellipse cx="340" cy="475" rx="42" ry="20" fill="#2e1610" opacity="0.5"/>
+
+      <!-- ====== EARS ====== -->
+      <path d="M262 488 C242 448, 248 405, 276 428 C288 438, 285 465, 272 488 Z" fill="#180c07"/>
+      <path d="M267 482 C250 450, 256 415, 276 433 C284 441, 282 462, 270 482 Z" fill="#28120a" opacity="0.7"/>
+      <path d="M418 488 C438 448, 432 405, 404 428 C392 438, 395 465, 408 488 Z" fill="#180c07"/>
+      <path d="M413 482 C430 450, 424 415, 404 433 C396 441, 398 462, 410 482 Z" fill="#28120a" opacity="0.7"/>
+
+      <!-- ====== ANGRY BROW ====== -->
+      <path d="M252 512 C272 493, 306 494, 325 508" stroke="#060302" stroke-width="9" fill="none" stroke-linecap="round"/>
+      <path d="M415 508 C434 494, 468 493, 488 512" stroke="#060302" stroke-width="9" fill="none" stroke-linecap="round"/>
+      <path d="M255 516 C275 498, 306 499, 323 512" stroke="#1e0e08" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6"/>
+      <path d="M417 512 C434 499, 465 498, 485 516" stroke="#1e0e08" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6"/>
+
+      <!-- ====== NOSE ====== -->
+      <path d="M326 548 C330 556, 340 558, 350 556 C358 553, 360 546, 355 541 C350 536, 340 535, 330 538 C322 541, 322 546, 326 548 Z" fill="#120806"/>
+      <ellipse cx="332" cy="547" rx="4" ry="3.2" fill="#090404"/>
+      <ellipse cx="348" cy="547" rx="4" ry="3.2" fill="#090404"/>
+
+      <!-- ====== MOUTH snarl ====== -->
+      <path d="M320 564 C330 572, 340 573, 350 572 C360 570, 364 564, 360 560" stroke="#0c0504" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+      <!-- ====== AMBIENT EYE GLOW — bloody red ====== -->
+      <ellipse cx="295" cy="522" rx="60" ry="48" fill="#cc0000" opacity="0.18" filter="url(#ambGlow)">
+        <animate attributeName="opacity" values="0.10;0.28;0.10" dur="3s" repeatCount="indefinite"/>
+      </ellipse>
+      <ellipse cx="385" cy="522" rx="60" ry="48" fill="#cc0000" opacity="0.18" filter="url(#ambGlow)">
+        <animate attributeName="opacity" values="0.10;0.28;0.10" dur="3.6s" repeatCount="indefinite"/>
+      </ellipse>
+
+      <!-- ====== EYE SOCKET BLEND HALOS ====== -->
+      <ellipse cx="295" cy="522" rx="52" ry="44" fill="url(#eyeHaloL)" filter="url(#haloBlur)"/>
+      <ellipse cx="385" cy="522" rx="52" ry="44" fill="url(#eyeHaloR)" filter="url(#haloBlur)"/>
+      <ellipse cx="295" cy="520" rx="36" ry="30" fill="#000000" opacity="0.55" filter="url(#haloBlur)"/>
+      <ellipse cx="385" cy="520" rx="36" ry="30" fill="#000000" opacity="0.55" filter="url(#haloBlur)"/>
+      <ellipse cx="295" cy="522" rx="28" ry="22" fill="#3a0000" opacity="0.30" filter="url(#haloBlur)"/>
+      <ellipse cx="385" cy="522" rx="28" ry="22" fill="#3a0000" opacity="0.30" filter="url(#haloBlur)"/>
+
+      <!-- ==================== LEFT EYE ==================== -->
+      <g>
+        <ellipse cx="295" cy="522" rx="32" ry="27" fill="#0c0503"/>
+        <path d="M263 522 Q279 504 295 502 Q311 504 327 522 Q311 540 295 542 Q279 540 263 522 Z" fill="#120404"/>
+        <ellipse cx="295" cy="522" rx="18" ry="18" fill="url(#irisL)" filter="url(#eyeGlow)"/>
+        <ellipse cx="295" cy="522" rx="18" ry="18" fill="none" stroke="#ff2200" stroke-width="1.5" opacity="0.5"/>
+        <ellipse cx="295" cy="522" rx="13" ry="13" fill="none" stroke="#aa0000" stroke-width="1" opacity="0.4"/>
+        <ellipse cx="295" cy="522" rx="6" ry="16" fill="#050000"/>
+        <ellipse cx="287" cy="514" rx="5" ry="3.5" fill="rgba(255,255,255,0.30)" transform="rotate(-20,287,514)"/>
+        <ellipse cx="289" cy="512" rx="2.2" ry="1.8" fill="rgba(255,255,255,0.45)" transform="rotate(-20,289,512)"/>
+
+        <!-- UPPER EYELID -->
+        <path fill="#1e0e08">
+          <animate attributeName="d"
+            dur="5.5s" repeatCount="indefinite"
+            calcMode="spline"
+            keyTimes="0;0.65;0.70;0.74;0.78;0.85;1"
+            keySplines="0.42 0 0.58 1; 0.1 0 0.1 1; 0.5 0 0.5 1; 0.5 0 0.5 1; 0.1 0 0.5 1; 0.42 0 0.58 1"
+            values="
+              M263 522 Q279 504 295 502 Q311 504 327 522   L327 490 Q295 486 263 490 Z;
+              M263 522 Q279 504 295 502 Q311 504 327 522   L327 490 Q295 486 263 490 Z;
+              M263 522 Q279 516 295 515 Q311 516 327 522   L327 490 Q295 486 263 490 Z;
+              M263 522 Q279 524 295 524 Q311 524 327 522   L327 490 Q295 486 263 490 Z;
+              M263 522 Q279 524 295 524 Q311 524 327 522   L327 490 Q295 486 263 490 Z;
+              M263 522 Q279 508 295 506 Q311 508 327 522   L327 490 Q295 486 263 490 Z;
+              M263 522 Q279 504 295 502 Q311 504 327 522   L327 490 Q295 486 263 490 Z
+            "/>
+        </path>
+
+        <!-- LOWER EYELID -->
+        <path fill="#1a0c07">
+          <animate attributeName="d"
+            dur="5.5s" repeatCount="indefinite"
+            calcMode="spline"
+            keyTimes="0;0.65;0.70;0.74;0.78;0.85;1"
+            keySplines="0.42 0 0.58 1; 0.1 0 0.1 1; 0.5 0 0.5 1; 0.5 0 0.5 1; 0.1 0 0.5 1; 0.42 0 0.58 1"
+            values="
+              M263 522 Q279 540 295 542 Q311 540 327 522   L327 558 Q295 562 263 558 Z;
+              M263 522 Q279 540 295 542 Q311 540 327 522   L327 558 Q295 562 263 558 Z;
+              M263 522 Q279 528 295 529 Q311 528 327 522   L327 558 Q295 562 263 558 Z;
+              M263 522 Q279 522 295 521 Q311 522 327 522   L327 558 Q295 562 263 558 Z;
+              M263 522 Q279 522 295 521 Q311 522 327 522   L327 558 Q295 562 263 558 Z;
+              M263 522 Q279 536 295 538 Q311 536 327 522   L327 558 Q295 562 263 558 Z;
+              M263 522 Q279 540 295 542 Q311 540 327 522   L327 558 Q295 562 263 558 Z
+            "/>
+        </path>
+
+        <!-- lid crease -->
+        <path fill="none" stroke="#0a0503" stroke-width="1.8" stroke-linecap="round">
+          <animate attributeName="d"
+            dur="5.5s" repeatCount="indefinite"
+            calcMode="spline"
+            keyTimes="0;0.65;0.70;0.74;0.78;0.85;1"
+            keySplines="0.42 0 0.58 1; 0.1 0 0.1 1; 0.5 0 0.5 1; 0.5 0 0.5 1; 0.1 0 0.5 1; 0.42 0 0.58 1"
+            values="
+              M263 522 Q279 504 295 502 Q311 504 327 522;
+              M263 522 Q279 504 295 502 Q311 504 327 522;
+              M263 522 Q279 516 295 515 Q311 516 327 522;
+              M263 522 Q279 524 295 524 Q311 524 327 522;
+              M263 522 Q279 524 295 524 Q311 524 327 522;
+              M263 522 Q279 508 295 506 Q311 508 327 522;
+              M263 522 Q279 504 295 502 Q311 504 327 522
+            "/>
+        </path>
+      </g>
+
+      <!-- ==================== RIGHT EYE ==================== -->
+      <g>
+        <ellipse cx="385" cy="522" rx="32" ry="27" fill="#0c0503"/>
+        <path d="M353 522 Q369 504 385 502 Q401 504 417 522 Q401 540 385 542 Q369 540 353 522 Z" fill="#120404"/>
+        <ellipse cx="385" cy="522" rx="18" ry="18" fill="url(#irisR)" filter="url(#eyeGlow)"/>
+        <ellipse cx="385" cy="522" rx="18" ry="18" fill="none" stroke="#ff2200" stroke-width="1.5" opacity="0.5"/>
+        <ellipse cx="385" cy="522" rx="13" ry="13" fill="none" stroke="#aa0000" stroke-width="1" opacity="0.4"/>
+        <ellipse cx="385" cy="522" rx="6" ry="16" fill="#050000"/>
+        <ellipse cx="377" cy="514" rx="5" ry="3.5" fill="rgba(255,255,255,0.30)" transform="rotate(-20,377,514)"/>
+        <ellipse cx="379" cy="512" rx="2.2" ry="1.8" fill="rgba(255,255,255,0.45)" transform="rotate(-20,379,512)"/>
+
+        <!-- UPPER EYELID -->
+        <path fill="#1e0e08">
+          <animate attributeName="d"
+            dur="6.8s" repeatCount="indefinite"
+            calcMode="spline"
+            keyTimes="0;0.65;0.70;0.74;0.78;0.85;1"
+            keySplines="0.42 0 0.58 1; 0.1 0 0.1 1; 0.5 0 0.5 1; 0.5 0 0.5 1; 0.1 0 0.5 1; 0.42 0 0.58 1"
+            values="
+              M353 522 Q369 504 385 502 Q401 504 417 522   L417 490 Q385 486 353 490 Z;
+              M353 522 Q369 504 385 502 Q401 504 417 522   L417 490 Q385 486 353 490 Z;
+              M353 522 Q369 516 385 515 Q401 516 417 522   L417 490 Q385 486 353 490 Z;
+              M353 522 Q369 524 385 524 Q401 524 417 522   L417 490 Q385 486 353 490 Z;
+              M353 522 Q369 524 385 524 Q401 524 417 522   L417 490 Q385 486 353 490 Z;
+              M353 522 Q369 508 385 506 Q401 508 417 522   L417 490 Q385 486 353 490 Z;
+              M353 522 Q369 504 385 502 Q401 504 417 522   L417 490 Q385 486 353 490 Z
+            "/>
+        </path>
+
+        <!-- LOWER EYELID -->
+        <path fill="#1a0c07">
+          <animate attributeName="d"
+            dur="6.8s" repeatCount="indefinite"
+            calcMode="spline"
+            keyTimes="0;0.65;0.70;0.74;0.78;0.85;1"
+            keySplines="0.42 0 0.58 1; 0.1 0 0.1 1; 0.5 0 0.5 1; 0.5 0 0.5 1; 0.1 0 0.5 1; 0.42 0 0.58 1"
+            values="
+              M353 522 Q369 540 385 542 Q401 540 417 522   L417 558 Q385 562 353 558 Z;
+              M353 522 Q369 540 385 542 Q401 540 417 522   L417 558 Q385 562 353 558 Z;
+              M353 522 Q369 528 385 529 Q401 528 417 522   L417 558 Q385 562 353 558 Z;
+              M353 522 Q369 522 385 521 Q401 522 417 522   L417 558 Q385 562 353 558 Z;
+              M353 522 Q369 522 385 521 Q401 522 417 522   L417 558 Q385 562 353 558 Z;
+              M353 522 Q369 536 385 538 Q401 536 417 522   L417 558 Q385 562 353 558 Z;
+              M353 522 Q369 540 385 542 Q401 540 417 522   L417 558 Q385 562 353 558 Z
+            "/>
+        </path>
+
+        <!-- lid crease -->
+        <path fill="none" stroke="#0a0503" stroke-width="1.8" stroke-linecap="round">
+          <animate attributeName="d"
+            dur="6.8s" repeatCount="indefinite"
+            calcMode="spline"
+            keyTimes="0;0.65;0.70;0.74;0.78;0.85;1"
+            keySplines="0.42 0 0.58 1; 0.1 0 0.1 1; 0.5 0 0.5 1; 0.5 0 0.5 1; 0.1 0 0.5 1; 0.42 0 0.58 1"
+            values="
+              M353 522 Q369 504 385 502 Q401 504 417 522;
+              M353 522 Q369 504 385 502 Q401 504 417 522;
+              M353 522 Q369 516 385 515 Q401 516 417 522;
+              M353 522 Q369 524 385 524 Q401 524 417 522;
+              M353 522 Q369 524 385 524 Q401 524 417 522;
+              M353 522 Q369 508 385 506 Q401 508 417 522;
+              M353 522 Q369 504 385 502 Q401 504 417 522
+            "/>
+        </path>
+      </g>
+
+    </g><!-- end scale group -->
+  </g><!-- end clip -->
+
+  <!-- RED RING — border of the entire circle, on top -->
+  <circle cx="340" cy="340" r="326" fill="none" stroke="#cc0000" stroke-width="10" filter="url(#redRingGlow)">
+    <animate attributeName="stroke-opacity" values="0.65;1;0.65" dur="2.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="340" cy="340" r="326" fill="none" stroke="#ff2200" stroke-width="3"/>
+
+</svg>

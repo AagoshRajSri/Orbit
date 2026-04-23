@@ -1,0 +1,425 @@
+ORBIT AUTH — IMPLEMENTATION GUIDE
+Face Lock + Ambient Presence
+================================================================================
+
+Everything here uses free, open-source tools. Zero paid services required.
+
+================================================================================
+SECTION 1: FACE LOCK
+================================================================================
+
+WHAT IT IS
+----------
+Face Lock uses the device's built-in biometric system (FaceID on iOS, Class 3
+biometric on Android, Windows Hello on desktop) via the WebAuthn / FIDO2
+standard. Orbit never sees, stores, or processes any face data. Authentication
+happens entirely on-device in a hardware-secure enclave.
+
+HOW IT WORKS (step by step)
+----------------------------
+1. USER REGISTERS (signup, once per device)
+   - Orbit calls: navigator.credentials.create({ publicKey: ... })
+   - Device prompts face scan
+   - Device generates a key pair (private key stays in secure enclave, never leaves)
+   - Public key + credential ID are sent to Orbit's server and stored in DB
+   - Orbit stores: { userId, credentialId, publicKey, deviceInfo, createdAt }
+
+2. USER LOGS IN
+   - Orbit calls: navigator.credentials.get({ publicKey: { challenge, ... } })
+   - Device prompts face scan
+   - Device signs the challenge with the private key (on-device, no network)
+   - Signed assertion is sent to Orbit's server
+   - Server verifies the signature using the stored public key
+   - If valid → session token issued → user is in
+
+3. DARK ROOM ACCURACY
+   - FaceID uses a 30,000-dot infrared projector + flood illuminator
+   - It does NOT use the visible light camera
+   - Darkness is actually optimal — zero ambient IR interference
+   - Android Class 3 biometric uses similar depth mapping
+   - Orbit should require Class 3 (depth-based) biometric only — not Class 1/2
+     (2D camera unlock) by setting: userVerification: "required"
+
+4. FAILURE FALLBACKS (in order)
+   - 1 failed face attempt → offer ambient presence (if registered)
+   - 2 failed face attempts → offer Orbit constellation / other method
+   - 3+ failed attempts → offer magic link to email
+   - Never hard-lock the user. Always offer the next path.
+
+TECH STACK (all free)
+---------------------
+Frontend:
+  - Web: navigator.credentials API (built into all modern browsers, no library)
+  - React Native: react-native-biometrics (MIT license, free)
+    https://github.com/SelfLent/react-native-biometrics
+  - Expo: expo-local-authentication (free)
+
+Backend:
+  - Node.js: @simplewebauthn/server (MIT, free)
+    npm install @simplewebauthn/server
+  - Python: py_webauthn (free)
+    pip install py_webauthn
+  - Database: Store credentials in any DB (Postgres, MongoDB, SQLite)
+    Fields needed: id, user_id, credential_id, public_key, sign_count, created_at
+
+Example backend code (Node.js + @simplewebauthn/server):
+---------------------------------------------------------
+  import { verifyAuthenticationResponse } from '@simplewebauthn/server';
+
+  const verification = await verifyAuthenticationResponse({
+    response: authResponse,           // from client
+    expectedChallenge: storedChallenge,
+    expectedOrigin: 'https://orbitapp.com',
+    expectedRPID: 'orbitapp.com',
+    authenticator: {
+      credentialID: storedCredential.credentialId,
+      credentialPublicKey: storedCredential.publicKey,
+      counter: storedCredential.signCount,
+    },
+  });
+
+  if (verification.verified) {
+    // Issue session token
+  }
+
+Example frontend code (React):
+-------------------------------
+  import { startAuthentication } from '@simplewebauthn/browser';
+
+  const challenge = await fetch('/auth/face/challenge').then(r => r.json());
+  const authResponse = await startAuthentication(challenge);
+  const result = await fetch('/auth/face/verify', {
+    method: 'POST',
+    body: JSON.stringify(authResponse)
+  });
+
+SECURITY DETAILS
+----------------
+- Private key: stored in device Secure Enclave (T2 chip on Mac, SE on iPhone)
+  It physically cannot be extracted — not by the OS, not by apps, not by Orbit
+- Public key: stored on Orbit server, used only for signature verification
+- Challenge: new random 32-byte value generated per login attempt
+  Prevents replay attacks — each challenge is single-use and expires in 60s
+- Sign count: incremented on every login. If server sees a count lower than
+  expected, it indicates a cloned authenticator — reject and alert
+- Phishing protection: key is domain-bound to orbitapp.com
+  A fake site cannot trigger a valid response from the real credential
+- False acceptance rate (FaceID): 1 in 1,000,000
+- False acceptance rate (TouchID): 1 in 50,000
+
+WHAT ORBIT STORES IN THE DATABASE
+-----------------------------------
+  Table: webauthn_credentials
+  ┌─────────────────┬──────────────────────────────────────────┐
+  │ user_id         │ UUID linking to user account             │
+  │ credential_id   │ Base64URL string (device-generated)      │
+  │ public_key      │ COSE-encoded public key bytes            │
+  │ sign_count      │ Integer, increments each login           │
+  │ device_name     │ "iPhone 15 Pro" (user-readable label)    │
+  │ created_at      │ Timestamp                                │
+  │ last_used_at    │ Timestamp                                │
+  └─────────────────┴──────────────────────────────────────────┘
+  
+  NO face data. NO biometric templates. NOTHING sensitive.
+
+COST
+----
+  @simplewebauthn/server: FREE (MIT)
+  @simplewebauthn/browser: FREE (MIT)
+  react-native-biometrics: FREE (MIT)
+  Device Secure Enclave: FREE (built into hardware)
+  WebAuthn browser API: FREE (built into browsers)
+  Total infrastructure cost added: $0
+
+
+================================================================================
+SECTION 2: AMBIENT PRESENCE
+================================================================================
+
+WHAT IT IS
+----------
+When the user's registered phone is within ~0.8m of their laptop, Orbit
+automatically logs them in. No action needed. Walk away → auto-lock.
+Uses Bluetooth Low Energy (BLE) beaconing. Works silently in background.
+
+HOW IT WORKS (step by step)
+----------------------------
+
+PHASE A: ONE-TIME DEVICE REGISTRATION
+1. User opens Orbit on phone → Settings → Ambient Login → Register Device
+2. Orbit desktop generates a one-time pairing QR code
+   QR contains: { pairingToken, serverPublicKey, expiresAt (5 min) }
+3. User scans QR with phone camera (within Orbit app)
+4. Phone sends to server: { pairingToken, phonePublicKey, deviceId }
+5. Server validates pairingToken, stores device pair:
+   { userId, deviceId, phonePublicKey, desktopId, registeredAt }
+6. Phone receives: { desktopId, sharedSecret (HMAC seed) }
+7. Orbit prompts for "Always allow Bluetooth background" — granted once
+8. Setup complete. Never needed again.
+
+PHASE B: EVERY SESSION (automatic, silent)
+1. Phone broadcasts BLE advertisement every 2 seconds containing:
+   { deviceId, token: TOTP(sharedSecret, timestamp/30) }
+   Token rotates every 30 seconds (TOTP — same algorithm as Google Authenticator)
+   
+2. Orbit desktop app scans for BLE advertisements continuously
+   When it detects the registered deviceId:
+   - Measures RSSI (signal strength) → converts to approximate distance
+   - If distance < 0.8m AND user is logged out → trigger login
+   
+3. Desktop sends to server: { deviceId, token, timestamp, desktopId }
+
+4. Server validates:
+   a. deviceId is registered to a user account ✓
+   b. desktopId matches registered desktop for this user ✓
+   c. TOTP token is valid for current 30s window ✓
+   d. Token has not been used before (single-use table) ✓
+   e. All checks pass → issue session token → user is in
+
+5. Session stays active while phone beacon is detected
+   Phone not detected for 15 seconds → auto-lock (configurable)
+
+TECH STACK (all free)
+---------------------
+Phone (BLE broadcasting):
+  React Native:
+    - react-native-ble-plx (MIT, free) — BLE peripheral/central
+    npm install react-native-ble-plx
+  
+  Expo:
+    - expo-bluetooth (free) — simpler API, limited peripheral mode
+    - For full peripheral mode: bare React Native is better
+  
+  iOS background BLE:
+    - Info.plist: NSBluetoothAlwaysUsageDescription
+    - Background mode: bluetooth-central + bluetooth-peripheral
+    - Uses CBPeripheralManager to advertise when app is backgrounded
+    
+  Android background BLE:
+    - AndroidManifest: BLUETOOTH_ADVERTISE, BLUETOOTH_SCAN, BLUETOOTH_CONNECT
+    - Foreground service for reliable background operation
+    - Uses BluetoothLeAdvertiser
+
+Desktop (BLE scanning):
+  Electron app (free):
+    - @abandonware/noble (MIT, free) — Node.js BLE scanner
+    npm install @abandonware/noble
+  
+  Web app (limited browser support):
+    - Web Bluetooth API — works in Chrome on desktop
+    - navigator.bluetooth.requestDevice() — requires user gesture first
+    - For seamless background scanning, Electron is far better than browser
+
+TOTP Token Generation (phone side):
+  - npm install otplib  (free, MIT)
+  
+  import { totp } from 'otplib';
+  totp.options = { step: 30, digits: 8 };
+  const token = totp.generate(sharedSecret);  // rotates every 30s
+
+TOTP Token Verification (server side):
+  import { totp } from 'otplib';
+  const isValid = totp.verify({ token, secret: sharedSecret });
+
+Backend:
+  - Node.js / Python / Go — any language
+  - Database table for registered device pairs
+  - Redis (free) for single-use token tracking (token → used, expires in 60s)
+
+Example backend validation (Node.js):
+--------------------------------------
+  import { totp } from 'otplib';
+  import redis from './redis';
+
+  async function validateAmbientToken(deviceId, token, desktopId) {
+    // 1. Look up device pair
+    const device = await db.query(
+      'SELECT * FROM ambient_devices WHERE device_id = $1', [deviceId]
+    );
+    if (!device) return { valid: false, reason: 'device_not_registered' };
+
+    // 2. Check desktop matches
+    if (device.desktop_id !== desktopId)
+      return { valid: false, reason: 'desktop_mismatch' };
+
+    // 3. Verify TOTP
+    totp.options = { step: 30, digits: 8, window: 1 };
+    const tokenValid = totp.verify({ token, secret: device.shared_secret });
+    if (!tokenValid) return { valid: false, reason: 'token_invalid' };
+
+    // 4. Check single-use (replay prevention)
+    const tokenKey = `ambient_token:${deviceId}:${token}`;
+    const alreadyUsed = await redis.get(tokenKey);
+    if (alreadyUsed) return { valid: false, reason: 'token_replayed' };
+
+    // 5. Mark token as used (expires after 60s)
+    await redis.setEx(tokenKey, 60, '1');
+
+    // 6. Issue session
+    return { valid: true, userId: device.user_id };
+  }
+
+DISTANCE ESTIMATION FROM BLE RSSI
+-----------------------------------
+  RSSI (Received Signal Strength Indicator) is measured in dBm.
+  Convert to approximate distance:
+
+  function rssiToDistance(rssi, txPower = -59) {
+    // txPower = RSSI at 1 meter (calibrate per device, default -59 dBm)
+    if (rssi === 0) return -1;
+    const ratio = rssi / txPower;
+    if (ratio < 1.0) return Math.pow(ratio, 10);
+    return 0.89976 * Math.pow(ratio, 7.7095) + 0.111;
+  }
+
+  Thresholds:
+    < 0.8m  → in range → unlock
+    0.8–2m  → buffer zone → maintain session, don't re-lock
+    > 2m    → out of range → start lock countdown (15s)
+    
+  Note: BLE RSSI is noisy. Use a rolling average of last 5 readings.
+  This prevents flickering when the user is sitting right at the boundary.
+
+WHAT ORBIT STORES IN THE DATABASE
+-----------------------------------
+  Table: ambient_devices
+  ┌──────────────────┬──────────────────────────────────────────┐
+  │ id               │ UUID primary key                         │
+  │ user_id          │ FK to users table                        │
+  │ device_id        │ Unique phone identifier (generated)      │
+  │ desktop_id       │ Unique laptop identifier (generated)     │
+  │ shared_secret    │ HMAC seed for TOTP (encrypted at rest)   │
+  │ device_name      │ "iPhone 15 Pro" (user label)             │
+  │ registered_at    │ Timestamp                                │
+  │ last_seen_at     │ Timestamp (updated each login)           │
+  └──────────────────┴──────────────────────────────────────────┘
+  
+  Redis: single-use token cache (auto-expires, not permanent storage)
+
+BATTERY IMPACT
+--------------
+  BLE advertising current draw: ~0.5–1.5 mA
+  Compared to screen-on: ~200–800 mA
+  A full day of ambient broadcasting ≈ 1–3% extra battery drain
+  BLE is designed for always-on low-power operation (it's why AirTags last 1yr)
+
+SECURITY SUMMARY
+----------------
+  Attack: Replay (capture and resend old token)
+    Defense: Tokens are single-use + expire in 30s. Redis marks used tokens.
+    
+  Attack: Distance spoofing (attacker amplifies BLE signal from far away)  
+    Defense: Token rotation + server-side verification. Even if signal is
+             amplified, the token is single-use. Pairing with IP binding
+             on a known network makes this attack impractical.
+             
+  Attack: Token theft from phone memory
+    Defense: TOTP seed is stored in device Keychain (iOS) / Keystore (Android)
+             — hardware-backed, app-sandboxed. Even rooted devices cannot
+             easily extract Keychain items without the device PIN.
+             
+  Attack: Roommate or stranger's phone triggers login
+    Defense: Only registered deviceId + desktopId pairs are accepted.
+             An unregistered device's BLE broadcasts are completely ignored.
+
+COST
+----
+  react-native-ble-plx: FREE (MIT)
+  @abandonware/noble (Electron BLE): FREE (MIT)
+  otplib (TOTP): FREE (MIT)
+  Redis: FREE (open source, self-hosted) or Upstash free tier (10k req/day)
+  Total infrastructure cost added: $0
+
+
+================================================================================
+SECTION 3: INTEGRATION — HOW THEY WORK TOGETHER IN ORBIT
+================================================================================
+
+AUTH DECISION TREE (runs on every app open)
+--------------------------------------------
+
+  App opens
+    │
+    ├─ Desktop?
+    │    │
+    │    ├─ Phone beacon detected? ──YES──► Ambient login (< 2s, silent)
+    │    │
+    │    └─ No beacon
+    │         │
+    │         └─ Has Face ID / Windows Hello enrolled? ──YES──► Face lock
+    │              └─ No? ──► Show login screen (magic link / constellation)
+    │
+    └─ Mobile?
+         │
+         ├─ Has biometric enrolled (Face/Touch ID)? ──YES──► Face/Touch lock
+         │
+         └─ No biometric? ──► Show login screen
+
+FALLBACK CHAIN (if primary method fails)
+-----------------------------------------
+  [Ambient presence fails] → [Face ID] → [Orbit method] → [Magic link]
+  [Face ID fails] → [Ambient presence if near laptop] → [Orbit method] → [Magic link]
+  [New device] → [Magic link] → [register device for future sessions]
+
+SESSION MANAGEMENT
+------------------
+  - Session token: signed JWT (HS256 or RS256)
+  - Expiry: 7 days for mobile, 8 hours for desktop
+  - Refresh: silent refresh when < 1 hour remaining
+  - Ambient presence: session refreshed continuously while phone in range
+    Walk away → session pauses (not expires). Return within 1 hour → resumes.
+  - Auto-lock on desktop: configurable 5s / 15s / 30s / never after phone leaves
+
+LIBRARIES SUMMARY (all free, all MIT/Apache)
+---------------------------------------------
+  @simplewebauthn/server       npm · WebAuthn server validation
+  @simplewebauthn/browser      npm · WebAuthn client calls
+  react-native-biometrics      npm · Mobile Face/Touch ID
+  react-native-ble-plx         npm · BLE beacon (phone side)
+  @abandonware/noble           npm · BLE scanner (desktop/Electron)
+  otplib                       npm · TOTP token generation + verification
+  redis / ioredis               npm · Single-use token store
+  jsonwebtoken                 npm · Session token signing
+  argon2                       npm · Fallback credential hashing
+
+DEPLOYMENT NOTES
+----------------
+  - BLE requires Electron on desktop (not plain browser) for background scanning
+    Electron is free and open source: https://electronjs.org
+  - iOS background BLE requires an app (not web). Expo + bare workflow works.
+  - Android background BLE needs a foreground service (shows persistent notification)
+    This is an Android OS requirement. The notification can say "Orbit is active".
+  - WebAuthn works in all modern browsers for Face/Touch ID — no Electron needed
+    for the biometric part, only for the BLE ambient scanning.
+
+
+================================================================================
+SECTION 4: WHAT THESE PROTOTYPES DEMONSTRATE
+================================================================================
+
+face-lock.html
+--------------
+  Simulates the visual flow of Face ID authentication:
+  - IR dot projection visualization (what the sensor actually does)
+  - Confidence meter filling in real-time
+  - 6 test scenarios: normal light, dark room, sunglasses, mask, new device, photo spoof
+  - Correct outcomes per scenario based on real FaceID accuracy data
+  - Fallback prompt when recognition fails
+  Tech shown: WebAuthn flow, IR depth mapping concept, fallback chain
+
+ambient-presence.html
+---------------------
+  Simulates the full ambient presence system:
+  - Setup tab: QR pairing flow step-by-step
+  - Live tab: real-time BLE beacon visualization
+  - Rotating token display (TOTP simulation)
+  - Distance indicator
+  - 4 attack simulations: approach, walk away, replay attack, wrong device
+  - Token verification display with server response times
+  Tech shown: BLE beaconing, TOTP rotation, single-use enforcement, device binding
+
+
+================================================================================
+END OF GUIDE
+Written for Orbit Auth · Both methods use 100% free open-source libraries
+================================================================================

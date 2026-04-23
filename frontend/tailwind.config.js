@@ -1,0 +1,122 @@
+import daisyui from "daisyui";
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: [
+          "Dosis",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif",
+        ],
+      },
+      colors: {
+        /* Legacy variables (compatibility) */
+        "chat-bg": "var(--chat-bg)",
+        "chat-surface": "var(--chat-surface)",
+        "chat-text": "var(--chat-text)",
+        "chat-muted": "var(--chat-muted)",
+        "chat-primary": "var(--chat-primary)",
+        "chat-border": "var(--chat-border)",
+        "border": "var(--chat-border)",
+
+        /* AMOLED Surface Layers */
+        "amoled-true-black": "var(--bg-primary)",
+        "amoled-elevation-0": "var(--bg-elevation-0)",
+        "amoled-elevation-1": "var(--bg-elevation-1)",
+        "amoled-elevation-2": "var(--bg-elevation-2)",
+        "amoled-elevation-3": "var(--bg-elevation-3)",
+        "amoled-elevation-4": "var(--bg-elevation-4)",
+        "amoled-elevation-5": "var(--bg-elevation-5)",
+
+        /* AMOLED Text */
+        "amoled-text-primary": "var(--text-primary)",
+        "amoled-text-secondary": "var(--text-secondary)",
+        "amoled-text-tertiary": "var(--text-tertiary)",
+        "amoled-text-disabled": "var(--text-disabled)",
+        "amoled-text-brand": "var(--text-brand)",
+        "amoled-text-brand-light": "var(--text-brand-light)",
+        "amoled-text-success": "var(--text-success)",
+        "amoled-text-error": "var(--text-error)",
+        "amoled-text-info": "var(--text-info)",
+
+        /* AMOLED Accents */
+        "amoled-accent-primary": "var(--accent-primary)",
+        "amoled-accent-secondary": "var(--accent-secondary)",
+        "amoled-accent-tertiary": "var(--accent-tertiary)",
+        "amoled-accent-quaternary": "var(--accent-quaternary)",
+
+        /* AMOLED Borders */
+        "amoled-border-default": "var(--border-default)",
+        "amoled-border-active": "var(--border-active)",
+        "amoled-border-brand": "var(--border-brand)",
+        "amoled-border-error": "var(--border-error)",
+        "amoled-border-success": "var(--border-success)",
+      },
+      boxShadow: {
+        glow: "var(--chat-glow)",
+        "amoled-sm": "var(--shadows-sm)",
+        "amoled-md": "var(--shadows-md)",
+        "amoled-lg": "var(--shadows-lg)",
+        "amoled-xl": "var(--shadows-xl)",
+        "amoled-glow-brand": "var(--shadows-glow-brand)",
+        "amoled-glow-primary": "var(--shadows-glow-primary)",
+        "amoled-glow-accent": "var(--shadows-glow-accent)",
+        "amoled-glow-error": "var(--shadows-glow-error)",
+      },
+      backgroundColor: {
+        "amoled-card": "var(--card-bg)",
+        "amoled-card-hover": "var(--card-bg-hover)",
+        "amoled-modal": "var(--modal-bg)",
+        "amoled-button": "var(--button-bg)",
+        "amoled-input": "var(--input-bg)",
+        "amoled-input-focus": "var(--input-bg-focus)",
+      },
+      transitionTimingFunction: {
+        smooth: "cubic-bezier(0.23, 1, 0.32, 1)",
+      },
+    },
+  },
+  plugins: [daisyui],
+  daisyui: {
+    themes: [
+      "light",
+      "dark",
+      "cupcake",
+      "bumblebee",
+      "emerald",
+      "corporate",
+      "synthwave",
+      "retro",
+      "cyberpunk",
+      "valentine",
+      "halloween",
+      "garden",
+      "forest",
+      "aqua",
+      "lofi",
+      "pastel",
+      "fantasy",
+      "wireframe",
+      "black",
+      "luxury",
+      "dracula",
+      "cmyk",
+      "autumn",
+      "business",
+      "acid",
+      "lemonade",
+      "night",
+      "coffee",
+      "winter",
+      "dim",
+      "nord",
+      "sunset",
+      "amoled-dark",
+    ],
+  },
+};
