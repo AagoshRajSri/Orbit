@@ -23,6 +23,10 @@ function createMeteor(id, containerWidth) {
   };
 }
 
+// Module-level state to persist animation across remounts (page navigation)
+let globalElapsed = 0;
+let globalMeteors = null;
+
 const Rocket = memo(({ x, y, tilt }) => {
   return (
     <g
@@ -128,14 +132,16 @@ const RocketAnimation = memo(() => {
   }, []);
 
   useEffect(() => {
-    meteorsRef.current = Array.from({ length: METEOR_COUNT }, (_, i) => createMeteor(i, width));
-    setMeteorStates(meteorsRef.current.map(m => ({ ...m })));
+    if (!globalMeteors || globalMeteors.length === 0) {
+      globalMeteors = Array.from({ length: METEOR_COUNT }, (_, i) => createMeteor(i, width));
+    }
+    meteorsRef.current = globalMeteors.map(m => ({ ...m }));
+    setMeteorStates(meteorsRef.current);
   }, [width]);
 
   useEffect(() => {
     const ROCKET_DURATION = 20000;
     const LOOP_INTERVAL = 120000;
-    let elapsed = 0;
 
     const waypoints = [
       [0, -0.12, 0],
@@ -167,8 +173,8 @@ const RocketAnimation = memo(() => {
       const dt = Math.min((now - lastTimeRef.current) / 1000, 0.05);
       lastTimeRef.current = now;
 
-      elapsed += dt * 1000;
-      const cycleTime = elapsed % LOOP_INTERVAL;
+      globalElapsed += dt * 1000;
+      const cycleTime = globalElapsed % LOOP_INTERVAL;
       const isFlying = cycleTime < ROCKET_DURATION;
       const t = isFlying ? cycleTime / ROCKET_DURATION : 1;
 
@@ -202,6 +208,7 @@ const RocketAnimation = memo(() => {
         return { ...m };
       });
       meteorsRef.current = updated.map(m => ({ ...m }));
+      globalMeteors = updated.map(m => ({ ...m })); // Sync to global state
       setMeteorStates(updated);
 
       rafRef.current = requestAnimationFrame(tick);

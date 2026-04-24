@@ -36,7 +36,7 @@ const DEFAULT_IDENTITY = {
 
   // Authentication
   authToken: null,
-  constellationHash: null,
+  hasConstellation: false,
 
   // Session
   sessionId: null,
@@ -66,7 +66,7 @@ export function IdentityProvider({ children }) {
       profilePic: authUser.profilePic,
       bio: authUser.bio,
       authToken: authUser.authToken,
-      constellationHash: authUser.constellationHash,
+      hasConstellation: authUser.hasConstellation,
       sessionId: sessionId || null,
       isAuthenticated: !!authUser._id,
       isCheckingAuth,

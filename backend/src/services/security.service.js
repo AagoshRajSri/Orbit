@@ -2,6 +2,7 @@ import AuditLog from "../models/auditLog.model.js";
 import BlockedIP from "../models/blockedIP.model.js";
 import Session from "../models/session.model.js";
 import crypto from "crypto";
+import logger from "../lib/logger.js";
 
 class SecurityService {
   /**
@@ -30,8 +31,11 @@ class SecurityService {
         details,
         riskScore,
       });
+
+      const level = riskScore > 50 ? "warn" : "info";
+      logger[level](`[AUDIT] ${action}`, { userId, ip, riskScore, ...details });
     } catch (e) {
-      console.error("Failed to write audit log:", e.message);
+      logger.error("Failed to write audit log", { error: e.message });
     }
   }
 
@@ -45,9 +49,9 @@ class SecurityService {
         },
         { upsert: true }
       );
-      console.warn(`[SECURITY] Blocked IP: ${ip} for ${durationMinutes} mins. Reason: ${reason}`);
+      logger.warn(`[SECURITY] Blocked IP: ${ip} for ${durationMinutes} mins. Reason: ${reason}`);
     } catch (e) {
-      console.error("Failed to block IP:", e.message);
+      logger.error("Failed to block IP", { error: e.message });
     }
   }
 
@@ -93,7 +97,7 @@ class SecurityService {
       }
       await Session.updateMany(query, { isValid: false });
     } catch (e) {
-      console.error("Failed to invalidate sessions:", e.message);
+      logger.error("Failed to invalidate sessions", { error: e.message });
     }
   }
 }

@@ -382,7 +382,7 @@ const MetricRow = memo(() => {
 /* ─────────────────────────────────────────────
    TOP NAV
 ───────────────────────────────────────────── */
-const TopNav = memo(({ navRef, synced }) => {
+const TopNav = memo(({ navRef, synced, hiddenNexuses, onReveal }) => {
   const [time, setTime] = useState(() =>
     new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })
   );
@@ -436,8 +436,18 @@ const TopNav = memo(({ navRef, synced }) => {
         <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.5)", fontFamily: "'Orbitron',monospace", letterSpacing: "0.1em" }}>VRC</span>
       </div>
 
+      {/* Gap 1 */}
+      <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", gap: 30, pointerEvents: "none" }}>
+        {hiddenNexuses[0] && (
+          <div style={{ pointerEvents: "auto", margin: "0 10px" }}>
+            <HiddenNexusCrystal nexus={hiddenNexuses[0]} onReveal={onReveal} />
+          </div>
+        )}
+      </div>
+
       {/* Center HUD */}
-      <div className="ncb-center-hud" style={{ display: "flex", gap: 16, alignItems: "center" }}>
+      <div className="ncb-center-hud" style={{ display: "flex", gap: 16, alignItems: "center", position: "relative" }}>
+
         {[["NODES", "14k+", C], ["NEXUS", "1337", P], ["PING", "12ms", Y]].map(([lab, val, col]) => (
           <div key={lab} style={{ textAlign: "center" }}>
             <div style={{ fontSize: 7, color: `${col}88`, letterSpacing: "0.15em", fontFamily: "'Orbitron',monospace" }}>{lab}</div>
@@ -449,6 +459,19 @@ const TopNav = memo(({ navRef, synced }) => {
           <div style={{ fontSize: 7, color: `${C}66`, letterSpacing: "0.15em", fontFamily: "'Orbitron',monospace" }}>LOCAL</div>
           <div style={{ fontFamily: "'Share Tech Mono'", fontSize: 11, color: `${C}99`, fontVariantNumeric: "tabular-nums" }}>{time}</div>
         </div>
+      </div>
+      {/* Gap 2 */}
+      <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", gap: 30, pointerEvents: "none" }}>
+        {hiddenNexuses[1] && (
+          <div style={{ pointerEvents: "auto", margin: "0 10px" }}>
+            <HiddenNexusCrystal nexus={hiddenNexuses[1]} onReveal={onReveal} />
+          </div>
+        )}
+        {hiddenNexuses[2] && (
+          <div style={{ pointerEvents: "auto", margin: "0 10px" }}>
+            <HiddenNexusCrystal nexus={hiddenNexuses[2]} onReveal={onReveal} />
+          </div>
+        )}
       </div>
 
       {/* Nav */}
@@ -479,10 +502,89 @@ const TopNav = memo(({ navRef, synced }) => {
   );
 });
 
+
+
+// ── Hidden Nexus Crystal ──────────────────────────────────────────────────
+const HiddenNexusCrystal = memo(({ nexus, onReveal }) => {
+    const [grabbed, setGrabbed] = useState(false);
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const domRef = useRef(null);
+    const offsetRef = useRef({ ox: 0, oy: 0 });
+    const clickTimerRef = useRef(null);
+    const pendingRevealRef = useRef(false);
+
+    useEffect(() => {
+        if (!grabbed) return;
+        const onMove = (e) => {
+            setPos({ x: e.clientX - offsetRef.current.ox, y: e.clientY - offsetRef.current.oy });
+        };
+        const onUp = () => setGrabbed(false);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+    }, [grabbed]);
+
+    const handleMouseDown = (e) => {
+        if (e.detail === 2) {
+            e.preventDefault();
+            e.stopPropagation();
+            pendingRevealRef.current = false;
+            clearTimeout(clickTimerRef.current);
+            const rect = domRef.current.getBoundingClientRect();
+            setPos({ x: rect.left, y: rect.top });
+            offsetRef.current = { ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+            setGrabbed(true);
+        }
+    };
+
+    const handleClick = (e) => {
+        e.stopPropagation();
+        if (grabbed) return; 
+        pendingRevealRef.current = true;
+        clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = setTimeout(() => {
+            if (pendingRevealRef.current) onReveal(nexus._id);
+        }, 250);
+    };
+
+    return (
+        <div
+            ref={domRef}
+            style={{
+                position: grabbed ? 'fixed' : 'relative',
+                left: grabbed ? pos.x : 'auto',
+                top: grabbed ? pos.y : 'auto',
+                zIndex: 9999,
+                cursor: grabbed ? 'grabbing' : 'pointer',
+                userSelect: 'none',
+                touchAction: 'none',
+                filter: grabbed
+                    ? `drop-shadow(0 0 15px ${P}) drop-shadow(0 0 30px ${P}88)`
+                    : `drop-shadow(0 0 8px ${P}44)`,
+                transition: grabbed ? 'none' : 'filter 0.3s',
+                fontSize: 20,
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
+            onMouseDown={handleMouseDown}
+            onClick={handleClick}
+            onDragStart={(e) => e.preventDefault()}
+        >
+            🔮
+        </div>
+    );
+});
+
 /* ─────────────────────────────────────────────
    SIDEBAR
 ───────────────────────────────────────────── */
-const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView }) => {
+const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) => {
   const [tab, setTab] = useState("orbits");
   const navigate = useNavigate();
   const { play } = useSoundManager();
@@ -514,14 +616,17 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
   };
 
   const sortedNexuses = useMemo(() => {
-    return [...nexuses].sort((a, b) => {
-      const aPinned = pinnedNexuses.includes(a._id);
-      const bPinned = pinnedNexuses.includes(b._id);
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      return 0;
-    });
-  }, [nexuses, pinnedNexuses]);
+    const hiddenIds = (hiddenNexuses || []).map(h => h._id);
+    return [...nexuses]
+      .filter(n => !hiddenIds.includes(n._id))
+      .sort((a, b) => {
+        const aPinned = pinnedNexuses.includes(a._id);
+        const bPinned = pinnedNexuses.includes(b._id);
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        return 0;
+      });
+  }, [nexuses, pinnedNexuses, hiddenNexuses]);
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -645,6 +750,12 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
                                 style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
                             >
                                 {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                            </button>
+                            <button 
+                                onClick={(e) => toggleHide(n, e)}
+                                style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
+                            >
+                                Hide 🔮
                             </button>
                         </div>
 
@@ -967,33 +1078,64 @@ export default function OrbitNeonCyberpunk({ children }) {
   const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
   const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
   const [synced, setSynced] = useState(true);
+
+  // ── Hidden Nexus State ──
+  const [hiddenNexuses, setHiddenNexuses] = useState(() => {
+      try {
+          const saved = localStorage.getItem('cyberpunk_hidden_nexuses');
+          return saved ? JSON.parse(saved) : [];
+      } catch { return []; }
+  });
+
+  const toggleHide = (nexus, e) => {
+      if (e) e.stopPropagation();
+      const id = nexus._id;
+      const isHidden = (hiddenNexuses || []).some(h => h._id === id);
+      
+      if (!isHidden && hiddenNexuses.length >= 3) {
+          import("react-hot-toast").then(({ toast }) => toast.error("Maximum 3 hidden Nexuses allowed per theme."));
+          return;
+      }
+
+      const next = isHidden
+          ? hiddenNexuses.filter(h => h._id !== id)
+          : [...hiddenNexuses, { _id: id, name: nexus.name }];
+      
+      setHiddenNexuses(next);
+      localStorage.setItem('cyberpunk_hidden_nexuses', JSON.stringify(next));
+  };
+
+  const onReveal = (id) => {
+      const next = hiddenNexuses.filter(h => h._id !== id);
+      setHiddenNexuses(next);
+      localStorage.setItem('cyberpunk_hidden_nexuses', JSON.stringify(next));
+  };
+
   const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
   const { users, selectedUser, setSelectedUser } = useChatStore();
 
   // GSAP entrance animation
   useEffect(() => {
-    const cards = [c0, c1, c2, c3].map(r => r.current).filter(Boolean);
-    const nav = navRef.current;
-    const sidebar = sidebarRef.current;
-    const hero = heroRef.current;
+    const ctx = gsap.context(() => {
+      const cards = [c0, c1, c2, c3].map(r => r.current).filter(Boolean);
+      const nav = navRef.current;
+      const sidebar = sidebarRef.current;
+      const hero = heroRef.current;
 
-    if (nav) gsap.set(nav, { opacity: 0, y: -20 });
-    if (sidebar) gsap.set(sidebar, { opacity: 0, x: -30 });
-    if (hero) gsap.set(hero, { opacity: 0, y: 14 });
-    if (cards.length > 0) gsap.set(cards, { opacity: 0, y: 24, scale: 0.94 });
+      if (nav) gsap.set(nav, { opacity: 0, y: -20 });
+      if (sidebar) gsap.set(sidebar, { opacity: 0, x: -30 });
+      if (hero) gsap.set(hero, { opacity: 0, y: 14 });
+      if (cards.length > 0) gsap.set(cards, { opacity: 0, y: 24, scale: 0.94 });
 
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-    if (nav) tl.to(nav, { opacity: 1, y: 0, duration: 0.5 });
-    if (sidebar) tl.to(sidebar, { opacity: 1, x: 0, duration: 0.45 }, "-=0.3");
-    if (hero) tl.to(hero, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25");
-    if (cards.length > 0) tl.to(cards, { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.09 }, "-=0.2");
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      if (nav) tl.to(nav, { opacity: 1, y: 0, duration: 0.5 });
+      if (sidebar) tl.to(sidebar, { opacity: 1, x: 0, duration: 0.45 }, "-=0.3");
+      if (hero) tl.to(hero, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25");
+      if (cards.length > 0) tl.to(cards, { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.09 }, "-=0.2");
+    });
 
-    // Clean up tweens on unmount
-    return () => {
-      gsap.killTweensOf([nav, sidebar, hero, ...cards]);
-      tl.kill();
-    };
+    return () => ctx.revert();
   }, []);
 
   const handleToggleSync = useCallback(() => {
@@ -1021,7 +1163,12 @@ export default function OrbitNeonCyberpunk({ children }) {
       {/* Data streams overlay */}
       <DataStreams count={6} color={P} />
 
-      <TopNav navRef={navRef} synced={synced} />
+      <TopNav 
+        navRef={navRef} 
+        synced={synced} 
+        hiddenNexuses={hiddenNexuses} 
+        onReveal={onReveal} 
+      />
 
       <div className="ncb-container" style={{ position: "absolute", top: 42, left: 0, right: 0, bottom: 0, display: "flex" }}>
         <Sidebar 
@@ -1037,6 +1184,8 @@ export default function OrbitNeonCyberpunk({ children }) {
           setSelectedUser={setSelectedUser}
           nexusUnread={nexusUnread || {}}
           setNexusActionView={setNexusActionView}
+          hiddenNexuses={hiddenNexuses}
+          toggleHide={toggleHide}
         />
 
         {/* Main content */}

@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useMemo } from "react";
+import { useState, useEffect, memo, useMemo, useRef } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
@@ -383,7 +383,7 @@ export const ActionCard = memo(({ icon, title, subtitle, color = "#C6A06E", badg
 ActionCard.displayName = "ActionCard";
 
 /* ── Sidebar ── */
-const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView }) => {
+const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView, toggleHide, hiddenNexuses }) => {
   const navigate = useNavigate();
   // Removed authUser here as it's not used in this specific implementation snippet, but if needed, pass as prop.
   const orbits = ["# NEXUS PRIME", "# DARKWEB", "# CONSTELLATION", "# SHADOW OPS"];
@@ -416,14 +416,17 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
   };
 
   const sortedNexuses = useMemo(() => {
-    return [...nexuses].sort((a, b) => {
-      const aPinned = pinnedNexuses.includes(a._id);
-      const bPinned = pinnedNexuses.includes(b._id);
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      return 0;
-    });
-  }, [nexuses, pinnedNexuses]);
+    const hiddenIds = (hiddenNexuses || []).map(h => h._id);
+    return [...nexuses]
+      .filter(n => !hiddenIds.includes(n._id))
+      .sort((a, b) => {
+        const aPinned = pinnedNexuses.includes(a._id);
+        const bPinned = pinnedNexuses.includes(b._id);
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        return 0;
+      });
+  }, [nexuses, pinnedNexuses, hiddenNexuses]);
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -533,6 +536,12 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
                               >
                                   {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
                               </button>
+                              <button 
+                                  onClick={(e) => toggleHide(n, e)}
+                                  style={{ flex: 1, padding: '6px', background: "rgba(198,160,110,.1)", border: "1px solid rgba(198,160,110,.4)", borderRadius: 4, fontSize: 11, color: "#C6A06E", fontFamily: "Orbitron, sans-serif", cursor: 'pointer' }}
+                              >
+                                  Hide 💎
+                              </button>
                           </div>
 
                           {activeColorPickerId === n._id && (
@@ -613,8 +622,85 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
 });
 Sidebar.displayName = "Sidebar";
 
+// ── Hidden Nexus Diamond ──────────────────────────────────────────────────
+const HiddenNexusDiamond = memo(({ nexus, onReveal }) => {
+    const [grabbed, setGrabbed] = useState(false);
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const domRef = useRef(null);
+    const offsetRef = useRef({ ox: 0, oy: 0 });
+    const clickTimerRef = useRef(null);
+    const pendingRevealRef = useRef(false);
+
+    useEffect(() => {
+        if (!grabbed) return;
+        const onMove = (e) => {
+            setPos({ x: e.clientX - offsetRef.current.ox, y: e.clientY - offsetRef.current.oy });
+        };
+        const onUp = () => setGrabbed(false);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+    }, [grabbed]);
+
+    const handleMouseDown = (e) => {
+        if (e.detail === 2) {
+            e.preventDefault();
+            e.stopPropagation();
+            pendingRevealRef.current = false;
+            clearTimeout(clickTimerRef.current);
+            const rect = domRef.current.getBoundingClientRect();
+            setPos({ x: rect.left, y: rect.top });
+            offsetRef.current = { ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+            setGrabbed(true);
+        }
+    };
+
+    const handleClick = (e) => {
+        e.stopPropagation();
+        if (grabbed) return; 
+        pendingRevealRef.current = true;
+        clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = setTimeout(() => {
+            if (pendingRevealRef.current) onReveal(nexus._id);
+        }, 250);
+    };
+
+    return (
+        <div
+            ref={domRef}
+            style={{
+                position: grabbed ? 'fixed' : 'relative',
+                left: grabbed ? pos.x : 'auto',
+                top: grabbed ? pos.y : 'auto',
+                zIndex: 9999,
+                cursor: grabbed ? 'grabbing' : 'pointer',
+                userSelect: 'none',
+                touchAction: 'none',
+                filter: grabbed
+                    ? 'drop-shadow(0 0 15px #C6A06E) drop-shadow(0 0 30px rgba(198,160,110,0.5))'
+                    : 'drop-shadow(0 0 8px rgba(198,160,110,0.3))',
+                transition: grabbed ? 'none' : 'filter 0.3s',
+                fontSize: 20,
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
+            onMouseDown={handleMouseDown}
+            onClick={handleClick}
+            onDragStart={(e) => e.preventDefault()}
+        >
+            💎
+        </div>
+    );
+});
+
 /* ── Topbar ── */
-const TopBar = memo(({ logout }) => {
+const TopBar = memo(({ logout, hiddenNexuses, onReveal }) => {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString());
   const navigate = useNavigate();
 
@@ -634,8 +720,17 @@ const TopBar = memo(({ logout }) => {
         <div className="oa-mono" style={{ fontSize: 9, color: "rgba(198,160,110,.3)", letterSpacing: 2, paddingLeft: 12, borderLeft: "1px solid rgba(198,160,110,.18)" }}>v2.4.1</div>
       </div>
 
-      {/* Centre: Rocket Animation fills all remaining space */}
-      <RocketAnimation />
+      {/* Centre: Rocket Animation + Hidden Diamonds */}
+      <div style={{ flex: 1, position: "relative", display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <RocketAnimation />
+        <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "center", alignItems: "center", gap: 60, pointerEvents: "none" }}>
+          {(hiddenNexuses || []).map((nexus) => (
+            <div key={nexus._id} style={{ pointerEvents: "auto" }}>
+              <HiddenNexusDiamond nexus={nexus} onReveal={onReveal} />
+             </div>
+          ))}
+        </div>
+      </div>
 
       {/* Right: Clock + Buttons */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
@@ -670,6 +765,38 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
     return () => clearTimeout(t);
   }, []);
 
+  // ── Hidden Nexus State ──
+  const [hiddenNexuses, setHiddenNexuses] = useState(() => {
+      try {
+          const saved = localStorage.getItem('amoled_hidden_nexuses');
+          return saved ? JSON.parse(saved) : [];
+      } catch { return []; }
+  });
+
+  const toggleHide = (nexus, e) => {
+      if (e) e.stopPropagation();
+      const id = nexus._id;
+      const isHidden = (hiddenNexuses || []).some(h => h._id === id);
+      
+      if (!isHidden && hiddenNexuses.length >= 3) {
+          import("react-hot-toast").then(({ toast }) => toast.error("Maximum 3 hidden Nexuses allowed per theme."));
+          return;
+      }
+
+      const next = isHidden
+          ? hiddenNexuses.filter(h => h._id !== id)
+          : [...hiddenNexuses, { _id: id, name: nexus.name }];
+      
+      setHiddenNexuses(next);
+      localStorage.setItem('amoled_hidden_nexuses', JSON.stringify(next));
+  };
+
+  const onReveal = (id) => {
+      const next = hiddenNexuses.filter(h => h._id !== id);
+      setHiddenNexuses(next);
+      localStorage.setItem('amoled_hidden_nexuses', JSON.stringify(next));
+  };
+
   const fade = (delay) => ({
     opacity: mounted ? 1 : 0,
     transform: mounted ? "translateY(0)" : "translateY(20px)",
@@ -683,7 +810,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
       {/* Root */}
       <div style={{ width: "100%", height: "100vh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter','Rajdhani',sans-serif", position: "relative" }}>
 
-        <TopBar logout={logout} />
+        <TopBar logout={logout} hiddenNexuses={hiddenNexuses} onReveal={onReveal} />
 
         <div className="oa-main-wrapper" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <Sidebar 
@@ -698,6 +825,8 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
             setSelectedUser={setSelectedUser}
             nexusUnread={nexusUnread || {}}
             setNexusActionView={setNexusActionView}
+            toggleHide={toggleHide}
+            hiddenNexuses={hiddenNexuses}
           />
 
           {/* ── Main content ── */}

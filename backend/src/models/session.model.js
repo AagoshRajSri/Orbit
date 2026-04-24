@@ -17,6 +17,7 @@ const sessionSchema = new mongoose.Schema(
 sessionSchema.index({ userId: 1, isValid: 1 });
 sessionSchema.index({ userId: 1, isValid: 1, lastActive: 1 });
 sessionSchema.index({ isValid: 1, lastActive: 1 });
+sessionSchema.index({ lastActive: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 }); // 7 days TTL
 
 const Session = mongoose.model("Session", sessionSchema);
 export default Session;

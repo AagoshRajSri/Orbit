@@ -1,10 +1,12 @@
+import logger from "../lib/logger.js";
+
 /**
  * Global error handling middleware
  * Should be the last middleware in the chain
  */
 export const errorHandler = (err, req, res, next) => {
   // Log the error
-  console.error("Error:", {
+  logger.error("API Error", {
     message: err.message,
     stack: err.stack,
     path: req.path,

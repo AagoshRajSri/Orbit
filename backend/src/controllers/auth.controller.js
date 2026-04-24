@@ -88,6 +88,10 @@ export const signup = async (req, res) => {
 
     savedUser = await newUser.save();
 
+    const otp = generateOTP();
+    await storeOTP(validation.data.email, otp);
+    console.log(`[Email Verification] Sent to ${validation.data.email}: ${otp}`);
+
     let tokens;
     try {
       tokens = await generateToken(newUser._id, req, res);
@@ -178,6 +182,15 @@ export const login = async (req, res) => {
       });
     }
 
+    // Only enforce email verification in production, or if explicitly required
+    if (process.env.NODE_ENV === "production" && !user.isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Please verify your email to log in",
+        error: { code: "EMAIL_NOT_VERIFIED", message: "Please verify your email to log in" },
+      });
+    }
+
     let tokens;
     try {
       tokens = await generateToken(user._id, req, res);
@@ -240,7 +253,22 @@ export const logout = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic, username, email, bio } = req.body;
+    const updateProfileSchema = z.object({
+      profilePic: z.string().regex(/^data:image\/(png|jpeg|jpg|webp);base64,/, "Only explicit PNG, JPEG, or WEBP base64 images are supported").optional(),
+      username: z.string().min(2, "Username too short").max(50, "Username too long").trim().optional(),
+      email: z.string().email("Invalid email").optional(),
+      bio: z.string().max(500, "Bio too long").optional(),
+    });
+
+    const parsed = updateProfileSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid input data",
+        errors: parsed.error.issues.map(e => ({ field: e.path.join("."), message: e.message })),
+      });
+    }
+
+    const { profilePic, username, email, bio } = parsed.data;
     const userId = req.user._id;
 
     const updater = {};
@@ -309,11 +337,20 @@ export const getContacts = async (req, res) => {
 export const addContact = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { contactId } = req.body;
 
-    if (!contactId) {
-      return res.status(400).json({ message: "Contact ID is required" });
+    const contactSchema = z.object({
+      contactId: z.string().min(1, "Contact ID is required"),
+    });
+
+    const parsed = contactSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid input data",
+        errors: parsed.error.issues.map(e => ({ field: e.path.join("."), message: e.message })),
+      });
     }
+
+    const { contactId } = parsed.data;
 
     if (contactId === userId.toString()) {
       return res
@@ -378,11 +415,20 @@ export const renameContact = async (req, res) => {
   try {
     const userId = req.user._id;
     const { contactId } = req.params;
-    const { alias } = req.body;
 
-    if (typeof alias !== "string") {
-      return res.status(400).json({ message: "Alias is required" });
+    const aliasSchema = z.object({
+      alias: z.string().min(1, "Alias is required").max(50, "Alias too long").trim(),
+    });
+
+    const parsed = aliasSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid input data",
+        errors: parsed.error.issues.map(e => ({ field: e.path.join("."), message: e.message })),
+      });
     }
+
+    const { alias } = parsed.data;
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -450,7 +496,7 @@ export const checkAuth = async (req, res) => {
       success: true,
       data: {
         ...userObj,
-        constellationHash,
+        hasConstellation: !!constellationHash,
         sessionId: req.sessionId,
       },
     });
@@ -470,11 +516,19 @@ export const checkAuth = async (req, res) => {
 // Forgot Password - Send OTP
 export const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const emailSchemaObj = z.object({
+      email: emailSchema, // Reusing global emailSchema from auth controller imports
+    });
 
-    if (!email || !email.trim()) {
-      return res.status(400).json({ message: "Email is required" });
+    const parsed = emailSchemaObj.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Valid email is required",
+        errors: parsed.error.issues.map(e => ({ field: e.path.join("."), message: e.message })),
+      });
     }
+
+    const { email } = parsed.data;
 
     // Check if user exists
     const user = await User.findOne({ email });
@@ -486,7 +540,7 @@ export const forgotPassword = async (req, res) => {
 
     // Generate and store OTP
     const otp = generateOTP();
-    storeOTP(email, otp);
+    await storeOTP(email, otp);
 
     // In development, we just log the OTP to console
     // In production, you would send via email
@@ -494,8 +548,6 @@ export const forgotPassword = async (req, res) => {
 
     res.status(200).json({
       message: "OTP sent to your email",
-      // Remove in production
-      ...(process.env.NODE_ENV === "development" && { otp }),
     });
   } catch (error) {
     console.error("Error in forgotPassword controller:", error);
@@ -509,14 +561,23 @@ export const forgotPassword = async (req, res) => {
 // Verify OTP
 export const verifyPasswordOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const otpSchema = z.object({
+      email: emailSchema,
+      otp: z.string().length(6, "OTP must be exactly 6 digits"),
+    });
 
-    if (!email || !otp) {
-      return res.status(400).json({ message: "Email and OTP are required" });
+    const parsed = otpSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid input data",
+        errors: parsed.error.issues.map(e => ({ field: e.path.join("."), message: e.message })),
+      });
     }
 
+    const { email, otp } = parsed.data;
+
     // Verify OTP
-    if (!verifyOTP(email, otp)) {
+    if (!(await verifyOTP(email, otp))) {
       return res.status(401).json({ message: "Invalid or expired OTP" });
     }
 
@@ -551,7 +612,7 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    if (!verifyOTP(validation.data.email, validation.data.otp)) {
+    if (!(await verifyOTP(validation.data.email, validation.data.otp))) {
       return res.status(401).json({
         success: false,
         error: { code: "INVALID_OTP", message: "Invalid or expired OTP" },
@@ -577,7 +638,7 @@ export const resetPassword = async (req, res) => {
       { isValid: false }
     );
 
-    clearOTP(validation.data.email);
+    await clearOTP(validation.data.email);
 
     res.status(200).json({
       success: true,
@@ -589,6 +650,59 @@ export const resetPassword = async (req, res) => {
       success: false,
       error: { code: "SERVER_ERROR", message: "Failed to reset password" },
     });
+  }
+};
+
+export const verifyEmail = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    if (!(await verifyOTP(email, otp))) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.isEmailVerified = true;
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Email verified successfully" });
+  } catch (error) {
+    console.error("Error in verifyEmail:", error);
+    res.status(500).json({ message: "Failed to verify email" });
+  }
+};
+
+export const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    const otp = generateOTP();
+    await storeOTP(email, otp);
+    console.log(`[Email Verification] Sent to ${email}: ${otp}`);
+
+    res.status(200).json({ success: true, message: "Verification email sent" });
+  } catch (error) {
+    console.error("Error in resendVerificationEmail:", error);
+    res.status(500).json({ message: "Failed to send verification email" });
   }
 };
 
@@ -669,7 +783,7 @@ export const constellationSignup = async (req, res) => {
 
     // ── Create user (constellation-only accounts get a dummy unguessable password) ────────
     const dummyPassword = crypto.randomBytes(32).toString("hex");
-    const pwdSalt = await bcrypt.genSalt(10);
+    const pwdSalt = await bcrypt.genSalt(12);
     const hashedDummyPassword = await bcrypt.hash(dummyPassword, pwdSalt);
 
     savedUser = await new User({
@@ -677,6 +791,11 @@ export const constellationSignup = async (req, res) => {
       email,
       password: hashedDummyPassword,
     }).save();
+
+    // Generate and store email verification OTP
+    const otp = generateOTP();
+    await storeOTP(email, otp);
+    console.log(`[Email Verification] Sent to ${email}: ${otp}`);
 
     // ── Hash pattern with Argon2id + salt + pepper ───────────────────────
     const salt = generateSalt();
@@ -719,7 +838,7 @@ export const constellationSignup = async (req, res) => {
       profilePic: savedUser.profilePic,
       createdAt: savedUser.createdAt,
       authToken: tokens.accessToken,
-      constellationHash: patternHash,
+      hasConstellation: true,
       message: "Constellation identity sealed.",
     });
   } catch (error) {
@@ -825,6 +944,10 @@ export const constellationLogin = async (req, res) => {
       }
       // Generic message — do not leak whether the account exists
       return res.status(401).json({ message: "Authentication failed." });
+    }
+
+    if (!user.isEmailVerified) {
+      return res.status(403).json({ message: "Please verify your email to log in." });
     }
 
     // ── Per-user lockout check ────────────────────────────────────────────
@@ -940,7 +1063,7 @@ export const constellationLogin = async (req, res) => {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       authToken: tokens.accessToken,
-      constellationHash: profile.patternHash,
+      hasConstellation: true,
       message: "Constellation identity verified.",
       ...(behaviorWarning && { behaviorWarning: true }),
     });

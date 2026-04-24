@@ -180,7 +180,20 @@ export const createNexus = async (req, res) => {
 
 export const removeNexusMember = async (req, res) => {
   try {
-    const { nexusId, memberId } = req.body;
+    const removeSchema = z.object({
+      nexusId: z.string().min(1),
+      memberId: z.string().min(1),
+    });
+
+    const parsed = removeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid input data",
+        errors: parsed.error.issues.map(e => ({ field: e.path.join("."), message: e.message })),
+      });
+    }
+
+    const { nexusId, memberId } = parsed.data;
     const userId = req.user._id;
 
     const nexus = await Nexus.findById(nexusId).populate("members", "username _id");
@@ -280,12 +293,20 @@ export const updateNexus = async (req, res) => {
 
 export const joinNexus = async (req, res) => {
   try {
-    const { joinCode } = req.body;
     const userId = req.user._id;
+    const joinSchema = z.object({
+      joinCode: z.string().min(1, "Join code is required").max(20).trim(),
+    });
 
-    if (!joinCode) {
-      return res.status(400).json({ message: "Join code is required" });
+    const parsed = joinSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid input data",
+        errors: parsed.error.issues.map(e => ({ field: e.path.join("."), message: e.message })),
+      });
     }
+
+    const { joinCode } = parsed.data;
 
     const nexus = await Nexus.findOne({ joinCode: joinCode.toUpperCase() });
 
@@ -542,15 +563,18 @@ export const checkMembership = async (req, res) => {
     const diagnostics = {
       status: isMember ? "member" : "not_member",
       nexusId,
-      nexusName: nexus.name,
+      nexusName: isMember ? nexus.name : "Private Nexus",
       userId: userId.toString(),
-      memberCount: nexus.members?.length || 0,
       isMember,
-      isCreator: nexus.creator?._id?.toString() === userId.toString(),
-      creatorId: nexus.creator?._id?.toString(),
-      memberIds, // All member IDs for debugging
       timestamp: new Date().toISOString(),
     };
+
+    if (isMember) {
+      diagnostics.memberCount = nexus.members?.length || 0;
+      diagnostics.isCreator = nexus.creator?._id?.toString() === userId.toString();
+      diagnostics.creatorId = nexus.creator?._id?.toString();
+      diagnostics.memberIds = memberIds; // All member IDs for debugging
+    }
 
     console.info("[Nexus Diagnostic] Membership check:", diagnostics);
     res.status(200).json(diagnostics);

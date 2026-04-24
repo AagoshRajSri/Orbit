@@ -242,11 +242,11 @@ const CSS = `
 
 /* ─────────────────────────────── CORE COMPONENTS ─────────────────────────────── */
 
-const TopNav = memo(({ handleLogout }) => {
+const TopNav = memo(({ handleLogout, hiddenNexuses, onReveal }) => {
   const navigate = useNavigate();
   
   return (
-    <div className="luxury-nav">
+    <div className="luxury-nav" style={{ display: 'flex', alignItems: 'center' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => navigate('/')}>
         <div style={{
           width: 32, height: 32, borderRadius: 8, 
@@ -258,6 +258,21 @@ const TopNav = memo(({ handleLogout }) => {
         </div>
         <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '0.5px' }}>Orbit</span>
       </div>
+
+      {/* ── Centered Globes Gap ── */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 80, height: '100%', pointerEvents: 'none' }}>
+        {(hiddenNexuses || []).map((nexus, i) => (
+          <div key={nexus._id} style={{ pointerEvents: 'auto' }}>
+            <HiddenNexusGlobe
+              nexus={nexus}
+              index={i}
+              totalCount={hiddenNexuses.length}
+              onReveal={onReveal}
+            />
+          </div>
+        ))}
+      </div>
+
       <div style={{ display: 'flex', gap: '12px' }}>
         <button onClick={() => navigate('/settings')} className="luxury-button btn-pill-pink" style={{ padding: '8px 16px' }}>
           <Settings size={14} /> Settings
@@ -273,19 +288,109 @@ const TopNav = memo(({ handleLogout }) => {
   );
 });
 
-const LuxuryWrapper = memo(({ children, handleLogout }) => {
+// ── Hidden Nexus Globe ──────────────────────────────────────────────────
+const HiddenNexusGlobe = memo(({ nexus, onReveal, index, totalCount }) => {
+    const [grabbed, setGrabbed] = useState(false);
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const domRef = useRef(null);
+    const offsetRef = useRef({ ox: 0, oy: 0 });
+    const clickTimerRef = useRef(null);
+    const pendingRevealRef = useRef(false);
+
+    useEffect(() => {
+        if (!grabbed) return;
+        const onMove = (e) => {
+            setPos({ x: e.clientX - offsetRef.current.ox, y: e.clientY - offsetRef.current.oy });
+        };
+        const onUp = () => setGrabbed(false);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+    }, [grabbed]);
+
+    const handleMouseDown = (e) => {
+        if (e.detail === 2) {
+            e.preventDefault();
+            e.stopPropagation();
+            pendingRevealRef.current = false;
+            clearTimeout(clickTimerRef.current);
+            const rect = domRef.current.getBoundingClientRect();
+            setPos({ x: rect.left, y: rect.top });
+            offsetRef.current = { ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+            setGrabbed(true);
+        }
+    };
+
+    const handleClick = (e) => {
+        e.stopPropagation();
+        if (grabbed) return; 
+        pendingRevealRef.current = true;
+        clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = setTimeout(() => {
+            if (pendingRevealRef.current) onReveal(nexus._id);
+        }, 250);
+    };
+
+    return (
+        <div
+            ref={domRef}
+            style={{
+                position: grabbed ? 'fixed' : 'relative',
+                left: grabbed ? pos.x : 'auto',
+                top: grabbed ? pos.y : 'auto',
+                zIndex: 9999,
+                cursor: grabbed ? 'grabbing' : 'pointer',
+                userSelect: 'none',
+                touchAction: 'none',
+                filter: grabbed
+                    ? 'drop-shadow(0 0 20px #C9A87C) drop-shadow(0 0 40px rgba(201,168,124,0.6))'
+                    : 'drop-shadow(0 0 6px rgba(201,168,124,0.4))',
+                transition: grabbed ? 'none' : 'filter 0.3s',
+                width: 44,
+                height: 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'white',
+                borderRadius: '12px',
+                border: `1px solid ${LUXURY_COLORS.goldMedium}`,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+            }}
+            onMouseDown={handleMouseDown}
+            onClick={handleClick}
+            onDragStart={(e) => e.preventDefault()}
+        >
+            <Globe size={20} color={LUXURY_COLORS.goldDark} />
+        </div>
+    );
+});
+
+const LuxuryWrapper = memo(({ children, hiddenNexuses, onReveal, handleLogout }) => {
   const rootRef = useRef(null);
+  const { logout } = useAuthStore();
   
+  const onLogout = async () => {
+    if (handleLogout) await handleLogout();
+    else await logout();
+  };
+
   return (
     <div className="luxury-root" ref={rootRef}>
       <style>{CSS}</style>
-      <TopNav handleLogout={handleLogout} />
+      <TopNav 
+        handleLogout={onLogout} 
+        hiddenNexuses={hiddenNexuses}
+        onReveal={onReveal}
+      />
       {children}
     </div>
   );
 });
 
-const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, selectedUser, setSelectedUser, setNexusActionView }) => {
+const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, selectedUser, setSelectedUser, setNexusActionView, toggleHide, hiddenNexuses }) => {
   const navigate = useNavigate();
   const [tab, setTab] = useState('orbits');
 
@@ -316,14 +421,17 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
   };
 
   const sortedNexuses = useMemo(() => {
-    return [...nexuses].sort((a, b) => {
-      const aPinned = pinnedNexuses.includes(a._id);
-      const bPinned = pinnedNexuses.includes(b._id);
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      return 0;
-    });
-  }, [nexuses, pinnedNexuses]);
+    const hiddenIds = (hiddenNexuses || []).map(h => h._id);
+    return [...(nexuses || [])]
+      .filter(n => !hiddenIds.includes(n._id))
+      .sort((a, b) => {
+        const aPinned = pinnedNexuses.includes(a._id);
+        const bPinned = pinnedNexuses.includes(b._id);
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        return 0;
+      });
+  }, [nexuses, pinnedNexuses, hiddenNexuses]);
 
   // Click outside handler for menus
   useEffect(() => {
@@ -457,6 +565,12 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
                         >
                           {pinnedNexuses.includes(nexus._id) ? "Unpin 📌" : "Pin 📌"}
                         </button>
+                        <button 
+                          onClick={(e) => toggleHide(nexus, e)}
+                          style={{ flex: 1, padding: '8px 12px', background: LUXURY_COLORS.accentPink, border: `1px solid ${LUXURY_COLORS.goldLight}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#7A4242', cursor: 'pointer', transition: 'all 0.2s' }}
+                        >
+                          Hide 🌐
+                        </button>
                       </div>
 
                       {activeColorPickerId === nexus._id && (
@@ -582,10 +696,55 @@ export default function LightTheme({ children }) {
    const nexusSelected = Boolean(selectedNexus || selectedNexusId);
    const navigate = useNavigate();
 
+   // ── Hidden Nexus State ──
+   const [hiddenNexuses, setHiddenNexuses] = useState(() => {
+       try {
+           const saved = localStorage.getItem('luxury_hidden_nexuses');
+           return saved ? JSON.parse(saved) : [];
+       } catch { return []; }
+   });
+
+   const toggleHide = (nexus, e) => {
+       if (e) e.stopPropagation();
+       const id = nexus._id;
+       const isHidden = (hiddenNexuses || []).some(h => h._id === id);
+       
+       if (!isHidden && hiddenNexuses.length >= 3) {
+           import("react-hot-toast").then(({ toast }) => toast.error("Maximum 3 hidden Nexuses allowed per theme."));
+           return;
+       }
+
+       const next = isHidden
+           ? hiddenNexuses.filter(h => h._id !== id)
+           : [...hiddenNexuses, { _id: id, name: nexus.name }];
+       
+       setHiddenNexuses(next);
+       localStorage.setItem('luxury_hidden_nexuses', JSON.stringify(next));
+   };
+
+   const onReveal = (id) => {
+       const next = hiddenNexuses.filter(h => h._id !== id);
+       setHiddenNexuses(next);
+       localStorage.setItem('luxury_hidden_nexuses', JSON.stringify(next));
+   };
+
    return (
-     <LuxuryWrapper>
+     <LuxuryWrapper 
+        hiddenNexuses={hiddenNexuses}
+        onReveal={onReveal}
+     >
        <div className="board-container">
-         <LuxurySidebar />
+          <LuxurySidebar 
+            nexuses={nexuses} 
+            selectedNexus={selectedNexus} 
+            setSelectedNexus={setSelectedNexus} 
+            users={users} 
+            selectedUser={selectedUser} 
+            setSelectedUser={setSelectedUser} 
+            setNexusActionView={setNexusActionView} 
+            toggleHide={toggleHide}
+            hiddenNexuses={hiddenNexuses}
+          />
          
          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
             

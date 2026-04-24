@@ -25,9 +25,10 @@ export const getUsersForSidebar = async (req, res) => {
     const query = { _id: { $ne: loggedInUserId } };
 
     if (search && typeof search === "string" && search.trim()) {
+      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { username: { $regex: search.trim(), $options: "i" } },
-        { email: { $regex: search.trim(), $options: "i" } },
+        { username: { $regex: sanitizedSearch, $options: "i" } },
+        { email: { $regex: sanitizedSearch, $options: "i" } },
       ];
     }
 
@@ -260,12 +261,19 @@ export const updateMessage = async (req, res) => {
     const { text } = req.body;
     const userId = req.user._id;
 
-    if (!text || typeof text !== "string" || text.trim().length === 0) {
+    const updateSchema = z.object({
+      text: z.string().min(1, "Text cannot be empty").max(2000, "Text too long").trim()
+    });
+
+    const parsed = updateSchema.safeParse({ text });
+    if (!parsed.success) {
       return res.status(400).json({
         success: false,
-        error: { code: "VALIDATION_ERROR", message: "Text is required and cannot be empty" },
+        error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0].message },
       });
     }
+
+    const sanitizedText = parsed.data.text;
 
     const message = await Message.findById(messageId);
     if (!message) {
@@ -276,7 +284,7 @@ export const updateMessage = async (req, res) => {
       return res.status(403).json({ success: false, error: { code: "FORBIDDEN", message: "Unauthorized" } });
     }
 
-    message.text = text.trim();
+    message.text = sanitizedText;
     await message.save();
 
     const populatedMessage = await Message.findById(messageId)

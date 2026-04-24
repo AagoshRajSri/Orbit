@@ -24,8 +24,10 @@ const challengeLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+import { loginLimiter, signupLimiter } from '../middleware/rate-limit.middleware.js';
+
 router.get('/challenge',  challengeLimiter, challengeHandler);
-router.post('/enroll',    enrollHandler);
-router.post('/login',     loginHandler);
+router.post('/enroll',    signupLimiter, enrollHandler);
+router.post('/login',     loginLimiter, loginHandler);
 
 export default router;

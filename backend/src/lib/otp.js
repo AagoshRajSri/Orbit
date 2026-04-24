@@ -1,28 +1,25 @@
-// In-memory OTP storage for development
-// In production, use Redis or a database
-const otpStore = new Map();
+import OTP from "../models/otp.model.js";
 
 export const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-export const storeOTP = (email, otp) => {
-  // OTP valid for 5 minutes
-  const expiry = Date.now() + 5 * 60 * 1000;
-  otpStore.set(email, { otp, expiry });
+export const storeOTP = async (email, otp) => {
+  await OTP.deleteMany({ email });
+  await OTP.create({ email, otp });
   console.log(`[DEV] OTP stored for ${email} (valid for 5 mins)`);
 };
 
-export const verifyOTP = (email, otp) => {
-  const stored = otpStore.get(email);
-  if (!stored) return false;
-  if (Date.now() > stored.expiry) {
-    otpStore.delete(email);
-    return false;
+export const verifyOTP = async (email, otp) => {
+  const record = await OTP.findOne({ email });
+  if (!record) return false;
+  if (record.otp === otp) {
+    await OTP.deleteMany({ email });
+    return true;
   }
-  return stored.otp === otp;
+  return false;
 };
 
-export const clearOTP = (email) => {
-  otpStore.delete(email);
+export const clearOTP = async (email) => {
+  await OTP.deleteMany({ email });
 };

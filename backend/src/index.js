@@ -59,6 +59,19 @@ const findAvailablePort = async (startPort, maxAttempts = 10) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const app = express();
+
+// ── Enforce HTTPS in Production ──────────────────────────────────────────────
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+  app.use((req, res, next) => {
+    if (req.header("x-forwarded-proto") !== "https") {
+      res.redirect(`https://${req.header("host")}${req.url}`);
+    } else {
+      next();
+    }
+  });
+}
+
 const httpServer = createServer(app);
 
 const allowedOrigins = process.env.FRONTEND_URL
@@ -83,13 +96,10 @@ app.use(
   }),
 );
 
-const limiter = rateLimit({
-  max: 1000,
-  windowMs: 15 * 60 * 1000,
-  message: "Too many requests from this IP, please try again in 15 minutes!",
-});
+import { apiLimiter, botProtectionLimiter } from "./middleware/rate-limit.middleware.js";
 
-app.use("/api", limiter);
+app.use(botProtectionLimiter); // Protects all routes from aggressive bots
+app.use("/api", apiLimiter); // General API limiter for authenticated/unauthenticated traffic
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ limit: "5mb", extended: true }));
 app.use(hpp());

@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import bcryptjs from 'bcryptjs';
 import User from '../models/user.model.js';
 import StarWeaveProfile from '../models/starweave.model.js';
+import { z } from 'zod';
 import { generateToken } from '../lib/utils.js';
 import {
   buildCanonicalPattern,
@@ -73,7 +74,17 @@ function consumeNonce(nonce, expectedUserId) {
 // ─── GET /challenge ──────────────────────
 export async function challengeHandler(req, res) {
   try {
-    const { email, type } = req.query;
+    const querySchema = z.object({
+      email: z.string().email().optional().or(z.literal('')),
+      type: z.enum(['signup', 'login']).optional()
+    });
+
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid query parameters" });
+    }
+
+    const { email, type } = parsed.data;
     const nonce = issueNonce(null);
 
     const VISIBLE_COUNT = 24;
@@ -184,6 +195,24 @@ export async function challengeHandler(req, res) {
 // ─── POST /enroll ──────────────────────────────────────────────────────────────
 export async function enrollHandler(req, res) {
   try {
+    const enrollSchema = z.object({
+      username: z.string().min(2).max(50),
+      email: z.string().email(),
+      password: z.string().min(6),
+      nodes: z.array(z.string()).min(5).max(9),
+      nonce: z.string().min(1),
+      pass1Metrics: z.record(z.any()).optional(),
+      pass2Metrics: z.record(z.any()).optional(),
+      emojiConfig: z.array(z.any()),
+      signatureGlyphs: z.array(z.string()),
+      configSignature: z.string().min(1)
+    });
+
+    const parsed = enrollSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: 'Missing or invalid required fields.', errors: parsed.error.issues });
+    }
+
     const {
       username, email, password,
       nodes,           // ordered array of node labels e.g. ['Ignis','Luna',...]
@@ -193,18 +222,7 @@ export async function enrollHandler(req, res) {
       emojiConfig,     // Server-provided emoji layout
       signatureGlyphs, // Required signature glyphs from challenge
       configSignature  // HMAC array of the layout
-    } = req.body;
-
-    // Basic validation
-    if (!username || !email || !password || !nodes || !nonce || !emojiConfig || !configSignature) {
-      const missing = { username: !username, email: !email, password: !password, nodes: !nodes, nonce: !nonce, emojiConfig: !emojiConfig, configSignature: !configSignature };
-      console.warn('[Enroll] Missing fields:', missing);
-      return res.status(400).json({ message: 'Missing required fields.' });
-    }
-    if (!Array.isArray(nodes) || nodes.length < 5 || nodes.length > 9) {
-      console.warn('[Enroll] Bad node count:', nodes?.length);
-      return res.status(400).json({ message: 'Pattern must be 5–9 nodes for security.' });
-    }
+    } = parsed.data;
     if (!consumeNonce(nonce, null)) {
       console.warn('[Enroll] Nonce rejected — expired or already used:', nonce?.slice(0, 12));
       return res.status(400).json({ message: 'Invalid or expired nonce.' });
@@ -306,6 +324,21 @@ export async function enrollHandler(req, res) {
 // ─── POST /login ───────────────────────────────────────────────────────────────
 export async function loginHandler(req, res) {
   try {
+    const loginSchema = z.object({
+      email: z.string().email(),
+      nodes: z.array(z.string()).min(5).max(9),
+      nonce: z.string().min(1),
+      loginMetrics: z.record(z.any()).optional(),
+      emojiConfig: z.array(z.any()),
+      signatureGlyphs: z.array(z.string()),
+      configSignature: z.string().min(1)
+    });
+
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: 'Missing or invalid required fields.', errors: parsed.error.issues });
+    }
+
     const {
       email,
       nodes,           // ordered array of node labels from login attempt
@@ -314,14 +347,7 @@ export async function loginHandler(req, res) {
       emojiConfig,
       signatureGlyphs,
       configSignature
-    } = req.body;
-
-    if (!email || !nodes || !nonce || !emojiConfig || !configSignature) {
-      return res.status(400).json({ message: 'Missing required fields.' });
-    }
-    if (!Array.isArray(nodes) || nodes.length < 5 || nodes.length > 9) {
-      return res.status(400).json({ message: 'Pattern must be 5–9 nodes for security.' });
-    }
+    } = parsed.data;
     if (!consumeNonce(nonce, null)) {
       return res.status(400).json({ message: 'Invalid or expired nonce.' });
     }

@@ -456,7 +456,7 @@ const BarbieTrainAnimation = memo(() => {
   );
 });
 
-const TopNav = memo(({ navRef, handleLogout, loggingOut, authUser }) => {
+const TopNav = memo(({ navRef, handleLogout, loggingOut, authUser, hiddenNexuses, onReveal }) => {
   const navigate = useNavigate();
 
   const navBtnBase = {
@@ -547,9 +547,18 @@ const TopNav = memo(({ navRef, handleLogout, loggingOut, authUser }) => {
         </div>
       </div>
 
-      {/* ── Center: Barbie Train Animation ── */}
-      <div style={{ flex: 1, margin: "0 20px", height: "100%", position: "relative", overflow: "hidden", pointerEvents: "none", opacity: 0.9 }}>
-        <BarbieTrainAnimation />
+      {/* ── Center: Barbie Train Animation + Hidden Sparks ── */}
+      <div style={{ flex: 1, margin: "0 20px", height: "100%", position: "relative", overflow: "hidden", display: "flex", alignItems: "center" }}>
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.9 }}>
+          <BarbieTrainAnimation />
+        </div>
+        <div style={{ position: "relative", zIndex: 5, display: "flex", gap: 50, marginLeft: 140, pointerEvents: "none" }}>
+          {(hiddenNexuses || []).map(nexus => (
+            <div key={nexus._id} style={{ pointerEvents: "auto" }}>
+              <HiddenNexusSparkle nexus={nexus} onReveal={onReveal} />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── Right: Nav links + logout ── */}
@@ -628,6 +637,86 @@ const TopNav = memo(({ navRef, handleLogout, loggingOut, authUser }) => {
   );
 });
 
+
+
+// ── Hidden Nexus Sparkle ──────────────────────────────────────────────────
+const HiddenNexusSparkle = memo(({ nexus, onReveal }) => {
+    const [grabbed, setGrabbed] = useState(false);
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const domRef = useRef(null);
+    const offsetRef = useRef({ ox: 0, oy: 0 });
+    const clickTimerRef = useRef(null);
+    const pendingRevealRef = useRef(false);
+
+    useEffect(() => {
+        if (!grabbed) return;
+        const onMove = (e) => {
+            setPos({ x: e.clientX - offsetRef.current.ox, y: e.clientY - offsetRef.current.oy });
+        };
+        const onUp = () => setGrabbed(false);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+    }, [grabbed]);
+
+    const handleMouseDown = (e) => {
+        if (e.detail === 2) {
+            e.preventDefault();
+            e.stopPropagation();
+            pendingRevealRef.current = false;
+            clearTimeout(clickTimerRef.current);
+            const rect = domRef.current.getBoundingClientRect();
+            setPos({ x: rect.left, y: rect.top });
+            offsetRef.current = { ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+            setGrabbed(true);
+        }
+    };
+
+    const handleClick = (e) => {
+        e.stopPropagation();
+        if (grabbed) return; 
+        pendingRevealRef.current = true;
+        clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = setTimeout(() => {
+            if (pendingRevealRef.current) onReveal(nexus._id);
+        }, 250);
+    };
+
+    return (
+        <div
+            ref={domRef}
+            style={{
+                position: grabbed ? 'fixed' : 'relative',
+                left: grabbed ? pos.x : 'auto',
+                top: grabbed ? pos.y : 'auto',
+                zIndex: 9999,
+                cursor: grabbed ? 'grabbing' : 'pointer',
+                userSelect: 'none',
+                touchAction: 'none',
+                filter: grabbed
+                    ? 'drop-shadow(0 0 15px #ffaad8) drop-shadow(0 0 30px rgba(255,170,216,0.5))'
+                    : 'drop-shadow(0 0 8px rgba(255,170,216,0.3))',
+                transition: grabbed ? 'none' : 'filter 0.3s',
+                fontSize: 22,
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                animation: grabbed ? 'none' : 'starPulse 2s ease-in-out infinite'
+            }}
+            onMouseDown={handleMouseDown}
+            onClick={handleClick}
+            onDragStart={(e) => e.preventDefault()}
+        >
+            ✨
+        </div>
+    );
+});
+
 /* ── cute online status pill ── */
 const StatusPill = memo(() => {
   return (
@@ -645,7 +734,7 @@ const StatusPill = memo(() => {
   );
 });
 
-const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView }) => {
+const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) => {
   const [activeTab, setActiveTab] = useState("orbits");
   const { play } = useSoundManager();
   const navigate = useNavigate();
@@ -677,14 +766,17 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
   };
 
   const sortedNexuses = useMemo(() => {
-    return [...nexuses].sort((a, b) => {
-      const aPinned = pinnedNexuses.includes(a._id);
-      const bPinned = pinnedNexuses.includes(b._id);
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      return 0;
-    });
-  }, [nexuses, pinnedNexuses]);
+    const hiddenIds = (hiddenNexuses || []).map(h => h._id);
+    return [...nexuses]
+      .filter(n => !hiddenIds.includes(n._id))
+      .sort((a, b) => {
+        const aPinned = pinnedNexuses.includes(a._id);
+        const bPinned = pinnedNexuses.includes(b._id);
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        return 0;
+      });
+  }, [nexuses, pinnedNexuses, hiddenNexuses]);
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -817,6 +909,12 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
                         style={{ flex: 1, padding: '6px', background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,182,193,0.3)", borderRadius: 10, fontSize: 11, color: "#8a7585", fontFamily: "inherit", fontWeight: 700, cursor: 'pointer' }}
                       >
                         {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                      </button>
+                      <button
+                        onClick={(e) => toggleHide(n, e)}
+                        style={{ flex: 1, padding: '6px', background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,182,193,0.3)", borderRadius: 10, fontSize: 11, color: "#8a7585", fontFamily: "inherit", fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Hide ✨
                       </button>
                     </div>
 
@@ -1050,6 +1148,39 @@ export default function PastelApp({ children }) {
     try { await logout(); } finally { setLoggingOut(false); }
   };
 
+  // ── Hidden Nexus State ──
+  const [hiddenNexuses, setHiddenNexuses] = useState(() => {
+      try {
+          const saved = localStorage.getItem('pastel_hidden_nexuses');
+          return saved ? JSON.parse(saved) : [];
+      } catch { return []; }
+  });
+
+  const toggleHide = (nexus, e) => {
+      if (e) e.stopPropagation();
+      const id = nexus._id;
+      const isHidden = (hiddenNexuses || []).some(h => h._id === id);
+      
+      if (!isHidden && hiddenNexuses.length >= 3) {
+          import("react-hot-toast").then(({ toast }) => toast.error("Maximum 3 hidden Nexuses allowed per theme."));
+          return;
+      }
+
+      const next = isHidden
+          ? hiddenNexuses.filter(h => h._id !== id)
+          : [...hiddenNexuses, { _id: id, name: nexus.name }];
+      
+      setHiddenNexuses(next);
+      localStorage.setItem('pastel_hidden_nexuses', JSON.stringify(next));
+  };
+
+  const onReveal = (id) => {
+      const next = hiddenNexuses.filter(h => h._id !== id);
+      setHiddenNexuses(next);
+      localStorage.setItem('pastel_hidden_nexuses', JSON.stringify(next));
+  };
+
+
   useEffect(() => {
     setMounted(true);
     const ctx = gsap.context(() => {
@@ -1191,10 +1322,103 @@ export default function PastelApp({ children }) {
         }
       `}</style>
 
+
+      <style>{`
+        @keyframes float {
+          0%,100%{ transform:translateY(0); }
+          50%{ transform:translateY(-6px); }
+        }
+        *{ box-sizing:border-box; }
+        button:focus{ outline:none; }
+        ::-webkit-scrollbar{ width:4px; }
+        ::-webkit-scrollbar-thumb{ background:rgba(200,169,212,0.4); border-radius:99px; }
+
+        /* ── Pastel Dream Chat Theme ── */
+        .pastel-chat-env .nexus-chat-container {
+          background: rgba(255,255,255,0.6) !important;
+          backdrop-filter: blur(20px) !important;
+          border-radius: 30px !important; /* heavy border radius */
+          overflow: hidden !important;
+          border: 1px solid rgba(255,255,255,0.8) !important;
+          box-shadow: 0 10px 40px rgba(255,150,200,0.1) !important;
+        }
+        .pastel-chat-env .nxc-messages {
+          background-color: transparent !important;
+          background-image: 
+            radial-gradient(circle at 10% 20%, rgba(200, 180, 255, 0.4) 0%, transparent 60%),
+            radial-gradient(circle at 90% 80%, rgba(180, 255, 200, 0.4) 0%, transparent 60%) !important;
+        }
+        .pastel-chat-env .nexus-chat-header { 
+          background: rgba(255,255,255,0.4) !important; 
+          border-bottom: 1px solid rgba(255,183,178,0.4) !important;
+          backdrop-filter: blur(14px) !important;
+          color: #8b5a2b !important; /* Coffee brown */
+        }
+        .pastel-chat-env .nexus-chat-header .nxc-name { color: #8b5a2b !important; font-weight: 800 !important; }
+        .pastel-chat-env .nxc-utility-group, .pastel-chat-env .nxc-telemetry-capsule {
+          background: transparent !important; border: none !important; box-shadow: none !important;
+          color: #8b5a2b !important;
+        }
+        /* Claymorphic Buttons */
+        .pastel-chat-env .nxc-hbtn, .pastel-chat-env .nxc-aero-btn {
+          background: rgba(255,255,255,0.85) !important;
+          border-radius: 50% !important;
+          box-shadow: 4px 4px 10px rgba(255,183,178,0.3), -4px -4px 10px rgba(255,255,255,0.8), inset 2px 2px 4px rgba(255,255,255,1), inset -4px -4px 4px rgba(255,183,178,0.15) !important;
+          color: #8b5a2b !important; 
+          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        }
+        .pastel-chat-env .nxc-hbtn:hover, .pastel-chat-env .nxc-aero-btn:hover {
+          transform: scale(1.15) !important; /* Popping */
+          box-shadow: 6px 6px 12px rgba(255,183,178,0.35), -6px -6px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,1), inset -2px -2px 4px rgba(255,183,178,0.15) !important;
+        }
+        .pastel-chat-env .nxc-signal-bars .nxc-bar,
+        .pastel-chat-env .text-[#5dcaa5] {
+          background-color: #8b5a2b !important; /* Using coffee brown to keep grounded */
+          color: #8b5a2b !important;
+          text-shadow: none !important;
+        }
+        .pastel-chat-env .bg-white\\/20 { display: none !important; } /* Clear out white line dividers from general utility group layout */
+        
+        .pastel-chat-env .nxi-shell {
+          background: rgba(255,255,255,0.4) !important;
+          border-top: 1px solid rgba(255,183,178,0.4) !important;
+          backdrop-filter: blur(14px) !important;
+        }
+        .pastel-chat-env .nxi-textarea {
+          background: rgba(255,255,255,0.6) !important;
+          border: 1px solid rgba(255,183,178,0.5) !important;
+          color: #8b5a2b !important;
+          border-radius: 18px !important;
+        }
+        .pastel-chat-env .nxi-textarea:focus {
+          border-color: #ffb7b2 !important; box-shadow: 0 0 10px rgba(255,183,178,0.5) !important;
+        }
+        .pastel-chat-env .nxi-send.ready {
+          background: rgba(255,255,255,0.85) !important;
+          color: #8b5a2b !important;
+          box-shadow: 4px 4px 10px rgba(255,183,178,0.3), inset 2px 2px 4px rgba(255,255,255,1) !important;
+          border-radius: 50% !important;
+        }
+        .pastel-chat-env .nxi-tool-btn, .pastel-chat-env .nxi-mic { color: #8b5a2b !important; }
+
+        /* Bubbles */
+        .pastel-chat-env .msg-bubble-mine { 
+          background: rgba(255,255,255,0.8) !important; 
+          border: 1px solid rgba(255,183,178,0.6) !important; 
+          color: #8b5a2b !important;
+          box-shadow: 4px 4px 10px rgba(255,183,178,0.2) !important;
+        }
+        .pastel-chat-env .msg-bubble-other { 
+          background: rgba(255,255,255,0.5) !important; 
+          border: 1px solid rgba(255,255,255,0.8) !important; 
+          color: #8b5a2b !important;
+        }
+      `}</style>
+
       <SparkleClick />
       <BgClouds />
       <Floaties />
-      <TopNav navRef={navRef} authUser={authUser} handleLogout={handleLogout} loggingOut={loggingOut} />
+      <TopNav navRef={navRef} authUser={authUser} handleLogout={handleLogout} loggingOut={loggingOut} hiddenNexuses={hiddenNexuses} onReveal={onReveal} />
 
       <div style={{ position: "absolute", top: 50, left: 0, right: 0, bottom: 0, display: "flex" }}>
         <Sidebar
@@ -1206,6 +1430,8 @@ export default function PastelApp({ children }) {
           setSelectedUser={setSelectedUser}
           nexusUnread={nexusUnread || {}}
           setNexusActionView={setNexusActionView}
+          hiddenNexuses={hiddenNexuses}
+          toggleHide={toggleHide}
         />
 
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>

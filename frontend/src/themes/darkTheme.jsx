@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, Fragment, useMemo, memo } from "react";
+import toast from "react-hot-toast";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { createPortal } from "react-dom";
 import { useThemeStore } from "../store/useThemeStore";
@@ -1071,15 +1072,29 @@ const HangingBats = memo(() => {
         </>
     );
 });
-
 // ── Main Shell Components ───────────────────────────────────────────────
-const VampireTopNav = memo(({ navRef, navigate, logout }) => {
+const VampireTopNav = memo(({ navRef, navigate, logout, hiddenNexuses, onReveal }) => {
     return (
-        <nav className="navbar" ref={navRef}>
+        <nav className="navbar" ref={navRef} style={{ display: 'flex', alignItems: 'center' }}>
             <div className="nav-logo" onClick={() => navigate("/")} style={{ cursor: 'pointer' }}>
                 <div className="nav-logo-icon"><img src={batLogo} alt="Orbit Bat" /></div>
                 ORBIT
             </div>
+
+            {/* ── Centered Bats Gap ── */}
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 60, height: '100%', pointerEvents: 'none' }}>
+                {hiddenNexuses.map((nexus, i) => (
+                    <div key={nexus._id} style={{ pointerEvents: 'auto' }}>
+                        <HiddenNexusBat
+                            nexus={nexus}
+                            index={i}
+                            totalCount={hiddenNexuses.length}
+                            onReveal={onReveal}
+                        />
+                    </div>
+                ))}
+            </div>
+
             <div className="nav-actions">
                 <button className="nav-btn" onClick={() => navigate("/settings")}>
                     <span>⚙</span> Settings
@@ -1088,7 +1103,7 @@ const VampireTopNav = memo(({ navRef, navigate, logout }) => {
                     <span>👤</span> Profile
                 </button>
                 <button className="nav-btn" onClick={logout}>
-                    <span>⇥</span> Logout
+                    <span>↥</span> Logout
                 </button>
             </div>
         </nav>
@@ -1096,12 +1111,14 @@ const VampireTopNav = memo(({ navRef, navigate, logout }) => {
 });
 VampireTopNav.displayName = "VampireTopNav";
 
-const VampireSidebar = memo(({ 
-    sidebarRef, activeTab, setActiveTab, setNexusActionView, 
-    isNexusesLoading, nexuses, sortedNexuses, selectedNexus, selectedNexusId, 
-    setSelectedNexus, setSelectedUser, nexusColors, nexusUnread, 
+
+const VampireSidebar = memo(({
+    sidebarRef, activeTab, setActiveTab, setNexusActionView,
+    isNexusesLoading, nexuses, sortedNexuses, selectedNexus, selectedNexusId,
+    setSelectedNexus, setSelectedUser, nexusColors, nexusUnread,
     activeMenuId, setActiveMenuId, activeColorPickerId, setActiveColorPickerId,
-    togglePin, updateColor, users, selectedUser, navigate, pinnedNexuses
+    togglePin, updateColor, users, selectedUser, navigate, pinnedNexuses,
+    hiddenNexuses, toggleHide
 }) => {
     return (
         <aside className="sidebar" ref={sidebarRef}>
@@ -1152,21 +1169,21 @@ const VampireSidebar = memo(({
                                 <div
                                     key={n._id}
                                     className="sidebar-item"
-                                    onClick={() => { 
+                                    onClick={() => {
                                         setSelectedUser(null);
                                         setNexusActionView(null);
-                                        setSelectedNexus(n); 
+                                        setSelectedNexus(n);
                                         navigate(`/nexus/${n._id}`);
                                     }}
-                                    style={{ 
-                                        display:"flex", 
-                                        flexDirection: "column", 
-                                        padding:"12px 14px", 
-                                        cursor:"pointer", 
-                                        borderBottom:"1px solid rgba(139,0,0,0.15)", 
-                                        transition:"all 0.2s ease",
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        padding: "12px 14px",
+                                        cursor: "pointer",
+                                        borderBottom: "1px solid rgba(139,0,0,0.15)",
+                                        transition: "all 0.2s ease",
                                         background: isSel
-                                            ? "rgba(139,0,0,0.25)" 
+                                            ? "rgba(139,0,0,0.25)"
                                             : nexusColors[n._id] || "transparent",
                                         borderLeft: isSel
                                             ? "3px solid #dc143c"
@@ -1175,22 +1192,22 @@ const VampireSidebar = memo(({
                                     }}
                                 >
                                     <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
-                                        <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(139,0,0,0.3)", border:"1.5px solid rgba(220,20,60,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0, overflow:"hidden" }}>
-                                            {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"50%" }} /> : "⬡"}
+                                        <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(139,0,0,0.3)", border: "1.5px solid rgba(220,20,60,0.6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, overflow: "hidden" }}>
+                                            {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} /> : "⬡"}
                                         </div>
-                                        <div style={{ minWidth:0, flex:1 }}>
-                                            <div style={{ fontSize:13, fontWeight:600, color: isSel ? "#fff" : "#F0E6D3", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.name}</div>
-                                            <div style={{ fontSize:10, color:"rgba(168,155,176,0.6)", fontFamily:"serif" }}>{n.members?.length || 0} members</div>
+                                        <div style={{ minWidth: 0, flex: 1 }}>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: isSel ? "#fff" : "#F0E6D3", fontFamily: "'Cinzel',serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.name}</div>
+                                            <div style={{ fontSize: 10, color: "rgba(168,155,176,0.6)", fontFamily: "serif" }}>{n.members?.length || 0} members</div>
                                         </div>
                                         {nexusUnread[n._id] > 0 && (
-                                            <div style={{ background:"rgba(220,20,60,0.8)", color:"white", fontSize:10, fontWeight:900, padding:"1px 6px", borderRadius:4, fontFamily:"'Cinzel',serif", boxShadow:"0 0 10px rgba(220,20,60,0.4)" }}>{nexusUnread[n._id]}</div>
+                                            <div style={{ background: "rgba(220,20,60,0.8)", color: "white", fontSize: 10, fontWeight: 900, padding: "1px 6px", borderRadius: 4, fontFamily: "'Cinzel',serif", boxShadow: "0 0 10px rgba(220,20,60,0.4)" }}>{nexusUnread[n._id]}</div>
                                         )}
 
                                         {nexusColors[n._id] && nexusColors[n._id] !== 'transparent' && (
                                             <div style={{ position: 'absolute', top: 2, right: 2, fontSize: 10 }}>📌</div>
                                         )}
 
-                                        <div 
+                                        <div
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setActiveMenuId(activeMenuId === n._id ? null : n._id);
@@ -1203,12 +1220,12 @@ const VampireSidebar = memo(({
                                     </div>
 
                                     {activeMenuId === n._id && (
-                                        <div 
+                                        <div
                                             onClick={(e) => e.stopPropagation()}
                                             style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(139,0,0,0.2)`, display: 'flex', flexDirection: 'column', gap: 8 }}
                                         >
                                             <div style={{ display: 'flex', gap: 8 }}>
-                                                <button 
+                                                <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
@@ -1217,11 +1234,17 @@ const VampireSidebar = memo(({
                                                 >
                                                     Mark 🎨
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={(e) => togglePin(n._id, e)}
                                                     style={{ flex: 1, padding: '6px', background: "rgba(139,0,0,0.2)", border: "1px solid rgba(139,0,0,0.4)", borderRadius: 4, fontSize: 9, color: "#F0E6D3", fontFamily: "'Cinzel', serif", letterSpacing: '1px', cursor: 'pointer' }}
                                                 >
                                                     {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                                                </button>
+                                                <button
+                                                    onClick={(e) => toggleHide(n, e)}
+                                                    style={{ flex: 1, padding: '6px', background: "rgba(80,0,0,0.3)", border: "1px solid rgba(220,20,60,0.5)", borderRadius: 4, fontSize: 9, color: "#dc143c", fontFamily: "'Cinzel', serif", letterSpacing: '1px', cursor: 'pointer' }}
+                                                >
+                                                    Hide 🦇
                                                 </button>
                                             </div>
                                         </div>
@@ -1242,22 +1265,22 @@ const VampireSidebar = memo(({
                                     setSelectedUser(u);
                                     navigate(`/chat/${u._id}`);
                                 }}
-                                style={{ 
-                                    display:"flex", 
-                                    alignItems:"center", 
-                                    gap:10, 
-                                    padding:"12px 14px", 
-                                    cursor:"pointer", 
-                                    transition:"all 0.2s ease",
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 10,
+                                    padding: "12px 14px",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease",
                                     background: (selectedUser?._id === u._id) ? "rgba(139,0,0,0.18)" : "transparent",
                                     borderLeft: (selectedUser?._id === u._id) ? "3px solid #dc143c" : "3px solid transparent",
                                     borderBottom: "1px solid rgba(139,0,0,0.05)"
                                 }}
                             >
-                                <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(139,0,0,0.2)", border:"1px solid rgba(220,20,60,0.4)", overflow:"hidden", flexShrink:0 }}>
-                                    {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"rgba(220,20,60,0.8)" }}>{u.username?.[0]?.toUpperCase()}</div>}
+                                <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(139,0,0,0.2)", border: "1px solid rgba(220,20,60,0.4)", overflow: "hidden", flexShrink: 0 }}>
+                                    {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "rgba(220,20,60,0.8)" }}>{u.username?.[0]?.toUpperCase()}</div>}
                                 </div>
-                                <div style={{ fontSize:13, color:(selectedUser?._id === u._id) ? "#fff" : "#F0E6D3", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.username}</div>
+                                <div style={{ fontSize: 13, color: (selectedUser?._id === u._id) ? "#fff" : "#F0E6D3", fontFamily: "'Cinzel',serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</div>
                             </div>
                         ));
                     }
@@ -1327,6 +1350,115 @@ const VampireSpotifyCard = memo(({ addCardRef, isPlaying, setIsPlaying, volume, 
 });
 VampireSpotifyCard.displayName = "VampireSpotifyCard";
 
+// ── Hidden Nexus Bat ───────────────────────────────────────────────────────
+const HiddenNexusBat = memo(({ nexus, onReveal, index, totalCount }) => {
+    const [grabbed, setGrabbed] = useState(false);
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const domRef = useRef(null);
+    const offsetRef = useRef({ ox: 0, oy: 0 });
+    const clickTimerRef = useRef(null);
+    const pendingRevealRef = useRef(false);
+
+    useEffect(() => {
+        if (!grabbed) return;
+        const onMove = (e) => {
+            setPos({ x: e.clientX - offsetRef.current.ox, y: e.clientY - offsetRef.current.oy });
+        };
+        const onUp = () => setGrabbed(false);
+        
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+    }, [grabbed]);
+
+    const handleMouseDown = (e) => {
+        // detail === 2 means second click of a double-click
+        if (e.detail === 2) {
+            e.preventDefault();
+            e.stopPropagation();
+            pendingRevealRef.current = false;
+            clearTimeout(clickTimerRef.current);
+
+            const rect = domRef.current.getBoundingClientRect();
+            const currentX = rect.left;
+            const currentY = rect.top;
+            
+            // Set initial drag pos to current physical screen pos
+            setPos({ x: currentX, y: currentY });
+            offsetRef.current = { ox: e.clientX - currentX, oy: e.clientY - currentY };
+            setGrabbed(true);
+        }
+    };
+
+    const handleClick = (e) => {
+        e.stopPropagation();
+        if (grabbed) return; 
+        
+        pendingRevealRef.current = true;
+        clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = setTimeout(() => {
+            if (pendingRevealRef.current) onReveal(nexus._id);
+        }, 250);
+    };
+
+    return (
+        <div
+            ref={domRef}
+            style={{
+                position: grabbed ? 'fixed' : 'relative',
+                left: grabbed ? pos.x : 'auto',
+                top: grabbed ? pos.y : 'auto',
+                zIndex: 9999,
+                cursor: grabbed ? 'grabbing' : 'pointer',
+                userSelect: 'none',
+                touchAction: 'none',
+                filter: grabbed
+                    ? 'drop-shadow(0 0 20px #dc143c) drop-shadow(0 0 40px rgba(220,20,60,0.6))'
+                    : 'drop-shadow(0 0 6px rgba(220,20,60,0.4))',
+                transition: grabbed ? 'none' : 'filter 0.3s',
+                width: 64,
+                height: 26,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
+            onMouseDown={handleMouseDown}
+            onClick={handleClick}
+            onDragStart={(e) => e.preventDefault()}
+        >
+            <svg width="64" height="26" viewBox="0 0 360 140" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#dc143c" d="
+                    M180,105 L186,97 L193,88
+                    C200,81 212,77 226,74
+                    C242,70 258,69 272,77
+                    C281,65 296,55 322,50
+                    C303,33 280,30 262,44
+                    C254,33 241,24 227,32
+                    L210,58 L200,74 L191,86 L184,95
+                    L180,105
+                    L176,95 L169,86 L160,74 L150,58
+                    L133,32 C119,24 106,33 98,44
+                    C80,30 57,33 38,50
+                    C64,55 79,65 88,77
+                    C102,69 118,70 134,74
+                    C148,77 160,81 167,88
+                    L174,97 Z
+                "/>
+                <polygon points="163,64 148,24 172,58" fill="#dc143c"/>
+                <polygon points="197,64 212,24 188,58" fill="#dc143c"/>
+                <ellipse cx="180" cy="72" rx="22" ry="22" fill="#dc143c"/>
+                <polygon points="164,70 170,62 174,72 168,75" fill="#0a0000"/>
+                <polygon points="196,70 190,62 186,72 192,75" fill="#0a0000"/>
+                <polygon points="173,90 180,104 187,90 180,86" fill="#0a0000" opacity="0.45"/>
+            </svg>
+        </div>
+    );
+});
+HiddenNexusBat.displayName = "HiddenNexusBat";
+
 export default function OrbitVampire({ children }) {
     const navigate = useNavigate();
     const logout = useAuthStore(state => state.logout);
@@ -1340,6 +1472,9 @@ export default function OrbitVampire({ children }) {
     });
     const [nexusColors, setNexusColors] = useState(() => {
         return JSON.parse(localStorage.getItem('vampire_nexus_colors') || '{}');
+    });
+    const [hiddenNexuses, setHiddenNexuses] = useState(() => {
+        return JSON.parse(localStorage.getItem('vampire_hidden_nexuses') || '[]');
     });
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [activeColorPickerId, setActiveColorPickerId] = useState(null);
@@ -1361,15 +1496,38 @@ export default function OrbitVampire({ children }) {
         setActiveMenuId(null);
     };
 
+    const toggleHide = (nexus, e) => {
+        e.stopPropagation();
+        const id = nexus._id;
+        const isHidden = hiddenNexuses.some(h => h._id === id);
+        
+        if (!isHidden && hiddenNexuses.length >= 3) {
+            toast.error("Vampire Limit: Only 3 bats allowed in the shadows.", {
+                style: { background: '#1a0000', color: '#dc143c', border: '1px solid #dc143c', fontFamily: 'Cinzel' }
+            });
+            return;
+        }
+
+        const next = isHidden
+            ? hiddenNexuses.filter(h => h._id !== id)
+            : [...hiddenNexuses, { _id: id, name: nexus.name }];
+        setHiddenNexuses(next);
+        localStorage.setItem('vampire_hidden_nexuses', JSON.stringify(next));
+        setActiveMenuId(null);
+    };
+
     const sortedNexuses = useMemo(() => {
-        return [...nexuses].sort((a, b) => {
-            const aPinned = pinnedNexuses.includes(a._id);
-            const bPinned = pinnedNexuses.includes(b._id);
-            if (aPinned && !bPinned) return -1;
-            if (!aPinned && bPinned) return 1;
-            return 0;
-        });
-    }, [nexuses, pinnedNexuses]);
+        const hiddenIds = hiddenNexuses.map(h => h._id);
+        return [...nexuses]
+            .filter(n => !hiddenIds.includes(n._id))
+            .sort((a, b) => {
+                const aPinned = pinnedNexuses.includes(a._id);
+                const bPinned = pinnedNexuses.includes(b._id);
+                if (aPinned && !bPinned) return -1;
+                if (!aPinned && bPinned) return 1;
+                return 0;
+            });
+    }, [nexuses, pinnedNexuses, hiddenNexuses]);
 
     useEffect(() => {
         const handleGlobalClick = () => {
@@ -1463,10 +1621,20 @@ export default function OrbitVampire({ children }) {
                 <Particles />
 
                 {/* ── Navbar ── */}
-                <VampireTopNav navRef={navRef} navigate={navigate} logout={logout} />
+                <VampireTopNav
+                    navRef={navRef}
+                    navigate={navigate}
+                    logout={logout}
+                    hiddenNexuses={hiddenNexuses}
+                    onReveal={(id) => {
+                        const next = hiddenNexuses.filter(h => h._id !== id);
+                        setHiddenNexuses(next);
+                        localStorage.setItem('vampire_hidden_nexuses', JSON.stringify(next));
+                    }}
+                />
 
                 {/* ── Sidebar ── */}
-                <VampireSidebar 
+                <VampireSidebar
                     sidebarRef={sidebarRef}
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
@@ -1490,6 +1658,8 @@ export default function OrbitVampire({ children }) {
                     selectedUser={selectedUser}
                     navigate={navigate}
                     pinnedNexuses={pinnedNexuses}
+                    hiddenNexuses={hiddenNexuses}
+                    toggleHide={toggleHide}
                 />
 
                 {/* ── Main ── */}
@@ -1525,11 +1695,11 @@ export default function OrbitVampire({ children }) {
                             </p>
 
                             <div className="ornament" ref={ornRef}>✦ ✧ ✦ ✧ ✦</div>
-                            
+
                             <HangingBats />
 
                             <div className="cards-grid">
-                                <VampireSpotifyCard 
+                                <VampireSpotifyCard
                                     addCardRef={addCardRef}
                                     isPlaying={isPlaying}
                                     setIsPlaying={setIsPlaying}
@@ -1571,7 +1741,9 @@ export default function OrbitVampire({ children }) {
                         </div>
                     )}
                 </main>
+
             </div>
+
         </div>
     );
 }
@@ -1811,7 +1983,7 @@ export function VampireProfile() {
                                                 style={{ resize: 'none', lineHeight: 1.8, fontSize: 14, opacity: isRitualMode ? 1 : 0.7, cursor: isRitualMode ? 'text' : 'default' }} />
                                         </div>
                                     </div>
-                                    
+
                                     {!isRitualMode
                                         ? null
                                         : (
@@ -1959,7 +2131,7 @@ export function VampireSettings({
                                     fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: "2px",
                                     cursor: "pointer", transition: "all 0.3s", display: "flex", alignItems: "center", gap: 14
                                 }}>
-                                <span style={{ fontSize: 18, color: activeSection === tab.id ? "var(--crimson)" : "var(--mist)", pointerEvents: "none" }}>{tab.icon}</span> 
+                                <span style={{ fontSize: 18, color: activeSection === tab.id ? "var(--crimson)" : "var(--mist)", pointerEvents: "none" }}>{tab.icon}</span>
                                 <span style={{ pointerEvents: "none" }}>{tab.label}</span>
                             </button>
                         ))}
@@ -2015,7 +2187,7 @@ export function VampireSettings({
                                             const vol = parseFloat(e.target.value);
                                             setDraftSoundSettings({ ...draftSoundSettings, volume: vol });
                                             // Live preview: update SoundManager immediately
-                                            try { useSettingsStore.getState().updateSetting('sound.volume', vol); } catch (_) {}
+                                            try { useSettingsStore.getState().updateSetting('sound.volume', vol); } catch (_) { }
                                         }} />
                                         <span style={{ color: 'var(--ivory)', fontFamily: 'Cinzel', width: 40 }}>{Math.round(draftSoundSettings.volume * 100)}%</span>
                                     </div>
@@ -2023,7 +2195,7 @@ export function VampireSettings({
                                 <div className="v-toggle" onClick={() => {
                                     const v = !draftSoundSettings.effectsEnabled;
                                     setDraftSoundSettings({ ...draftSoundSettings, effectsEnabled: v });
-                                    try { useSettingsStore.getState().updateSetting('sound.enabled', v); } catch (_) {}
+                                    try { useSettingsStore.getState().updateSetting('sound.enabled', v); } catch (_) { }
                                 }} style={{ cursor: 'pointer' }}>
                                     <div className="v-label" style={{ marginBottom: 0 }}>ENABLE SOUND EFFECTS</div>
                                     <button type="button" style={{ color: draftSoundSettings.effectsEnabled ? 'var(--crimson)' : 'var(--mist)', background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', pointerEvents: 'none' }}>
@@ -2033,7 +2205,7 @@ export function VampireSettings({
                                 <div className="v-toggle" onClick={() => {
                                     const v = !draftSoundSettings.ambientStorm;
                                     setDraftSoundSettings({ ...draftSoundSettings, ambientStorm: v });
-                                    try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) {}
+                                    try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) { }
                                 }} style={{ cursor: 'pointer' }}>
                                     <div className="v-label" style={{ marginBottom: 0 }}>BACKGROUND AMBIENCE</div>
                                     <button type="button" style={{ color: draftSoundSettings.ambientStorm ? 'var(--crimson)' : 'var(--mist)', background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', pointerEvents: 'none' }}>
@@ -2051,11 +2223,11 @@ export function VampireSettings({
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 15, marginTop: 15 }}>
                                         {Object.keys(THEME_LABELS).map(id => {
                                             const isSelected = draftTheme === id;
-                                            
+
                                             // Fixed preview colors for each theme
                                             let previewPrimary = "#ef4444"; // default (crimson)
                                             let previewBg = "#0a0a0a";
-                                            
+
                                             if (id === "light") { previewPrimary = "#3b82f6"; previewBg = "#ffffff"; }
                                             else if (id === "dark") { previewPrimary = "#ef4444"; previewBg = "#0a0a0a"; }
                                             else if (id === "neon-cyberpunk") { previewPrimary = "#8b5cf6"; previewBg = "#0c0e14"; }
@@ -2168,8 +2340,8 @@ export function VampireSettings({
                         <div style={{ fontSize: 40, marginBottom: 20 }}>🩸</div>
                         <h2 style={{ fontSize: 18, fontWeight: 900, color: 'var(--crimson)', letterSpacing: '4px', marginBottom: 16, textShadow: '0 0 20px rgba(220,20,60,0.5)' }}>INVOKE ESSENCE?</h2>
                         <p style={{ fontSize: 13, color: 'var(--bone)', fontFamily: "'IM Fell English', serif", fontStyle: 'italic', lineHeight: 1.7, marginBottom: 36 }}>
-                            Are you certain you wish to manifest<br/>
-                            <strong style={{ color: 'var(--ivory)', fontStyle: 'normal' }}>{THEME_LABELS[pendingLocal] || pendingLocal}</strong><br/>
+                            Are you certain you wish to manifest<br />
+                            <strong style={{ color: 'var(--ivory)', fontStyle: 'normal' }}>{THEME_LABELS[pendingLocal] || pendingLocal}</strong><br />
                             across your entire realm?
                         </p>
                         <div style={{ display: 'flex', gap: 16 }}>
@@ -2216,67 +2388,67 @@ export function VampireSpotify() {
     return (
         <div className="vamp-theme-root">
             <OrbitVampire>
-            <div style={{ display: 'flex', gap: 24, flex: 1, minHeight: 0 }}>
-                {/* Left embellishment column */}
-                <div style={{ width: 340, display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0, flexShrink: 0 }}>
-                    <div className="card" style={{ flex: 1, padding: 36, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
-                        <div style={{ fontSize: 40, color: 'var(--crimson)', filter: 'drop-shadow(0 0 10px rgba(220,20,60,0.5))' }}>🦇</div>
-                        <h2 className="v-label" style={{ fontSize: 16, textAlign: 'center' }}>SYMPHONY OF NIGHT</h2>
-                        <div style={{ fontSize: 12, color: 'var(--mist)', textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic' }}>
-                            Bind your soul to the eternal resonance. Let the dark melodies guide your path across the shadows.
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main player area */}
-                <div className="card" style={{ flex: 1, padding: 48, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 30 }}>
-                        <h2 style={{ fontSize: 32, fontWeight: 900, color: 'var(--crimson)', fontFamily: "'Cinzel',serif", letterSpacing: '6px', textShadow: '0 0 20px rgba(220,20,60,0.4)', margin: 0 }}>
-                            NOCTURNAL HARMONY
-                        </h2>
-                        <div style={{ display: 'flex', gap: 12 }}>
-                            <button className="nav-btn" onClick={() => (window.location.href = "/")} style={{ border: '1px solid rgba(139,0,0,0.3)', padding: '8px 16px', borderRadius: '4px' }}>
-                                ◀ RETURN
-                            </button>
-
+                <div style={{ display: 'flex', gap: 24, flex: 1, minHeight: 0 }}>
+                    {/* Left embellishment column */}
+                    <div style={{ width: 340, display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0, flexShrink: 0 }}>
+                        <div className="card" style={{ flex: 1, padding: 36, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+                            <div style={{ fontSize: 40, color: 'var(--crimson)', filter: 'drop-shadow(0 0 10px rgba(220,20,60,0.5))' }}>🦇</div>
+                            <h2 className="v-label" style={{ fontSize: 16, textAlign: 'center' }}>SYMPHONY OF NIGHT</h2>
+                            <div style={{ fontSize: 12, color: 'var(--mist)', textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic' }}>
+                                Bind your soul to the eternal resonance. Let the dark melodies guide your path across the shadows.
+                            </div>
                         </div>
                     </div>
 
-                    {!spotifyLinked ? (
-                        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-                            <div style={{ fontSize: 16, color: "var(--bone)", fontFamily: "'IM Fell English', serif", fontStyle: "italic", maxWidth: 460, lineHeight: 1.8 }}>
-                                The ritual requires a conduit. Link your Spotify existence to broadcast hymns across the crimson void.
-                            </div>
-                            <button onClick={() => window.location.href = `${API_URL}/api/spotify/login`} style={{ padding: "16px 36px", borderRadius: 4, background: "linear-gradient(135deg,rgba(139,0,0,0.4),rgba(220,20,60,0.2))", color: "var(--ivory)", border: "1px solid var(--crimson)", fontSize: 14, fontWeight: 900, fontFamily: "'Cinzel',serif", letterSpacing: "3px", cursor: "pointer", boxShadow: "0 0 20px rgba(139,0,0,0.3), inset 0 0 10px rgba(220,20,60,0.2)", transition: "all 0.3s" }} onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 0 30px rgba(220,20,60,0.5), inset 0 0 20px rgba(220,20,60,0.4)"; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 0 20px rgba(139,0,0,0.3), inset 0 0 10px rgba(220,20,60,0.2)"; }}>
-                                COMMENCE RITUAL
-                            </button>
-                        </div>
-                    ) : (
-                        <>
-                            <div style={{ width: 280, height: 280, borderRadius: '50%', border: '2px solid var(--crimson)', padding: 8, background: 'linear-gradient(135deg,var(--void),#200000)', boxShadow: '0 0 40px rgba(220,20,60,0.2)', position: 'relative' }}>
-                                <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(220,20,60,0.3)' }}>
-                                    {currentTrack ? <img src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", filter: playing ? "none" : "grayscale(0.6)" }} alt="Album Art" /> : <div style={{ width: '100%', height: '100%', background: 'var(--void)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>🎵</div>}
-                                </div>
-                                {playing && <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: '1px solid var(--crimson)', animation: 'pulse-glow 2s infinite', pointerEvents: 'none' }} />}
-                            </div>
-
-                            <div style={{ textAlign: "center", minHeight: 64 }}>
-                                <div style={{ fontSize: 24, fontWeight: 700, color: "var(--ivory)", fontFamily: "'Cinzel',serif", letterSpacing: '2px', textShadow: '0 0 10px rgba(255,255,255,0.2)' }}>{currentTrack ? currentTrack.name : "Awaiting the Hymn..."}</div>
-                                <div style={{ fontSize: 16, color: "var(--mist)", marginTop: 8, fontFamily: "'IM Fell English', serif", fontStyle: 'italic' }}>{currentTrack ? currentTrack.artist : "The silent choir"}</div>
-                            </div>
-
-                            <div style={{ display: "flex", alignItems: "center", gap: 36 }}>
-                                <button onClick={skipPrevious} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--crimson)", fontSize: 24, opacity: 0.7, transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.7}>⏮</button>
-                                <button onClick={() => playing ? pausePlayback() : playTrack()} style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,var(--blood),var(--crimson))", border: "1px solid var(--ivory)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ivory)", fontSize: 24, boxShadow: "0 0 24px rgba(220,20,60,0.5)", transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
-                                    {playing ? "⏸" : "▶"}
+                    {/* Main player area */}
+                    <div className="card" style={{ flex: 1, padding: 48, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 30 }}>
+                            <h2 style={{ fontSize: 32, fontWeight: 900, color: 'var(--crimson)', fontFamily: "'Cinzel',serif", letterSpacing: '6px', textShadow: '0 0 20px rgba(220,20,60,0.4)', margin: 0 }}>
+                                NOCTURNAL HARMONY
+                            </h2>
+                            <div style={{ display: 'flex', gap: 12 }}>
+                                <button className="nav-btn" onClick={() => (window.location.href = "/")} style={{ border: '1px solid rgba(139,0,0,0.3)', padding: '8px 16px', borderRadius: '4px' }}>
+                                    ◀ RETURN
                                 </button>
-                                <button onClick={skipNext} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--crimson)", fontSize: 24, opacity: 0.7, transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.7}>⏭</button>
+
                             </div>
-                        </>
-                    )}
+                        </div>
+
+                        {!spotifyLinked ? (
+                            <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
+                                <div style={{ fontSize: 16, color: "var(--bone)", fontFamily: "'IM Fell English', serif", fontStyle: "italic", maxWidth: 460, lineHeight: 1.8 }}>
+                                    The ritual requires a conduit. Link your Spotify existence to broadcast hymns across the crimson void.
+                                </div>
+                                <button onClick={() => window.location.href = `${API_URL}/api/spotify/login`} style={{ padding: "16px 36px", borderRadius: 4, background: "linear-gradient(135deg,rgba(139,0,0,0.4),rgba(220,20,60,0.2))", color: "var(--ivory)", border: "1px solid var(--crimson)", fontSize: 14, fontWeight: 900, fontFamily: "'Cinzel',serif", letterSpacing: "3px", cursor: "pointer", boxShadow: "0 0 20px rgba(139,0,0,0.3), inset 0 0 10px rgba(220,20,60,0.2)", transition: "all 0.3s" }} onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 0 30px rgba(220,20,60,0.5), inset 0 0 20px rgba(220,20,60,0.4)"; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 0 20px rgba(139,0,0,0.3), inset 0 0 10px rgba(220,20,60,0.2)"; }}>
+                                    COMMENCE RITUAL
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div style={{ width: 280, height: 280, borderRadius: '50%', border: '2px solid var(--crimson)', padding: 8, background: 'linear-gradient(135deg,var(--void),#200000)', boxShadow: '0 0 40px rgba(220,20,60,0.2)', position: 'relative' }}>
+                                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(220,20,60,0.3)' }}>
+                                        {currentTrack ? <img src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", filter: playing ? "none" : "grayscale(0.6)" }} alt="Album Art" /> : <div style={{ width: '100%', height: '100%', background: 'var(--void)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>🎵</div>}
+                                    </div>
+                                    {playing && <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: '1px solid var(--crimson)', animation: 'pulse-glow 2s infinite', pointerEvents: 'none' }} />}
+                                </div>
+
+                                <div style={{ textAlign: "center", minHeight: 64 }}>
+                                    <div style={{ fontSize: 24, fontWeight: 700, color: "var(--ivory)", fontFamily: "'Cinzel',serif", letterSpacing: '2px', textShadow: '0 0 10px rgba(255,255,255,0.2)' }}>{currentTrack ? currentTrack.name : "Awaiting the Hymn..."}</div>
+                                    <div style={{ fontSize: 16, color: "var(--mist)", marginTop: 8, fontFamily: "'IM Fell English', serif", fontStyle: 'italic' }}>{currentTrack ? currentTrack.artist : "The silent choir"}</div>
+                                </div>
+
+                                <div style={{ display: "flex", alignItems: "center", gap: 36 }}>
+                                    <button onClick={skipPrevious} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--crimson)", fontSize: 24, opacity: 0.7, transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.7}>⏮</button>
+                                    <button onClick={() => playing ? pausePlayback() : playTrack()} style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,var(--blood),var(--crimson))", border: "1px solid var(--ivory)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ivory)", fontSize: 24, boxShadow: "0 0 24px rgba(220,20,60,0.5)", transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+                                        {playing ? "⏸" : "▶"}
+                                    </button>
+                                    <button onClick={skipNext} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--crimson)", fontSize: 24, opacity: 0.7, transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.7}>⏭</button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
-            </div>
-        </OrbitVampire>
+            </OrbitVampire>
         </div>
     );
 }

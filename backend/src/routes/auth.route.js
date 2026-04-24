@@ -1,5 +1,5 @@
 import express from "express";
-import rateLimit from "express-rate-limit";
+import { loginLimiter, signupLimiter, apiLimiter } from "../middleware/rate-limit.middleware.js";
 import {
   login,
   logout,
@@ -14,6 +14,8 @@ import {
   forgotPassword,
   verifyPasswordOTP,
   resetPassword,
+  verifyEmail,
+  resendVerificationEmail,
   constellationChallenge,
   constellationSignup,
   constellationLogin,
@@ -27,16 +29,16 @@ import {
 
 const router = express.Router();
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
-  message: "Too many attempts, please try again later",
-});
+
 
 // Basic Auth
-router.post("/signup", authLimiter, signup);
-router.post("/login", authLimiter, login);
+router.post("/signup", signupLimiter, signup);
+router.post("/login", loginLimiter, login);
 router.post("/logout", logout);
+
+// Email Verification
+router.post("/verify-email", loginLimiter, verifyEmail);
+router.post("/resend-verification", loginLimiter, resendVerificationEmail);
 
 // Profile & Contacts
 router.put("/update-profile", protectRoute, updateProfile);
@@ -48,19 +50,21 @@ router.delete("/contacts/:contactId", protectRoute, removeContact);
 router.put("/contacts/:contactId", protectRoute, renameContact);
 
 // Password Reset
-router.post("/forgot-password", authLimiter, forgotPassword);
-router.post("/verify-otp", authLimiter, verifyPasswordOTP);
-router.post("/reset-password", authLimiter, resetPassword);
+router.post("/forgot-password", loginLimiter, forgotPassword);
+router.post("/verify-otp", loginLimiter, verifyPasswordOTP);
+router.post("/reset-password", loginLimiter, resetPassword);
 
-// Constellation Auth (Legacy/Experimental)
-router.get("/constellation/challenge", constellationChallenge);
+// Constellation Auth
+router.get("/constellation/challenge", apiLimiter, constellationChallenge);
 router.post(
   "/constellation/signup",
+  signupLimiter,
   validateRequestBody(constellationSignupSchema),
   constellationSignup
 );
 router.post(
   "/constellation/login",
+  loginLimiter,
   validateRequestBody(constellationLoginSchema),
   constellationLogin
 );

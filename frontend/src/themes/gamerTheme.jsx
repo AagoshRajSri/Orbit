@@ -86,6 +86,83 @@ function MainCircuits() {
   );
 }
 
+// ── Hidden Nexus Whirl ──────────────────────────────────────────────────
+const HiddenNexusWhirl = memo(({ nexus, onReveal }) => {
+    const [grabbed, setGrabbed] = useState(false);
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const domRef = useRef(null);
+    const offsetRef = useRef({ ox: 0, oy: 0 });
+    const clickTimerRef = useRef(null);
+    const pendingRevealRef = useRef(false);
+
+    useEffect(() => {
+        if (!grabbed) return;
+        const onMove = (e) => {
+            setPos({ x: e.clientX - offsetRef.current.ox, y: e.clientY - offsetRef.current.oy });
+        };
+        const onUp = () => setGrabbed(false);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+    }, [grabbed]);
+
+    const handleMouseDown = (e) => {
+        if (e.detail === 2) {
+            e.preventDefault();
+            e.stopPropagation();
+            pendingRevealRef.current = false;
+            clearTimeout(clickTimerRef.current);
+            const rect = domRef.current.getBoundingClientRect();
+            setPos({ x: rect.left, y: rect.top });
+            offsetRef.current = { ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+            setGrabbed(true);
+        }
+    };
+
+    const handleClick = (e) => {
+        e.stopPropagation();
+        if (grabbed) return; 
+        pendingRevealRef.current = true;
+        clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = setTimeout(() => {
+            if (pendingRevealRef.current) onReveal(nexus._id);
+        }, 250);
+    };
+
+    return (
+        <div
+            ref={domRef}
+            style={{
+                position: grabbed ? 'fixed' : 'relative',
+                left: grabbed ? pos.x : 'auto',
+                top: grabbed ? pos.y : 'auto',
+                zIndex: 9999,
+                cursor: grabbed ? 'grabbing' : 'pointer',
+                userSelect: 'none',
+                touchAction: 'none',
+                filter: grabbed
+                    ? 'drop-shadow(0 0 15px #00f5d4) drop-shadow(0 0 30px rgba(0,245,212,0.5))'
+                    : 'drop-shadow(0 0 8px rgba(0,245,212,0.3))',
+                transition: grabbed ? 'none' : 'filter 0.3s',
+                fontSize: 20,
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
+            onMouseDown={handleMouseDown}
+            onClick={handleClick}
+            onDragStart={(e) => e.preventDefault()}
+        >
+            🌀
+        </div>
+    );
+});
+
 /* ─────────────────────────────────────────────
    NEON CARD SHELL
 ───────────────────────────────────────────── */
@@ -461,7 +538,7 @@ const Scanlines = memo(() => {
 /* ─────────────────────────────────────────────
    TOP NAV
 ───────────────────────────────────────────── */
-const TopNav = memo(({ navRef, killCount, setSelectedNexus, setSelectedUser, logout }) => {
+const TopNav = memo(({ navRef, killCount, setSelectedNexus, setSelectedUser, logout, hiddenNexuses, onReveal }) => {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }));
   useEffect(() => { const iv = setInterval(() => setTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })), 1000); return () => clearInterval(iv); }, []);
   const navigate = useNavigate();
@@ -488,6 +565,15 @@ const TopNav = memo(({ navRef, killCount, setSelectedNexus, setSelectedUser, log
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 30, height: 30, borderRadius: "50%", border: "2px solid #ff2d78", boxShadow: "0 0 10px #ff2d78", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,45,120,0.15)", fontSize: 14 }}>🌀</div>
         <span style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.2em", color: "#00f5d4", textShadow: "0 0 10px #00f5d4", fontFamily: "'Orbitron',monospace" }}>ORBIT</span>
+        
+        {/* Hidden Nexus Whirls */}
+        <div style={{ display: "flex", gap: 40, alignItems: "center", marginLeft: 40, pointerEvents: "none" }}>
+          {(hiddenNexuses || []).map(nexus => (
+            <div key={nexus._id} style={{ pointerEvents: "auto" }}>
+              <HiddenNexusWhirl nexus={nexus} onReveal={onReveal} />
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
@@ -833,7 +919,7 @@ const GamingHeroAnimation = memo(() => {
 });
 
 
-const Sidebar = memo(({ sidebarRef, onJoin, onNexus, nexuses, isNexusesLoading, selectedNexus, selectedNexusId, setSelectedNexus, users, selectedUser, selectedUserId, setSelectedUser, nexusUnread, setNexusActionView }) => {
+const Sidebar = memo(({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses, isNexusesLoading, selectedNexus, selectedNexusId, setSelectedNexus, users, selectedUser, selectedUserId, setSelectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) => {
   const navigate = useNavigate();
   const [tab, setTab] = useState("orbits");
 
@@ -864,14 +950,17 @@ const Sidebar = memo(({ sidebarRef, onJoin, onNexus, nexuses, isNexusesLoading, 
   };
 
   const sortedNexuses = useMemo(() => {
-    return [...nexuses].sort((a, b) => {
-      const aPinned = pinnedNexuses.includes(a._id);
-      const bPinned = pinnedNexuses.includes(b._id);
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      return 0;
-    });
-  }, [nexuses, pinnedNexuses]);
+    const hiddenIds = (hiddenNexuses || []).map(h => h._id);
+    return [...nexuses]
+      .filter(n => !hiddenIds.includes(n._id))
+      .sort((a, b) => {
+        const aPinned = pinnedNexuses.includes(a._id);
+        const bPinned = pinnedNexuses.includes(b._id);
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        return 0;
+      });
+  }, [nexuses, pinnedNexuses, hiddenNexuses]);
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -988,6 +1077,12 @@ const Sidebar = memo(({ sidebarRef, onJoin, onNexus, nexuses, isNexusesLoading, 
                             style={{ flex: 1, padding: '6px', background: "rgba(255,45,120,0.1)", border: "1px solid rgba(255,45,120,0.3)", borderRadius: 4, fontSize: 10, color: "#ff2d78", fontFamily: "'Orbitron', monospace", fontWeight: 800, cursor: 'pointer' }}
                           >
                             {pinnedNexuses.includes(n._id) ? "UNPIN" : "PIN"}
+                          </button>
+                          <button
+                            onClick={(e) => toggleHide(n, e)}
+                            style={{ flex: 1, padding: '6px', background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.3)", borderRadius: 4, fontSize: 10, color: "#00f5d4", fontFamily: "'Orbitron', monospace", fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            HIDE 🌀
                           </button>
                         </div>
 
@@ -1208,6 +1303,38 @@ export default function OrbitGrind({ children }) {
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
   const userSelected = Boolean(selectedUser || selectedUserId);
 
+  // ── Hidden Nexus State ──
+  const [hiddenNexuses, setHiddenNexuses] = useState(() => {
+      try {
+          const saved = localStorage.getItem('gamer_hidden_nexuses');
+          return saved ? JSON.parse(saved) : [];
+      } catch { return []; }
+  });
+
+  const toggleHide = (nexus, e) => {
+      if (e) e.stopPropagation();
+      const id = nexus._id;
+      const isHidden = (hiddenNexuses || []).some(h => h._id === id);
+      
+      if (!isHidden && hiddenNexuses.length >= 3) {
+          import("react-hot-toast").then(({ toast }) => toast.error("Maximum 3 hidden Nexuses allowed per theme."));
+          return;
+      }
+
+      const next = isHidden
+          ? hiddenNexuses.filter(h => h._id !== id)
+          : [...hiddenNexuses, { _id: id, name: nexus.name }];
+      
+      setHiddenNexuses(next);
+      localStorage.setItem('gamer_hidden_nexuses', JSON.stringify(next));
+  };
+
+  const onReveal = (id) => {
+      const next = hiddenNexuses.filter(h => h._id !== id);
+      setHiddenNexuses(next);
+      localStorage.setItem('gamer_hidden_nexuses', JSON.stringify(next));
+  };
+
   useEffect(() => {
     const ctx = gsap.context(() => {
       const cards = [c0, c1, c2, c3].map(r => r?.current).filter(Boolean);
@@ -1321,6 +1448,7 @@ export default function OrbitGrind({ children }) {
         }
       `}</style>
 
+
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 50%,rgba(80,0,120,0.55) 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,rgba(0,60,120,0.45) 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,rgba(0,80,60,0.35) 0%,transparent 40%),radial-gradient(ellipse at 10% 80%,rgba(120,0,80,0.3) 0%,transparent 40%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,rgba(255,255,255,0.35) 1px,transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none", opacity: 0.25 }} />
 
@@ -1332,6 +1460,9 @@ export default function OrbitGrind({ children }) {
         killCount={killCount} 
         setSelectedNexus={setSelectedNexus}
         setSelectedUser={setSelectedUser}
+        logout={logout}
+        hiddenNexuses={hiddenNexuses}
+        onReveal={onReveal}
       />
 
       <div style={{ position: "absolute", top: 48, left: 0, right: 0, bottom: 0, display: "flex" }}>
@@ -1352,6 +1483,8 @@ export default function OrbitGrind({ children }) {
           setSelectedUser={(u) => { setSelectedUser(u); setSelectedNexus(null); }}
           nexusUnread={nexusUnread || {}}
           setNexusActionView={setNexusActionView}
+          hiddenNexuses={hiddenNexuses}
+          toggleHide={toggleHide}
         />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
