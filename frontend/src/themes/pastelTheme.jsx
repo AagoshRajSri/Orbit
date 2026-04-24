@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { THEMES, THEME_LABELS } from "../constants";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,8 @@ import { useSpotifyStore } from "../store/useSpotifyStore";
 import { useAuthStore } from "../store/useAuthStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 import { useSoundManager } from "../hooks/useSoundManager";
+import AnimLayer from "../components/AnimLayer";
+import AnimationSettingsPanel from "../components/AnimationSettingsPanel";
 
 /* ── floating glitter/hearts/butterflies scattered everywhere ── */
 const FLOATIES = [
@@ -36,7 +38,7 @@ const FLOATIES = [
 ];
 
 /* ── tiny sparkle burst that fires on click ── */
-function SparkleClick() {
+const SparkleClick = memo(() => {
   const [sparks, setSparks] = useState([]);
   useEffect(() => {
     const handler = (e) => {
@@ -68,9 +70,9 @@ function SparkleClick() {
       ))}
     </div>
   );
-}
+});
 
-function BgClouds() {
+const BgClouds = memo(() => {
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
       {/* Grain texture overlay */}
@@ -87,26 +89,28 @@ function BgClouds() {
       <div style={{ position: "absolute", left: "-3%", bottom: "8%", width: 360, height: 260, background: "radial-gradient(ellipse, rgba(242,196,208,0.4) 0%, transparent 70%)", filter: "blur(32px)" }} />
     </div>
   );
-}
+});
 
-function Floaties() {
+const Floaties = memo(() => {
   return (
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {FLOATIES.map((s, i) => (
-        <span key={i} style={{
-          position: "absolute", left: s.x, top: s.y,
-          fontSize: s.size, color: s.color, opacity: s.opacity, lineHeight: 1,
-          animation: `starPulse ${s.dur}s ease-in-out infinite`,
-          animationDelay: `${i * 0.28}s`,
-          userSelect: "none",
-        }}>{s.char}</span>
-      ))}
-    </div>
+    <AnimLayer category="atmospheric">
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        {FLOATIES.map((s, i) => (
+          <span key={i} style={{
+            position: "absolute", left: s.x, top: s.y,
+            fontSize: s.size, color: s.color, opacity: s.opacity, lineHeight: 1,
+            animation: `starPulse ${s.dur}s ease-in-out infinite`,
+            animationDelay: `${i * 0.28}s`,
+            userSelect: "none",
+          }}>{s.char}</span>
+        ))}
+      </div>
+    </AnimLayer>
   );
-}
+});
 
 /* ── ribbon badge in top-right of a card ── */
-function CuteBadge({ label, color }) {
+const CuteBadge = memo(({ label, color }) => {
   return (
     <div style={{
       position: "absolute", top: 10, right: 10,
@@ -118,11 +122,12 @@ function CuteBadge({ label, color }) {
       display: "flex", alignItems: "center", gap: 3,
     }}>✨ {label}</div>
   );
-}
+});
 
-function BarbieTrainAnimation() {
+const BarbieTrainAnimation = memo(() => {
   return (
-    <svg width="100%" height="100%" viewBox="0 0 8000 220" preserveAspectRatio="xMinYMid slice" role="img" xmlns="http://www.w3.org/2000/svg">
+    <AnimLayer category="atmospheric">
+      <svg width="100%" height="100%" viewBox="0 0 8000 220" preserveAspectRatio="xMinYMid slice" role="img" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <style>
           {`
@@ -446,19 +451,13 @@ function BarbieTrainAnimation() {
         <circle className="sparkle2" cx="-5" cy="115" r="2" fill="#FFB6D9" />
         <circle className="sparkle3" cx="2" cy="128" r="2.5" fill="#FF69B4" />
       </g>
-    </svg>
+      </svg>
+    </AnimLayer>
   );
-}
+});
 
-function TopNav({ navRef }) {
+const TopNav = memo(({ navRef, handleLogout, loggingOut, authUser }) => {
   const navigate = useNavigate();
-  const { authUser, logout } = useAuthStore();
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try { await logout(); } finally { setLoggingOut(false); }
-  };
 
   const navBtnBase = {
     display: "flex", alignItems: "center", gap: 5,
@@ -627,10 +626,10 @@ function TopNav({ navRef }) {
       </div>
     </div>
   );
-}
+});
 
 /* ── cute online status pill ── */
-function StatusPill() {
+const StatusPill = memo(() => {
   return (
     <div style={{
       display: "inline-flex", alignItems: "center", gap: 5,
@@ -644,12 +643,12 @@ function StatusPill() {
       <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,80,140,0.85)", textTransform: "uppercase" }}>STATUS: ONLINE ♡</span>
     </div>
   );
-}
+});
 
-function Sidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread }) {
+const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView }) => {
   const [activeTab, setActiveTab] = useState("orbits");
   const { play } = useSoundManager();
-  const { setNexusActionView } = useNexusStore();
+  const navigate = useNavigate();
 
   const [pinnedNexuses, setPinnedNexuses] = useState(() => {
     return JSON.parse(localStorage.getItem('pastel_pinned_nexuses') || '[]');
@@ -756,7 +755,13 @@ function Sidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, user
             sortedNexuses.map(n => (
               <div
                 key={n._id}
-                onClick={() => { play("click"); setSelectedNexus(n); }}
+                onClick={() => { 
+                  play("click"); 
+                  setSelectedNexus(n); 
+                  setSelectedUser(null);
+                  setNexusActionView(null);
+                  navigate(`/nexus/${n._id}`);
+                }}
                 style={{
                   display: "flex", flexDirection: "column", padding: "8px 10px", borderRadius: 14, cursor: "pointer", transition: "all 0.25s",
                   background: nexusColors[n._id] || "rgba(255,255,255,0.45)", position: "relative"
@@ -846,7 +851,13 @@ function Sidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, user
           ) : (
             users.map(u => (
               <div key={u._id}
-                onClick={() => { play("click"); setSelectedUser(u); }}
+                onClick={() => { 
+                  play("click"); 
+                  setSelectedUser(u); 
+                  setSelectedNexus(null);
+                  setNexusActionView(null);
+                  navigate(`/chat/${u._id}`);
+                }}
                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, marginBottom: 5, cursor: "pointer", transition: "all 0.2s" }}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.3)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -880,9 +891,9 @@ function Sidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, user
       </div>
     </div>
   );
-}
+});
 
-function SpotifyCard({ cardRef }) {
+const SpotifyCard = memo(({ cardRef }) => {
   const [playing, setPlaying] = useState(true);
   const [prog, setProg] = useState(38);
   useEffect(() => {
@@ -947,7 +958,7 @@ function SpotifyCard({ cardRef }) {
       </div>
     </div>
   );
-}
+});
 
 const CARDS = [
   {
@@ -979,7 +990,7 @@ const CARDS = [
   },
 ];
 
-function FeatureCard({ cfg, cardRef }) {
+const FeatureCard = memo(({ cfg, cardRef }) => {
   return (
     <div onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))} ref={cardRef} style={{
       background: cfg.bg, border: cfg.border, borderRadius: 20,
@@ -1000,10 +1011,10 @@ function FeatureCard({ cfg, cardRef }) {
       <div style={{ position: "absolute", bottom: 11, right: 14, fontSize: 13, color: cfg.accent, opacity: 0.38, fontWeight: "bold" }}>{cfg.bottomIcon}</div>
     </div>
   );
-}
+});
 
 /* ── animated title with shimmer ── */
-function HeroTitle() {
+const HeroTitle = memo(() => {
   return (
     <h1 style={{
       margin: "0 0 5px 0", fontSize: 38, fontWeight: 600,
@@ -1020,17 +1031,24 @@ function HeroTitle() {
       }}>✦</span>
     </h1>
   );
-}
+});
 
 import { gsap } from "gsap";
 
 export default function PastelApp({ children }) {
   const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
   const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
+  const { authUser, logout } = useAuthStore();
+  const [loggingOut, setLoggingOut] = useState(false);
   const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
   const { users, selectedUser, setSelectedUser } = useChatStore();
   const [mounted, setMounted] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try { await logout(); } finally { setLoggingOut(false); }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -1130,7 +1148,7 @@ export default function PastelApp({ children }) {
           box-shadow: 6px 6px 12px rgba(255,183,178,0.35), -6px -6px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,1), inset -2px -2px 4px rgba(255,183,178,0.15) !important;
         }
         .pastel-chat-env .nxc-signal-bars .nxc-bar,
-        .pastel-chat-env .text-\[\#5dcaa5\] {
+        .pastel-chat-env .text-[#5dcaa5] {
           background-color: #8b5a2b !important; /* Using coffee brown to keep grounded */
           color: #8b5a2b !important;
           text-shadow: none !important;
@@ -1176,17 +1194,18 @@ export default function PastelApp({ children }) {
       <SparkleClick />
       <BgClouds />
       <Floaties />
-      <TopNav navRef={navRef} />
+      <TopNav navRef={navRef} authUser={authUser} handleLogout={handleLogout} loggingOut={loggingOut} />
 
       <div style={{ position: "absolute", top: 50, left: 0, right: 0, bottom: 0, display: "flex" }}>
         <Sidebar
           sidebarRef={sidebarRef}
           nexuses={nexuses}
           isNexusesLoading={isNexusesLoading}
-          setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
+          setSelectedNexus={setSelectedNexus}
           users={users || []}
-          setSelectedUser={(u) => { setSelectedUser(u); setSelectedNexus(null); }}
+          setSelectedUser={setSelectedUser}
           nexusUnread={nexusUnread || {}}
+          setNexusActionView={setNexusActionView}
         />
 
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
@@ -1206,11 +1225,11 @@ export default function PastelApp({ children }) {
               </div>
             ) : nexusSelected ? (
               <div className="pastel-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-                <UniversalChatContainer type="nexus" />
+                <UniversalChatContainer key={selectedNexus?._id || selectedNexusId} type="nexus" />
               </div>
             ) : selectedUser ? (
               <div className="pastel-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-                <UniversalChatContainer type="dm" />
+                <UniversalChatContainer key={selectedUser?._id} type="dm" />
               </div>
             ) : (
               <div style={{ padding: "20px 26px 18px 26px", height: "100%", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
@@ -1473,6 +1492,7 @@ export function PastelSettings({
     { id: "profile", label: "Identity", icon: "🌸" },
     { id: "sound", label: "Acoustics", icon: "🎵" },
     { id: "appearance", label: "Aesthetics", icon: "🎀" },
+    { id: "animations", label: "Motion", icon: "💨" },
     { id: "notifications", label: "Alerts", icon: "🔔" },
     { id: "orbit", label: "Magic Rules", icon: "✨" },
     { id: "security", label: "Protection", icon: "🛡️" }
@@ -1540,6 +1560,11 @@ export function PastelSettings({
               <h2 style={{ fontSize: 36, fontWeight: 900, color: "#a855f7", marginBottom: 30, textShadow: "0 2px 10px rgba(168,85,247,0.2)" }}>
                 {tabs.find(t => t.id === activeSection)?.label}
               </h2>
+
+              {/* ANIMATIONS */}
+              {activeSection === "animations" && (
+                <AnimationSettingsPanel isPastel={true} />
+              )}
 
               {/* PROFILE */}
               {activeSection === "profile" && (

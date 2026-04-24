@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, memo } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
@@ -89,7 +89,7 @@ function MainCircuits() {
 /* ─────────────────────────────────────────────
    NEON CARD SHELL
 ───────────────────────────────────────────── */
-function NeonCard({ color = "#00f5d4", children, style = {} }) {
+const NeonCard = memo(({ color = "#00f5d4", children, style = {} }) => {
   const [hover, setHover] = useState(false);
   return (
     <div
@@ -103,12 +103,12 @@ function NeonCard({ color = "#00f5d4", children, style = {} }) {
       {children}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    AUDIO VISUALIZER
 ───────────────────────────────────────────── */
-function AudioViz({ playing }) {
+const AudioViz = memo(({ playing }) => {
   const [bars, setBars] = useState(() => Array.from({ length: 32 }, () => 0.3 + Math.random() * 0.7));
   useEffect(() => {
     if (!playing) return;
@@ -123,12 +123,12 @@ function AudioViz({ playing }) {
       ))}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    RADAR SWEEP
 ───────────────────────────────────────────── */
-function RadarSweep() {
+const RadarSweep = memo(() => {
   const ref = useRef(null);
   useEffect(() => {
     const c = ref.current; if (!c) return;
@@ -161,12 +161,12 @@ function RadarSweep() {
     draw(); return () => cancelAnimationFrame(raf);
   }, []);
   return <canvas ref={ref} width={150} height={120} style={{ display: "block" }} />;
-}
+});
 
 /* ─────────────────────────────────────────────
    HOLOGRAPHIC GLOBE
 ───────────────────────────────────────────── */
-function HoloGlobe() {
+const HoloGlobe = memo(() => {
   const ref = useRef(null);
   useEffect(() => {
     const c = ref.current; if (!c) return;
@@ -212,12 +212,12 @@ function HoloGlobe() {
     draw(); return () => cancelAnimationFrame(raf);
   }, []);
   return <canvas ref={ref} width={130} height={130} style={{ display: "block" }} />;
-}
+});
 
 /* ─────────────────────────────────────────────
    SPINNING GEARS
 ───────────────────────────────────────────── */
-function Gears() {
+const Gears = memo(() => {
   const ref = useRef(null);
   useEffect(() => {
     const c = ref.current; if (!c) return;
@@ -248,12 +248,12 @@ function Gears() {
     draw(); return () => cancelAnimationFrame(raf);
   }, []);
   return <canvas ref={ref} width={155} height={130} style={{ display: "block" }} />;
-}
+});
 
 /* ─────────────────────────────────────────────
    XP BAR
 ───────────────────────────────────────────── */
-function XPBar({ xp = 7340, maxXp = 10000, level = 47, compact = false }) {
+const XPBar = memo(({ xp = 7340, maxXp = 10000, level = 47, compact = false }) => {
   const pct = (xp / maxXp) * 100;
   if (compact) {
     return (
@@ -275,12 +275,12 @@ function XPBar({ xp = 7340, maxXp = 10000, level = 47, compact = false }) {
       <span style={{ fontSize: 8.5, color: "rgba(255,230,0,0.6)", fontFamily: "'Orbitron',monospace", whiteSpace: "nowrap" }}>{xp.toLocaleString()}/{maxXp.toLocaleString()} XP</span>
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    RANK BADGE
 ───────────────────────────────────────────── */
-function RankBadge({ rank = "DIAMOND", rp = 1847, nextRp = 2000, compact = false }) {
+const RankBadge = memo(({ rank = "DIAMOND", rp = 1847, nextRp = 2000, compact = false }) => {
   const color = RANK_COLORS[rank] || "#fff";
   const pct = Math.round((rp / nextRp) * 100);
   if (compact) {
@@ -318,17 +318,16 @@ function RankBadge({ rank = "DIAMOND", rp = 1847, nextRp = 2000, compact = false
       </div>
     </NeonCard>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    KILL FEED
 ───────────────────────────────────────────── */
-function KillFeed() {
-  const [visible, setVisible] = useState(KILL_FEED);
+const KillFeed = memo(() => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontSize: 8, fontWeight: 900, letterSpacing: "0.2em", color: "rgba(255,45,120,0.7)", fontFamily: "'Orbitron',monospace", marginBottom: 2 }}>⚔ KILL FEED</div>
-      {visible.map((k, i) => (
+      {KILL_FEED.map((k, i) => (
         <div key={i} style={{
           display: "flex", alignItems: "center", gap: 5, padding: "3px 6px", borderRadius: 3,
           background: k.isYou ? "rgba(255,230,0,0.08)" : "rgba(255,255,255,0.03)",
@@ -344,12 +343,12 @@ function KillFeed() {
       ))}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    SQUAD STATUS
 ───────────────────────────────────────────── */
-function SquadStatus() {
+const SquadStatus = memo(() => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <div style={{ fontSize: 8, fontWeight: 900, letterSpacing: "0.2em", color: "rgba(0,245,212,0.7)", fontFamily: "'Orbitron',monospace", marginBottom: 1 }}>👥 SQUAD</div>
@@ -371,12 +370,12 @@ function SquadStatus() {
       ))}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    DAILY QUESTS
 ───────────────────────────────────────────── */
-function DailyQuests() {
+const DailyQuests = memo(() => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1 }}>
@@ -409,12 +408,12 @@ function DailyQuests() {
       ))}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    LOCK IN BUTTON
 ───────────────────────────────────────────── */
-function LockInButton({ locked, onToggle }) {
+const LockInButton = memo(({ locked, onToggle }) => {
   return (
     <button onClick={onToggle} style={{
       width: "100%", padding: "7px 0", border: "none", borderRadius: 5, cursor: "pointer",
@@ -434,12 +433,12 @@ function LockInButton({ locked, onToggle }) {
       {locked ? "🔒 LOCKED IN" : "⚡ LOCK IN NOW"}
     </button>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    DEBRIS + STARS LAYER
 ───────────────────────────────────────────── */
-function DebrisLayer() {
+const DebrisLayer = memo(() => {
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
       {SHARDS.map((s, i) => (
@@ -450,24 +449,23 @@ function DebrisLayer() {
       ))}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    SCANLINES
 ───────────────────────────────────────────── */
-function Scanlines() {
+const Scanlines = memo(() => {
   return <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)", mixBlendMode: "overlay" }} />;
-}
+});
 
 /* ─────────────────────────────────────────────
    TOP NAV
 ───────────────────────────────────────────── */
-function TopNav({ navRef, locked, killCount, setSelectedNexus, setSelectedUser }) {
+const TopNav = memo(({ navRef, killCount, setSelectedNexus, setSelectedUser, logout }) => {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }));
   useEffect(() => { const iv = setInterval(() => setTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })), 1000); return () => clearInterval(iv); }, []);
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuthStore();
 
   const navItems = [
     { icon: "⚙", label: "CONFIG", path: "/settings" },
@@ -480,7 +478,6 @@ function TopNav({ navRef, locked, killCount, setSelectedNexus, setSelectedUser }
       logout();
       return;
     }
-    // Clear selection when navigating to Home or other top-level pages
     if (typeof setSelectedNexus === "function") setSelectedNexus(null);
     if (typeof setSelectedUser === "function") setSelectedUser(null);
     navigate(item.path);
@@ -488,27 +485,16 @@ function TopNav({ navRef, locked, killCount, setSelectedNexus, setSelectedUser }
 
   return (
     <div ref={navRef} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 48, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", zIndex: 40, background: "rgba(4,2,18,0.95)", borderBottom: "2px solid rgba(0,245,212,0.3)", backdropFilter: "blur(12px)", boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
-      {/* Logo Section */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 30, height: 30, borderRadius: "50%", border: "2px solid #ff2d78", boxShadow: "0 0 10px #ff2d78", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,45,120,0.15)", fontSize: 14 }}>🌀</div>
         <span style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.2em", color: "#00f5d4", textShadow: "0 0 10px #00f5d4", fontFamily: "'Orbitron',monospace" }}>ORBIT</span>
       </div>
 
-      {/* Center HUD Stats - Combined with Rank/XP */}
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-        {/* Rank Section */}
         <RankBadge rank="DIAMOND" rp={1847} nextRp={2000} compact={true} />
-
-        {/* Divider */}
         <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.1)" }} />
-
-        {/* XP Section */}
         <XPBar xp={7340} maxXp={10000} level={47} compact={true} />
-
-        {/* Divider */}
         <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.1)" }} />
-
-        {/* Session Stats */}
         <div style={{ display: "flex", gap: 16 }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 7, color: "rgba(0,245,212,0.5)", letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace" }}>KILLS</div>
@@ -520,9 +506,7 @@ function TopNav({ navRef, locked, killCount, setSelectedNexus, setSelectedUser }
           </div>
         </div>
       </div>
-      {/* Nav Actions */}
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        {/* Back to Main Button (Conditional) */}
         {(location.pathname === "/settings" || location.pathname === "/profile") && (
           <button 
             onClick={() => navigate("/")}
@@ -545,21 +529,311 @@ function TopNav({ navRef, locked, killCount, setSelectedNexus, setSelectedUser }
         )}
 
         {navItems.map((item) => (
-          <button key={item.label} onClick={() => handleNav(item)} style={{ display: "flex", alignItems: "center", gap: 6, background: item.highlight ? "rgba(255,45,120,0.2)" : "rgba(255,255,255,0.05)", border: `1.5px solid ${item.highlight ? "#ff2d78" : "rgba(255,255,255,0.15)"}`, borderRadius: 4, padding: "5px 10px", cursor: "pointer", fontSize: 10, fontWeight: 900, color: item.highlight ? "#ff2d78" : "#fff", fontFamily: "'Orbitron',monospace", transition: "all 0.2s" }}
-            onMouseEnter={e => { e.currentTarget.style.background = item.highlight ? "rgba(255,45,120,0.3)" : "rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor = item.highlight ? "#ff2d78" : "#00f5d4"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = item.highlight ? "rgba(255,45,120,0.2)" : "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = item.highlight ? "#ff2d78" : "rgba(255,255,255,0.15)"; }}>
+          <button key={item.label} onClick={() => handleNav(item)} style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.05)", border: `1.5px solid rgba(255,255,255,0.15)`, borderRadius: 4, padding: "5px 10px", cursor: "pointer", fontSize: 10, fontWeight: 900, color: "#fff", fontFamily: "'Orbitron',monospace", transition: "all 0.2s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor = "#00f5d4"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}>
             <span>{item.icon}</span>{item.label}
           </button>
         ))}
       </div>
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
-   SIDEBAR
+   GAMING HERO ANIMATION (Centerpiece)
 ───────────────────────────────────────────── */
-function Sidebar({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses, isNexusesLoading, selectedNexus, selectedNexusId, setSelectedNexus, users, selectedUser, selectedUserId, setSelectedUser, nexusUnread, setNexusActionView }) {
+const ICONS_HERO = [
+  {
+    id: "controller",
+    label: "Controller",
+    color: "#00c8ff",
+    glow: "#00c8ff55",
+    render: () => (
+      <g>
+        <defs>
+          <radialGradient id="cg" cx="40%" cy="35%">
+            <stop offset="0%" stopColor="#80e8ff" />
+            <stop offset="100%" stopColor="#006080" />
+          </radialGradient>
+        </defs>
+        <rect x="18" y="34" width="64" height="36" rx="18" fill="url(#cg)" opacity=".95" />
+        <rect x="5" y="42" width="26" height="20" rx="13" fill="#0099cc" opacity=".9" />
+        <rect x="69" y="42" width="26" height="20" rx="13" fill="#0099cc" opacity=".9" />
+        <rect x="40" y="28" width="20" height="6" rx="3" fill="#00c8ff" opacity=".7" />
+        <rect x="28" y="40" width="4" height="12" rx="2" fill="#fff" opacity=".75" />
+        <rect x="24" y="44" width="12" height="4" rx="2" fill="#fff" opacity=".75" />
+        <circle cx="72" cy="44" r="3" fill="#ff2d78" opacity=".9" />
+        <circle cx="79" cy="50" r="3" fill="#ffe44d" opacity=".9" />
+        <circle cx="65" cy="50" r="3" fill="#00ffa3" opacity=".9" />
+        <circle cx="72" cy="56" r="3" fill="#00c8ff" opacity=".9" />
+      </g>
+    ),
+  },
+  {
+    id: "sword",
+    label: "Blade",
+    color: "#b400ff",
+    glow: "#b400ff55",
+    render: () => (
+      <g>
+        <defs>
+          <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f0f4ff" />
+            <stop offset="50%" stopColor="#d4b4ff" />
+            <stop offset="100%" stopColor="#6600cc" />
+          </linearGradient>
+        </defs>
+        <line x1="72" y1="18" x2="28" y2="82" stroke="rgba(200,100,255,0.35)" strokeWidth="10" strokeLinecap="round" />
+        <line x1="72" y1="18" x2="28" y2="82" stroke="url(#sg)" strokeWidth="5" strokeLinecap="round" />
+        <line x1="38" y1="58" x2="22" y2="52" stroke="#d4b4ff" strokeWidth="3" strokeLinecap="round" />
+        <line x1="38" y1="58" x2="44" y2="74" stroke="#d4b4ff" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="74" cy="16" r="10" fill="none" stroke="#d4b4ff" strokeWidth="1" opacity=".4" />
+        <circle cx="74" cy="16" r="6" fill="#f0f4ff" opacity=".95" />
+        <circle cx="24" cy="84" r="5" fill="#b400ff" opacity=".9" />
+      </g>
+    ),
+  },
+  {
+    id: "star",
+    label: "Star Power",
+    color: "#ffe44d",
+    glow: "#ffe44d55",
+    render: () => (
+      <g>
+        <defs>
+          <radialGradient id="stg" cx="50%" cy="45%">
+            <stop offset="0%" stopColor="#fff9c4" />
+            <stop offset="60%" stopColor="#ffe44d" />
+            <stop offset="100%" stopColor="#ff8c00" stopOpacity=".8" />
+          </radialGradient>
+        </defs>
+        <polygon points="50,10 61,38 92,38 68,56 78,84 50,66 22,84 32,56 8,38 39,38" fill="url(#stg)" opacity=".97" />
+        <polygon points="50,22 58,38 76,38 62,48 68,66 50,56 32,66 38,48 24,38 42,38" fill="#fff9c4" opacity=".5" />
+        <circle cx="50" cy="46" r="8" fill="#fff" opacity=".9" />
+      </g>
+    ),
+  },
+  {
+    id: "shield",
+    label: "Shield",
+    color: "#00ffa3",
+    glow: "#00ffa355",
+    render: () => (
+      <g>
+        <defs>
+          <linearGradient id="shg" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#80ffcc" />
+            <stop offset="100%" stopColor="#007744" />
+          </linearGradient>
+        </defs>
+        <path d="M50 12 L82 26 L82 54 Q82 74 50 90 Q18 74 18 54 L18 26 Z" fill="url(#shg)" opacity=".9" />
+        <path d="M50 22 L74 33 L74 54 Q74 68 50 80 Q26 68 26 54 L26 33 Z" fill="rgba(0,255,163,0.18)" />
+        <line x1="50" y1="28" x2="50" y2="75" stroke="#00ffa3" strokeWidth="2" strokeLinecap="round" opacity=".8" />
+        <line x1="30" y1="46" x2="70" y2="46" stroke="#00ffa3" strokeWidth="2" strokeLinecap="round" opacity=".8" />
+        <circle cx="50" cy="46" r="8" fill="rgba(0,255,163,0.25)" />
+        <circle cx="50" cy="46" r="4" fill="#00ffa3" opacity=".9" />
+      </g>
+    ),
+  },
+  {
+    id: "lightning",
+    label: "Voltage",
+    color: "#ff2d78",
+    glow: "#ff2d7855",
+    render: () => (
+      <g>
+        <defs>
+          <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ff9ed2" />
+            <stop offset="100%" stopColor="#cc0050" />
+          </linearGradient>
+        </defs>
+        <path d="M58 8 L28 54 L46 54 L42 92 L72 46 L54 46 Z" fill="url(#lg)" opacity=".97" />
+        <path d="M58 8 L28 54 L46 54 L42 92 L72 46 L54 46 Z" fill="none" stroke="#fff" strokeWidth="1" opacity=".3" />
+        <circle cx="42" cy="92" r="5" fill="#ff2d78" opacity=".7" />
+        <circle cx="58" cy="8" r="4" fill="#ff9ed2" opacity=".9" />
+      </g>
+    ),
+  },
+  {
+    id: "gem",
+    label: "Crystal",
+    color: "#00c8ff",
+    glow: "#00c8ff55",
+    render: () => (
+      <g>
+        <defs>
+          <linearGradient id="gemg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#c4f0ff" />
+            <stop offset="40%" stopColor="#00c8ff" />
+            <stop offset="100%" stopColor="#004466" />
+          </linearGradient>
+        </defs>
+        <polygon points="50,14 76,30 76,66 50,86 24,66 24,30" fill="url(#gemg)" opacity=".95" />
+        <polygon points="50,14 76,30 50,46" fill="rgba(255,255,255,0.25)" />
+        <polygon points="50,46 76,30 76,66" fill="rgba(0,100,150,0.3)" />
+        <polygon points="50,46 76,66 50,86 24,66" fill="rgba(0,60,100,0.25)" />
+        <polygon points="50,46 24,66 24,30" fill="rgba(100,220,255,0.18)" />
+        <line x1="50" y1="14" x2="50" y2="86" stroke="#fff" strokeWidth="1" opacity=".2" />
+        <line x1="24" y1="30" x2="76" y2="66" stroke="#fff" strokeWidth="1" opacity=".15" />
+      </g>
+    ),
+  },
+];
+
+const ORBIT_ICONS_HERO = [
+  (c) => (
+    <svg width="24" height="24" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="20" fill={c} opacity=".12" />
+      <circle cx="22" cy="22" r="20" fill="none" stroke={c} strokeWidth="1" opacity=".55" />
+      <circle cx="22" cy="22" r="5" fill={c} opacity=".9" />
+      <rect x="8" y="20" width="8" height="4" rx="2" fill={c} opacity=".8" />
+      <rect x="28" y="20" width="8" height="4" rx="2" fill={c} opacity=".8" />
+      <rect x="20" y="8" width="4" height="8" rx="2" fill={c} opacity=".8" />
+      <rect x="20" y="28" width="4" height="8" rx="2" fill={c} opacity=".8" />
+    </svg>
+  ),
+  (c) => (
+    <svg width="24" height="24" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="20" fill="rgba(180,0,255,0.1)" />
+      <path d="M22 6L38 34H6Z" fill="none" stroke={c} strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="22" cy="26" r="4" fill={c} opacity=".9" />
+      <circle cx="22" cy="26" r="7" fill="none" stroke={c} strokeWidth=".8" opacity=".5" />
+    </svg>
+  ),
+  (c) => (
+    <svg width="24" height="24" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="20" fill="rgba(255,200,0,0.08)" />
+      <polygon points="22,8 25,18 36,18 27,24 30,34 22,28 14,34 17,24 8,18 19,18" fill={c} opacity=".9" />
+    </svg>
+  ),
+  (c) => (
+    <svg width="24" height="24" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="20" fill="rgba(0,255,163,0.08)" />
+      <rect x="10" y="10" width="24" height="24" rx="4" fill="none" stroke={c} strokeWidth="1.5" />
+      <rect x="16" y="16" width="12" height="12" rx="2" fill={c} opacity=".7" />
+      <line x1="22" y1="4" x2="22" y2="10" stroke={c} strokeWidth="1.5" />
+      <line x1="22" y1="34" x2="22" y2="40" stroke={c} strokeWidth="1.5" />
+      <line x1="4" y1="22" x2="10" y2="22" stroke={c} strokeWidth="1.5" />
+      <line x1="34" y1="22" x2="40" y2="22" stroke={c} strokeWidth="1.5" />
+    </svg>
+  ),
+];
+
+const PALETTE_HERO = ["#00c8ff", "#b400ff", "#ff2d78", "#00ffa3", "#ffe44d"];
+
+function useHeroParticles(canvasRef, count = 40) {
+  const pts = useRef([]);
+  const raf = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let W, H;
+
+    const mkPt = () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.2 + 0.3,
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: (Math.random() - 0.5) * 0.2,
+      a: Math.random(),
+      da: (Math.random() * 0.003 + 0.001) * (Math.random() < 0.5 ? 1 : -1),
+      color: PALETTE_HERO[Math.floor(Math.random() * PALETTE_HERO.length)],
+    });
+
+    const resize = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      W = canvas.width = rect.width;
+      H = canvas.height = rect.height;
+      if (!pts.current.length) pts.current = Array.from({ length: count }, mkPt);
+    };
+
+    resize();
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      for (const p of pts.current) {
+        p.x = (p.x + p.vx + W) % W;
+        p.y = (p.y + p.vy + H) % H;
+        p.a = Math.max(0, Math.min(1, p.a + p.da));
+        if (p.a >= 1 || p.a <= 0) p.da *= -1;
+        ctx.globalAlpha = p.a * 0.5;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 6.283);
+        ctx.fill();
+      }
+      raf.current = requestAnimationFrame(draw);
+    };
+    raf.current = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf.current);
+  }, [canvasRef, count]);
+}
+
+const GamingHeroAnimation = memo(() => {
+  const canvasRef = useRef(null);
+  const [idx, setIdx] = useState(0);
+  const [phase, setPhase] = useState("visible");
+  useHeroParticles(canvasRef, 40);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPhase("exit");
+      setTimeout(() => {
+        setIdx(i => (i + 1) % ICONS_HERO.length);
+        setPhase("enter");
+        setTimeout(() => setPhase("visible"), 300);
+      }, 300);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const ic = ICONS_HERO[idx];
+  const iconScale = phase === "exit" ? "scale(0.5) rotate(-20deg)" : phase === "enter" ? "scale(0.5) rotate(20deg)" : "scale(1) rotate(0deg)";
+  const iconOpacity = phase === "visible" ? 1 : 0;
+  const orbitColors = ["#00c8ff", "#b400ff", "#ffe44d", "#00ffa3"];
+
+  return (
+    <div style={{ position: "relative", width: "100%", height: 180, background: "rgba(5,8,16,0.4)", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(0,245,212,0.15)", margin: "10px 0" }}>
+      <style>{`
+        @keyframes spinRingCW  { from{transform:rotate(0deg)}  to{transform:rotate(360deg)} }
+        @keyframes counterSpin { from{transform:translate(-50%,-50%) rotate(0deg)} to{transform:translate(-50%,-50%) rotate(-360deg)} }
+        @keyframes pulseGlow   { 0%,100%{transform:scale(1);opacity:.3} 50%{transform:scale(1.15);opacity:.6} }
+      `}</style>
+      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1 }} />
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
+        <div style={{ position: "absolute", width: 140, height: 140, borderRadius: "50%", border: "1px solid rgba(0,245,212,0.1)", animation: "spinRingCW 15s linear infinite" }} />
+        <div style={{ position: "absolute", width: 120, height: 120, animation: "spinRingCW 10s linear infinite" }}>
+          {ORBIT_ICONS_HERO.map((IconFn, i) => {
+            const angle = i * 90;
+            const rad = (angle * Math.PI) / 180;
+            const cx = 60 + Math.cos(rad) * 60 - 12;
+            const cy = 60 + Math.sin(rad) * 60 - 12;
+            return (
+              <div key={i} style={{ position: "absolute", left: cx, top: cy, animation: "counterSpin 10s linear infinite", filter: `drop-shadow(0 0 5px ${orbitColors[i]})`, opacity: 0.7 }}>
+                {IconFn(orbitColors[i])}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ position: "relative", width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ position: "absolute", inset: -10, borderRadius: "50%", boxShadow: `0 0 30px 10px ${ic.glow}`, animation: "pulseGlow 2s ease-in-out infinite", transition: "box-shadow 0.5s ease" }} />
+          <div style={{ position: "relative", zIndex: 2, transition: "all 0.3s cubic-bezier(.34,1.56,.64,1)", transform: iconScale, opacity: iconOpacity }}>
+            <svg width={50} height={50} viewBox="0 0 100 100" style={{ filter: `drop-shadow(0 0 10px ${ic.color})` }}>{ic.render()}</svg>
+          </div>
+        </div>
+      </div>
+      <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, textAlign: "center", zIndex: 3, fontSize: 8, letterSpacing: "0.15em", color: ic.color, textTransform: "uppercase", fontWeight: 900, opacity: phase === "visible" ? 0.8 : 0, transition: "all 0.3s" }}>{ic.label}</div>
+    </div>
+  );
+});
+
+
+const Sidebar = memo(({ sidebarRef, onJoin, onNexus, nexuses, isNexusesLoading, selectedNexus, selectedNexusId, setSelectedNexus, users, selectedUser, selectedUserId, setSelectedUser, nexusUnread, setNexusActionView }) => {
   const navigate = useNavigate();
   const [tab, setTab] = useState("orbits");
 
@@ -641,7 +915,6 @@ function Sidebar({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses,
               )}
               {sortedNexuses.map(n => (
                 <div key={n._id}>
-                  {/* Separator if transitioning from pinned to unpinned */}
                   {!pinnedNexuses.includes(n._id) && pinnedNexuses.length > 0 && sortedNexuses.indexOf(n) === pinnedNexuses.length && (
                     <div style={{ fontSize: 8, fontWeight: 900, color: "rgba(0,245,212,0.6)", letterSpacing: "0.2em", padding: "12px 8px 4px 8px", fontFamily: "'Orbitron',monospace" }}>// ALL_NODES</div>
                   )}
@@ -777,6 +1050,8 @@ function Sidebar({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses,
         )}
       </div>
 
+      <GamingHeroAnimation />
+
       {/* Footer / Orbit Mode */}
       <div style={{ marginTop: "auto", borderRadius: 6, padding: "10px", display: "flex", alignItems: "center", gap: 10, background: "rgba(0,245,212,0.08)", border: "2.5px solid #00f5d4", cursor: "pointer", boxShadow: "0 0 15px rgba(0,245,212,0.3)", position: "relative", zIndex: 2, transition: "all 0.3s" }}
         onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))}
@@ -790,7 +1065,7 @@ function Sidebar({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses,
       </div>
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    AUDIO CARD
@@ -891,7 +1166,6 @@ function CustomizeCard() {
         <div style={{ width: 28, height: 28, borderRadius: 7, border: "1.5px solid rgba(0,207,255,0.6)", background: "rgba(0,207,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: "0 0 8px rgba(0,207,255,0.3)" }}>⚙️</div>
         <div style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: "0.15em", color: "#00cfff", textTransform: "uppercase", textShadow: "0 0 8px #00cfff", fontFamily: "'Orbitron',monospace" }}>CUSTOMIZE</div>
         <div style={{ fontSize: 9.5, color: "rgba(100,190,220,0.7)", lineHeight: 1.5 }}>Configure your orbit behavior and preferences</div>
-        {/* quick stats */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginTop: 2 }}>
           {[{ l: "MATCHES", v: "284" }, { l: "TOP 1%", v: "YES" }, { l: "HOURS", v: "1,240" }, { l: "STREAK", v: "7d" }].map(s => (
             <div key={s.l} style={{ padding: "3px 6px", borderRadius: 3, background: "rgba(0,207,255,0.06)", border: "1px solid rgba(0,207,255,0.18)" }}>
@@ -907,9 +1181,6 @@ function CustomizeCard() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   STATUS BAR
-───────────────────────────────────────────── */
 function StatusBar({ locked }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -925,14 +1196,12 @@ function StatusBar({ locked }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN APP
-───────────────────────────────────────────── */
 export default function OrbitGrind({ children }) {
   const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
   const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
   const [locked, setLocked] = useState(false);
   const [killCount, setKillCount] = useState(14);
+  const { logout } = useAuthStore();
   const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
   const { users, selectedUser, selectedUserId, setSelectedUser } = useChatStore();
 
@@ -987,22 +1256,20 @@ export default function OrbitGrind({ children }) {
         @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
         @keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(200%);}}
         @keyframes lockedPulse{0%,100%{opacity:1;box-shadow:0 0 10px currentColor;}50%{opacity:0.7;box-shadow:0 0 25px currentColor;}}
-        @keyframes fadeSlideIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
         *{box-sizing:border-box;} button:focus{outline:none;}
         ::-webkit-scrollbar{width:3px;height:3px;} 
         ::-webkit-scrollbar-track{background:rgba(0,0,0,0.5);}
         ::-webkit-scrollbar-thumb{background:rgba(0,245,212,0.25);border-radius:0;}
         ::-webkit-scrollbar-thumb:hover{background:rgba(0,245,212,0.55);}
 
-        /* ── Gamer Battle-Station Chat Theme ── */
         .gamer-chat-env .nexus-chat-container {
           background: #0a0a0a !important;
           border: 4px solid #1a1a1a !important;
-          border-radius: 4px !important; /* rigid, angular */
+          border-radius: 4px !important;
           box-shadow: inset 0 0 10px #000 !important;
         }
         .gamer-chat-env .nexus-chat-header { 
-          background: repeating-linear-gradient(45deg, #111, #111 6px, #1a1a1a 6px, #1a1a1a 12px) !important; /* carbon-fiber-like edge */
+          background: repeating-linear-gradient(45deg, #111, #111 6px, #1a1a1a 6px, #1a1a1a 12px) !important;
           border-bottom: 2px solid #333 !important;
           border-radius: 4px 4px 0 0 !important;
         }
@@ -1010,14 +1277,12 @@ export default function OrbitGrind({ children }) {
         .gamer-chat-env .nxc-name { 
           color: #ff2d78 !important; font-family: 'Orbitron', sans-serif !important; letter-spacing: 2px !important; text-shadow: 0 0 8px #ff2d78 !important; font-weight: 900 !important;
         }
-        .gamer-chat-env .nexus-chat-header .text-base-content\/70 { color: rgba(255,255,255,0.6) !important; }
-        
         .gamer-chat-env .nxc-utility-group,
         .gamer-chat-env .nxc-telemetry-capsule {
           background: #111 !important;
-          border: 1.5px solid #333 !important; /* brushed aluminum feel */
+          border: 1.5px solid #333 !important;
           box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 2px 0px rgba(255,255,255,0.1) !important;
-          border-radius: 0px !important; /* Angular */
+          border-radius: 0px !important;
         }
         .gamer-chat-env .nxc-hbtn, .gamer-chat-env .nxc-aero-btn {
           background: #1a1a1a !important; color: #fff !important;
@@ -1028,12 +1293,11 @@ export default function OrbitGrind({ children }) {
            0% { border-color: #ff0000; box-shadow: inset 0 0 5px #ff0000; }
           33% { border-color: #00ff00; box-shadow: inset 0 0 5px #00ff00; }
           66% { border-color: #0000ff; box-shadow: inset 0 0 5px #0000ff; }
-         100% { border-color: #ff0000; box-shadow: inset 0 0 5px #ff0000; }
+          100% { border-color: #ff0000; box-shadow: inset 0 0 5px #ff0000; }
         }
         .gamer-chat-env .nxc-signal-bars { display: flex; align-items: flex-end; gap: 1px; }
         .gamer-chat-env .nxc-signal-bars .nxc-bar { background: #ff2d78 !important; width: 4px !important; border-radius: 0 !important; height: 10px !important; }
-        .gamer-chat-env .bg-white\/20 { background: #333 !important; }
-
+        .gamer-chat-env .bg-white/20 { background: #333 !important; }
         .gamer-chat-env .nxi-shell { 
           background: rgba(4,2,18,0.92) !important; 
           border-top: 1px solid rgba(0,245,212,0.3) !important;
@@ -1042,7 +1306,6 @@ export default function OrbitGrind({ children }) {
         .gamer-chat-env .nxi-textarea { background: rgba(0,245,212,0.06) !important; border: 1px solid rgba(0,245,212,0.2) !important; color: #fff !important; font-family: 'Rajdhani', sans-serif !important; font-weight: 500 !important; font-size: 15px !important; }
         .gamer-chat-env .nxi-textarea:focus { border-color: #00f5d4 !important; box-shadow: 0 0 10px rgba(0,245,212,0.3) !important; }
         .gamer-chat-env .nxi-tool-btn, .gamer-chat-env .nxi-mic { color: #00f5d4 !important; }
-
         .gamer-chat-env .msg-bubble-mine { 
           background: rgba(255,45,120,0.15) !important; 
           border: 1.5px solid #ff2d78 !important; 
@@ -1058,7 +1321,6 @@ export default function OrbitGrind({ children }) {
         }
       `}</style>
 
-      {/* nebula bg */}
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 50%,rgba(80,0,120,0.55) 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,rgba(0,60,120,0.45) 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,rgba(0,80,60,0.35) 0%,transparent 40%),radial-gradient(ellipse at 10% 80%,rgba(120,0,80,0.3) 0%,transparent 40%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,rgba(255,255,255,0.35) 1px,transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none", opacity: 0.25 }} />
 
@@ -1092,7 +1354,6 @@ export default function OrbitGrind({ children }) {
           setNexusActionView={setNexusActionView}
         />
 
-        {/* Main */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
           <MainCircuits />
 
@@ -1106,15 +1367,14 @@ export default function OrbitGrind({ children }) {
             </div>
           ) : nexusSelected ? (
             <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-              <UniversalChatContainer type="nexus" />
+              <UniversalChatContainer key={selectedNexus?._id || selectedNexusId} type="nexus" />
             </div>
           ) : userSelected ? (
             <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-              <UniversalChatContainer type="dm" />
+              <UniversalChatContainer key={selectedUser?._id || selectedUserId} type="dm" />
             </div>
           ) : (
             <div style={{ flex: 1, padding: "12px 16px 10px 16px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", position: "relative" }}>
-              {/* Hero */}
               <div ref={heroRef} style={{ position: "relative", zIndex: 2 }}>
                 <StatusBar locked={locked} />
                 <div style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap", marginBottom: "10px" }}>

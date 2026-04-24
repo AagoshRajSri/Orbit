@@ -110,9 +110,8 @@ export default function UniversalChatContainer({ type }) {
   const getNexusMessages  = useNexusStore(s => s.getNexusMessages);
   const setNexusTyping    = useNexusStore(s => s.setNexusTyping);
   // For InfoPanel wiring
-  const updateNexus       = useNexusStore(s => s.updateNexus);
-  const leaveNexus        = useNexusStore(s => s.leaveNexus);
   const setSelectedNexus  = useNexusStore(s => s.setSelectedNexus);
+  const deleteNexus        = useNexusStore(s => s.deleteNexus);
 
   // ── Chat store ──
   const selectedUser      = useChatStore(s => s.selectedUser);
@@ -357,11 +356,33 @@ export default function UniversalChatContainer({ type }) {
     setLocalNexusGroup(g => ({ ...g, [field]: val }));
     if (isNexus && selectedNexus?._id) {
       try {
-        await updateNexus(selectedNexus._id, { [field]: val });
+        await useNexusStore.getState().updateNexus(selectedNexus._id, { [field]: val });
         addToast(`${field} updated`);
       } catch {
         addToast("Update failed");
       }
+    }
+  };
+
+  const handleLeaveNexus = async () => {
+    if (!isNexus || !selectedNexus?._id) return;
+    try {
+      await useNexusStore.getState().leaveNexus(selectedNexus._id);
+      addToast("Left Nexus successfully");
+      navigate("/");
+    } catch {
+      addToast("Failed to leave Nexus");
+    }
+  };
+
+  const handleDeleteNexus = async () => {
+    if (!isNexus || !selectedNexus?._id) return;
+    try {
+      await deleteNexus(selectedNexus._id);
+      addToast("Nexus deleted permanently");
+      navigate("/");
+    } catch {
+      addToast("Failed to delete Nexus");
     }
   };
 
@@ -639,6 +660,9 @@ export default function UniversalChatContainer({ type }) {
             setGroup={setLocalNexusGroup}
             onClose={() => setShowInfo(false)}
             addToast={addToast}
+            onUpdate={handleInfoUpdate}
+            onLeave={handleLeaveNexus}
+            onDelete={handleDeleteNexus}
           />
         </div>
       )}

@@ -39,8 +39,21 @@ const ambientDeviceSchema = new mongoose.Schema({
   lastSeenAt: {
     type: Date,
     default: Date.now,
+  },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0],
+    }
   }
 });
+
+ambientDeviceSchema.index({ location: "2dsphere" });
 
 const AmbientDevice = mongoose.model('AmbientDevice', ambientDeviceSchema);
 

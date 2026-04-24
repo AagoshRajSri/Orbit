@@ -14,7 +14,9 @@ import {
   Send,
   Compass,
   Music,
+  Activity,
 } from "lucide-react";
+import AnimationSettingsPanel from "../components/AnimationSettingsPanel";
 import { useSoundManager } from "../hooks/useSoundManager";
 
 import { THEMES, THEME_LABELS } from "../constants";
@@ -123,6 +125,12 @@ const SettingsPage = () => {
         label: "Appearance",
         icon: Palette,
         color: "text-purple-400",
+      },
+      {
+        key: "animations",
+        label: "Animations",
+        icon: Activity,
+        color: "text-indigo-400",
       },
       {
         key: "orbit",
@@ -622,6 +630,11 @@ const SettingsPage = () => {
 
               <section className="col-span-12 lg:col-span-9 min-h-0 flex flex-col">
                 <div className="flex-1 min-h-0 overflow-y-auto pr-0 lg:pr-2">
+                  {/* ANIMATIONS */}
+                  {activeSection === "animations" && (
+                    <AnimationSettingsPanel isPastel={false} />
+                  )}
+
                   {/* PROFILE */}
                   {activeSection === "profile" && (
                     <div className="space-y-6">

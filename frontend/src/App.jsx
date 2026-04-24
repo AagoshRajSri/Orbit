@@ -45,6 +45,7 @@ import NowPlayingWidget from "./components/NowPlayingWidget";
 import ThemePortal from "./components/ThemePortal";
 
 import OrbitChatApp from "./components/OrbitChatApp";
+import { useAnimationContext } from "./components/AnimLayer";
 
 // Initialized exactly once at module load time (before any renders)
 let _appSettingsInitialized = false;
@@ -57,10 +58,7 @@ function ensureAppSettings() {
 
 const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPastel, HomePage }) => {
   const [ThemeComponent, setThemeComponent] = useState(null);
-  const [nexusTrigger, setNexusTrigger] = useState(0);
   
-  const nexusCount = useNexusStore((state) => Object.keys(state.entities?.nexuses || {}).length);
-
   useEffect(() => {
     const loadTheme = async () => {
       if (isDark) {
@@ -88,10 +86,6 @@ const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPas
     loadTheme();
   }, [isDark, isCyber, isGamer, isAmoled, isLight, isPastel]);
 
-  useEffect(() => {
-    setNexusTrigger(t => t + 1);
-  }, [nexusCount]);
-
   if (!ThemeComponent) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -100,7 +94,7 @@ const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPas
     );
   }
 
-  return <ThemeComponent key={`theme-${nexusTrigger}`} />;
+  return <ThemeComponent />;
 };
 
 /**
@@ -138,6 +132,7 @@ const DynamicRouteHandler = (props) => {
 };
 
 const AppContent = () => {
+  useAnimationContext();
   const location = useLocation();
   const { isOnline } = useConnectivity();
   const authUser = useAuthStore((state) => state.authUser);

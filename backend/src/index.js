@@ -133,8 +133,11 @@ app.use((req, res) => {
 });
 app.use(errorHandler);
 
+import * as msgpackParser from "socket.io-msgpack-parser";
+
 // ── Socket.IO ────────────────────────────────────────────────────────────────
 const io = new Server(httpServer, {
+  parser: msgpackParser,
   cors: {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);

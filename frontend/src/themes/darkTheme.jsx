@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, Fragment, useMemo } from "react";
+import React, { useEffect, useRef, useState, Fragment, useMemo, memo } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { createPortal } from "react-dom";
 import { useThemeStore } from "../store/useThemeStore";
@@ -430,6 +430,7 @@ const style = `
     border-top: 1px solid rgba(139,0,0,0.4) !important;
     backdrop-filter: blur(20px) !important;
   }
+  .vamp-chat-env textarea {
     background: transparent !important;
   }
   .vamp-chat-env textarea::placeholder { color: rgba(123, 110, 138, 0.4) !important; }
@@ -779,7 +780,7 @@ const style = `
 `;
 
 // ── Particle emitter ─────────────────────────────────────────────
-function Particles() {
+const Particles = memo(() => {
     const containerRef = useRef(null);
 
     useEffect(() => {
@@ -813,10 +814,10 @@ function Particles() {
     }, []);
 
     return <div ref={containerRef} style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }} />;
-}
+});
 
 
-function BloodRain() {
+const BloodRain = memo(() => {
     const containerRef = useRef(null);
 
     useEffect(() => {
@@ -855,9 +856,9 @@ function BloodRain() {
     }, []);
 
     return <div ref={containerRef} style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }} />;
-}
+});
 
-function Embers() {
+const Embers = memo(() => {
     const containerRef = useRef(null);
 
     useEffect(() => {
@@ -893,9 +894,9 @@ function Embers() {
     }, []);
 
     return <div ref={containerRef} style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }} />;
-}
+});
 
-function Lightning() {
+const Lightning = memo(() => {
     const [isFlashing, setIsFlashing] = useState(false);
     const [bolt, setBolt] = useState(null);
     const thunderRef = useRef(new Audio("https://actions.google.com/sounds/v1/weather/rolling_thunder.ogg"));
@@ -1027,9 +1028,9 @@ function Lightning() {
             )}
         </>
     );
-}
+});
 
-function HangingBat({ right = 60, top = 0, delay = "0s", scale = 1, opacity = 1, zIndex = 20 }) {
+const HangingBat = memo(({ right = 60, top = 0, delay = "0s", scale = 1, opacity = 1, zIndex = 20 }) => {
     return (
         <div
             className="hanging-bat-container"
@@ -1053,9 +1054,9 @@ function HangingBat({ right = 60, top = 0, delay = "0s", scale = 1, opacity = 1,
             </svg>
         </div>
     );
-}
+});
 
-function HangingBats() {
+const HangingBats = memo(() => {
     return (
         <>
             {/* Background Bats (smaller, dimmer) */}
@@ -1069,9 +1070,263 @@ function HangingBats() {
             <HangingBat right={180} top={-5} delay="0.5s" scale={0.9} />
         </>
     );
-}
+});
 
-// ── Main Component ───────────────────────────────────────────────
+// ── Main Shell Components ───────────────────────────────────────────────
+const VampireTopNav = memo(({ navRef, navigate, logout }) => {
+    return (
+        <nav className="navbar" ref={navRef}>
+            <div className="nav-logo" onClick={() => navigate("/")} style={{ cursor: 'pointer' }}>
+                <div className="nav-logo-icon"><img src={batLogo} alt="Orbit Bat" /></div>
+                ORBIT
+            </div>
+            <div className="nav-actions">
+                <button className="nav-btn" onClick={() => navigate("/settings")}>
+                    <span>⚙</span> Settings
+                </button>
+                <button className="nav-btn" onClick={() => navigate("/profile")}>
+                    <span>👤</span> Profile
+                </button>
+                <button className="nav-btn" onClick={logout}>
+                    <span>⇥</span> Logout
+                </button>
+            </div>
+        </nav>
+    );
+});
+VampireTopNav.displayName = "VampireTopNav";
+
+const VampireSidebar = memo(({ 
+    sidebarRef, activeTab, setActiveTab, setNexusActionView, 
+    isNexusesLoading, nexuses, sortedNexuses, selectedNexus, selectedNexusId, 
+    setSelectedNexus, setSelectedUser, nexusColors, nexusUnread, 
+    activeMenuId, setActiveMenuId, activeColorPickerId, setActiveColorPickerId,
+    togglePin, updateColor, users, selectedUser, navigate, pinnedNexuses
+}) => {
+    return (
+        <aside className="sidebar" ref={sidebarRef}>
+            <div className="sidebar-tabs">
+                <button
+                    className={`tab-btn ${activeTab === "orbits" ? "active" : ""}`}
+                    onClick={() => setActiveTab("orbits")}
+                >
+                    # ORBITS
+                </button>
+                <button
+                    className={`tab-btn ${activeTab === "contacts" ? "active" : ""}`}
+                    onClick={() => setActiveTab("contacts")}
+                >
+                    👤 CONTACTS
+                </button>
+            </div>
+
+            <div className="sidebar-actions">
+                <button className="action-btn join" onClick={() => {
+                    setNexusActionView("join");
+                    setSelectedNexus(null);
+                    setSelectedUser(null);
+                }}># JOIN</button>
+                <button className="action-btn nexus" onClick={() => {
+                    setNexusActionView("create");
+                    setSelectedNexus(null);
+                    setSelectedUser(null);
+                }}>+ NEXUS</button>
+            </div>
+
+            <div className="sidebar-list custom-scrollbar" style={{ flex: 1, overflowY: 'auto' }}>
+                {(() => {
+                    if (activeTab === "orbits") {
+                        if (isNexusesLoading) {
+                            return <div className="sidebar-empty"><em>Syncing...</em></div>;
+                        }
+                        if (nexuses.length === 0) {
+                            return (
+                                <div className="sidebar-empty">
+                                    <em>"The night is vast.<br />Join or create a Nexus<br />to begin your communion."</em>
+                                </div>
+                            );
+                        }
+                        return sortedNexuses.map(n => {
+                            const isSel = (selectedNexus?._id === n._id || selectedNexusId === n._id);
+                            return (
+                                <div
+                                    key={n._id}
+                                    className="sidebar-item"
+                                    onClick={() => { 
+                                        setSelectedUser(null);
+                                        setNexusActionView(null);
+                                        setSelectedNexus(n); 
+                                        navigate(`/nexus/${n._id}`);
+                                    }}
+                                    style={{ 
+                                        display:"flex", 
+                                        flexDirection: "column", 
+                                        padding:"12px 14px", 
+                                        cursor:"pointer", 
+                                        borderBottom:"1px solid rgba(139,0,0,0.15)", 
+                                        transition:"all 0.2s ease",
+                                        background: isSel
+                                            ? "rgba(139,0,0,0.25)" 
+                                            : nexusColors[n._id] || "transparent",
+                                        borderLeft: isSel
+                                            ? "3px solid #dc143c"
+                                            : "3px solid transparent",
+                                        position: "relative"
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+                                        <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(139,0,0,0.3)", border:"1.5px solid rgba(220,20,60,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0, overflow:"hidden" }}>
+                                            {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"50%" }} /> : "⬡"}
+                                        </div>
+                                        <div style={{ minWidth:0, flex:1 }}>
+                                            <div style={{ fontSize:13, fontWeight:600, color: isSel ? "#fff" : "#F0E6D3", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.name}</div>
+                                            <div style={{ fontSize:10, color:"rgba(168,155,176,0.6)", fontFamily:"serif" }}>{n.members?.length || 0} members</div>
+                                        </div>
+                                        {nexusUnread[n._id] > 0 && (
+                                            <div style={{ background:"rgba(220,20,60,0.8)", color:"white", fontSize:10, fontWeight:900, padding:"1px 6px", borderRadius:4, fontFamily:"'Cinzel',serif", boxShadow:"0 0 10px rgba(220,20,60,0.4)" }}>{nexusUnread[n._id]}</div>
+                                        )}
+
+                                        {nexusColors[n._id] && nexusColors[n._id] !== 'transparent' && (
+                                            <div style={{ position: 'absolute', top: 2, right: 2, fontSize: 10 }}>📌</div>
+                                        )}
+
+                                        <div 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setActiveMenuId(activeMenuId === n._id ? null : n._id);
+                                                setActiveColorPickerId(null);
+                                            }}
+                                            style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
+                                        >
+                                            🦇
+                                        </div>
+                                    </div>
+
+                                    {activeMenuId === n._id && (
+                                        <div 
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(139,0,0,0.2)`, display: 'flex', flexDirection: 'column', gap: 8 }}
+                                        >
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
+                                                    }}
+                                                    style={{ flex: 1, padding: '6px', background: "rgba(139,0,0,0.2)", border: "1px solid rgba(139,0,0,0.4)", borderRadius: 4, fontSize: 9, color: "#F0E6D3", fontFamily: "'Cinzel', serif", letterSpacing: '1px', cursor: 'pointer' }}
+                                                >
+                                                    Mark 🎨
+                                                </button>
+                                                <button 
+                                                    onClick={(e) => togglePin(n._id, e)}
+                                                    style={{ flex: 1, padding: '6px', background: "rgba(139,0,0,0.2)", border: "1px solid rgba(139,0,0,0.4)", borderRadius: 4, fontSize: 9, color: "#F0E6D3", fontFamily: "'Cinzel', serif", letterSpacing: '1px', cursor: 'pointer' }}
+                                                >
+                                                    {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        });
+                    } else {
+                        if ((users || []).length === 0) {
+                            return <div className="sidebar-empty"><em>No contacts detected.</em></div>;
+                        }
+                        return (users || []).map(u => (
+                            <div
+                                key={u._id}
+                                onClick={() => {
+                                    setSelectedNexus(null);
+                                    setNexusActionView(null);
+                                    setSelectedUser(u);
+                                    navigate(`/chat/${u._id}`);
+                                }}
+                                style={{ 
+                                    display:"flex", 
+                                    alignItems:"center", 
+                                    gap:10, 
+                                    padding:"12px 14px", 
+                                    cursor:"pointer", 
+                                    transition:"all 0.2s ease",
+                                    background: (selectedUser?._id === u._id) ? "rgba(139,0,0,0.18)" : "transparent",
+                                    borderLeft: (selectedUser?._id === u._id) ? "3px solid #dc143c" : "3px solid transparent",
+                                    borderBottom: "1px solid rgba(139,0,0,0.05)"
+                                }}
+                            >
+                                <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(139,0,0,0.2)", border:"1px solid rgba(220,20,60,0.4)", overflow:"hidden", flexShrink:0 }}>
+                                    {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"rgba(220,20,60,0.8)" }}>{u.username?.[0]?.toUpperCase()}</div>}
+                                </div>
+                                <div style={{ fontSize:13, color:(selectedUser?._id === u._id) ? "#fff" : "#F0E6D3", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.username}</div>
+                            </div>
+                        ));
+                    }
+                })()}
+            </div>
+
+            <div className="sidebar-footer">
+                <div className="enter-orbit-card" onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))}>
+                    <div className="orbit-icon">🌑</div>
+                    <div>
+                        <div className="orbit-label">Enter Your Orbit</div>
+                        <div className="orbit-sub">60 FPS Galaxy Engine</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    );
+});
+VampireSidebar.displayName = "VampireSidebar";
+
+const VampireSpotifyCard = memo(({ addCardRef, isPlaying, setIsPlaying, volume, setVolume, navigate }) => {
+    return (
+        <div className="card spotify" ref={el => addCardRef(el, 0)} onClick={() => navigate("/spotify")}>
+            <div className="spotify-header">
+                <div className="spotify-badge">
+                    <div className="spotify-dot">🎵</div>
+                    <span className="spotify-label">Spotify Active</span>
+                </div>
+                <span className="expand-link">EXPAND</span>
+            </div>
+
+            <div className="spotify-track">
+                <div className="track-art">🎼</div>
+                <div>
+                    <div className="track-name">Reflections</div>
+                    <div className="track-artist">The Neighbourhood</div>
+                </div>
+            </div>
+
+            <div className="spotify-controls">
+                <div className="controls-center">
+                    <button className="ctrl-btn" onClick={(e) => e.stopPropagation()}>⏮</button>
+                    <button
+                        className="play-btn"
+                        onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }}
+                    >
+                        {isPlaying ? "⏸" : "▶"}
+                    </button>
+                    <button className="ctrl-btn" onClick={(e) => e.stopPropagation()}>⏭</button>
+                </div>
+                <div className="volume-row">
+                    <span className="vol-icon">🔊</span>
+                    <input
+                        className="vol-slider" type="range"
+                        min="0" max="100" value={volume}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={e => setVolume(e.target.value)}
+                        style={{
+                            background: `linear-gradient(90deg, #1DB954 ${volume}%, rgba(29,185,84,0.2) ${volume}%)`,
+                            width: '100%'
+                        }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+});
+VampireSpotifyCard.displayName = "VampireSpotifyCard";
+
 export default function OrbitVampire({ children }) {
     const navigate = useNavigate();
     const logout = useAuthStore(state => state.logout);
@@ -1180,12 +1435,14 @@ export default function OrbitVampire({ children }) {
                 );
 
                 // Hover shimmer
-                card.addEventListener("mouseenter", () => {
-                    gsap.to(card, { scale: 1.02, duration: 0.3, ease: "power2.out" });
-                });
-                card.addEventListener("mouseleave", () => {
-                    gsap.to(card, { scale: 1, duration: 0.3, ease: "power2.out" });
-                });
+                const enter = () => gsap.to(card, { scale: 1.02, duration: 0.3, ease: "power2.out" });
+                const leave = () => gsap.to(card, { scale: 1, duration: 0.3, ease: "power2.out" });
+                card.addEventListener("mouseenter", enter);
+                card.addEventListener("mouseleave", leave);
+                return () => {
+                    card.removeEventListener("mouseenter", enter);
+                    card.removeEventListener("mouseleave", leave);
+                };
             });
         });
 
@@ -1206,224 +1463,34 @@ export default function OrbitVampire({ children }) {
                 <Particles />
 
                 {/* ── Navbar ── */}
-                <nav className="navbar" ref={navRef}>
-                    <div className="nav-logo">
-                        <div className="nav-logo-icon"><img src={batLogo} alt="Orbit Bat" /></div>
-                        ORBIT
-                    </div>
-                    <div className="nav-actions">
-                        <button className="nav-btn" onClick={() => navigate("/settings")}>
-                            <span>⚙</span> Settings
-                        </button>
-                        <button className="nav-btn" onClick={() => navigate("/profile")}>
-                            <span>👤</span> Profile
-                        </button>
-                        <button className="nav-btn" onClick={() => logout()}>
-                            <span>⇥</span> Logout
-                        </button>
-                    </div>
-                </nav>
+                <VampireTopNav navRef={navRef} navigate={navigate} logout={logout} />
 
                 {/* ── Sidebar ── */}
-                <aside className="sidebar" ref={sidebarRef}>
-                    <div className="sidebar-tabs">
-                        <button
-                            className={`tab-btn ${activeTab === "orbits" ? "active" : ""}`}
-                            onClick={() => setActiveTab("orbits")}
-                        >
-                            # ORBITS
-                        </button>
-                        <button
-                            className={`tab-btn ${activeTab === "contacts" ? "active" : ""}`}
-                            onClick={() => setActiveTab("contacts")}
-                        >
-                            👤 CONTACTS
-                        </button>
-                    </div>
-
-                    <div className="sidebar-actions">
-                        <button className="action-btn join" onClick={() => setNexusActionView("join")}># JOIN</button>
-                                                <button className="action-btn nexus" onClick={() => setNexusActionView("create")}>+ NEXUS</button>
-                    </div>
-
-                    <div className="sidebar-list">
-                        {(() => {
-                            if (activeTab === "orbits") {
-                                if (isNexusesLoading) {
-                                    return <div className="sidebar-empty"><em>Loading...</em></div>;
-                                }
-                                if (nexuses.length === 0) {
-                                    return (
-                                        <div className="sidebar-empty">
-                                            <em>"The night is vast.<br />Join or create a Nexus<br />to begin your communion."</em>
-                                        </div>
-                                    );
-                                }
-                                return sortedNexuses.map(n => (
-                                    <div
-                                        key={n._id}
-                                        className="sidebar-item"
-                                        onClick={() => { 
-                                            setSelectedNexus(n); 
-                                            setSelectedUser(null);
-                                            setNexusActionView(null);
-                                        }}
-                                        style={{ 
-                                            display:"flex", 
-                                            flexDirection: "column", 
-                                            padding:"10px 14px", 
-                                            cursor:"pointer", 
-                                            borderBottom:"1px solid rgba(139,0,0,0.15)", 
-                                            transition:"all 0.2s ease",
-                                            background: (selectedNexus?._id === n._id || selectedNexusId === n._id)
-                                                ? "rgba(139,0,0,0.25)" 
-                                                : nexusColors[n._id] || "transparent",
-                                            borderLeft: (selectedNexus?._id === n._id || selectedNexusId === n._id)
-                                                ? "3px solid #dc143c"
-                                                : "3px solid transparent",
-                                            position: "relative"
-                                        }}
-                                        onMouseEnter={e => {
-                                            if (selectedNexus?._id !== n._id && selectedNexusId !== n._id) {
-                                                e.currentTarget.style.background = "rgba(139,0,0,0.12)";
-                                            }
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (selectedNexus?._id !== n._id && selectedNexusId !== n._id) {
-                                                e.currentTarget.style.background = nexusColors[n._id] || "transparent";
-                                            }
-                                        }}
-                                    >
-                                        <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
-                                            <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(139,0,0,0.3)", border:"1.5px solid rgba(220,20,60,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0, overflow:"hidden" }}>
-                                                {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"50%" }} /> : "⬡"}
-                                            </div>
-                                            <div style={{ minWidth:0, flex:1 }}>
-                                                <div style={{ fontSize:13, fontWeight:600, color:"#F0E6D3", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.name}</div>
-                                                <div style={{ fontSize:10, color:"rgba(168,155,176,0.6)", fontFamily:"serif" }}>{n.members?.length || 0} members</div>
-                                            </div>
-                                            {nexusUnread[n._id] > 0 && (
-                                                <div style={{ background:"rgba(220,20,60,0.8)", color:"white", fontSize:10, fontWeight:900, padding:"1px 6px", borderRadius:4, fontFamily:"'Cinzel',serif", boxShadow:"0 0 10px rgba(220,20,60,0.4)" }}>{nexusUnread[n._id]}</div>
-                                            )}
-
-                                            {pinnedNexuses.includes(n._id) && (
-                                                <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>📌</div>
-                                            )}
-
-                                            <div 
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setActiveMenuId(activeMenuId === n._id ? null : n._id);
-                                                    setActiveColorPickerId(null);
-                                                }}
-                                                style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
-                                                onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                                                onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
-                                            >
-                                                🦇
-                                            </div>
-                                        </div>
-
-                                        {activeMenuId === n._id && (
-                                            <div 
-                                                onClick={(e) => e.stopPropagation()}
-                                                style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(139,0,0,0.2)`, display: 'flex', flexDirection: 'column', gap: 8 }}
-                                            >
-                                                <div style={{ display: 'flex', gap: 8 }}>
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
-                                                        }}
-                                                        style={{ flex: 1, padding: '6px', background: "rgba(139,0,0,0.2)", border: "1px solid rgba(139,0,0,0.4)", borderRadius: 4, fontSize: 9, color: "#F0E6D3", fontFamily: "'Cinzel', serif", letterSpacing: '1px', cursor: 'pointer' }}
-                                                    >
-                                                        Mark 🎨
-                                                    </button>
-                                                    <button 
-                                                        onClick={(e) => togglePin(n._id, e)}
-                                                        style={{ flex: 1, padding: '6px', background: "rgba(139,0,0,0.2)", border: "1px solid rgba(139,0,0,0.4)", borderRadius: 4, fontSize: 9, color: "#F0E6D3", fontFamily: "'Cinzel', serif", letterSpacing: '1px', cursor: 'pointer' }}
-                                                    >
-                                                        {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
-                                                    </button>
-                                                </div>
-
-                                                {activeColorPickerId === n._id && (
-                                                    <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(0,0,0,0.5)", borderRadius: 4, border: "1px solid rgba(139,0,0,0.3)", overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
-                                                        {[
-                                                            "transparent", // Default
-                                                            "rgba(139,0,0,0.3)", // Blood Red
-                                                            "rgba(80,0,0,0.4)", // Deep Crimson
-                                                            "rgba(60,20,60,0.4)", // Dark Purple
-                                                            "rgba(20,20,32,0.6)", // Midnight Blue
-                                                            "rgba(40,40,40,0.6)", // Shadow Gray
-                                                            "rgba(0,0,0,0.8)", // Void
-                                                            "rgba(184,134,11,0.2)", // Dark Gold
-                                                        ].map(c => (
-                                                            <div 
-                                                                key={c}
-                                                                onClick={(e) => updateColor(n._id, c, e)}
-                                                                style={{ minWidth: 20, height: 20, borderRadius: '50%', background: c, border: c === "transparent" ? "1px solid rgba(255,255,255,0.2)" : `1px solid var(--crimson)`, cursor: 'pointer', flexShrink: 0 }}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                ));
-                            } else {
-                                if ((users || []).length === 0) {
-                                    return <div className="sidebar-empty"><em>No contacts yet.</em></div>;
-                                }
-                                return (users || []).map(u => (
-                                    <div
-                                        key={u._id}
-                                        onClick={() => {
-                                            setSelectedUser(u);
-                                            setSelectedNexus(null);
-                                            setNexusActionView(null);
-                                        }}
-                                        style={{ 
-                                            display:"flex", 
-                                            alignItems:"center", 
-                                            gap:10, 
-                                            padding:"10px 14px", 
-                                            cursor:"pointer", 
-                                            transition:"all 0.2s ease",
-                                            background: (selectedUser?._id === u._id) ? "rgba(139,0,0,0.18)" : "transparent",
-                                            borderLeft: (selectedUser?._id === u._id) ? "3px solid #dc143c" : "3px solid transparent"
-                                        }}
-                                        onMouseEnter={e => {
-                                            if (selectedUser?._id !== u._id) {
-                                                e.currentTarget.style.background = "rgba(139,0,0,0.12)";
-                                            }
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (selectedUser?._id !== u._id) {
-                                                e.currentTarget.style.background = "transparent";
-                                            }
-                                        }}
-                                    >
-                                        <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(139,0,0,0.2)", border:"1px solid rgba(220,20,60,0.4)", overflow:"hidden", flexShrink:0 }}>
-                                            {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"rgba(220,20,60,0.8)" }}>{u.username?.[0]?.toUpperCase()}</div>}
-                                        </div>
-                                        <div style={{ fontSize:13, color:"#F0E6D3", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.username}</div>
-                                    </div>
-                                ));
-                            }
-                        })()}
-                    </div>
-
-                    <div className="sidebar-footer">
-                        <div className="enter-orbit-card" onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))}>
-                            <div className="orbit-icon">🌑</div>
-                            <div>
-                                <div className="orbit-label">Enter Your Orbit</div>
-                                <div className="orbit-sub">60 FPS Galaxy Engine</div>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
+                <VampireSidebar 
+                    sidebarRef={sidebarRef}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    setNexusActionView={setNexusActionView}
+                    isNexusesLoading={isNexusesLoading}
+                    nexuses={nexuses}
+                    sortedNexuses={sortedNexuses}
+                    selectedNexus={selectedNexus}
+                    selectedNexusId={selectedNexusId}
+                    setSelectedNexus={setSelectedNexus}
+                    setSelectedUser={setSelectedUser}
+                    nexusColors={nexusColors}
+                    nexusUnread={nexusUnread}
+                    activeMenuId={activeMenuId}
+                    setActiveMenuId={setActiveMenuId}
+                    activeColorPickerId={activeColorPickerId}
+                    setActiveColorPickerId={setActiveColorPickerId}
+                    togglePin={togglePin}
+                    updateColor={updateColor}
+                    users={users}
+                    selectedUser={selectedUser}
+                    navigate={navigate}
+                    pinnedNexuses={pinnedNexuses}
+                />
 
                 {/* ── Main ── */}
                 <main className="main" ref={heroRef}>
@@ -1435,13 +1502,13 @@ export default function OrbitVampire({ children }) {
                         <div style={{ position: "absolute", inset: 0, zIndex: 20 }}>
                             <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
                         </div>
-                    ) : nexusSelected ? (
+                    ) : (selectedNexus || selectedNexusId) ? (
                         <div className="vamp-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-                            <UniversalChatContainer type="nexus" />
+                            <UniversalChatContainer key={selectedNexus?._id || selectedNexusId} type="nexus" />
                         </div>
                     ) : selectedUser ? (
                         <div className="vamp-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-                            <UniversalChatContainer type="dm" />
+                            <UniversalChatContainer key={selectedUser?._id} type="dm" />
                         </div>
                     ) : (
                         <div className="main-content-flow">
@@ -1462,53 +1529,17 @@ export default function OrbitVampire({ children }) {
                             <HangingBats />
 
                             <div className="cards-grid">
-
-                                {/* Spotify Card */}
-                                <div className="card spotify" ref={el => addCardRef(el, 0)}>
-                                    <div className="spotify-header">
-                                        <div className="spotify-badge">
-                                            <div className="spotify-dot">🎵</div>
-                                            <span className="spotify-label">Spotify Active</span>
-                                        </div>
-                                        <span className="expand-link">EXPAND</span>
-                                    </div>
-
-                                    <div className="spotify-track">
-                                        <div className="track-art">🎼</div>
-                                        <div>
-                                            <div className="track-name">Reflections</div>
-                                            <div className="track-artist">The Neighbourhood</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="spotify-controls">
-                                        <div className="controls-center">
-                                            <button className="ctrl-btn">⏮</button>
-                                            <button
-                                                className="play-btn"
-                                                onClick={() => setIsPlaying(!isPlaying)}
-                                            >
-                                                {isPlaying ? "⏸" : "▶"}
-                                            </button>
-                                            <button className="ctrl-btn">⏭</button>
-                                        </div>
-                                        <div className="volume-row">
-                                            <span className="vol-icon">🔊</span>
-                                            <input
-                                                className="vol-slider" type="range"
-                                                min="0" max="100" value={volume}
-                                                onChange={e => setVolume(e.target.value)}
-                                                style={{
-                                                    background: `linear-gradient(90deg, #1DB954 ${volume}%, rgba(29,185,84,0.2) ${volume}%)`,
-                                                    width: '100%'
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                                <VampireSpotifyCard 
+                                    addCardRef={addCardRef}
+                                    isPlaying={isPlaying}
+                                    setIsPlaying={setIsPlaying}
+                                    volume={volume}
+                                    setVolume={setVolume}
+                                    navigate={navigate}
+                                />
 
                                 {/* Start Chatting */}
-                                <div className="card" ref={el => addCardRef(el, 1)} onClick={() => navigate("/")}>
+                                <div className="card" ref={el => addCardRef(el, 1)} onClick={() => { setActiveTab("orbits"); setNexusActionView(null); }}>
                                     <div className="card-icon icon-chat">💬</div>
                                     <div className="card-title">Start Chatting</div>
                                     <div className="card-desc">
@@ -1536,7 +1567,6 @@ export default function OrbitVampire({ children }) {
                                     </div>
                                     <span className="card-arrow">↗</span>
                                 </div>
-
                             </div>
                         </div>
                     )}
@@ -2249,4 +2279,4 @@ export function VampireSpotify() {
         </OrbitVampire>
         </div>
     );
-}
+}

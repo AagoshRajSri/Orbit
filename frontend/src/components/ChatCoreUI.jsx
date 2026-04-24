@@ -776,14 +776,15 @@ function MemberRow({t,m,onRoleChange,onMute,onBan,onKick,canEdit}) {
 // ══════════════════════════════════════════════════════════════════════════════
 //  GROUP INFO PANEL (right panel)
 // ══════════════════════════════════════════════════════════════════════════════
-function InfoPanel({t,group,setGroup,onClose,addToast}) {
+function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete}) {
   const [tab,setTab]=useState("overview");
   const [inviteCopied,setInviteCopied]=useState(false);
   const [confirmDelete,setConfirmDelete]=useState(false);
 
   const updateField=(field,val)=>{
     setGroup(g=>({...g,[field]:val}));
-    addToast(field.charAt(0).toUpperCase()+field.slice(1)+" updated");
+    if(onUpdate) onUpdate(field,val);
+    else addToast(field.charAt(0).toUpperCase()+field.slice(1)+" updated (local)");
   };
   const handleRoleChange=(id,role)=>{
     setGroup(g=>({...g,members:g.members.map(m=>m.id===id?{...m,role}:m)}));
@@ -1081,14 +1082,19 @@ function InfoPanel({t,group,setGroup,onClose,addToast}) {
               {label:"Transfer Ownership",   sub:"Give admin control to another member",   icon:I.crown,    color:"#3b82f6",ok:false},
               {label:"Export Chat",          sub:"Download full conversation history",     icon:I.download, color:"#22d3ee",ok:false},
               {label:"Archive Nexus",        sub:"Hide from active list, preserve data",   icon:I.settings, color:"#f59e0b",ok:false},
-              {label:"Delete Nexus Forever", sub:"Permanently destroy this nexus",         icon:I.trash,    color:dangerRed, ok:true},
-            ].map(({label,sub,icon,color,ok})=>(
+              {label:"Leave Nexus",          sub:"Exit this nexus and remove it from your list", icon:I.back,     color:"#f59e0b", leave:true},
+              {label:"Delete Nexus Forever", sub:"Permanently destroy this nexus",         icon:I.trash,    color:dangerRed, delete:true},
+            ].map(({label,sub,icon,color,leave,delete:isDel})=>(
               <div key={label} style={{marginBottom:8}}>
                 <Btn3D onClick={()=>{
-                  if(ok&&!confirmDelete){setConfirmDelete(true);setTimeout(()=>setConfirmDelete(false),4000);addToast("⚠️ Tap again to confirm");}
-                  else{addToast(label+" executed (demo)");setConfirmDelete(false);}
+                  if(leave){ if(onLeave) onLeave(); else addToast("Leave not implemented"); }
+                  else if(isDel){
+                    if(!confirmDelete){setConfirmDelete(true);setTimeout(()=>setConfirmDelete(false),4000);addToast("⚠️ Tap again to confirm");}
+                    else{ if(onDelete) onDelete(); else addToast("Delete not implemented"); setConfirmDelete(false);}
+                  }
+                  else{addToast(label+" executed (demo)");}
                 }}
-                  style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:ok&&confirmDelete?color+"20":color+"08",border:"1px solid "+(ok&&confirmDelete?color:color+"35"),borderRadius:12,textAlign:"left",cursor:"pointer",transition:"all .15s"}}>
+                  style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:isDel&&confirmDelete?color+"20":color+"08",border:"1px solid "+(isDel&&confirmDelete?color:color+"35"),borderRadius:12,textAlign:"left",cursor:"pointer",transition:"all .15s"}}>
                   <div style={{width:34,height:34,borderRadius:10,background:color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                     <Ico d={icon} size={15} stroke={color}/>
                   </div>

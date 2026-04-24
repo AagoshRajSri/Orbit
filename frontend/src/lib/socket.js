@@ -7,6 +7,8 @@ let socket = null;
 let connectionState = "disconnected";
 let connectionError = null;
 
+import * as msgpackParser from "socket.io-msgpack-parser";
+
 export const getSocket = () => {
   if (socket) return socket;
 
@@ -26,6 +28,7 @@ export const getSocket = () => {
   
   socket = io(API_URL, {
     auth: { token },
+    parser: msgpackParser,
     withCredentials: true,
     transports: ["websocket", "polling"],
     reconnectionAttempts: 5,

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, memo } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -236,15 +236,14 @@ const CSS = `
 }
 .luxury-root .nxc-aero-btn { width: auto !important; border-radius: 16px !important; padding: 0 12px !important; }
 .luxury-root .nxc-utility-group .bg-white\\/20 { background: #C0C0C0 !important; } /* Frosted Silver dividers */
-.luxury-root .text-\[\#5dcaa5\] { color: #2A52BE !important; }
+.luxury-root .text-[#5dcaa5] { color: #2A52BE !important; }
 .luxury-root .nxc-signal-bars .nxc-bar { background-color: #2A52BE !important; }
 `;
 
 /* ─────────────────────────────── CORE COMPONENTS ─────────────────────────────── */
 
-function TopNav() {
+const TopNav = memo(({ handleLogout }) => {
   const navigate = useNavigate();
-  const { logout } = useAuthStore();
   
   return (
     <div className="luxury-nav">
@@ -266,28 +265,27 @@ function TopNav() {
         <button onClick={() => navigate('/profile')} className="luxury-button btn-pill-pink" style={{ padding: '8px 16px' }}>
           <User size={14} /> Profile
         </button>
-        <button onClick={logout} className="luxury-button btn-pill" style={{ padding: '8px 16px' }}>
+        <button onClick={handleLogout} className="luxury-button btn-pill" style={{ padding: '8px 16px' }}>
           <LogOut size={14} /> Logout
         </button>
       </div>
     </div>
   );
-}
+});
 
-function LuxuryWrapper({ children }) {
+const LuxuryWrapper = memo(({ children, handleLogout }) => {
   const rootRef = useRef(null);
   
   return (
     <div className="luxury-root" ref={rootRef}>
       <style>{CSS}</style>
-      <TopNav />
+      <TopNav handleLogout={handleLogout} />
       {children}
     </div>
   );
-}
+});
 
-function LuxurySidebar() {
-  const { nexuses, selectedNexus, setSelectedNexus, setNexusActionView } = useNexusStore();
+const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, selectedUser, setSelectedUser, setNexusActionView }) => {
   const navigate = useNavigate();
   const [tab, setTab] = useState('orbits');
 
@@ -379,9 +377,9 @@ function LuxurySidebar() {
                   key={nexus._id}
                   onClick={() => {
                     setSelectedNexus(nexus);
-                    // Standard app logic uses store state for routing, not URL navigation for chat
-                    useChatStore.getState().setSelectedUser(null);
+                    setSelectedUser(null);
                     setNexusActionView(null);
+                    navigate(`/nexus/${nexus._id}`);
                   }}
                   className="luxury-card"
                   style={{ 
@@ -514,15 +512,16 @@ function LuxurySidebar() {
             </p>
           )
         ) : (
-          (useChatStore.getState().users?.length > 0) ? (
+          (users?.length > 0) ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {useChatStore.getState().users.map((u) => (
+              {users.map((u) => (
                 <div 
                   key={u._id}
                   onClick={() => {
-                    useChatStore.getState().setSelectedUser(u);
+                    setSelectedUser(u);
                     setSelectedNexus(null);
                     setNexusActionView(null);
+                    navigate(`/chat/${u._id}`);
                   }}
                   className="luxury-card"
                   style={{ 
@@ -531,8 +530,8 @@ function LuxurySidebar() {
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: 12,
-                    background: useChatStore.getState().selectedUser?._id === u._id ? LUXURY_COLORS.accentMute : LUXURY_COLORS.surface,
-                    borderColor: useChatStore.getState().selectedUser?._id === u._id ? LUXURY_COLORS.goldMedium : LUXURY_COLORS.borderSubtle
+                    background: selectedUser?._id === u._id ? LUXURY_COLORS.accentMute : LUXURY_COLORS.surface,
+                    borderColor: selectedUser?._id === u._id ? LUXURY_COLORS.goldMedium : LUXURY_COLORS.borderSubtle
                   }}
                 >
                   <div style={{ width: 40, height: 40, borderRadius: '50%', background: LUXURY_COLORS.surfaceHover, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
@@ -572,13 +571,14 @@ function LuxurySidebar() {
       </div>
     </div>
   );
-}
+});
 
 /* ─────────────────────────────── VIEWS ─────────────────────────────── */
 
 export default function LightTheme({ children }) {
-   const { nexusActionView, setNexusActionView, selectedNexus, selectedNexusId } = useNexusStore();
-   const { selectedUser } = useChatStore();
+   const { nexusActionView, setNexusActionView, selectedNexus, setSelectedNexus, selectedNexusId, nexuses } = useNexusStore();
+   const { selectedUser, setSelectedUser, users } = useChatStore();
+   const { logout } = useAuthStore();
    const nexusSelected = Boolean(selectedNexus || selectedNexusId);
    const navigate = useNavigate();
 

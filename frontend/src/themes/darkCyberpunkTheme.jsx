@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, memo, Fragment } from "react";
 import UniversalChatContainer from "../components/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
@@ -157,7 +157,7 @@ const STYLES = `
 /* ─────────────────────────────────────────────
    CANVAS: ORBIT CODE RAIN
 ───────────────────────────────────────────── */
-function OrbitRain() {
+const OrbitRain = memo(() => {
   const ref = useRef(null);
   useEffect(() => {
     const c = ref.current; if (!c) return;
@@ -181,12 +181,12 @@ function OrbitRain() {
     return () => clearInterval(iv);
   }, []);
   return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.18 }} />;
-}
+});
 
 /* ─────────────────────────────────────────────
    CANVAS: ORBITAL RING VISUALIZER
 ───────────────────────────────────────────── */
-function OrbitalViz({ playing }) {
+const OrbitalViz = memo(({ playing }) => {
   const ref = useRef(null);
   const bars = useRef(Array.from({ length: 28 }, () => 0.3 + Math.random() * 0.7));
   useEffect(() => {
@@ -228,12 +228,12 @@ function OrbitalViz({ playing }) {
     draw(); return () => cancelAnimationFrame(raf);
   }, [playing]);
   return <canvas ref={ref} width={120} height={120} style={{ display: "block" }} />;
-}
+});
 
 /* ─────────────────────────────────────────────
    CANVAS: CONSTELLATION GRID
 ───────────────────────────────────────────── */
-function ConstellationGrid() {
+const ConstellationGrid = memo(() => {
   const ref = useRef(null);
   useEffect(() => {
     const c = ref.current; if (!c) return;
@@ -271,12 +271,12 @@ function ConstellationGrid() {
     draw(); return () => cancelAnimationFrame(raf);
   }, []);
   return <canvas ref={ref} width={150} height={110} style={{ display: "block" }} />;
-}
+});
 
 /* ─────────────────────────────────────────────
    NEON CARD SHELL
 ───────────────────────────────────────────── */
-function NeonCard({ color = C, children, style = {}, onClick }) {
+const NeonCard = memo(({ color = C, children, style = {}, onClick }) => {
   const [hover, setHover] = useState(false);
   return (
     <div
@@ -317,12 +317,12 @@ function NeonCard({ color = C, children, style = {}, onClick }) {
       {children}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    DATA STREAM OVERLAY
 ───────────────────────────────────────────── */
-function DataStreams({ count = 5, color = P }) {
+const DataStreams = memo(({ count = 5, color = P }) => {
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
       {Array.from({ length: count }).map((_, i) => (
@@ -336,12 +336,12 @@ function DataStreams({ count = 5, color = P }) {
       ))}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    SCAN FEED (like kill feed)
 ───────────────────────────────────────────── */
-function ScanFeed() {
+const ScanFeed = memo(() => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontSize: 8, fontWeight: 900, letterSpacing: "0.2em", color: `${C}aa`, fontFamily: "'Orbitron',monospace", marginBottom: 2 }}>
@@ -361,12 +361,12 @@ function ScanFeed() {
       ))}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    METRIC ROW
 ───────────────────────────────────────────── */
-function MetricRow() {
+const MetricRow = memo(() => {
   return (
     <div style={{ display: "flex", gap: 8 }}>
       {METRICS.map(m => (
@@ -377,12 +377,12 @@ function MetricRow() {
       ))}
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    TOP NAV
 ───────────────────────────────────────────── */
-function TopNav({ navRef, synced }) {
+const TopNav = memo(({ navRef, synced }) => {
   const [time, setTime] = useState(() =>
     new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })
   );
@@ -477,12 +477,12 @@ function TopNav({ navRef, synced }) {
       </div>
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    SIDEBAR
 ───────────────────────────────────────────── */
-function Sidebar({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView }) {
+const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView }) => {
   const [tab, setTab] = useState("orbits");
   const navigate = useNavigate();
   const { play } = useSoundManager();
@@ -581,7 +581,13 @@ function Sidebar({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, i
           ) : (
             sortedNexuses.map(n => (
               <div key={n._id}
-                onClick={() => { play("click"); setSelectedNexus(n); setSelectedUser(null); setNexusActionView(null); }}
+                onClick={() => { 
+                  play("click"); 
+                  setSelectedNexus(n); 
+                  setSelectedUser(null); 
+                  setNexusActionView(null); 
+                  navigate(`/nexus/${n._id}`);
+                }}
                 style={{ display: "flex", flexDirection: "column", padding: "8px 10px", borderRadius: 4, cursor: "pointer", transition: "all 0.2s", background: nexusColors[n._id] || `${M}08`, border: "1px solid transparent", position: "relative" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = `${M}44`; e.currentTarget.style.boxShadow = `inset 0 0 10px ${M}44`; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.boxShadow = "none"; }}
@@ -673,7 +679,13 @@ function Sidebar({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, i
           ) : (
             users.map(u => (
               <div key={u._id}
-                onClick={() => { play("click"); setSelectedUser(u); setSelectedNexus(null); setNexusActionView(null); }}
+                onClick={() => { 
+                  play("click"); 
+                  setSelectedUser(u); 
+                  setSelectedNexus(null); 
+                  setNexusActionView(null); 
+                  navigate(`/chat/${u._id}`);
+                }}
                 style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 4, cursor: "pointer", transition: "all 0.2s" }}
                 onMouseEnter={e => e.currentTarget.style.background = `${C}12`}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -726,12 +738,12 @@ function Sidebar({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, i
       </div>
     </div>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    SPOTIFY / AUDIO CARD
 ───────────────────────────────────────────── */
-function AudioCard() {
+const AudioCard = memo(() => {
   const [playing, setPlaying] = useState(true);
   const navigate = useNavigate();
   const { play } = useSoundManager();
@@ -786,7 +798,7 @@ function AudioCard() {
       </div>
     </NeonCard>
   );
-}
+});
 
 /* ─────────────────────────────────────────────
    CHAT CARD

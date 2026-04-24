@@ -10,6 +10,7 @@ import { useChatStore } from "../store/useChatStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 import { Music } from "lucide-react";
 import { API_URL } from "../config";
+import RocketAnimation from "../components/RocketAnimation";
 
 
 /* ─────────────────────────────── KEYFRAMES ─────────────────────────────── */
@@ -102,58 +103,93 @@ const CSS = `
 /* ── AMOLED Void Chat Theme ── */
 .amoled-chat-env .nxc-shell {
   background: #000000 !important;
-  border: none !important;
-  box-shadow: 0 0 0 1px #6F00FF inset, 0 0 40px rgba(111,0,255,0.2) !important;
-  background-image: radial-gradient(circle at 120px 20px, rgba(111,0,255,0.15) 0%, transparent 300px) !important;
+  border: 1px solid rgba(198,160,110,0.3) !important;
+  box-shadow: 0 0 100px rgba(0,0,0,1) !important;
+  background-image: radial-gradient(circle at 50% 0%, rgba(198,160,110,0.08) 0%, transparent 500px) !important;
 }
 .amoled-chat-env .nexus-chat-header { 
-  background: transparent !important; 
-  border-bottom: none !important;
+  background: #000000 !important; 
+  border-bottom: 2px solid rgba(198,160,110,0.3) !important;
 }
-.amoled-chat-env .nexus-chat-header * { color: #ffffff !important; font-family: 'Rajdhani', sans-serif !important; }
-.amoled-chat-env .nexus-chat-header .nxc-name { font-family: 'Orbitron', sans-serif !important; letter-spacing: 2px !important; }
+.amoled-chat-env .nexus-chat-header * { color: #C6A06E !important; font-family: 'Rajdhani', sans-serif !important; }
+.amoled-chat-env .nexus-chat-header .nxc-name { font-family: 'Orbitron', sans-serif !important; letter-spacing: 2px !important; font-weight: 900 !important; text-shadow: 0 0 10px rgba(198,160,110,0.3); }
+
+/* Pinned Banner Visibility */
+.amoled-chat-env div[style*="background: var(--tag)"] {
+  background: rgba(198,160,110,0.12) !important;
+  border-bottom: 2px solid rgba(198,160,110,0.4) !important;
+  backdrop-filter: blur(10px);
+}
+.amoled-chat-env div[style*="background: var(--tag)"] * {
+  color: #F0D5A0 !important;
+  font-weight: 600 !important;
+}
 
 .amoled-chat-env .nxc-utility-group, .amoled-chat-env .nxc-telemetry-capsule {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: rgba(198,160,110,0.08) !important;
+  border: 1px solid rgba(198,160,110,0.2) !important;
+  padding: 4px 8px !important;
+  border-radius: 12px !important;
 }
 .amoled-chat-env .nxc-hbtn, .amoled-chat-env .nxc-aero-btn {
-  background: transparent !important; color: #fff !important; border: none !important;
+  background: transparent !important; color: #F0D5A0 !important; border: none !important;
+  opacity: 0.9 !important; transition: all 0.2s;
 }
-.amoled-chat-env .bg-white\/20 { display: none !important; }
+.amoled-chat-env .nxc-hbtn:hover { transform: translateY(-1px); text-shadow: 0 0 10px #C6A06E; }
 
 .amoled-chat-env .nxi-shell { 
-  background: rgba(20,0,40,0.8) !important; 
-  backdrop-filter: blur(10px) !important;
-  border-top: 1px solid #6F00FF !important;
+  background: #000000 !important; 
+  border-top: 2px solid rgba(198,160,110,0.4) !important;
+  padding: 20px !important;
+}
+.amoled-chat-env .nxi-textarea-wrapper {
+  background: rgba(198,160,110,0.03) !important;
+  border: 1.5px solid rgba(198,160,110,0.5) !important;
+  border-radius: 14px !important;
 }
 .amoled-chat-env .nxi-textarea { 
-  background: rgba(198,160,110,0.05) !important; border: 1px solid rgba(198,160,110,0.1) !important; 
+  background: transparent !important; 
   color: #F0D5A0 !important; 
-  font-family: 'Rajdhani', sans-serif !important; 
-  font-size: 16px !important; 
+  font-family: 'Share Tech Mono', monospace !important; 
+  font-size: 15px !important;
 }
-.amoled-chat-env .nxi-textarea:focus { border-color: #C6A06E !important; box-shadow: 0 0 15px rgba(198,160,110,0.2) !important; }
+.amoled-chat-env .nxi-textarea::placeholder {
+  color: rgba(198,160,110,0.4) !important;
+}
+
 .amoled-chat-env .nxi-send.ready { 
-  background: linear-gradient(135deg, #C6A06E, #8B6914) !important; 
-  border: 1px solid #C6A06E !important;
+  background: #C6A06E !important; 
+  border: 1px solid #F0D5A0 !important;
   color: #000 !important;
+  box-shadow: 0 0 20px rgba(198,160,110,0.5) !important;
 }
-.amoled-chat-env .nxi-tool-btn, .amoled-chat-env .nxi-mic { color: #C6A06E !important; }
+.amoled-chat-env .nxi-tool-btn, .amoled-chat-env .nxi-mic { 
+  color: #C6A06E !important; 
+  opacity: 1 !important;
+}
+
+/* Empty State & Dividers */
+.amoled-chat-env div[style*="textAlign: center"][style*="padding: 48px 0"] * {
+  color: #F0D5A0 !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 15px rgba(198,160,110,0.2);
+}
+.amoled-chat-env div[style*="height: 1px"] {
+  background: rgba(198,160,110,0.5) !important;
+  box-shadow: 0 0 8px rgba(198,160,110,0.3);
+}
 
 .amoled-chat-env .msg-bubble-mine { 
-  background: linear-gradient(135deg, #C6A06E, #8B6914) !important; 
-  border: 1px solid #C6A06E !important; 
-  color: #000 !important;
-  font-family: 'Rajdhani', sans-serif !important;
-  font-weight: 500 !important;
+  background: #000000 !important; 
+  border: 2px solid #C6A06E !important; 
+  color: #F0D5A0 !important;
+  box-shadow: 0 4px 25px rgba(0,0,0,1), 0 0 15px rgba(198,160,110,0.15) !important;
 }
 .amoled-chat-env .msg-bubble-other { 
-  background: rgba(30,30,30,0.9) !important; 
-  border: 1px solid rgba(198,160,110,0.2) !important; 
-  color: #C6A06E !important;
-  font-family: 'Rajdhani', sans-serif !important;
+  background: #000000 !important; 
+  border: 1.5px solid rgba(198,160,110,0.4) !important; 
+  color: #F0D5A0 !important;
 }
 
 
@@ -186,7 +222,7 @@ const StarField = memo(({ count = 40 }) => {
 });
 StarField.displayName = "StarField";
 
-const DataStream = ({ x, delay, dur }) => {
+const DataStream = memo(({ x, delay, dur }) => {
   const chars = "01ABCDEF※△▽◆■★";
   const stream = Array.from({ length: 14 }, (_, i) => chars[(i * 7) % chars.length]);
   return (
@@ -194,18 +230,20 @@ const DataStream = ({ x, delay, dur }) => {
       {stream.map((c, i) => <div key={i}>{c}</div>)}
     </div>
   );
-};
+});
+DataStream.displayName = "DataStream";
 
-const OrbitLogo = () => (
+const OrbitLogo = memo(() => (
   <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
     <div style={{ position: "absolute", inset: 0, border: "1.2px solid rgba(198,160,110,.55)", borderRadius: "50%", animation: "oa-cw 12s linear infinite" }} />
     <div style={{ position: "absolute", inset: 4.5, border: "1px solid rgba(78,205,196,.45)", borderRadius: "50%", animation: "oa-ccw 8s linear infinite" }} />
     <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 7, height: 7, background: "#C6A06E", borderRadius: "50%", boxShadow: "0 0 8px #C6A06E,0 0 15px rgba(198,160,110,.4)" }} />
     <div style={{ position: "absolute", top: "50%", left: "-2px", width: 5, height: 5, background: "#4ECDC4", borderRadius: "50%", boxShadow: "0 0 6px #4ECDC4", marginTop: -2.5, animation: "oa-cw 12s linear infinite", transformOrigin: "16px 0" }} />
   </div>
-);
+));
+OrbitLogo.displayName = "OrbitLogo";
 
-const Waveform = ({ playing }) => (
+const Waveform = memo(({ playing }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 2, height: 28 }}>
     {Array.from({ length: 28 }).map((_, i) => (
       <div key={i} style={{
@@ -222,10 +260,11 @@ const Waveform = ({ playing }) => (
       }} />
     ))}
   </div>
-);
+));
+Waveform.displayName = "Waveform";
 
 /* ── Spotify mock card ── */
-const SpotifyCard = () => {
+const SpotifyCard = memo(() => {
   const [playing, setPlaying] = useState(true);
   const [progress, setProgress] = useState(38);
   const [vol, setVol] = useState(70);
@@ -297,10 +336,11 @@ const SpotifyCard = () => {
       </div>
     </div>
   );
-};
+});
+SpotifyCard.displayName = "SpotifyCard";
 
 /* ── Generic action card ── */
-export const ActionCard = ({ icon, title, subtitle, color = "#C6A06E", badge, teal, onClick }) => {
+export const ActionCard = memo(({ icon, title, subtitle, color = "#C6A06E", badge, teal, onClick }) => {
   const [hov, setHov] = useState(false);
   return (
     <div className={`oa-card oa-bracket${teal ? " oa-teal-card" : ""}`}
@@ -339,12 +379,13 @@ export const ActionCard = ({ icon, title, subtitle, color = "#C6A06E", badge, te
       <div style={{ position: "absolute", left: 0, top: "20%", bottom: "20%", width: 2, background: color, opacity: hov ? 1 : 0, transition: "all .4s ease" }} />
     </div>
   );
-};
+});
+ActionCard.displayName = "ActionCard";
 
 /* ── Sidebar ── */
-const Sidebar = ({ activeTab, setActiveTab, setShowOrbitExplorer, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView }) => {
+const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView }) => {
   const navigate = useNavigate();
-  const { authUser } = useAuthStore();
+  // Removed authUser here as it's not used in this specific implementation snippet, but if needed, pass as prop.
   const orbits = ["# NEXUS PRIME", "# DARKWEB", "# CONSTELLATION", "# SHADOW OPS"];
   const contacts = [["CIPHER", "⚡", "#C6A06E"], ["NOVA", "◈", "#4ECDC4"], ["PHANTOM", "☽", "#9B59B6"], ["AXIOM", "▲", "#E74C3C"]];
 
@@ -433,7 +474,12 @@ const Sidebar = ({ activeTab, setActiveTab, setShowOrbitExplorer, onJoin, onNexu
                <div style={{ color: "rgba(198,160,110,.3)", fontSize: 11, textAlign: "center", padding: "20px 10px", lineHeight: 1.5 }}>NO CHANNELS DETECTED.<br/>INITIALIZE NEXUS.</div>
             ) : (
               sortedNexuses.map((n) => (
-                <div key={n._id} onClick={() => { setSelectedNexus(n); }} style={{ display: "flex", flexDirection: "column", padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", color: "#C6A06E", background: nexusColors[n._id] || "rgba(198,160,110,.05)", border: "1px solid rgba(198,160,110,.1)", transition: "all .2s", fontFamily: "Rajdhani,sans-serif", fontSize: 15, fontWeight: 600, letterSpacing: 1, position: "relative" }}
+                <div key={n._id} onClick={() => { 
+                  setSelectedNexus(n); 
+                  setSelectedUser(null);
+                  setNexusActionView(null);
+                  navigate(`/nexus/${n._id}`);
+                }} style={{ display: "flex", flexDirection: "column", padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", color: "#C6A06E", background: nexusColors[n._id] || "rgba(198,160,110,.05)", border: "1px solid rgba(198,160,110,.1)", transition: "all .2s", fontFamily: "Rajdhani,sans-serif", fontSize: 15, fontWeight: 600, letterSpacing: 1, position: "relative" }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(198,160,110,.3)"; e.currentTarget.style.boxShadow = "inset 0 0 10px rgba(198,160,110,.2)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(198,160,110,.1)"; e.currentTarget.style.boxShadow = "none"; }}
                 >
@@ -521,7 +567,12 @@ const Sidebar = ({ activeTab, setActiveTab, setShowOrbitExplorer, onJoin, onNexu
                <div style={{ color: "rgba(198,160,110,.3)", fontSize: 11, textAlign: "center", padding: "20px 0" }}>NO CONTACTS SEARCHED.</div>
             ) : (
               users.map((u) => (
-                <div key={u._id} onClick={() => { setSelectedUser(u); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", transition: "all .2s" }}
+                <div key={u._id} onClick={() => { 
+                  setSelectedUser(u); 
+                  setSelectedNexus(null);
+                  setNexusActionView(null);
+                  navigate(`/chat/${u._id}`);
+                }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", transition: "all .2s" }}
                   onMouseEnter={e => e.currentTarget.style.background = "rgba(78,205,196,.08)"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                 >
@@ -559,21 +610,22 @@ const Sidebar = ({ activeTab, setActiveTab, setShowOrbitExplorer, onJoin, onNexu
       </div>
     </div>
   );
-};
+});
+Sidebar.displayName = "Sidebar";
 
 /* ── Topbar ── */
-const TopBar = () => {
+const TopBar = memo(({ logout }) => {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString());
   const navigate = useNavigate();
-  const { logout } = useAuthStore();
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="oa-desktop-nav" style={{ height: 44, background: "rgba(2,2,2,.96)", borderBottom: "1px solid rgba(198,160,110,.14)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", backdropFilter: "blur(22px)", flexShrink: 0, zIndex: 20, position: "relative" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <div className="oa-desktop-nav" style={{ height: 44, background: "rgba(2,2,2,.96)", borderBottom: "1px solid rgba(198,160,110,.14)", display: "flex", alignItems: "center", padding: "0 20px", backdropFilter: "blur(22px)", flexShrink: 0, zIndex: 20, position: "relative", gap: 0 }}>
+      {/* Left: Logo + Title */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
         <button onClick={() => navigate("/")} style={{ background: "transparent", border: "none", color: "rgba(198,160,110,.5)", cursor: "pointer", fontSize: 16, padding: "0 10px 0 0", display: location.pathname === "/" ? "none" : "block" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.5)"}>
           ←
         </button>
@@ -581,7 +633,12 @@ const TopBar = () => {
         <span className="oa-shimmer-text oa-orbitron" style={{ fontSize: 14, fontWeight: 700, letterSpacing: 3 }}>ORBIT</span>
         <div className="oa-mono" style={{ fontSize: 9, color: "rgba(198,160,110,.3)", letterSpacing: 2, paddingLeft: 12, borderLeft: "1px solid rgba(198,160,110,.18)" }}>v2.4.1</div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+
+      {/* Centre: Rocket Animation fills all remaining space */}
+      <RocketAnimation />
+
+      {/* Right: Clock + Buttons */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <div className="oa-mono" style={{ fontSize: 10, color: "rgba(78,205,196,.65)", letterSpacing: 2, paddingRight: 16 }}>
           {time}<span style={{ animation: "oa-blink 1s step-end infinite", display: "inline-block" }}>_</span>
         </div>
@@ -595,14 +652,15 @@ const TopBar = () => {
       </div>
     </div>
   );
-};
+});
+TopBar.displayName = "TopBar";
 
 /* ─────────────────────────────── MAIN EXPORT ────────────────────────────── */
 export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
   const [activeTab, setActiveTab] = useState("orbits");
-  const [showOrbitExplorer, setShowOrbitExplorer] = useState(false);
   const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
+  const { logout } = useAuthStore();
   const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
   const { users, selectedUser, setSelectedUser } = useChatStore();
@@ -625,20 +683,19 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
       {/* Root */}
       <div style={{ width: "100%", height: "100vh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter','Rajdhani',sans-serif", position: "relative" }}>
 
-        <TopBar title={title} />
+        <TopBar logout={logout} />
 
         <div className="oa-main-wrapper" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <Sidebar 
             activeTab={activeTab} 
             setActiveTab={setActiveTab} 
-            setShowOrbitExplorer={setShowOrbitExplorer} 
             onJoin={() => setNexusActionView("join")}
             onNexus={() => setNexusActionView("create")}
             nexuses={nexuses}
             isNexusesLoading={isNexusesLoading}
-            setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
+            setSelectedNexus={setSelectedNexus}
             users={users || []}
-            setSelectedUser={(u) => { setSelectedUser(u); setSelectedNexus(null); }}
+            setSelectedUser={setSelectedUser}
             nexusUnread={nexusUnread || {}}
             setNexusActionView={setNexusActionView}
           />
@@ -660,11 +717,11 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
               </div>
             ) : nexusSelected ? (
               <div className="amoled-chat-env" style={{ position: "absolute", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", background: "#000" }}>
-                <UniversalChatContainer type="nexus" />
+                <UniversalChatContainer key={selectedNexus?._id || selectedNexusId} type="nexus" />
               </div>
             ) : selectedUser ? (
               <div className="amoled-chat-env" style={{ position: "absolute", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", background: "#000" }}>
-                <UniversalChatContainer type="dm" />
+                <UniversalChatContainer key={selectedUser?._id} type="dm" />
               </div>
             ) : (
               <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 28, position: "relative" }}>
