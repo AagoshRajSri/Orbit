@@ -1,171 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useLocation, useNavigate, Navigate } from "react-router-dom";
+import { CyberAuthStyles } from "../components/CyberAuth";
 
-/* ─── Inline styles so the page works without any external CSS ───────────── */
-const S = {
-  wrap: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#06040f",
-    padding: "24px",
-    position: "relative",
-    overflow: "hidden",
-    fontFamily: "'Space Mono', 'Courier New', monospace",
-  },
-  orb1: {
-    position: "absolute", top: "-15%", left: "-10%",
-    width: "50%", height: "50%",
-    background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)",
-    pointerEvents: "none",
-  },
-  orb2: {
-    position: "absolute", bottom: "-15%", right: "-10%",
-    width: "50%", height: "50%",
-    background: "radial-gradient(circle, rgba(56,189,248,0.08) 0%, transparent 70%)",
-    pointerEvents: "none",
-  },
-  card: {
-    position: "relative",
-    zIndex: 1,
-    width: "100%",
-    maxWidth: "440px",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "24px",
-    padding: "40px 36px",
-    boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
-    backdropFilter: "blur(20px)",
-  },
-  icon: {
-    width: "52px", height: "52px",
-    borderRadius: "16px",
-    background: "rgba(139,92,246,0.1)",
-    border: "1px solid rgba(139,92,246,0.2)",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    marginBottom: "24px",
-  },
-  title: {
-    fontSize: "22px",
-    fontWeight: "700",
-    color: "#f0ebff",
-    margin: "0 0 6px",
-    letterSpacing: "-0.3px",
-    fontFamily: "'Syne', sans-serif",
-  },
-  sub: {
-    fontSize: "12px",
-    color: "rgba(255,255,255,0.35)",
-    lineHeight: 1.6,
-    margin: "0 0 32px",
-    letterSpacing: "0.02em",
-  },
-  email: { color: "rgba(167,139,250,0.8)" },
-  label: {
-    fontSize: "9px",
-    letterSpacing: "0.2em",
-    color: "rgba(255,255,255,0.25)",
-    marginBottom: "12px",
-    display: "block",
-  },
-  inputs: {
-    display: "flex",
-    gap: "8px",
-    marginBottom: "8px",
-  },
-  digitBase: {
-    flex: 1,
-    height: "56px",
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "12px",
-    textAlign: "center",
-    fontSize: "24px",
-    fontWeight: "700",
-    color: "white",
-    outline: "none",
-    transition: "border-color 0.2s, background 0.2s",
-    caretColor: "transparent",
-    fontFamily: "inherit",
-    WebkitAppearance: "none",
-  },
-  digitFocus: {
-    borderColor: "rgba(139,92,246,0.7)",
-    background: "rgba(139,92,246,0.08)",
-  },
-  digitFilled: {
-    borderColor: "rgba(139,92,246,0.4)",
-    background: "rgba(139,92,246,0.06)",
-  },
-  error: {
-    fontSize: "10px",
-    color: "#f87171",
-    letterSpacing: "0.05em",
-    marginBottom: "20px",
-    minHeight: "14px",
-  },
-  btn: {
-    width: "100%",
-    height: "52px",
-    borderRadius: "14px",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "11px",
-    letterSpacing: "0.15em",
-    fontWeight: "700",
-    fontFamily: "inherit",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    transition: "opacity 0.2s, transform 0.15s",
-  },
-  btnPrimary: {
-    background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
-    color: "white",
-    boxShadow: "0 8px 24px rgba(124,58,237,0.3)",
-  },
-  btnDisabled: {
-    opacity: 0.4,
-    cursor: "not-allowed",
-  },
-  divider: {
-    height: "1px",
-    background: "rgba(255,255,255,0.06)",
-    margin: "20px 0",
-  },
-  resend: {
-    width: "100%",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "10px",
-    letterSpacing: "0.1em",
-    color: "rgba(255,255,255,0.25)",
-    fontFamily: "inherit",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "6px",
-    transition: "color 0.2s",
-    padding: "0",
-  },
-  resendActive: { color: "rgba(167,139,250,0.7)" },
-  badge: {
-    marginTop: "28px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "6px",
-    fontSize: "9px",
-    letterSpacing: "0.12em",
-    color: "rgba(255,255,255,0.12)",
-  },
-};
-
-const COOLDOWN = 60; // seconds before resend is allowed again
+const COOLDOWN = 60;
 
 const VerifyEmailPage = () => {
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
@@ -185,12 +23,12 @@ const VerifyEmailPage = () => {
   if (!email && !authUser) return <Navigate to="/login" />;
   if (authUser?.isEmailVerified) return <Navigate to="/" />;
 
-  // Auto-focus first input on mount
+  // Auto-focus first input
   useEffect(() => {
     setTimeout(() => refs[0].current?.focus(), 100);
   }, []);
 
-  // Cooldown timer
+  // Cooldown countdown
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setTimeout(() => setCooldown(c => c - 1), 1000);
@@ -212,7 +50,6 @@ const VerifyEmailPage = () => {
   }, [email, verifyEmail, navigate]);
 
   const handleChange = (i, val) => {
-    // Allow paste of full 6-digit code into first box
     if (val.length > 1) {
       const clean = val.replace(/\D/g, "").slice(0, 6);
       if (clean.length === 6) {
@@ -230,8 +67,6 @@ const VerifyEmailPage = () => {
     setDigits(next);
     setErrorMsg("");
     if (val && i < 5) refs[i + 1].current?.focus();
-
-    // Auto-submit when all filled
     if (val && next.every(d => d !== "")) {
       submit(next.join(""));
     }
@@ -258,28 +93,78 @@ const VerifyEmailPage = () => {
   const ready = code.length === 6;
 
   return (
-    <div style={S.wrap}>
-      <div style={S.orb1} />
-      <div style={S.orb2} />
+    <>
+      <CyberAuthStyles />
 
-      <div style={S.card}>
-        {/* Icon */}
-        <div style={S.icon}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2L12 6M12 18L12 22M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07M2 12H6M18 12H22M4.93 19.07L7.76 16.24M16.24 7.76L19.07 4.93" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
+      {/* ── Header ── */}
+      <div className="text-center flex flex-col items-center gap-2 mb-1">
+        {/* Spinning orbit icon */}
+        <div className="relative flex items-center justify-center" style={{ width: "48px", height: "48px" }}>
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{ border: "1px solid rgba(139,92,246,0.4)", animation: "spin-glow 8s linear infinite" }}
+          />
+          <div style={{
+            width: "34px", height: "34px",
+            background: "linear-gradient(135deg, rgba(124,58,237,0.3), rgba(79,70,229,0.3))",
+            border: "1px solid rgba(139,92,246,0.5)",
+            borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2l7 4v6c0 5-7 10-7 10S5 17 5 12V6l7-4z" stroke="#a78bfa" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M9 12l2 2 4-4" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
         </div>
 
-        <h1 style={S.title}>Check your inbox</h1>
-        <p style={S.sub}>
-          We sent a 6-digit code to{" "}
-          <span style={S.email}>{email}</span>
-          <br />Enter it below to verify your account.
+        <h1 style={{
+          fontFamily: "'Syne', sans-serif",
+          fontSize: "22px",
+          fontWeight: "800",
+          color: "white",
+          letterSpacing: "-0.02em",
+          lineHeight: 1.1,
+        }}>
+          VERIFY IDENTITY
+        </h1>
+        <p style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: "9px",
+          letterSpacing: "0.2em",
+          color: "rgba(255,255,255,0.25)",
+        }}>
+          EMAIL_VERIFICATION_SEQUENCE
         </p>
+      </div>
 
-        {/* OTP Inputs */}
-        <span style={S.label}>VERIFICATION CODE</span>
-        <div style={S.inputs}>
+      {/* ── Sub-text ── */}
+      <p style={{
+        fontFamily: "'Space Mono', monospace",
+        fontSize: "10px",
+        letterSpacing: "0.05em",
+        color: "rgba(255,255,255,0.3)",
+        textAlign: "center",
+        lineHeight: 1.7,
+        margin: "8px 0 0",
+      }}>
+        A 6-digit code was sent to{" "}
+        <span style={{ color: "rgba(167,139,250,0.8)", fontWeight: "600" }}>{email}</span>
+      </p>
+
+      {/* ── OTP Inputs ── */}
+      <div className="flex flex-col gap-2">
+        <span style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: "9px",
+          letterSpacing: "0.2em",
+          color: "rgba(255,255,255,0.2)",
+          display: "block",
+        }}>
+          VERIFICATION_CODE
+        </span>
+
+        <div style={{ display: "flex", gap: "8px" }}>
           {digits.map((d, i) => (
             <input
               key={i}
@@ -293,73 +178,123 @@ const VerifyEmailPage = () => {
               onFocus={() => setFocused(i)}
               onBlur={() => setFocused(null)}
               style={{
-                ...S.digitBase,
-                ...(focused === i ? S.digitFocus : {}),
-                ...(d && focused !== i ? S.digitFilled : {}),
+                flex: 1,
+                height: "60px",
+                background: focused === i
+                  ? "rgba(139,92,246,0.08)"
+                  : d
+                  ? "rgba(99,102,241,0.05)"
+                  : "rgba(255,255,255,0.03)",
+                border: focused === i
+                  ? "1px solid rgba(167,139,250,0.6)"
+                  : d
+                  ? "1px solid rgba(99,102,241,0.3)"
+                  : "1px solid rgba(255,255,255,0.07)",
+                borderRadius: "16px",
+                textAlign: "center",
+                fontSize: "22px",
+                fontWeight: "700",
+                color: d ? "#a78bfa" : "rgba(255,255,255,0.8)",
+                outline: "none",
+                caretColor: "transparent",
+                fontFamily: "'Inter', sans-serif",
+                WebkitAppearance: "none",
+                transition: "border-color 0.25s, background 0.25s",
               }}
             />
           ))}
         </div>
-
-        {/* Error message */}
-        <div style={S.error}>{errorMsg}</div>
-
-        {/* Submit button */}
-        <button
-          onClick={() => ready && !submitting && submit(code)}
-          disabled={!ready || submitting}
-          style={{
-            ...S.btn,
-            ...S.btnPrimary,
-            ...(!ready || submitting ? S.btnDisabled : {}),
-          }}
-        >
-          {submitting ? (
-            <>
-              <span style={{
-                display: "inline-block", width: "14px", height: "14px",
-                border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "white",
-                borderRadius: "50%", animation: "orbit-spin 0.7s linear infinite",
-              }} />
-              VERIFYING...
-            </>
-          ) : "VERIFY IDENTITY //"}
-        </button>
-
-        <div style={S.divider} />
-
-        {/* Resend */}
-        <button
-          onClick={handleResend}
-          disabled={cooldown > 0 || resending}
-          style={{
-            ...S.resend,
-            ...(cooldown === 0 && !resending ? S.resendActive : {}),
-          }}
-        >
-          {resending ? (
-            "SENDING..."
-          ) : cooldown > 0 ? (
-            `RESEND IN ${cooldown}s`
-          ) : (
-            "RESEND CODE"
-          )}
-        </button>
-
-        {/* Security badge */}
-        <div style={S.badge}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2l7 4v6c0 5-7 10-7 10S5 17 5 12V6l7-4z" stroke="currentColor" strokeWidth="1.5"/>
-          </svg>
-          END-TO-END ENCRYPTED
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2l7 4v6c0 5-7 10-7 10S5 17 5 12V6l7-4z" stroke="currentColor" strokeWidth="1.5"/>
-          </svg>
-        </div>
       </div>
 
-      <style>{`@keyframes orbit-spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+      {/* ── Error ── */}
+      <div style={{
+        fontFamily: "'Space Mono', monospace",
+        fontSize: "9px",
+        letterSpacing: "0.08em",
+        color: "#f87171",
+        minHeight: "14px",
+        marginTop: "-4px",
+      }}>
+        {errorMsg}
+      </div>
+
+      {/* ── Submit button ── */}
+      <button
+        className="cyber-submit-btn"
+        onClick={() => ready && !submitting && submit(code)}
+        disabled={!ready || submitting}
+      >
+        {submitting ? (
+          <span className="flex items-center justify-center gap-3">
+            <span
+              className="inline-block w-4 h-4 rounded-full"
+              style={{
+                border: "2px solid rgba(255,255,255,0.2)",
+                borderTopColor: "white",
+                animation: "spin-glow 0.7s linear infinite",
+              }}
+            />
+            VERIFYING...
+          </span>
+        ) : (
+          <span className="relative z-10">VERIFY_ACCESS //</span>
+        )}
+      </button>
+
+      {/* ── Divider ── */}
+      <div className="flex items-center gap-3">
+        <div style={{ flex: 1, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }} />
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: "rgba(255,255,255,0.15)" }}>OR</span>
+        <div style={{ flex: 1, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }} />
+      </div>
+
+      {/* ── Resend ── */}
+      <button
+        onClick={handleResend}
+        disabled={cooldown > 0 || resending}
+        style={{
+          width: "100%",
+          padding: "14px",
+          borderRadius: "12px",
+          border: "1px solid rgba(139,92,246,0.15)",
+          background: "rgba(139,92,246,0.04)",
+          cursor: cooldown > 0 || resending ? "not-allowed" : "pointer",
+          fontFamily: "'Space Mono', monospace",
+          fontSize: "9px",
+          letterSpacing: "0.15em",
+          color: cooldown > 0 || resending ? "rgba(255,255,255,0.2)" : "rgba(167,139,250,0.7)",
+          transition: "all 0.25s",
+          opacity: cooldown > 0 || resending ? 0.5 : 1,
+        }}
+        onMouseEnter={e => {
+          if (cooldown === 0 && !resending) {
+            e.currentTarget.style.background = "rgba(139,92,246,0.1)";
+            e.currentTarget.style.borderColor = "rgba(139,92,246,0.4)";
+          }
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = "rgba(139,92,246,0.04)";
+          e.currentTarget.style.borderColor = "rgba(139,92,246,0.15)";
+        }}
+      >
+        {resending
+          ? "SENDING..."
+          : cooldown > 0
+          ? `RESEND_IN_${cooldown}s`
+          : "RESEND_CODE →"
+        }
+      </button>
+
+      {/* ── Security badge ── */}
+      <p className="text-center" style={{
+        fontFamily: "'Space Mono', monospace",
+        fontSize: "9px",
+        letterSpacing: "0.12em",
+        color: "rgba(255,255,255,0.15)",
+      }}>
+        ◈ END_TO_END_ENCRYPTED ◈
+      </p>
+    </>
   );
 };
 
