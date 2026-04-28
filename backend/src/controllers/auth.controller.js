@@ -192,19 +192,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Enforce email verification in production
-    if (process.env.NODE_ENV === "production" && !user.isEmailVerified) {
-      return res.status(403).json({
-        success: false,
-        message: "Please verify your email to log in",
-        error: { 
-          code: "EMAIL_NOT_VERIFIED", 
-          message: "Your account is not verified. Please check your email for a verification code.",
-          email: user.email 
-        },
-      });
-    }
-
     let tokens;
     try {
       tokens = await generateToken(user._id, req, res);

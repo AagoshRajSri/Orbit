@@ -137,7 +137,7 @@ app.get("/health", async (req, res) => {
 if (process.env.NODE_ENV === "production") {
   const publicPath = "public";
   app.use(express.static(publicPath));
-  
+
   // Catch-all for SPA: serve index.html for non-API routes if it exists
   app.get(/^(?!\/api).*/, (req, res, next) => {
     res.sendFile("index.html", { root: publicPath }, (err) => {

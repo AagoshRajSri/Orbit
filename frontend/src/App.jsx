@@ -217,11 +217,7 @@ const AppContent = () => {
     }
   }, [isOnline, authUser]);
 
-  useEffect(() => {
-    if (authUser && !authUser.isEmailVerified && location.pathname !== "/verify-email" && !location.pathname.includes("/login") && !location.pathname.includes("/signup")) {
-      navigate("/verify-email");
-    }
-  }, [authUser, location.pathname, navigate]);
+
 
   useEffect(() => {
     if (authUser) {
@@ -481,7 +477,7 @@ const AppContent = () => {
           >
             {isAuthPage ? (
               <Suspense fallback={<OrbitLoader />}>
-                {authUser && !location.pathname.includes('starweave') ? (
+                {authUser && authUser.isEmailVerified && !location.pathname.includes('starweave') ? (
                   <Navigate to="/" />
                 ) : location.pathname === "/login/constellation" ? (
                   <OrbitAuth initialMode="login" />
