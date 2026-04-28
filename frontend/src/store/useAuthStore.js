@@ -17,6 +17,7 @@ export const useAuthStore = create(
       socketToken: null,
 
       checkAuth: async () => {
+        const startToken = get().socketToken;
         set({ isCheckingAuth: true });
         try {
           const res = await axiosInstance.get("/auth/check");
@@ -39,10 +40,13 @@ export const useAuthStore = create(
             console.warn("Auth check failed due to network - keeping persisted session");
             // Keep current auth state (will be restored from localStorage)
           } else if (isAuthError) {
-            console.warn("[checkAuth] Wiping auth user due to auth error");
-            // Clear auth only on actual auth failures (invalid session/credentials)
-            set({ authUser: null, sessionId: null, socketToken: null });
-            delete axiosInstance.defaults.headers.common["X-Auth-Token"];
+            if (get().socketToken === startToken) {
+              console.warn("[checkAuth] Wiping auth user due to auth error");
+              set({ authUser: null, sessionId: null, socketToken: null });
+              delete axiosInstance.defaults.headers.common["X-Auth-Token"];
+            } else {
+              console.warn("[checkAuth] Ignoring 401 because token changed (likely logged in while checking)");
+            }
           } else {
             console.error("Auth check failed:", error.message);
             // For other errors, also try to keep persisted auth as fallback
