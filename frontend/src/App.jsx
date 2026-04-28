@@ -135,6 +135,7 @@ const DynamicRouteHandler = (props) => {
 const AppContent = () => {
   useAnimationContext();
   const location = useLocation();
+  const navigate = useNavigate();
   const { isOnline } = useConnectivity();
   const authUser = useAuthStore((state) => state.authUser);
   const { theme } = useThemeStore();
