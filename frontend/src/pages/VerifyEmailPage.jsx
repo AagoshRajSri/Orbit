@@ -43,7 +43,7 @@ const VerifyEmailPage = () => {
     if (ok) {
       navigate("/");
     } else {
-      setErrorMsg("Incorrect code — double-check and try again.");
+      setErrorMsg("INVALID_CODE: AUTHENTICATION_FAILED");
       setDigits(["", "", "", "", "", ""]);
       setTimeout(() => refs[0].current?.focus(), 50);
     }
@@ -96,7 +96,7 @@ const VerifyEmailPage = () => {
     <>
       <CyberAuthStyles />
 
-      {/* ── Header ── */}
+      {/* ── Header ─────────────────────────────── */}
       <div className="text-center flex flex-col items-center gap-2 mb-1">
         {/* Spinning orbit icon */}
         <div className="relative flex items-center justify-center" style={{ width: "48px", height: "48px" }}>
@@ -138,33 +138,34 @@ const VerifyEmailPage = () => {
         </p>
       </div>
 
-      {/* ── Sub-text ── */}
-      <p style={{
-        fontFamily: "'Space Mono', monospace",
-        fontSize: "10px",
-        letterSpacing: "0.05em",
-        color: "rgba(255,255,255,0.3)",
-        textAlign: "center",
-        lineHeight: 1.7,
-        margin: "8px 0 0",
-      }}>
-        A 6-digit code was sent to{" "}
-        <span style={{ color: "rgba(167,139,250,0.8)", fontWeight: "600" }}>{email}</span>
-      </p>
+      {/* ── Sub-text ───────────────────────────── */}
+      <div className="text-center mb-4">
+        <p style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: "10px",
+          letterSpacing: "0.05em",
+          color: "rgba(255,255,255,0.35)",
+          lineHeight: 1.6,
+        }}>
+          A security code has been dispatched to:
+          <br />
+          <span style={{ color: "rgba(167,139,250,0.85)", fontWeight: "600" }}>{email}</span>
+        </p>
+      </div>
 
-      {/* ── OTP Inputs ── */}
-      <div className="flex flex-col gap-2">
-        <span style={{
+      {/* ── OTP Inputs ─────────────────────────── */}
+      <div className="flex flex-col gap-3">
+        <label style={{
           fontFamily: "'Space Mono', monospace",
           fontSize: "9px",
           letterSpacing: "0.2em",
           color: "rgba(255,255,255,0.2)",
-          display: "block",
+          textTransform: "uppercase"
         }}>
-          VERIFICATION_CODE
-        </span>
+          Enter_6_Digit_Sigil
+        </label>
 
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="flex gap-2 sm:gap-3 justify-between">
           {digits.map((d, i) => (
             <input
               key={i}
@@ -178,47 +179,47 @@ const VerifyEmailPage = () => {
               onFocus={() => setFocused(i)}
               onBlur={() => setFocused(null)}
               style={{
-                flex: 1,
-                height: "60px",
+                width: "48px",
+                height: "56px",
                 background: focused === i
-                  ? "rgba(139,92,246,0.08)"
+                  ? "rgba(139,92,246,0.1)"
                   : d
-                  ? "rgba(99,102,241,0.05)"
-                  : "rgba(255,255,255,0.03)",
+                  ? "rgba(99,102,241,0.06)"
+                  : "rgba(255,255,255,0.02)",
                 border: focused === i
                   ? "1px solid rgba(167,139,250,0.6)"
                   : d
                   ? "1px solid rgba(99,102,241,0.3)"
-                  : "1px solid rgba(255,255,255,0.07)",
-                borderRadius: "16px",
+                  : "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "12px",
                 textAlign: "center",
-                fontSize: "22px",
+                fontSize: "20px",
                 fontWeight: "700",
-                color: d ? "#a78bfa" : "rgba(255,255,255,0.8)",
+                color: d ? "#a78bfa" : "white",
                 outline: "none",
                 caretColor: "transparent",
                 fontFamily: "'Inter', sans-serif",
-                WebkitAppearance: "none",
-                transition: "border-color 0.25s, background 0.25s",
+                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxShadow: focused === i ? "0 0 15px rgba(139,92,246,0.15)" : "none",
               }}
             />
           ))}
         </div>
+
+        {/* Error message */}
+        <div style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: "9px",
+          letterSpacing: "0.05em",
+          color: "#f87171",
+          minHeight: "14px",
+          marginTop: "2px",
+        }}>
+          {errorMsg}
+        </div>
       </div>
 
-      {/* ── Error ── */}
-      <div style={{
-        fontFamily: "'Space Mono', monospace",
-        fontSize: "9px",
-        letterSpacing: "0.08em",
-        color: "#f87171",
-        minHeight: "14px",
-        marginTop: "-4px",
-      }}>
-        {errorMsg}
-      </div>
-
-      {/* ── Submit button ── */}
+      {/* ── Submit button ──────────────────────── */}
       <button
         className="cyber-submit-btn"
         onClick={() => ready && !submitting && submit(code)}
@@ -234,66 +235,68 @@ const VerifyEmailPage = () => {
                 animation: "spin-glow 0.7s linear infinite",
               }}
             />
-            VERIFYING...
+            VALIDATING...
           </span>
         ) : (
-          <span className="relative z-10">VERIFY_ACCESS //</span>
+          <span>UNSEAL_ACCOUNT //</span>
         )}
       </button>
 
-      {/* ── Divider ── */}
-      <div className="flex items-center gap-3">
+      {/* ── Divider ────────────────────────────── */}
+      <div className="flex items-center gap-3 py-1">
         <div style={{ flex: 1, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }} />
         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: "rgba(255,255,255,0.15)" }}>OR</span>
         <div style={{ flex: 1, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }} />
       </div>
 
-      {/* ── Resend ── */}
+      {/* ── Resend ─────────────────────────────── */}
       <button
         onClick={handleResend}
         disabled={cooldown > 0 || resending}
         style={{
           width: "100%",
-          padding: "14px",
-          borderRadius: "12px",
-          border: "1px solid rgba(139,92,246,0.15)",
-          background: "rgba(139,92,246,0.04)",
+          padding: "12px",
+          borderRadius: "10px",
+          border: "1px solid rgba(139,92,246,0.12)",
+          background: "rgba(139,92,246,0.03)",
           cursor: cooldown > 0 || resending ? "not-allowed" : "pointer",
           fontFamily: "'Space Mono', monospace",
           fontSize: "9px",
           letterSpacing: "0.15em",
-          color: cooldown > 0 || resending ? "rgba(255,255,255,0.2)" : "rgba(167,139,250,0.7)",
+          color: cooldown > 0 || resending ? "rgba(255,255,255,0.15)" : "rgba(167,139,250,0.6)",
           transition: "all 0.25s",
-          opacity: cooldown > 0 || resending ? 0.5 : 1,
+          opacity: cooldown > 0 || resending ? 0.6 : 1,
         }}
         onMouseEnter={e => {
           if (cooldown === 0 && !resending) {
-            e.currentTarget.style.background = "rgba(139,92,246,0.1)";
-            e.currentTarget.style.borderColor = "rgba(139,92,246,0.4)";
+            e.currentTarget.style.background = "rgba(139,92,246,0.08)";
+            e.currentTarget.style.borderColor = "rgba(139,92,246,0.3)";
           }
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.background = "rgba(139,92,246,0.04)";
-          e.currentTarget.style.borderColor = "rgba(139,92,246,0.15)";
+          e.currentTarget.style.background = "rgba(139,92,246,0.03)";
+          e.currentTarget.style.borderColor = "rgba(139,92,246,0.12)";
         }}
       >
         {resending
-          ? "SENDING..."
+          ? "DISPATCHING..."
           : cooldown > 0
-          ? `RESEND_IN_${cooldown}s`
-          : "RESEND_CODE →"
+          ? `RESEND_AVAILABLE_IN_${cooldown}s`
+          : "RESEND_SIGIL_CODE →"
         }
       </button>
 
-      {/* ── Security badge ── */}
-      <p className="text-center" style={{
-        fontFamily: "'Space Mono', monospace",
-        fontSize: "9px",
-        letterSpacing: "0.12em",
-        color: "rgba(255,255,255,0.15)",
-      }}>
-        ◈ END_TO_END_ENCRYPTED ◈
-      </p>
+      {/* ── Footer ─────────────────────────────── */}
+      <div className="text-center pt-2">
+        <p style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: "8px",
+          letterSpacing: "0.15em",
+          color: "rgba(255,255,255,0.1)",
+        }}>
+          ◈ SECURE_NODE_COMMUNICATION_ESTABLISHED ◈
+        </p>
+      </div>
     </>
   );
 };
