@@ -4,6 +4,7 @@ import Session from "../models/session.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import bcrypt from "bcryptjs";
 import { generateOTP, storeOTP, verifyOTP, clearOTP } from "../lib/otp.js";
+import { sendOTP } from "../lib/mailer.js";
 import crypto from "crypto";
 import { z } from "zod";
 import ConstellationProfile from "../models/constellationProfile.model.js";
@@ -90,6 +91,15 @@ export const signup = async (req, res) => {
 
     const otp = generateOTP();
     await storeOTP(validation.data.email, otp);
+    
+    // Call the mailer to send a real email
+    const mailResult = await sendOTP(validation.data.email, otp);
+    if (!mailResult.success) {
+      console.error("[Signup] Failed to send verification email:", mailResult.error);
+      // We still allow signup to proceed so the user isn't stuck, 
+      // but they will see a "Resend" option on the verification page.
+    }
+    
     console.log(`[Email Verification] Sent to ${validation.data.email}: ${otp}`);
 
     let tokens;
@@ -182,12 +192,16 @@ export const login = async (req, res) => {
       });
     }
 
-    // Only enforce email verification in production, or if explicitly required
+    // Enforce email verification in production
     if (process.env.NODE_ENV === "production" && !user.isEmailVerified) {
       return res.status(403).json({
         success: false,
         message: "Please verify your email to log in",
-        error: { code: "EMAIL_NOT_VERIFIED", message: "Please verify your email to log in" },
+        error: { 
+          code: "EMAIL_NOT_VERIFIED", 
+          message: "Your account is not verified. Please check your email for a verification code.",
+          email: user.email 
+        },
       });
     }
 
@@ -697,6 +711,13 @@ export const resendVerificationEmail = async (req, res) => {
 
     const otp = generateOTP();
     await storeOTP(email, otp);
+    
+    // Send real email
+    const mailResult = await sendOTP(email, otp);
+    if (!mailResult.success) {
+      throw new Error(mailResult.error);
+    }
+
     console.log(`[Email Verification] Sent to ${email}: ${otp}`);
 
     res.status(200).json({ success: true, message: "Verification email sent" });

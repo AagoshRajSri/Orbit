@@ -13,6 +13,7 @@ const SpotifyPage = lazy(() => import("./pages/SpotifyPage"));
 const TetherApproval = lazy(() => import("./pages/TetherApproval"));
 const StarWeaveLoginPage = lazy(() => import("./pages/StarWeaveLoginPage"));
 const StarWeaveSignupPage = lazy(() => import("./pages/StarWeaveSignupPage"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 
 import FaceLock from "./components/FaceLock";
 import AmbientPresence from "./components/AmbientPresence";
@@ -214,6 +215,12 @@ const AppContent = () => {
       useChatStore.getState().syncOfflineQueue();
     }
   }, [isOnline, authUser]);
+
+  useEffect(() => {
+    if (authUser && !authUser.isEmailVerified && location.pathname !== "/verify-email" && !location.pathname.includes("/login") && !location.pathname.includes("/signup")) {
+      navigate("/verify-email");
+    }
+  }, [authUser, location.pathname, navigate]);
 
   useEffect(() => {
     if (authUser) {
@@ -455,6 +462,7 @@ const AppContent = () => {
     location.pathname === "/login/ambient" ||
     location.pathname === "/login/starweave" ||
     location.pathname === "/signup/starweave" ||
+    location.pathname === "/verify-email" ||
     location.pathname === "/signup/ambient";
 
   return (
@@ -580,6 +588,7 @@ const AppContent = () => {
                   <Route path="/tether/approve" element={<TetherApproval />} />
                   <Route path="/login/starweave"  element={<StarWeaveLoginPage />} />
                   <Route path="/signup/starweave" element={<StarWeaveSignupPage />} />
+                  <Route path="/verify-email" element={<VerifyEmailPage />} />
                 </Routes>
               </Suspense>
             )}

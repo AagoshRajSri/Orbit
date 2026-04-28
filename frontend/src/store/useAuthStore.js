@@ -181,6 +181,31 @@ export const useAuthStore = create(
           toast.error("Could not delete account.");
         }
       },
+      verifyEmail: async (email, code) => {
+        try {
+          await axiosInstance.post("/auth/verify-email", { email, code });
+          set((state) => ({
+            authUser: state.authUser ? { ...state.authUser, isEmailVerified: true } : null
+          }));
+          toast.success("Identity verified ✦");
+          return true;
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Verification failed");
+          return false;
+        }
+      },
+
+      resendVerification: async (email) => {
+        try {
+          await axiosInstance.post("/auth/resend-verification", { email });
+          toast.success("New code dispatched");
+          return true;
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Failed to resend");
+          return false;
+        }
+      },
+
       setOnlineUsers: (users) => set({ onlineUsers: users }),
       finishPostAuthLoader: () => set({ showPostAuthLoader: false }),
       refreshSocketToken: async () => {
