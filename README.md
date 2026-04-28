@@ -29,7 +29,7 @@
 
 ## 📸 Overview
 
-Orbit is a full-stack, production-deployed chat application that reimagines what identity and connection look like in a modern web app. Instead of a password, users authenticate by drawing a personal star pattern on a constellation canvas — a cryptographic pattern unique to them. Once inside, they can chat 1-on-1, create group **Nexuses**, sync music with friends, and fully customize their experience with 15+ live themes.
+Orbit is a full-stack, production-deployed chat application that reimagines what identity and connection look like in a modern web app. Instead of a password, users authenticate by drawing a personal star pattern on a constellation canvas — a cryptographic pattern unique to them. Once inside, they can chat 1-on-1, create group **Nexuses**, sync music with friends, and fully customize their experience with 5+ live themes.
 
 ---
 
