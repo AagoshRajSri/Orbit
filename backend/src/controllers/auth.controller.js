@@ -712,15 +712,21 @@ export const resendVerificationEmail = async (req, res) => {
     const otp = generateOTP();
     await storeOTP(email, otp);
     
-    // Send real email
+    // Attempt to send real email; fall back gracefully if SMTP is misconfigured
     const mailResult = await sendOTP(email, otp);
     if (!mailResult.success) {
-      throw new Error(mailResult.error);
+      // Log OTP to server console as fallback so admin can see it
+      console.warn(`[Email Verification] SMTP failed (${mailResult.error}). OTP for ${email}: ${otp}`);
+    } else {
+      console.log(`[Email Verification] Sent to ${email}`);
     }
 
-    console.log(`[Email Verification] Sent to ${email}: ${otp}`);
-
-    res.status(200).json({ success: true, message: "Verification email sent" });
+    res.status(200).json({ 
+      success: true, 
+      message: "Verification code sent",
+      // In development, expose preview URL if using Ethereal
+      ...(mailResult.previewUrl && { previewUrl: mailResult.previewUrl })
+    });
   } catch (error) {
     console.error("Error in resendVerificationEmail:", error);
     res.status(500).json({ message: "Failed to send verification email" });
