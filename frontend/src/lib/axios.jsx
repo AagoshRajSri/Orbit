@@ -9,12 +9,14 @@ export const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use((config) => {
   try {
-    const authData = JSON.parse(localStorage.getItem("orbit-auth-storage") || "{}");
-    const token = authData.state?.socketToken;
+    const authState = useAuthStore.getState();
+    const token = authState.socketToken;
     if (token && !config.headers["X-Auth-Token"]) {
       config.headers["X-Auth-Token"] = token;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("Interceptor failed to attach token:", e);
+  }
   return config;
 });
 
@@ -83,6 +85,7 @@ axiosInstance.interceptors.response.use(
         _isRefreshing = false;
         processQueue(refreshError);
         
+        console.warn("[Axios Interceptor] Refresh failed. Wiping session.", refreshError.response?.data || refreshError.message);
         // Wipe local session on refresh failure
         useAuthStore.setState({ authUser: null, sessionId: null, socketToken: null });
         localStorage.removeItem("orbit-auth-storage");

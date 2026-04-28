@@ -125,6 +125,7 @@ export const signup = async (req, res) => {
         profilePic: newUser.profilePic,
         createdAt: newUser.createdAt,
         updatedAt: newUser.updatedAt,
+        isEmailVerified: newUser.isEmailVerified,
         authToken: tokens.accessToken,
         sessionId: tokens.sessionId
       },
@@ -212,6 +213,7 @@ export const login = async (req, res) => {
         profilePic: user.profilePic,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        isEmailVerified: user.isEmailVerified,
         authToken: tokens.accessToken,
         sessionId: tokens.sessionId
       },
