@@ -217,7 +217,11 @@ const AppContent = () => {
     }
   }, [isOnline, authUser]);
 
-
+  useEffect(() => {
+    if (authUser && !authUser.isEmailVerified && !isAuthPage) {
+      navigate("/verify-email", { replace: true });
+    }
+  }, [authUser, isAuthPage, navigate]);
 
   useEffect(() => {
     if (authUser) {

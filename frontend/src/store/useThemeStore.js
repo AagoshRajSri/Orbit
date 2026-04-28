@@ -6,7 +6,7 @@ import { applyTheme, initTheme } from "../lib/themeSwitcher";
 const getInitialTheme = () =>
   initTheme({
     allowedThemes: THEMES,
-    defaultTheme: "dark",
+    defaultTheme: "light",
   });
 
 export const useThemeStore = create((set, get) => ({

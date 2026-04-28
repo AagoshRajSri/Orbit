@@ -8,7 +8,7 @@ export const applyTheme = (themeId) => {
 
 export const initTheme = ({
   allowedThemes = [],
-  defaultTheme = "dark",
+  defaultTheme = "light",
 } = {}) => {
   if (typeof window === "undefined") return defaultTheme;
 
