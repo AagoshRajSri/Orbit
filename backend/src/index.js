@@ -114,6 +114,10 @@ app.use("/api/spotify", spotifyRoutes);
 app.use("/api/spotify/session", spotifySessionRoutes);
 app.use("/api/starweave", starweaveRoutes);
 
+app.get("/", (req, res) => {
+  res.json({ message: "Orbit API is running", version: "1.0.0" });
+});
+
 app.get("/health", async (req, res) => {
   const startTime = Date.now();
   const mongoStatus = global.mongoose?.connections?.some(c => c.readyState === 1) ? "connected" : "disconnected";
@@ -131,10 +135,17 @@ app.get("/health", async (req, res) => {
 
 // ── Static Files (Production) ────────────────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static("public"));
-  app.get("/:path(.*)", (req, res, next) => {
-    if (req.path.startsWith("/api")) return next();
-    res.sendFile("index.html", { root: "public" });
+  const publicPath = "public";
+  app.use(express.static(publicPath));
+  
+  // Catch-all for SPA: serve index.html for non-API routes if it exists
+  app.get(/^(?!\/api).*/, (req, res, next) => {
+    res.sendFile("index.html", { root: publicPath }, (err) => {
+      if (err) {
+        // If file not found, fall back to 404 handler
+        next();
+      }
+    });
   });
 }
 
@@ -216,7 +227,7 @@ const startServer = async () => {
     await connectDB();
     console.log("✓ Database connected successfully");
 
-    const port = process.env.NODE_ENV === "production" 
+    const port = process.env.NODE_ENV === "production"
       ? parseInt(process.env.PORT || "3000", 10)
       : await findAvailablePort(parseInt(process.env.PORT || "3000", 10));
 
@@ -224,8 +235,7 @@ const startServer = async () => {
       console.log(`✓ Server is running on port ${port}`);
       console.log(`✓ Node environment: ${process.env.NODE_ENV || "development"}`);
       console.log(
-        `✓ Socket.IO initialized with CORS origins: ${
-          Array.isArray(allowedOrigins) ? allowedOrigins.join(", ") : allowedOrigins
+        `✓ Socket.IO initialized with CORS origins: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(", ") : allowedOrigins
         }`,
       );
     });
@@ -243,7 +253,7 @@ const startServer = async () => {
       }, 10_000).unref();
     };
     process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-    process.on("SIGINT",  () => gracefulShutdown("SIGINT"));
+    process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
   } catch (error) {
     console.error("✗ Failed to start server:", error.message);
