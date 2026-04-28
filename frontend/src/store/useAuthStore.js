@@ -59,6 +59,7 @@ export const useAuthStore = create(
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
           set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: false, sessionId });
+          get().refreshSocketToken();
           toast.success("Account created — verify your email to continue");
           return { success: true, email: data.email };
         } catch (error) {
@@ -79,6 +80,7 @@ export const useAuthStore = create(
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
           set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
+          get().refreshSocketToken();
           toast.success("Logged in successfully");
           return { success: true };
         } catch (error) {
@@ -123,6 +125,7 @@ export const useAuthStore = create(
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
           set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
+          get().refreshSocketToken();
           toast.success("Constellation identity sealed ✦");
           return true;
         } catch (error) {
@@ -147,6 +150,7 @@ export const useAuthStore = create(
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
           set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
+          get().refreshSocketToken();
           if (res.data.data.behaviorWarning) {
             toast.warning("Pattern verified — unusual behavior noted.");
           }
@@ -205,6 +209,7 @@ export const useAuthStore = create(
             authUser: state.authUser ? { ...state.authUser, isEmailVerified: true } : null,
             showPostAuthLoader: true,
           }));
+          get().refreshSocketToken();
           toast.success("Identity verified ✦");
           return true;
         } catch (error) {
