@@ -119,14 +119,15 @@ export const useAuthStore = create(
             edges,
             nonce,
           });
-          const { authToken, sessionId } = res.data;
+          const { authToken, sessionId } = res.data.data;
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
-          set({ authUser: res.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
+          set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
           toast.success("Constellation identity sealed ✦");
           return true;
         } catch (error) {
-          toast.error(error.response?.data?.message || "Signup failed.");
+          const backendMsg = error.response?.data?.error?.message || error.response?.data?.message;
+          toast.error(backendMsg || "Signup failed.");
           return false;
         } finally {
           set({ isSigningUp: false });
@@ -142,20 +143,21 @@ export const useAuthStore = create(
             nonce,
             behavioral: behavioral || undefined,
           });
-          const { authToken, sessionId } = res.data;
+          const { authToken, sessionId } = res.data.data;
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
-          set({ authUser: res.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
-          if (res.data.behaviorWarning) {
+          set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
+          if (res.data.data.behaviorWarning) {
             toast.warning("Pattern verified — unusual behavior noted.");
           }
           return true;
         } catch (error) {
           const retryMs = error.response?.data?.retryAfterMs;
+          const backendMsg = error.response?.data?.error?.message || error.response?.data?.message;
           if (error.response?.status === 429 && retryMs) {
             toast.error(`Locked out. Try again in ${Math.ceil(retryMs / 1000)}s.`);
           } else {
-            toast.error(error.response?.data?.message || "Authentication failed.");
+            toast.error(backendMsg || "Authentication failed.");
           }
           return false;
         } finally {

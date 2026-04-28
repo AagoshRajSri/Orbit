@@ -229,10 +229,12 @@ const AppContent = () => {
   }, []);
 
   useEffect(() => {
-    if (hydrated) {
+    // Only perform the initial security check if we haven't checked yet 
+    // and we aren't currently in a post-auth transition.
+    if (hydrated && !isCheckingAuth && !showPostAuthLoader) {
       checkAuth();
     }
-  }, [hydrated, checkAuth]);
+  }, [hydrated, checkAuth, isCheckingAuth, showPostAuthLoader]);
 
   useEffect(() => {
     if (isOnline && authUser) {

@@ -846,14 +846,18 @@ export const constellationSignup = async (req, res) => {
     );
 
     return res.status(201).json({
-      _id: savedUser._id,
-      username: savedUser.username,
-      email: savedUser.email,
-      profilePic: savedUser.profilePic,
-      createdAt: savedUser.createdAt,
-      authToken: tokens.accessToken,
-      hasConstellation: true,
-      message: "Constellation identity sealed.",
+      success: true,
+      data: {
+        _id: savedUser._id,
+        username: savedUser.username,
+        email: savedUser.email,
+        profilePic: savedUser.profilePic,
+        createdAt: savedUser.createdAt,
+        updatedAt: savedUser.updatedAt,
+        authToken: tokens.accessToken,
+        sessionId: tokens.sessionId,
+      },
+      message: "Constellation identity sealed ✦",
     });
   } catch (error) {
     // Clean up on any failure
@@ -1070,16 +1074,20 @@ export const constellationLogin = async (req, res) => {
     }
 
     return res.status(200).json({
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      profilePic: user.profilePic,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      authToken: tokens.accessToken,
-      hasConstellation: true,
+      success: true,
+      data: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePic: user.profilePic,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        authToken: tokens.accessToken,
+        sessionId: tokens.sessionId,
+        hasConstellation: true,
+        ...(behaviorWarning && { behaviorWarning: true }),
+      },
       message: "Constellation identity verified.",
-      ...(behaviorWarning && { behaviorWarning: true }),
     });
   } catch (error) {
     console.error("[constellationLogin]", error.message);
