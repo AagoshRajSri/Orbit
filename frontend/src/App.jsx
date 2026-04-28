@@ -1,5 +1,5 @@
 import Navbar from "./components/Navbar";
-import { Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useParams, useNavigate } from "react-router-dom";
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import toast from "./lib/toast";
 
