@@ -136,6 +136,21 @@ const AppContent = () => {
   useAnimationContext();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isAuthPage =
+    location.pathname === "/login" ||
+    location.pathname === "/signup" ||
+    location.pathname === "/forgot-password" ||
+    location.pathname === "/login/constellation" ||
+    location.pathname === "/signup/constellation" ||
+    location.pathname === "/login/facelock" ||
+    location.pathname === "/signup/facelock" ||
+    location.pathname === "/login/ambient" ||
+    location.pathname === "/login/starweave" ||
+    location.pathname === "/signup/starweave" ||
+    location.pathname === "/verify-email" ||
+    location.pathname === "/signup/ambient";
+
   const { isOnline } = useConnectivity();
   const authUser = useAuthStore((state) => state.authUser);
   const { theme } = useThemeStore();
@@ -452,19 +467,6 @@ const AppContent = () => {
     return () => document.removeEventListener("click", handleGlobalClick, { capture: true });
   }, []);
 
-  const isAuthPage =
-    location.pathname === "/login" ||
-    location.pathname === "/signup" ||
-    location.pathname === "/forgot-password" ||
-    location.pathname === "/login/constellation" ||
-    location.pathname === "/signup/constellation" ||
-    location.pathname === "/login/facelock" ||
-    location.pathname === "/signup/facelock" ||
-    location.pathname === "/login/ambient" ||
-    location.pathname === "/login/starweave" ||
-    location.pathname === "/signup/starweave" ||
-    location.pathname === "/verify-email" ||
-    location.pathname === "/signup/ambient";
 
   return (
     <div className={`relative h-screen bg-base-300 text-[var(--chat-text)] overflow-hidden flex flex-col ${isOrbitMode ? 'orbit-active' : ''}`}>
