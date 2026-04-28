@@ -599,6 +599,7 @@ const AppContent = () => {
               </div>
             )}
           </main>
+          {!isAuthPage && <NowPlayingWidget />}
         </>
       )}
     </div>
@@ -623,7 +624,6 @@ const App = () => {
           />
         )}
         <AppContent />
-        <NowPlayingWidget />
       </IdentityProvider>
     </ErrorBoundary>
   );
