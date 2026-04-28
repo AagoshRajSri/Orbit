@@ -228,13 +228,23 @@ const AppContent = () => {
     checkHydration();
   }, []);
 
+  const hasCheckedAuthRef = useRef(false);
+
   useEffect(() => {
-    // Only perform the initial security check if we haven't checked yet 
-    // and we aren't currently in a post-auth transition.
-    if (hydrated && !isCheckingAuth && !showPostAuthLoader) {
+    // Only perform the initial security check ONCE per application load.
+    if (hydrated && !hasCheckedAuthRef.current) {
+      // If the post-auth loader is active, it means the user JUST logged in.
+      // We already have their fresh data, so we DO NOT need to check auth again.
+      // We just mark it as checked and skip the API call.
+      if (showPostAuthLoader) {
+        hasCheckedAuthRef.current = true;
+        return;
+      }
+      
+      hasCheckedAuthRef.current = true;
       checkAuth();
     }
-  }, [hydrated, checkAuth, isCheckingAuth, showPostAuthLoader]);
+  }, [hydrated, showPostAuthLoader, checkAuth]);
 
   useEffect(() => {
     if (isOnline && authUser) {

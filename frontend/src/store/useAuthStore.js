@@ -28,9 +28,9 @@ export const useAuthStore = create(
             sessionId: serverSessionId || currentSessionId || crypto.randomUUID() 
           });
         } catch (error) {
-          if (error.response?.data?.error) {
-            console.error("[checkAuth] Server error details:", error.response.data.error);
-          }
+          console.error("[checkAuth] Server error status:", error.response?.status);
+          console.error("[checkAuth] Server error details:", error.response?.data);
+          
           const isAuthError = error.response?.status === 401 || error.response?.status === 404;
           const isNetworkError = error.code === "ERR_NETWORK" || !error.response;
           
@@ -39,6 +39,7 @@ export const useAuthStore = create(
             console.warn("Auth check failed due to network - keeping persisted session");
             // Keep current auth state (will be restored from localStorage)
           } else if (isAuthError) {
+            console.warn("[checkAuth] Wiping auth user due to auth error");
             // Clear auth only on actual auth failures (invalid session/credentials)
             set({ authUser: null, sessionId: null, socketToken: null });
             delete axiosInstance.defaults.headers.common["X-Auth-Token"];
