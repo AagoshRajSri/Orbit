@@ -521,7 +521,9 @@ const AppContent = () => {
                   <StarWeaveSignupPage />
                 ) : (
                   <AuthShell animationKey={location.pathname}>
-                    {location.pathname === "/signup" ? (
+                    {location.pathname === "/verify-email" ? (
+                      <VerifyEmailPage />
+                    ) : location.pathname === "/signup" ? (
                       <SignUpPage />
                     ) : location.pathname === "/forgot-password" ? (
                       <ForgotPasswordPage />

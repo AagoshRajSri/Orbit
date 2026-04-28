@@ -14,9 +14,13 @@ const SignUpPage = () => {
   const { play } = useSoundManager();
   const navigate = useNavigate();
 
-  // Only redirect to home if already fully verified (e.g. came back to signup page)
+  // Redirect verified users to home, or unverified users to the verification screen
   useEffect(() => {
-    if (authUser?.isEmailVerified) navigate("/");
+    if (authUser?.isEmailVerified) {
+      navigate("/");
+    } else if (authUser && !authUser.isEmailVerified) {
+      navigate("/verify-email", { state: { email: authUser.email } });
+    }
   }, [authUser, navigate]);
 
   const validateForm = () => {

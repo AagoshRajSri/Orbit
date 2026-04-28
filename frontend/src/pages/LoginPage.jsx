@@ -14,7 +14,11 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (authUser?.isEmailVerified) navigate("/");
+    if (authUser?.isEmailVerified) {
+      navigate("/");
+    } else if (authUser && !authUser.isEmailVerified) {
+      navigate("/verify-email", { state: { email: authUser.email } });
+    }
   }, [authUser, navigate]);
 
   const handleSubmit = async (e) => {
