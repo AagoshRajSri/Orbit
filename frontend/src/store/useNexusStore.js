@@ -403,6 +403,10 @@ export const useNexusStore = create((set, get) => ({
     });
   },
 
+  clearNexusTyping: () => {
+    set({ nexusTypingUsers: [] });
+  },
+
   setSelectedNexus: (nexus) => {
     if (nexus) {
       const nid = nexus._id?.toString();

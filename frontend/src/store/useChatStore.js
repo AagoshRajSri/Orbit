@@ -276,6 +276,13 @@ export const useChatStore = create((set, get) => ({
     });
   },
 
+  clearUserTyping: () => {
+    set((state) => ({
+      users: state.users.map((user) => ({ ...user, isTyping: false })),
+      selectedUser: state.selectedUser ? { ...state.selectedUser, isTyping: false } : null,
+    }));
+  },
+
   addContact: (userId) =>
     set((state) => ({
       contactList: state.contactList.includes(userId)

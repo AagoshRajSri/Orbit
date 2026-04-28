@@ -8,10 +8,10 @@ export const protectRoute = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       token = authHeader.split(" ")[1];
-    } else if (req.cookies?.jwt) {
-      token = req.cookies.jwt;
     } else if (req.headers["x-auth-token"]) {
       token = req.headers["x-auth-token"];
+    } else if (req.cookies?.jwt) {
+      token = req.cookies.jwt;
     }
 
     if (!token) {
