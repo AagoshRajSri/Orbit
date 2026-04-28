@@ -62,30 +62,38 @@ const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPas
   
   useEffect(() => {
     const loadTheme = async () => {
-      if (isDark) {
-        const mod = await import("./themes/darkTheme");
-        setThemeComponent(() => mod.default);
-      } else if (isCyber) {
-        const mod = await import("./themes/darkCyberpunkTheme");
-        setThemeComponent(() => mod.default);
-      } else if (isGamer) {
-        const mod = await import("./themes/gamerTheme");
-        setThemeComponent(() => mod.default);
-      } else if (isAmoled) {
-        const mod = await import("./themes/amoledTheme");
-        setThemeComponent(() => mod.default);
-      } else if (isLight) {
-        const mod = await import("./themes/lightTheme");
-        setThemeComponent(() => mod.default);
-      } else if (isPastel) {
-        const mod = await import("./themes/pastelTheme");
-        setThemeComponent(() => mod.default);
-      } else {
-        setThemeComponent(() => HomePage);
+      try {
+        if (isDark) {
+          const mod = await import("./themes/darkTheme");
+          setThemeComponent(() => mod.default);
+        } else if (isCyber) {
+          const mod = await import("./themes/darkCyberpunkTheme");
+          setThemeComponent(() => mod.default);
+        } else if (isGamer) {
+          const mod = await import("./themes/gamerTheme");
+          setThemeComponent(() => mod.default);
+        } else if (isAmoled) {
+          const mod = await import("./themes/amoledTheme");
+          setThemeComponent(() => mod.default);
+        } else if (isLight) {
+          const mod = await import("./themes/lightTheme");
+          setThemeComponent(() => mod.default);
+        } else if (isPastel) {
+          const mod = await import("./themes/pastelTheme");
+          setThemeComponent(() => mod.default);
+        } else {
+          setThemeComponent(() => HomePage);
+        }
+      } catch (err) {
+        console.error("Theme load failed:", err);
+        // If it's a fetch error, it's likely a redeploy. Reload to get new assets.
+        if (err.name === "TypeError" || err.message?.includes("fetch")) {
+          window.location.reload();
+        }
       }
     };
     loadTheme();
-  }, [isDark, isCyber, isGamer, isAmoled, isLight, isPastel]);
+  }, [isDark, isCyber, isGamer, isAmoled, isLight, isPastel, HomePage]);
 
   if (!ThemeComponent) {
     return (
