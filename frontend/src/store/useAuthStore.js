@@ -62,7 +62,9 @@ export const useAuthStore = create(
           toast.success("Account created — verify your email to continue");
           return { success: true, email: data.email };
         } catch (error) {
-          toast.error(error.response?.data?.message || "Signup failed");
+          const backendMsg = error.response?.data?.error?.message || error.response?.data?.message;
+          const details = error.response?.data?.error?.details?.[0]?.message;
+          toast.error(details || backendMsg || "Signup failed");
           return { success: false };
         } finally {
           set({ isSigningUp: false });
@@ -82,10 +84,14 @@ export const useAuthStore = create(
         } catch (error) {
           const errCode = error.response?.data?.error?.code;
           const errEmail = error.response?.data?.error?.email;
+          const backendMsg = error.response?.data?.error?.message || error.response?.data?.message;
+          const details = error.response?.data?.error?.details?.[0]?.message;
+
           if (errCode === "EMAIL_NOT_VERIFIED") {
-            return { unverified: true, email: errEmail || data.email };
+            toast.error("Email not verified. Redirecting...");
+            return { unverified: true, email: errEmail };
           }
-          toast.error(error.response?.data?.message || "Login failed");
+          toast.error(details || backendMsg || "Login failed");
           return { success: false };
         } finally {
           set({ isLoggingIn: false });
