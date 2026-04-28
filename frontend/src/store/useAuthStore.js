@@ -58,10 +58,12 @@ export const useAuthStore = create(
           const { authToken, sessionId } = res.data.data;
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
-          set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
-          toast.success("Account created successfully");
+          set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: false, sessionId });
+          toast.success("Account created — verify your email to continue");
+          return { success: true, email: data.email };
         } catch (error) {
           toast.error(error.response?.data?.message || "Signup failed");
+          return { success: false };
         } finally {
           set({ isSigningUp: false });
         }
@@ -76,8 +78,15 @@ export const useAuthStore = create(
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
           set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
           toast.success("Logged in successfully");
+          return { success: true };
         } catch (error) {
+          const errCode = error.response?.data?.error?.code;
+          const errEmail = error.response?.data?.error?.email;
+          if (errCode === "EMAIL_NOT_VERIFIED") {
+            return { unverified: true, email: errEmail || data.email };
+          }
           toast.error(error.response?.data?.message || "Login failed");
+          return { success: false };
         } finally {
           set({ isLoggingIn: false });
         }

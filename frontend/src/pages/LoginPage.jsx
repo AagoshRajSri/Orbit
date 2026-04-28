@@ -9,7 +9,7 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [focused, setFocused] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoggingIn, authUser } = useAuthStore();
+  const { login, isLoggingIn, authUser, resendVerification } = useAuthStore();
   const { play } = useSoundManager();
   const navigate = useNavigate();
 
@@ -20,7 +20,12 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     play("click");
-    login(formData);
+    const result = await login(formData);
+    if (result?.unverified) {
+      // Send fresh OTP then redirect to verify page
+      await resendVerification(result.email);
+      navigate("/verify-email", { state: { email: result.email } });
+    }
   };
 
   return (

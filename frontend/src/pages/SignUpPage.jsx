@@ -35,7 +35,11 @@ const SignUpPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     play("click");
-    if (validateForm() === true) signup(formData);
+    if (validateForm() !== true) return;
+    const result = await signup(formData);
+    if (result?.success) {
+      navigate("/verify-email", { state: { email: formData.email } });
+    }
   };
 
   // Password strength
