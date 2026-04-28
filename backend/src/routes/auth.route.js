@@ -26,6 +26,7 @@ import {
   constellationSignupSchema,
   constellationLoginSchema,
 } from "../schemas/constellation.schemas.js";
+import { refreshAccessToken } from "../lib/utils.js";
 
 const router = express.Router();
 
@@ -35,6 +36,7 @@ const router = express.Router();
 router.post("/signup", signupLimiter, signup);
 router.post("/login", loginLimiter, login);
 router.post("/logout", logout);
+router.post("/refresh", refreshAccessToken);
 
 // Email Verification
 router.post("/verify-email", loginLimiter, verifyEmail);
