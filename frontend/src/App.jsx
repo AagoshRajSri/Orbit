@@ -471,7 +471,7 @@ const AppContent = () => {
       <ThemePortal />
       {!isOnline && <ConnectionStatus />}
       <NotificationContainer />
-      {isCheckingAuth && !authUser ? (
+      {(!hydrated || (isCheckingAuth && !!authUser)) && !isAuthPage ? (
         <OrbitLoader />
       ) : (
         <>
@@ -609,7 +609,7 @@ const AppContent = () => {
               </div>
             )}
           </main>
-          {!isAuthPage && <NowPlayingWidget />}
+          {authUser && !isAuthPage && <NowPlayingWidget />}
         </>
       )}
     </div>
