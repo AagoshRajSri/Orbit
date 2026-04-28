@@ -192,9 +192,10 @@ export const useAuthStore = create(
       },
       verifyEmail: async (email, code) => {
         try {
-          await axiosInstance.post("/auth/verify-email", { email, code });
+          await axiosInstance.post("/auth/verify-email", { email, otp: code });
           set((state) => ({
-            authUser: state.authUser ? { ...state.authUser, isEmailVerified: true } : null
+            authUser: state.authUser ? { ...state.authUser, isEmailVerified: true } : null,
+            showPostAuthLoader: true,
           }));
           toast.success("Identity verified ✦");
           return true;

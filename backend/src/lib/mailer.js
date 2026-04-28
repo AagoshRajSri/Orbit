@@ -80,100 +80,100 @@ async function createTransporter() {
 // ─── Email Template ───────────────────────────────────────────────────────────
 
 function buildEmailPayload(to, otp) {
-  const digits = otp.toString().split("");
+  const year = new Date().getFullYear();
 
   return {
-    from: `"Orbit Auth" <${process.env.SMTP_FROM || "noreply@orbit.com"}>`,
+    from: `"Orbit" <${process.env.SMTP_FROM || "noreply@orbit.com"}>`,
     to,
-    subject: "Your Orbit verification code",
+    subject: `${otp} is your Orbit verification code`,
     text: [
-      `Hello,`,
+      `Hey,`,
       ``,
-      `You requested a password reset. Your verification code is: ${otp}`,
+      `Your Orbit verification code is: ${otp}`,
       ``,
-      `This code expires in ${OTP_VALIDITY_MINUTES} minutes.`,
-      `If you didn't request this, you can safely ignore this email.`,
+      `It expires in ${OTP_VALIDITY_MINUTES} minutes.`,
+      `If you didn't sign up for Orbit, you can safely ignore this.`,
       ``,
-      `— The Orbit Team`,
+      `— Orbit`,
     ].join("\n"),
     html: `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Orbit Verification Code</title>
+  <title>Verify your Orbit account</title>
 </head>
-<body style="margin:0;padding:0;background-color:#080611;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#080611;padding:40px 20px;">
+<body style="margin:0;padding:0;background:#07050f;font-family:'Segoe UI',system-ui,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+    style="background:#07050f;padding:48px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:500px;background:linear-gradient(145deg,#0f0c1a,#130e22);border:1px solid rgba(192,132,252,0.15);border-radius:18px;overflow:hidden;">
+        <table role="presentation" cellpadding="0" cellspacing="0"
+          style="width:100%;max-width:480px;">
 
-          <!-- Header -->
+          <!-- Logo row -->
           <tr>
-            <td style="padding:32px 40px 24px;border-bottom:1px solid rgba(192,132,252,0.1);">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td>
-                    <span style="font-size:22px;font-weight:800;background:linear-gradient(90deg,#c084fc,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px;">
-                      ✦ Orbit
-                    </span>
-                  </td>
-                  <td align="right">
-                    <span style="font-size:11px;color:#6b7280;letter-spacing:1.5px;text-transform:uppercase;">Security Alert</span>
-                  </td>
-                </tr>
-              </table>
+            <td style="padding-bottom:32px;">
+              <span style="font-size:18px;font-weight:700;color:#a78bfa;letter-spacing:-0.3px;">
+                ✦ Orbit
+              </span>
             </td>
           </tr>
 
-          <!-- Body -->
+          <!-- Card -->
           <tr>
-            <td style="padding:36px 40px;">
-              <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#f0ebff;">Password Reset Request</p>
-              <p style="margin:0 0 28px;font-size:14px;color:#9ca3af;line-height:1.6;">
-                We received a request to reset your password. Use the code below — it's valid for
-                <strong style="color:#c084fc;">${OTP_VALIDITY_MINUTES} minutes</strong>.
+            <td style="background:#0f0b1e;border:1px solid rgba(255,255,255,0.07);
+              border-radius:20px;padding:40px 36px;">
+
+              <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#f0ebff;
+                letter-spacing:-0.4px;">
+                Here's your code
+              </p>
+              <p style="margin:0 0 32px;font-size:14px;color:#6b7280;line-height:1.65;">
+                Use this to verify your Orbit account. It's only valid for
+                <strong style="color:#9ca3af;">${OTP_VALIDITY_MINUTES} minutes</strong>, so use it soon.
               </p>
 
-              <!-- OTP Block -->
+              <!-- OTP block -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="padding:28px 0;background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.18);border-radius:12px;">
-                    <p style="margin:0 0 10px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6b7280;">Your verification code</p>
-                    <div style="display:inline-flex;gap:8px;letter-spacing:6px;">
-                      ${digits
-        .map(
-          (d) => `
-                        <span style="display:inline-block;width:36px;height:48px;line-height:48px;text-align:center;font-size:28px;font-weight:800;color:#4ade80;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:8px;">${d}</span>
-                      `
-        )
-        .join("")}
+                  <td align="center"
+                    style="background:#13102a;border:1px solid rgba(167,139,250,0.15);
+                    border-radius:14px;padding:28px 20px;">
+                    <p style="margin:0 0 14px;font-size:10px;letter-spacing:0.2em;
+                      text-transform:uppercase;color:#4b5563;">
+                      Verification code
+                    </p>
+                    <div style="display:inline-block;">
+                      ${otp.split("").map(d => `<span style="
+                        display:inline-block;
+                        width:40px;height:52px;line-height:52px;
+                        text-align:center;
+                        font-size:30px;font-weight:800;
+                        color:#a78bfa;
+                        background:rgba(139,92,246,0.08);
+                        border:1px solid rgba(139,92,246,0.2);
+                        border-radius:10px;
+                        margin:0 3px;
+                        font-family:'Courier New',monospace;
+                      ">${d}</span>`).join("")}
                     </div>
                   </td>
                 </tr>
               </table>
 
-              <!-- Warning -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
-                <tr>
-                  <td style="padding:14px 18px;background:rgba(251,191,36,0.05);border-left:3px solid rgba(251,191,36,0.4);border-radius:0 8px 8px 0;">
-                    <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.5;">
-                      🔒 If you didn't request this code, your account may be at risk.
-                      <a href="#" style="color:#c084fc;text-decoration:none;">Secure your account →</a>
-                    </p>
-                  </td>
-                </tr>
-              </table>
+              <!-- Note -->
+              <p style="margin:28px 0 0;font-size:13px;color:#4b5563;line-height:1.6;">
+                Didn't sign up? No worries — just ignore this email and nothing will happen.
+              </p>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="padding:20px 40px 28px;border-top:1px solid rgba(255,255,255,0.05);">
-              <p style="margin:0;font-size:11px;color:#4b5563;text-align:center;line-height:1.6;">
-                Sent by Orbit · You're receiving this because a reset was requested for your account.<br/>
-                © ${new Date().getFullYear()} Orbit. All rights reserved.
+            <td style="padding-top:28px;text-align:center;">
+              <p style="margin:0;font-size:11px;color:#374151;line-height:1.7;">
+                © ${year} Orbit &nbsp;·&nbsp; This email was sent because an account was being created.
               </p>
             </td>
           </tr>
