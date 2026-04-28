@@ -132,7 +132,7 @@ app.get("/health", async (req, res) => {
 // ── Static Files (Production) ────────────────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
   app.use(express.static("public"));
-  app.get("(.*)", (req, res, next) => {
+  app.get("/:path*", (req, res, next) => {
     if (req.path.startsWith("/api")) return next();
     res.sendFile("index.html", { root: "public" });
   });
