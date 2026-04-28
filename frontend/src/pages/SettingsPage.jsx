@@ -22,6 +22,7 @@ import { useSoundManager } from "../hooks/useSoundManager";
 import { THEMES, THEME_LABELS } from "../constants";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
+import { useSettingsStore } from "../store/useSettingsStore";
 import { axiosInstance } from "../lib/axios.jsx";
 import { VampireSettings } from "../themes/darkTheme";
 import { AmoledSettings } from "../themes/amoledTheme";
@@ -367,6 +368,18 @@ const SettingsPage = () => {
         STORAGE_KEYS.soundSettings,
         JSON.stringify(draftSoundSettings),
       );
+
+      useSettingsStore.getState().updateSettings({
+        "sound.volume": draftSoundSettings.volume ?? 0.7,
+        "sound.effectsEnabled": draftSoundSettings.effectsEnabled ?? true,
+        "sound.clickEnabled": draftSoundSettings.clickSound ?? true,
+        "sound.notificationEnabled": draftSoundSettings.messageSound ?? true,
+        "sound.orbitAmbientEnabled": draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true,
+        "notifications.desktopEnabled": draftNotifications.desktop ?? true,
+        "notifications.soundEnabled": draftNotifications.sound ?? true,
+        "orbit.showRings": draftOrbitBehavior.showRings ?? true,
+        "orbit.autoPauseOnHover": draftOrbitBehavior.autoPauseOnHover ?? true,
+      });
 
       setTheme(draftTheme);
       toast.success("Settings saved");

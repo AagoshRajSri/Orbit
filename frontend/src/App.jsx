@@ -608,7 +608,7 @@ const AppContent = () => {
 const App = () => {
   const { theme } = useThemeStore();
   const authUser = useAuthStore(s => s.authUser);
-  const ambientEnabled = useSettingsStore(s => s.settings?.sound?.orbitAmbientEnabled ?? true);
+  const ambientEnabled = useSettingsStore(s => (s.settings?.sound?.enabled ?? true) && (s.settings?.sound?.orbitAmbientEnabled ?? true));
   const masterVolume = useSettingsStore(s => s.settings?.sound?.volume ?? 0.5);
 
   return (

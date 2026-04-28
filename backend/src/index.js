@@ -216,8 +216,9 @@ const startServer = async () => {
     await connectDB();
     console.log("✓ Database connected successfully");
 
-    const configuredPort = parseInt(process.env.PORT || "3000", 10);
-    const port = await findAvailablePort(configuredPort);
+    const port = process.env.NODE_ENV === "production" 
+      ? parseInt(process.env.PORT || "3000", 10)
+      : await findAvailablePort(parseInt(process.env.PORT || "3000", 10));
 
     httpServer.listen(port, "0.0.0.0", () => {
       console.log(`✓ Server is running on port ${port}`);

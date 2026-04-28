@@ -10,6 +10,7 @@ import {
 import { useAuthStore } from "../store/useAuthStore";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
+import { useSettingsStore } from "../store/useSettingsStore";
 import { THEMES, THEME_LABELS } from "../constants";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 const LUXURY_COLORS = {
@@ -1057,48 +1058,58 @@ export function LightSettings({
            })()}
 
 
-           {activeSection === "sound" && (
-             <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 600 }}>
-                <div style={{ padding: '24px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: LUXURY_COLORS.textSecondary, marginBottom: 16, letterSpacing: 1 }}>MASTER VOLUME</label>
-                  <input type="range" min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={e => setDraftSoundSettings(p => ({...p, volume: parseFloat(e.target.value)}))} style={{ width: '100%', accentColor: LUXURY_COLORS.goldDark }} />
+            {activeSection === "sound" && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 600 }}>
+                 <div style={{ padding: '24px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
+                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: LUXURY_COLORS.textSecondary, marginBottom: 16, letterSpacing: 1 }}>MASTER VOLUME</label>
+                   <input type="range" min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={e => { const v = parseFloat(e.target.value); setDraftSoundSettings(p => ({...p, volume: v})); try { useSettingsStore.getState().updateSetting('sound.volume', v); } catch (_) {} }} style={{ width: '100%', accentColor: LUXURY_COLORS.goldDark }} />
+                 </div>
+                 
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Haptic Sounds</div>
+                    <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Play acoustic feedback on interaction.</div>
+                  </div>
+                  <div onClick={() => { const v = !draftSoundSettings.clickSound; setDraftSoundSettings(p => ({...p, clickSound: v})); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) {} }} style={{ width: 50, height: 28, borderRadius: 14, background: draftSoundSettings.clickSound ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
+                    <div style={{ position: 'absolute', top: 2, left: draftSoundSettings.clickSound ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s' }} />
+                  </div>
                 </div>
-                
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
-                 <div>
-                   <div style={{ fontWeight: 600, marginBottom: 4 }}>Haptic Sounds</div>
-                   <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Play acoustic feedback on interaction.</div>
-                 </div>
-                 <div onClick={() => setDraftSoundSettings(p => ({...p, clickSound: !p.clickSound}))} style={{ width: 50, height: 28, borderRadius: 14, background: draftSoundSettings.clickSound ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
-                   <div style={{ position: 'absolute', top: 2, left: draftSoundSettings.clickSound ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s' }} />
-                 </div>
-               </div>
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Message Alerts</div>
+                    <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Play a chime on receiving transmissions.</div>
+                  </div>
+                  <div onClick={() => { const v = !draftSoundSettings.messageSound; setDraftSoundSettings(p => ({...p, messageSound: v})); try { useSettingsStore.getState().updateSetting('sound.notificationEnabled', v); } catch (_) {} }} style={{ width: 50, height: 28, borderRadius: 14, background: draftSoundSettings.messageSound ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
+                    <div style={{ position: 'absolute', top: 2, left: draftSoundSettings.messageSound ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s' }} />
+                  </div>
+                </div>
 
-               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
-                 <div>
-                   <div style={{ fontWeight: 600, marginBottom: 4 }}>Message Alerts</div>
-                   <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Play a chime on receiving transmissions.</div>
-                 </div>
-                 <div onClick={() => setDraftSoundSettings(p => ({...p, messageSound: !p.messageSound}))} style={{ width: 50, height: 28, borderRadius: 14, background: draftSoundSettings.messageSound ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
-                   <div style={{ position: 'absolute', top: 2, left: draftSoundSettings.messageSound ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s' }} />
-                 </div>
-               </div>
-             </div>
-           )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Background Ambience</div>
+                    <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Play a soothing background atmosphere.</div>
+                  </div>
+                  <div onClick={() => { const v = !(draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true); setDraftSoundSettings(p => ({...p, ambientStorm: v, orbitAmbientEnabled: v})); try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) {} }} style={{ width: 50, height: 28, borderRadius: 14, background: (draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true) ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
+                    <div style={{ position: 'absolute', top: 2, left: (draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true) ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s' }} />
+                  </div>
+                </div>
+              </div>
+            )}
 
-           {activeSection === "notifications" && (
-             <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 600 }}>
-               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
-                 <div>
-                   <div style={{ fontWeight: 600, marginBottom: 4 }}>Enable Alerts</div>
-                   <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Receive desktop notifications for messages.</div>
-                 </div>
-                 <div onClick={() => setDraftNotifications(p => ({...p, enabled: !p.enabled}))} style={{ width: 50, height: 28, borderRadius: 14, background: draftNotifications.enabled ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
-                   <div style={{ position: 'absolute', top: 2, left: draftNotifications.enabled ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s' }} />
-                 </div>
-               </div>
-             </div>
-           )}
+            {activeSection === "notifications" && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Enable Alerts</div>
+                    <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Receive desktop notifications for messages.</div>
+                  </div>
+                  <div onClick={() => { const v = !draftNotifications.enabled; setDraftNotifications(p => ({...p, enabled: v, desktop: v})); try { useSettingsStore.getState().updateSetting('notifications.enabled', v); } catch (_) {} }} style={{ width: 50, height: 28, borderRadius: 14, background: draftNotifications.enabled ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
+                    <div style={{ position: 'absolute', top: 2, left: draftNotifications.enabled ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s' }} />
+                  </div>
+                </div>
+              </div>
+            )}
 
         </div>
       </div>

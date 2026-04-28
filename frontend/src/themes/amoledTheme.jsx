@@ -7,6 +7,7 @@ import { THEMES, THEME_LABELS } from "../constants";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
+import { useSettingsStore } from "../store/useSettingsStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 import { Music } from "lucide-react";
 import { API_URL } from "../config";
@@ -1077,13 +1078,14 @@ export function AmoledSettings({
             {activeSection === "sound" && (
               <div>
                 <h3 className="oa-orbitron" style={{ fontSize: 16, color: "#E8C990", letterSpacing: 2, marginBottom: 20 }}>ACOUSTIC FEEDBACK</h3>
-                <ToggleRow label="GLOBAL EFFECTS" description="Enable or disable all acoustic signals." checked={draftSoundSettings.effectsEnabled} onChange={v => setDraftSoundSettings(p => ({ ...p, effectsEnabled: v }))} />
-                <ToggleRow label="TRANSMISSION SOUNDS" description="Auditory ping when a direct message is received." checked={draftSoundSettings.messageSound} onChange={v => setDraftSoundSettings(p => ({ ...p, messageSound: v }))} />
-                <ToggleRow label="HAPTIC CLICKS" description="Subtle acoustic clicks on UI interactions." checked={draftSoundSettings.clickSound} onChange={v => setDraftSoundSettings(p => ({ ...p, clickSound: v }))} />
+                <ToggleRow label="GLOBAL EFFECTS" description="Enable or disable all acoustic signals." checked={draftSoundSettings.effectsEnabled} onChange={v => { setDraftSoundSettings(p => ({ ...p, effectsEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.enabled', v); } catch (_) {} }} />
+                <ToggleRow label="TRANSMISSION SOUNDS" description="Auditory ping when a direct message is received." checked={draftSoundSettings.messageSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, messageSound: v })); try { useSettingsStore.getState().updateSetting('sound.notificationEnabled', v); } catch (_) {} }} />
+                <ToggleRow label="HAPTIC CLICKS" description="Subtle acoustic clicks on UI interactions." checked={draftSoundSettings.clickSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, clickSound: v })); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) {} }} />
+                <ToggleRow label="BACKGROUND AMBIENCE" description="Play a soothing background atmosphere." checked={draftSoundSettings.orbitAmbientEnabled ?? true} onChange={v => { setDraftSoundSettings(p => ({ ...p, orbitAmbientEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) {} }} />
 
                 <div style={{ marginTop: 20 }}>
                   <label className="oa-mono" style={{ fontSize: 11, color: "rgba(198,160,110,.6)", letterSpacing: 2, display: "block", marginBottom: 10 }}>MASTER GAIN {(draftSoundSettings.volume * 100).toFixed(0)}%</label>
-                  <input type="range" min="0" max="1" step="0.05" value={draftSoundSettings.volume} onChange={(e) => setDraftSoundSettings(p => ({ ...p, volume: parseFloat(e.target.value) }))} style={{ width: "100%", accentColor: "#C6A06E" }} />
+                  <input type="range" min="0" max="1" step="0.05" value={draftSoundSettings.volume} onChange={(e) => { const v = parseFloat(e.target.value); setDraftSoundSettings(p => ({ ...p, volume: v })); try { useSettingsStore.getState().updateSetting('sound.volume', v); } catch (_) {} }} style={{ width: "100%", accentColor: "#C6A06E" }} />
                 </div>
               </div>
             )}
@@ -1126,8 +1128,8 @@ export function AmoledSettings({
             {activeSection === "notifications" && (
               <div>
                 <h3 className="oa-orbitron" style={{ fontSize: 16, color: "#E8C990", letterSpacing: 2, marginBottom: 20 }}>ALERT SYSTEMS</h3>
-                <ToggleRow label="DESKTOP OVERLAYS" description="Show visual toast notifications on your HUD." checked={draftNotifications.desktop} onChange={v => setDraftNotifications(p => ({ ...p, desktop: v }))} />
-                <ToggleRow label="AUDIO CUES" description="Play auditory pings for incoming waves." checked={draftNotifications.sound} onChange={v => setDraftNotifications(p => ({ ...p, sound: v }))} />
+                <ToggleRow label="DESKTOP OVERLAYS" description="Show visual toast notifications on your HUD." checked={draftNotifications.desktop} onChange={v => { setDraftNotifications(p => ({ ...p, desktop: v })); try { useSettingsStore.getState().updateSetting('notifications.desktopEnabled', v); } catch (_) {} }} />
+                <ToggleRow label="AUDIO CUES" description="Play auditory pings for incoming waves." checked={draftNotifications.sound} onChange={v => { setDraftNotifications(p => ({ ...p, sound: v })); try { useSettingsStore.getState().updateSetting('notifications.enabled', v); } catch (_) {} }} />
                 <ToggleRow label="EMAIL DIGESTS" description="Periodic email summaries (if allowed by server)." checked={draftNotifications.email} onChange={v => setDraftNotifications(p => ({ ...p, email: v }))} />
               </div>
             )}

@@ -2274,13 +2274,21 @@ export function VampireSettings({
 
                         {activeSection === "notifications" && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                                <div className="v-toggle" onClick={() => setDraftNotifications({ ...draftNotifications, desktop: !draftNotifications.desktop })} style={{ cursor: 'pointer' }}>
+                                <div className="v-toggle" onClick={() => {
+                                    const v = !draftNotifications.desktop;
+                                    setDraftNotifications({ ...draftNotifications, desktop: v });
+                                    try { useSettingsStore.getState().updateSetting('notifications.desktopEnabled', v); } catch (_) { }
+                                }} style={{ cursor: 'pointer' }}>
                                     <div className="v-label" style={{ marginBottom: 0 }}>DESKTOP NOTIFICATIONS</div>
                                     <button type="button" style={{ color: draftNotifications.desktop ? 'var(--crimson)' : 'var(--mist)', background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', pointerEvents: 'none' }}>
                                         {draftNotifications.desktop ? '◉' : '○'}
                                     </button>
                                 </div>
-                                <div className="v-toggle" onClick={() => setDraftNotifications({ ...draftNotifications, sound: !draftNotifications.sound })} style={{ cursor: 'pointer' }}>
+                                <div className="v-toggle" onClick={() => {
+                                    const v = !draftNotifications.sound;
+                                    setDraftNotifications({ ...draftNotifications, sound: v });
+                                    try { useSettingsStore.getState().updateSetting('notifications.enabled', v); } catch (_) { }
+                                }} style={{ cursor: 'pointer' }}>
                                     <div className="v-label" style={{ marginBottom: 0 }}>NOTIFICATION SOUNDS</div>
                                     <button type="button" style={{ color: draftNotifications.sound ? 'var(--crimson)' : 'var(--mist)', background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', pointerEvents: 'none' }}>
                                         {draftNotifications.sound ? '◉' : '○'}

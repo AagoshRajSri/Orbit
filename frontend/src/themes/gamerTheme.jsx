@@ -1635,10 +1635,10 @@ export function GamerSettings({
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               <div style={{ background: "rgba(255,255,255,0.03)", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)" }}>
                 <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 16, fontFamily: "'Orbitron', monospace", letterSpacing: "0.1em" }}>MASTER GAIN: {(draftSoundSettings.volume * 100).toFixed(0)}%</div>
-                <input type="range" min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={(e) => setDraftSoundSettings(p => ({ ...p, volume: parseFloat(e.target.value) }))} style={{ width: "100%", accentColor: "#00cfff" }} />
+                <input type="range" min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={(e) => { const v = parseFloat(e.target.value); setDraftSoundSettings(p => ({ ...p, volume: v })); try { useSettingsStore.getState().updateSetting('sound.volume', v); } catch (_) { } }} style={{ width: "100%", accentColor: "#00cfff" }} />
               </div>
-              <ToggleSwitch label="GLOBAL EFFECTS" checked={draftSoundSettings.effectsEnabled} onChange={v => setDraftSoundSettings(p => ({ ...p, effectsEnabled: v }))} color="#00cfff" />
-              <ToggleSwitch label="TRANSMISSION PINGS" checked={draftSoundSettings.messageSound} onChange={v => setDraftSoundSettings(p => ({ ...p, messageSound: v }))} color="#00cfff" />
+              <ToggleSwitch label="GLOBAL EFFECTS" checked={draftSoundSettings.effectsEnabled} onChange={v => { setDraftSoundSettings(p => ({ ...p, effectsEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.enabled', v); } catch (_) { } }} color="#00cfff" />
+              <ToggleSwitch label="TRANSMISSION PINGS" checked={draftSoundSettings.messageSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, messageSound: v })); try { useSettingsStore.getState().updateSetting('sound.notificationEnabled', v); } catch (_) { } }} color="#00cfff" />
               <ToggleSwitch label="HAPTIC CLICKS" checked={draftSoundSettings.clickSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, clickSound: v })); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) { } }} color="#00cfff" />
               <ToggleSwitch label="BACKGROUND AMBIENCE" checked={draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true} onChange={v => { setDraftSoundSettings(p => ({ ...p, ambientStorm: v, orbitAmbientEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) { } }} color="#00cfff" />
             </div>
@@ -1666,14 +1666,14 @@ export function GamerSettings({
                   style={{ width: "100%", height: 80, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(0,207,255,0.4)", color: "#00cfff", padding: "12px 16px", borderRadius: 8, fontFamily: "'Rajdhani', monospace", fontSize: 15, outline: "none", boxShadow: "inset 0 0 10px rgba(0,207,255,0.1)", resize: "none" }}
                 />
               </div>
-              <ToggleSwitch label="BROADCAST PRESENCE" checked={draftShowOnlineStatus} onChange={setDraftShowOnlineStatus} color="#ff2d78" />
+              <ToggleSwitch label="BROADCAST PRESENCE" checked={draftShowOnlineStatus} onChange={v => { setDraftShowOnlineStatus(v); try { useSettingsStore.getState().updateSetting('profile.showOnlineStatus', v); } catch (_) { } }} color="#ff2d78" />
             </div>
           )}
 
           {activeSection === "notifications" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              <ToggleSwitch label="DESKTOP OVERLAYS" checked={draftNotifications.desktop} onChange={v => setDraftNotifications(p => ({ ...p, desktop: v }))} color="#ffe600" />
-              <ToggleSwitch label="AUDIO CUES" checked={draftNotifications.sound} onChange={v => setDraftNotifications(p => ({ ...p, sound: v }))} color="#ffe600" />
+              <ToggleSwitch label="DESKTOP OVERLAYS" checked={draftNotifications.desktop} onChange={v => { setDraftNotifications(p => ({ ...p, desktop: v })); try { useSettingsStore.getState().updateSetting('notifications.desktopEnabled', v); } catch (_) { } }} color="#ffe600" />
+              <ToggleSwitch label="AUDIO CUES" checked={draftNotifications.sound} onChange={v => { setDraftNotifications(p => ({ ...p, sound: v })); try { useSettingsStore.getState().updateSetting('notifications.enabled', v); } catch (_) { } }} color="#ffe600" />
               <ToggleSwitch label="EMAIL DIGESTS" checked={draftNotifications.email} onChange={v => setDraftNotifications(p => ({ ...p, email: v }))} color="#ffe600" />
             </div>
           )}
