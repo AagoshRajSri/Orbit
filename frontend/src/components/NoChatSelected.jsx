@@ -6,7 +6,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { spotifyService } from "../services/spotifyService";
-import { memo, useMemo, useState, useEffect } from "react";
+import React, { memo, useMemo, useState, useEffect, useRef } from "react";
 import { ThemeMainContainer, ThemeCardWrapper } from "./welcome/WelcomeWrappers";
 import { useThemeStore } from "../store/useThemeStore";
 import { TruePastelDashboard } from "./welcome/PastelDreamBoard";
@@ -37,56 +37,6 @@ const itemVariants = {
     },
   },
 };
-
-/**
- * Micro-component to isolate playback progress updates
- */
-const MiniProgressBar = memo(() => {
-  const { positionMs, durationMs, isPlaying, seekTo } = useSpotifyStore();
-  const [animatedPos, setAnimatedPos] = useState(positionMs);
-
-  // Sync when positionMs changes from store
-  useEffect(() => {
-    setAnimatedPos(positionMs);
-  }, [positionMs]);
-
-  // Simulate smooth progress
-  useEffect(() => {
-    let interval;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setAnimatedPos(prev => Math.min(prev + 1000, durationMs));
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, durationMs]);
-
-  const progress = durationMs > 0 ? (animatedPos / durationMs) * 100 : 0;
-
-  const handleSeek = (e) => {
-    e.stopPropagation();
-    if (!durationMs) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    seekTo((percent / 100) * durationMs);
-  };
-
-  return (
-    <div 
-      className="relative z-10 h-1.5 w-full bg-[var(--chat-border)] rounded-full overflow-visible mt-4 cursor-pointer group"
-      onClick={handleSeek}
-    >
-      <div
-        className="absolute left-0 top-0 h-full bg-[#1DB954] transition-all duration-1000 ease-linear rounded-full"
-        style={{ width: `${progress}%` }}
-      />
-      <div 
-        className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full shadow border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ left: `calc(${progress}% - 5px)` }}
-      />
-    </div>
-  );
-});
 
 const StarryBackground = memo(() => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
@@ -135,20 +85,93 @@ const VolumeControl = memo(({ activeDeviceId }) => {
 });
 
 const SpotifyCard = memo(() => {
-  const navigate = useNavigate();
-  const spotifyLinked = useSpotifyStore(s => s.spotifyLinked);
-  const currentTrack = useSpotifyStore(s => s.currentTrack);
-  const isPlaying = useSpotifyStore(s => s.isPlaying);
-  const activeDevice = useSpotifyStore(s => s.activeDevice);
+  const {
+    spotifyLinked,
+    currentTrack,
+    isPlaying,
+    activeDevice,
+    pausePlayback,
+    playTrack,
+    skipNext,
+    skipPrevious,
+    seekTo,
+    positionMsAtSync,
+    lastSyncTimestamp,
+    durationMs,
+  } = useSpotifyStore();
 
-  const { pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore();
+  const navigate = useNavigate();
+  const [isResetting, setIsResetting] = useState(false);
+  const [optimisticAnchor, setOptimisticAnchor] = useState(null);
+
+  const prevTrackIdRef = useRef(null);
+  const cardRef = useRef(null);
+  const fillRef = useRef(null);
+  const glowRef = useRef(null);
+
+  useEffect(() => {
+    if (!currentTrack?.id) return;
+    if (currentTrack.id !== prevTrackIdRef.current) {
+      prevTrackIdRef.current = currentTrack.id;
+      setOptimisticAnchor(null);
+      setIsResetting(true);
+      const t = setTimeout(() => {
+        setIsResetting(false);
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [currentTrack]);
+
+  useEffect(() => {
+    let frameId;
+    const tick = () => {
+      if (isResetting || !durationMs) {
+        if (fillRef.current) fillRef.current.style.width = "0%";
+        if (glowRef.current) glowRef.current.style.left = "0%";
+        frameId = requestAnimationFrame(tick);
+        return;
+      }
+
+      let currentPos = 0;
+      if (optimisticAnchor) {
+        currentPos = optimisticAnchor.pos + (isPlaying ? Date.now() - optimisticAnchor.ts : 0);
+      } else if (lastSyncTimestamp) {
+        currentPos = positionMsAtSync + (isPlaying ? Date.now() - lastSyncTimestamp : 0);
+      } else {
+        currentPos = positionMsAtSync;
+      }
+
+      currentPos = Math.max(0, Math.min(currentPos, durationMs));
+      const p = (currentPos / durationMs) * 100;
+
+      if (fillRef.current) fillRef.current.style.width = `${p}%`;
+      if (glowRef.current) glowRef.current.style.left = `calc(${p}% - 10px)`;
+
+      frameId = requestAnimationFrame(tick);
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [isPlaying, isResetting, durationMs, positionMsAtSync, lastSyncTimestamp, optimisticAnchor]);
+
+  const handleCardSeek = (e) => {
+    if (!cardRef.current || !durationMs) return;
+    if (e.target.closest("button")) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const newPos = ratio * durationMs;
+    
+    setOptimisticAnchor({ pos: newPos, ts: Date.now() });
+    setIsResetting(false);
+    seekTo(newPos).catch(() => {});
+  };
 
   if (!spotifyLinked) {
     return (
       <motion.div variants={itemVariants} style={{ backfaceVisibility: "hidden", willChange: "transform" }} className="h-full">
-        <ThemeCardWrapper themeColorMap={{ gamer: "#00f5d4", pastel: "rgba(136,204,255,0.25)", default: "#1DB954" }} onClick={() => navigate("/spotify")} className="flex flex-col h-full min-h-[160px] p-6 relative justify-between overflow-hidden cursor-pointer">
+        <ThemeCardWrapper themeColorMap={{ gamer: "#00f5d4", pastel: "rgba(136,204,255,0.25)", default: "#1DB954" }} onClick={() => navigate("/spotify")} className="flex flex-col h-full min-h-[160px] p-6 relative justify-between overflow-hidden cursor-pointer group">
           <div className="relative z-10 flex items-center justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
               <Music className="w-6 h-6 text-[var(--bg-primary)]" />
             </div>
             <div className="size-1.5 rounded-full bg-[#1DB954]/50" />
@@ -159,7 +182,7 @@ const SpotifyCard = memo(() => {
           </div>
           <div className="mt-auto pt-4 flex items-center justify-end">
             <div className="h-px flex-1 bg-[var(--chat-border)]" />
-            <Zap className="ml-4 size-3 text-[var(--chat-muted)]" />
+            <Zap className="ml-4 size-3 text-[var(--chat-muted)] transition-transform group-hover:scale-110" />
           </div>
         </ThemeCardWrapper>
       </motion.div>
@@ -169,8 +192,8 @@ const SpotifyCard = memo(() => {
   if (!currentTrack) {
     return (
       <motion.div variants={itemVariants} style={{ backfaceVisibility: "hidden", willChange: "transform" }} className="h-full">
-        <ThemeCardWrapper themeColorMap={{ gamer: "#00f5d4", pastel: "rgba(136,204,255,0.25)", default: "#1DB954" }} onClick={() => navigate("/spotify")} className="flex flex-col items-center justify-center text-center h-full min-h-[160px]">
-          <Disc className="w-10 h-10 text-[var(--chat-muted)] animate-spin-slow mb-3" />
+        <ThemeCardWrapper themeColorMap={{ gamer: "#00f5d4", pastel: "rgba(136,204,255,0.25)", default: "#1DB954" }} onClick={() => navigate("/spotify")} className="flex flex-col items-center justify-center text-center h-full min-h-[160px] cursor-pointer group">
+          <Disc className="w-10 h-10 text-[var(--chat-muted)] animate-spin-slow mb-3 transition-colors group-hover:text-[#1DB954]" />
           <p className="text-[10px] font-black uppercase tracking-widest text-[#1DB954] opacity-90 leading-none">Ready to play</p>
           <p className="text-xs text-[var(--chat-muted)] font-bold mt-1">Select music to start sync</p>
         </ThemeCardWrapper>
@@ -179,52 +202,83 @@ const SpotifyCard = memo(() => {
   }
 
   return (
-    <motion.div variants={itemVariants} style={{ backfaceVisibility: "hidden", willChange: "transform" }} className="h-full">
-      <ThemeCardWrapper themeColorMap={{ gamer: "#00f5d4", pastel: "rgba(136,204,255,0.25)", default: "#1DB954" }} className="flex flex-col h-full min-h-[160px] relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-emerald-600/10 opacity-30 blur-3xl pointer-events-none" />
+    <motion.div variants={itemVariants} style={{ backfaceVisibility: "hidden", willChange: "transform", height: "100%" }}>
+      <div 
+        ref={cardRef} 
+        onClick={handleCardSeek} 
+        style={{ cursor: "crosshair", height: "100%", position: "relative", overflow: "hidden", borderRadius: "var(--card-radius, 1rem)" }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.transition = "transform 0.2s"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+      >
+        <ThemeCardWrapper themeColorMap={{ gamer: "#00f5d4", pastel: "rgba(136,204,255,0.25)", default: "#1DB954" }} className="flex flex-col h-full min-h-[160px] relative pointer-events-none p-0 overflow-hidden">
+          
+          <div
+            ref={fillRef}
+            style={{
+              position: "absolute", inset: 0, zIndex: 0,
+              background: `linear-gradient(90deg, rgba(29, 185, 84, 0.15) 0%, rgba(29, 185, 84, 0.05) 100%)`,
+              width: "0%", transition: isResetting ? "width 0.2s ease-out" : "none",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            ref={glowRef}
+            style={{
+              position: "absolute", top: 0, bottom: 0, zIndex: 1, width: 20,
+              left: "0%", background: `radial-gradient(ellipse at center, rgba(29, 185, 84, 0.4) 0%, transparent 100%)`,
+              transition: isResetting ? "left 0.2s ease-out" : "none", pointerEvents: "none",
+              opacity: isPlaying ? 1 : 0.3, filter: "blur(2px)"
+            }}
+          />
 
-      <div className="relative z-10 flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1DB954] text-[var(--chat-bg)]">
-            <Music className="w-3 h-3 fill-current" />
+          <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-600/5 opacity-30 blur-3xl pointer-events-none" />
+
+          {/* Card Content Wrapper (pointer-events-auto for buttons inside) */}
+          <div className="relative z-10 flex flex-col h-full p-4 pointer-events-auto" style={{ pointerEvents: "auto" }}>
+            <div className="flex items-center justify-between mb-4 pointer-events-none">
+              <div className="flex items-center gap-2">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1DB954] text-[var(--chat-bg)]">
+                  <Music className="w-3 h-3 fill-current" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--chat-text)] opacity-90">Spotify Active</span>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); navigate("/spotify"); }} className="text-[10px] font-black text-[#1DB954] hover:text-[#1ed760] transition-colors uppercase tracking-tight pointer-events-auto">Expand</button>
+            </div>
+
+            <div className="flex gap-4 mb-4 pointer-events-none">
+              <div className="h-16 w-16 rounded-xl shadow-xl overflow-hidden flex-shrink-0 border border-[var(--chat-border)]">
+                <img src={currentTrack.imageUrl} alt="" className="h-full w-full object-cover" />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-center" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
+                <h4 className="text-sm font-bold text-[var(--chat-text)] truncate leading-tight mb-1">{currentTrack.name}</h4>
+                <p className="text-[10px] font-bold text-[var(--chat-muted)] truncate">{currentTrack.artist}</p>
+              </div>
+            </div>
+
+            {/* Mini Controls */}
+            <div className="flex items-center justify-between gap-4 mt-auto">
+              <div className="flex items-center gap-3">
+                <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} className="text-[var(--chat-muted)] hover:text-[var(--chat-text)] transition-colors pointer-events-auto">
+                  <SkipBack className="w-4 h-4 fill-current" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); isPlaying ? pausePlayback() : playTrack(); }}
+                  className="h-8 w-8 rounded-full bg-[var(--chat-text)] text-[var(--color-base-100)] flex items-center justify-center hover:scale-105 active:scale-95 shadow-lg transition-all pointer-events-auto"
+                >
+                  {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); skipNext(); }} className="text-[var(--chat-muted)] hover:text-[var(--chat-text)] transition-colors pointer-events-auto">
+                  <SkipForward className="w-4 h-4 fill-current" />
+                </button>
+              </div>
+
+              <div className="pointer-events-auto">
+                <VolumeControl activeDeviceId={activeDevice?.id} />
+              </div>
+            </div>
           </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--chat-text)] opacity-90">Spotify Active</span>
-        </div>
-        <button onClick={() => navigate("/spotify")} className="text-[10px] font-black text-[#1DB954] hover:text-[#1ed760] transition-colors uppercase tracking-tight">Expand</button>
+        </ThemeCardWrapper>
       </div>
-
-      <div className="relative z-10 flex gap-4 mb-4">
-        <div className="h-16 w-16 rounded-xl shadow-xl overflow-hidden flex-shrink-0 border border-[var(--chat-border)]">
-          <img src={currentTrack.imageUrl} alt="" className="h-full w-full object-cover" />
-        </div>
-        <div className="flex-1 min-w-0 flex flex-col justify-center">
-          <h4 className="text-sm font-bold text-[var(--chat-text)] truncate leading-tight mb-1">{currentTrack.name}</h4>
-          <p className="text-[10px] font-bold text-[var(--chat-muted)] truncate">{currentTrack.artist}</p>
-        </div>
-      </div>
-
-      {/* Mini Controls */}
-      <div className="relative z-10 flex items-center justify-between gap-4 mt-auto">
-        <div className="flex items-center gap-3">
-          <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} className="text-[var(--chat-muted)] hover:text-[var(--chat-text)] transition-colors">
-            <SkipBack className="w-4 h-4 fill-current" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); isPlaying ? pausePlayback() : playTrack(); }}
-            className="h-8 w-8 rounded-full bg-[var(--chat-text)] text-[var(--color-base-100)] flex items-center justify-center hover:scale-105 active:scale-95 shadow-lg transition-all"
-          >
-            {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); skipNext(); }} className="text-[var(--chat-muted)] hover:text-[var(--chat-text)] transition-colors">
-            <SkipForward className="w-4 h-4 fill-current" />
-          </button>
-        </div>
-
-        <VolumeControl activeDeviceId={activeDevice?.id} />
-      </div>
-
-      <MiniProgressBar />
-      </ThemeCardWrapper>
     </motion.div>
   );
 });

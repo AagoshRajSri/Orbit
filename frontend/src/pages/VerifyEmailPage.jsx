@@ -228,14 +228,7 @@ const VerifyEmailPage = () => {
       >
         {submitting ? (
           <span className="flex items-center justify-center gap-3">
-            <span
-              className="inline-block w-4 h-4 rounded-full"
-              style={{
-                border: "2px solid rgba(255,255,255,0.2)",
-                borderTopColor: "white",
-                animation: "spin-glow 0.7s linear infinite",
-              }}
-            />
+            <div className="beating-loader" />
             VALIDATING...
           </span>
         ) : (

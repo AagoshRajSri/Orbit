@@ -38,18 +38,15 @@ const LoginPage = () => {
 
       {/* ── Header ─────────────────────────────── */}
       <div className="text-center flex flex-col items-center gap-2 mb-1">
-        {/* Spinning orbit icon */}
         <div className="relative flex items-center justify-center" style={{ width: "48px", height: "48px" }}>
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{ border: "1px solid rgba(139,92,246,0.4)", animation: "spin-glow 8s linear infinite" }}
-          />
+          <div className="beating-loader absolute" />
           <div style={{
             width: "34px", height: "34px",
             background: "linear-gradient(135deg, rgba(124,58,237,0.3), rgba(79,70,229,0.3))",
             border: "1px solid rgba(139,92,246,0.5)",
             borderRadius: "50%",
             display: "flex", alignItems: "center", justifyContent: "center",
+            position: "relative", zIndex: 1
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path d="M12 2L12 6M12 18L12 22M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07M2 12H6M18 12H22M4.93 19.07L7.76 16.24M16.24 7.76L19.07 4.93" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round"/>
@@ -141,14 +138,7 @@ const LoginPage = () => {
         <button type="submit" className="cyber-submit-btn" disabled={isLoggingIn}>
           {isLoggingIn ? (
             <span className="flex items-center justify-center gap-3">
-              <span
-                className="inline-block w-4 h-4 rounded-full"
-                style={{
-                  border: "2px solid rgba(255,255,255,0.2)",
-                  borderTopColor: "white",
-                  animation: "spin-glow 0.7s linear infinite",
-                }}
-              />
+              <div className="beating-loader" />
               AUTHENTICATING...
             </span>
           ) : (

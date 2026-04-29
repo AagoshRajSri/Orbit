@@ -29,8 +29,25 @@ export function CyberAuthStyles() {
       .cyber-submit-btn:active { transform: translateY(0); }
       .cyber-submit-btn:disabled { 
         background: #312e81;
-        opacity: 0.6; 
+        opacity: 0.8; 
         cursor: not-allowed; 
+      }
+
+      @keyframes heartbeat {
+        0% { transform: scale(1); opacity: 1; }
+        15% { transform: scale(1.2); opacity: 0.8; }
+        30% { transform: scale(1); opacity: 1; }
+        45% { transform: scale(1.2); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      .beating-loader {
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        animation: heartbeat 1.5s ease-in-out infinite;
       }
     `}</style>
   );

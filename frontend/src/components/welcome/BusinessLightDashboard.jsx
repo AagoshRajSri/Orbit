@@ -50,31 +50,71 @@ export function ElegantSpotifyCard({ onClick }) {
   const { 
     spotifyLinked, currentTrack, isPlaying, 
     pausePlayback, playTrack, skipNext, skipPrevious,
-    positionMs, durationMs, seekTo, setVolume
+    positionMsAtSync, lastSyncTimestamp, durationMs, seekTo, setVolume
   } = useSpotifyStore();
 
-  const [localPos, setLocalPos] = useState(positionMs);
   const [vol, setVol] = useState(70);
+  const [isResetting, setIsResetting] = useState(false);
+  const [optimisticAnchor, setOptimisticAnchor] = useState(null);
+
+  const prevTrackIdRef = useRef(null);
+  const fillRef = useRef(null);
+  const glowRef = useRef(null);
 
   useEffect(() => {
-    setLocalPos(positionMs);
-  }, [positionMs]);
-
-  useEffect(() => {
-    let t;
-    if (isPlaying && durationMs) {
-      t = setInterval(() => setLocalPos(p => Math.min(p + 1000, durationMs)), 1000);
+    if (!currentTrack?.id) return;
+    if (currentTrack.id !== prevTrackIdRef.current) {
+      prevTrackIdRef.current = currentTrack.id;
+      setOptimisticAnchor(null);
+      setIsResetting(true);
+      const t = setTimeout(() => {
+        setIsResetting(false);
+      }, 300);
+      return () => clearTimeout(t);
     }
-    return () => clearInterval(t);
-  }, [isPlaying, durationMs]);
+  }, [currentTrack]);
 
-  const progress = durationMs ? (localPos / durationMs) * 100 : 0;
+  useEffect(() => {
+    let frameId;
+    const tick = () => {
+      if (isResetting || !durationMs) {
+        if (fillRef.current) fillRef.current.style.width = "0%";
+        if (glowRef.current) glowRef.current.style.left = "0%";
+        frameId = requestAnimationFrame(tick);
+        return;
+      }
+
+      let currentPos = 0;
+      if (optimisticAnchor) {
+        currentPos = optimisticAnchor.pos + (isPlaying ? Date.now() - optimisticAnchor.ts : 0);
+      } else if (lastSyncTimestamp) {
+        currentPos = positionMsAtSync + (isPlaying ? Date.now() - lastSyncTimestamp : 0);
+      } else {
+        currentPos = positionMsAtSync;
+      }
+
+      currentPos = Math.max(0, Math.min(currentPos, durationMs));
+      const p = (currentPos / durationMs) * 100;
+
+      if (fillRef.current) fillRef.current.style.width = `${p}%`;
+      if (glowRef.current) glowRef.current.style.left = `${p}%`;
+
+      frameId = requestAnimationFrame(tick);
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [isPlaying, isResetting, durationMs, positionMsAtSync, lastSyncTimestamp, optimisticAnchor]);
 
   const handleSeek = (e) => {
     e.stopPropagation();
+    if (!durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    seekTo((percent / 100) * durationMs);
+    const newPos = (percent / 100) * durationMs;
+    setOptimisticAnchor({ pos: newPos, ts: Date.now() });
+    setIsResetting(false);
+    seekTo(newPos).catch(() => {});
   };
 
   const handleVol = (e) => {
@@ -109,10 +149,13 @@ export function ElegantSpotifyCard({ onClick }) {
 
   const handleCardClick = (e) => {
     // Don't seek if a button was clicked
-    if (e.target.closest("button")) return;
+    if (e.target.closest("button") || !durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    if (durationMs) seekTo((percent / 100) * durationMs);
+    const newPos = (percent / 100) * durationMs;
+    setOptimisticAnchor({ pos: newPos, ts: Date.now() });
+    setIsResetting(false);
+    seekTo(newPos).catch(() => {});
   };
 
   return (
@@ -123,12 +166,13 @@ export function ElegantSpotifyCard({ onClick }) {
     >
       {/* ── CARD-WIDE PROGRESS FILL (z=0, behind all content) ── */}
       <div
+        ref={fillRef}
         style={{
           position: "absolute",
           top: 0, left: 0, bottom: 0,
-          width: `${progress}%`,
+          width: "0%",
           background: "linear-gradient(90deg, rgba(29,185,84,0.14) 0%, rgba(29,185,84,0.07) 100%)",
-          transition: "width 1s linear",
+          transition: isResetting ? "width 0.2s ease-out" : "none",
           zIndex: 0,
           borderRadius: "inherit",
           pointerEvents: "none",
@@ -136,13 +180,14 @@ export function ElegantSpotifyCard({ onClick }) {
       />
       {/* Leading-edge glow line */}
       <div
+        ref={glowRef}
         style={{
           position: "absolute",
           top: 0, bottom: 0,
-          left: `${progress}%`,
+          left: "0%",
           width: 2,
           background: "rgba(29,185,84,0.5)",
-          transition: "left 1s linear",
+          transition: isResetting ? "left 0.2s ease-out" : "none",
           zIndex: 1,
           pointerEvents: "none",
           filter: "blur(3px)",

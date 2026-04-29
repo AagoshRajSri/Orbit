@@ -12,6 +12,8 @@ export const useSpotifyStore = create((set, get) => ({
   currentTrack: null,
   isPlaying: false,
   positionMs: 0,
+  positionMsAtSync: 0,
+  lastSyncTimestamp: null,
   durationMs: 0,
   isShuffle: false,
   repeatMode: 0, // 0: off, 1: context, 2: track
@@ -56,6 +58,8 @@ export const useSpotifyStore = create((set, get) => ({
     set({
       isPlaying: state.isPlaying,
       positionMs: state.positionMs,
+      positionMsAtSync: state.positionMs,
+      lastSyncTimestamp: Date.now(),
       durationMs: state.durationMs,
       isShuffle: state.isShuffle ?? get().isShuffle,
       repeatMode: state.repeatMode ?? get().repeatMode,
@@ -105,7 +109,7 @@ export const useSpotifyStore = create((set, get) => ({
     const { activeDevice } = get();
     if (!activeDevice) throw new Error("No active device");
 
-    set({ isPlaying: true, _lastLocalAction: Date.now() });
+    set({ isPlaying: true, positionMsAtSync: get().positionMs, lastSyncTimestamp: Date.now(), _lastLocalAction: Date.now() });
 
     try {
       await spotifyService.play(activeDevice.id, context);
@@ -119,7 +123,7 @@ export const useSpotifyStore = create((set, get) => ({
     const { activeDevice } = get();
     if (!activeDevice) throw new Error("No active device");
 
-    set({ isPlaying: false, _lastLocalAction: Date.now() });
+    set({ isPlaying: false, positionMsAtSync: get().positionMs, lastSyncTimestamp: Date.now(), _lastLocalAction: Date.now() });
 
     try {
       await spotifyService.pause(activeDevice.id);
@@ -161,7 +165,7 @@ export const useSpotifyStore = create((set, get) => ({
 
     try {
       await spotifyService.seek(activeDevice.id, positionMs);
-      set({ positionMs, _lastLocalAction: Date.now() });
+      set({ positionMs, positionMsAtSync: positionMs, lastSyncTimestamp: Date.now(), _lastLocalAction: Date.now() });
     } catch (error) {
       set({ error: error.message });
       throw error;
@@ -313,6 +317,8 @@ export const useSpotifyStore = create((set, get) => ({
           currentTrack: track,
           isPlaying: state.is_playing,
           positionMs: state.progress_ms,
+          positionMsAtSync: state.progress_ms,
+          lastSyncTimestamp: Date.now(),
           durationMs: state.item?.duration_ms || 0,
           isShuffle: state.shuffle_state,
           repeatMode: state.repeat_state === "track" ? 2 : state.repeat_state === "context" ? 1 : 0,
@@ -435,6 +441,8 @@ export const useSpotifyStore = create((set, get) => ({
         currentTrack: data.currentTrack,
         isPlaying: data.isPlaying,
         positionMs: adjustedPos,
+        positionMsAtSync: adjustedPos,
+        lastSyncTimestamp: Date.now(),
         syncVersion: data.syncVersion,
         syncStatus: "synced",
       });
@@ -444,6 +452,8 @@ export const useSpotifyStore = create((set, get) => ({
       set({
         isPlaying: data.isPlaying,
         positionMs: data.positionMs,
+        positionMsAtSync: data.positionMs,
+        lastSyncTimestamp: Date.now(),
         currentTrack: data.currentTrack,
         syncVersion: data.syncVersion,
         syncStatus: "synced",

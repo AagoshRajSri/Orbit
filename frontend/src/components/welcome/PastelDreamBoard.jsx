@@ -163,30 +163,69 @@ export function TruePastelSpotifyCard({ cardRef, onClick }) {
   const { 
     spotifyLinked, currentTrack, isPlaying, 
     pausePlayback, playTrack, skipNext, skipPrevious,
-    positionMs, durationMs, seekTo
+    positionMsAtSync, lastSyncTimestamp, durationMs, seekTo
   } = useSpotifyStore();
 
-  const [localPos, setLocalPos] = useState(positionMs);
+  const [isResetting, setIsResetting] = useState(false);
+  const [optimisticAnchor, setOptimisticAnchor] = useState(null);
+
+  const prevTrackIdRef = useRef(null);
+  const fillRef = useRef(null);
+  const glowRef = useRef(null);
 
   useEffect(() => {
-    setLocalPos(positionMs);
-  }, [positionMs]);
-
-  useEffect(() => {
-    let t;
-    if (isPlaying && durationMs) {
-      t = setInterval(() => setLocalPos(p => Math.min(p + 1000, durationMs)), 1000);
+    if (!currentTrack?.id) return;
+    if (currentTrack.id !== prevTrackIdRef.current) {
+      prevTrackIdRef.current = currentTrack.id;
+      setOptimisticAnchor(null);
+      setIsResetting(true);
+      const t = setTimeout(() => {
+        setIsResetting(false);
+      }, 300);
+      return () => clearTimeout(t);
     }
-    return () => clearInterval(t);
-  }, [isPlaying, durationMs]);
+  }, [currentTrack]);
 
-  const prog = durationMs ? (localPos / durationMs) * 100 : 0;
+  useEffect(() => {
+    let frameId;
+    const tick = () => {
+      if (isResetting || !durationMs) {
+        if (fillRef.current) fillRef.current.style.width = "0%";
+        if (glowRef.current) glowRef.current.style.left = "0%";
+        frameId = requestAnimationFrame(tick);
+        return;
+      }
+
+      let currentPos = 0;
+      if (optimisticAnchor) {
+        currentPos = optimisticAnchor.pos + (isPlaying ? Date.now() - optimisticAnchor.ts : 0);
+      } else if (lastSyncTimestamp) {
+        currentPos = positionMsAtSync + (isPlaying ? Date.now() - lastSyncTimestamp : 0);
+      } else {
+        currentPos = positionMsAtSync;
+      }
+
+      currentPos = Math.max(0, Math.min(currentPos, durationMs));
+      const p = (currentPos / durationMs) * 100;
+
+      if (fillRef.current) fillRef.current.style.width = `${p}%`;
+      if (glowRef.current) glowRef.current.style.left = `calc(${p}% - 7.5px)`;
+
+      frameId = requestAnimationFrame(tick);
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [isPlaying, isResetting, durationMs, positionMsAtSync, lastSyncTimestamp, optimisticAnchor]);
 
   const handleSeek = (e) => {
-    e.stopPropagation();
+    if (e.target.closest("button") || !durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    seekTo((percent / 100) * durationMs);
+    const newPos = (percent / 100) * durationMs;
+    setOptimisticAnchor({ pos: newPos, ts: Date.now() });
+    setIsResetting(false);
+    seekTo(newPos).catch(() => {});
   };
 
   const handlePlayPause = (e) => {
@@ -218,7 +257,7 @@ export function TruePastelSpotifyCard({ cardRef, onClick }) {
   }
 
   return (
-    <div ref={cardRef} onClick={onClick} style={{
+    <div ref={cardRef} onClick={handleSeek} style={{
       background:"linear-gradient(135deg, #ffd6f0 0%, #f0d8ff 100%)",
       border:"2px solid rgba(255,180,220,0.8)", borderRadius:24,
       backdropFilter:"blur(16px)", padding:"18px 20px",
@@ -226,11 +265,32 @@ export function TruePastelSpotifyCard({ cardRef, onClick }) {
       boxShadow:"0 8px 32px rgba(255,150,200,0.25), inset 0 0 15px rgba(255,255,255,0.6)",
       cursor: "pointer",
       transition: "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.25), box-shadow 0.3s",
-      height: "100%", minHeight: 140
+      height: "100%", minHeight: 140,
+      overflow: "hidden"
     }}
     onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.025) translateY(-5px)"; e.currentTarget.style.boxShadow="0 15px 45px rgba(255,100,180,0.4), inset 0 0 20px rgba(255,255,255,1)"}}
     onMouseLeave={e=>{e.currentTarget.style.transform="scale(1) translateY(0)"; e.currentTarget.style.boxShadow="0 8px 32px rgba(255,150,200,0.25), inset 0 0 15px rgba(255,255,255,0.6)"}}
     >
+    {/* Background Progress Fill */}
+    <div
+      ref={fillRef}
+      style={{
+        position: "absolute", inset: 0, zIndex: 0,
+        background: "linear-gradient(90deg, rgba(255, 71, 156, 0.25) 0%, rgba(232, 96, 255, 0.1) 100%)",
+        width: "0%", transition: isResetting ? "width 0.2s ease-out" : "none", pointerEvents: "none",
+        borderRadius: "inherit"
+      }}
+    />
+    <div
+      ref={glowRef}
+      style={{
+        position: "absolute", top: 0, bottom: 0, zIndex: 0, width: 15,
+        left: "0%", background: "radial-gradient(ellipse at center, rgba(255, 71, 156, 0.5) 0%, transparent 100%)",
+        transition: isResetting ? "left 0.2s ease-out" : "none", pointerEvents: "none", opacity: isPlaying ? 1 : 0.3
+      }}
+    />
+
+    <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%", gap: 12 }}>
       <CuteBadge label="vibing" color="linear-gradient(90deg,#ff479c,#ff85cc)" />
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -260,7 +320,7 @@ export function TruePastelSpotifyCard({ cardRef, onClick }) {
           <div style={{ fontSize:12, color:"#ff85cc", marginTop:4, letterSpacing:4, animation: isPlaying ? "pulse 2s infinite" : "none" }}>♡ ♡ ♡ ♡</div>
         </div>
       </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:10, flex: 1, justifyContent: "flex-end" }}>
         <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:24 }}>
           <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#ff85cc", fontSize:18, padding:0, lineHeight:1, transition: "transform 0.2s" }} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.2)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>⏮</button>
           <button onClick={handlePlayPause} style={{
@@ -275,16 +335,7 @@ export function TruePastelSpotifyCard({ cardRef, onClick }) {
           >{isPlaying ? "⏸" : "▶"}</button>
           <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#ff85cc", fontSize:18, padding:0, lineHeight:1, transition: "transform 0.2s" }} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.2)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>⏭</button>
         </div>
-        {/* progress bar */}
-        <div onClick={handleSeek} style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }}>
-          <span style={{ fontSize:14 }}>💖</span>
-          <div style={{ flex:1, height:8, borderRadius:4, background:"rgba(255,255,255,0.4)", position:"relative", overflow:"hidden", border: "1px solid rgba(255,180,220,0.4)" }}>
-            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${prog}%`, background:"linear-gradient(90deg, #ff479c, #e860ff)", borderRadius:4, transition:"width 1s linear" }}>
-              <div style={{ position:"absolute", right:-4, top:0, bottom:0, width:8, background:"white", filter:"blur(4px)" }} />
-            </div>
-          </div>
-          <span style={{ fontSize:10, fontWeight:900, color:"#ff479c" }}>{Math.floor(prog)}%</span>
-        </div>
+      </div>
       </div>
     </div>
   );

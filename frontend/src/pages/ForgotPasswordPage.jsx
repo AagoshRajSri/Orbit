@@ -152,7 +152,7 @@ const ForgotPasswordPage = () => {
             onBlur={() => setFocused(null)}
           />
           <button type="submit" className="cyber-submit-btn" disabled={loading}>
-            {loading ? <span className="flex items-center justify-center gap-3"><span className="inline-block w-4 h-4 rounded-full" style={{ border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "white", animation: "spin-glow 0.7s linear infinite" }} /> SCANNING...</span>
+            {loading ? <span className="flex items-center justify-center gap-3"><div className="beating-loader" /> SCANNING...</span>
               : <span className="relative z-10">SEND_OTP //</span>}
           </button>
         </form>
@@ -186,7 +186,7 @@ const ForgotPasswordPage = () => {
           )}
 
           <button type="submit" className="cyber-submit-btn" disabled={loading}>
-            {loading ? <span className="flex items-center justify-center gap-3"><span className="inline-block w-4 h-4 rounded-full" style={{ border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "white", animation: "spin-glow 0.7s linear infinite" }} /> VERIFYING...</span>
+            {loading ? <span className="flex items-center justify-center gap-3"><div className="beating-loader" /> VERIFYING...</span>
               : <span className="relative z-10">VERIFY_TOKEN //</span>}
           </button>
 
@@ -235,7 +235,7 @@ const ForgotPasswordPage = () => {
           </MorphInput>
 
           <button type="submit" className="cyber-submit-btn" disabled={loading}>
-            {loading ? <span className="flex items-center justify-center gap-3"><span className="inline-block w-4 h-4 rounded-full" style={{ border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "white", animation: "spin-glow 0.7s linear infinite" }} /> RESETTING...</span>
+            {loading ? <span className="flex items-center justify-center gap-3"><div className="beating-loader" /> RESETTING...</span>
               : <span className="relative z-10">RESET_CIPHER //</span>}
           </button>
         </form>
