@@ -53,7 +53,4 @@ export const useThemeStore = create((set, get) => ({
     });
   },
 
-  isConfirming: false,
-  pendingTheme: null,
-  setIsConfirming: (val, theme = null) => set({ isConfirming: val, pendingTheme: theme }),
 }));

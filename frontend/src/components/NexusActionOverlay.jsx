@@ -66,7 +66,10 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
       inputText: "#9b3d7a",
       btnBg: "linear-gradient(135deg, #e87bbf, #c070e0)",
       btnText: "#fff",
-      closeColor: "rgba(192,80,144,0.5)",
+      closeColor: "#c050a0",
+      closeBg: "rgba(232,123,191,0.18)",
+      closeBorder: "rgba(232,123,191,0.85)",
+      closeGlow: "0 0 8px rgba(232,123,191,0.7), 0 0 18px rgba(232,123,191,0.35)",
       fontFamily: "'Nunito', 'Inter', sans-serif",
       panelBg: "linear-gradient(135deg, rgba(255,192,220,0.15), rgba(200,160,255,0.12))",
       glyph: "✨",
@@ -85,7 +88,10 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
       inputText: "#E8C990",
       btnBg: "#C6A06E",
       btnText: "#000",
-      closeColor: "rgba(198,160,110,0.4)",
+      closeColor: "#E8C990",
+      closeBg: "rgba(198,160,110,0.14)",
+      closeBorder: "rgba(198,160,110,0.85)",
+      closeGlow: "0 0 8px rgba(198,160,110,0.65), 0 0 18px rgba(198,160,110,0.3)",
       fontFamily: "'Rajdhani', 'Orbitron', sans-serif",
       panelBg: "rgba(198,160,110,0.04)",
       glyph: "◈",
@@ -104,7 +110,10 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
       inputText: "#F0E6D3",
       btnBg: "linear-gradient(135deg, #8B0000, #DC143C)",
       btnText: "#F0E6D3",
-      closeColor: "rgba(220,20,60,0.4)",
+      closeColor: "#FF4060",
+      closeBg: "rgba(139,0,0,0.22)",
+      closeBorder: "rgba(220,20,60,0.9)",
+      closeGlow: "0 0 8px rgba(220,20,60,0.75), 0 0 20px rgba(139,0,0,0.45)",
       fontFamily: "'Cinzel', serif",
       panelBg: "rgba(139,0,0,0.05)",
       glyph: "🩸",
@@ -123,7 +132,10 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
       inputText: "#fff",
       btnBg: "linear-gradient(90deg, #b026ff, #00fff5)",
       btnText: "#000",
-      closeColor: "rgba(0,255,245,0.35)",
+      closeColor: "#00fff5",
+      closeBg: "rgba(0,255,245,0.1)",
+      closeBorder: "rgba(0,255,245,0.9)",
+      closeGlow: "0 0 8px rgba(0,255,245,0.8), 0 0 20px rgba(176,38,255,0.4)",
       fontFamily: "'Share Tech Mono', monospace",
       panelBg: "rgba(176,38,255,0.04)",
       glyph: "◉",
@@ -142,7 +154,10 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
       inputText: "#fff",
       btnBg: "#00f5d4",
       btnText: "#000",
-      closeColor: "rgba(0,245,212,0.35)",
+      closeColor: "#00f5d4",
+      closeBg: "rgba(0,245,212,0.1)",
+      closeBorder: "rgba(0,245,212,0.9)",
+      closeGlow: "0 0 8px rgba(0,245,212,0.8), 0 0 20px rgba(255,45,120,0.3)",
       fontFamily: "'Orbitron', 'Rajdhani', monospace",
       panelBg: "rgba(0,245,212,0.04)",
       glyph: "⚡",
@@ -161,7 +176,10 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
       inputText: "#5c4a2a",
       btnBg: "#b08d57",
       btnText: "#fff",
-      closeColor: "rgba(176,141,87,0.4)",
+      closeColor: "#7a5c30",
+      closeBg: "rgba(176,141,87,0.18)",
+      closeBorder: "rgba(176,141,87,0.85)",
+      closeGlow: "0 0 6px rgba(176,141,87,0.6), 0 0 14px rgba(176,141,87,0.3)",
       fontFamily: "'Georgia', serif",
       panelBg: "rgba(176,141,87,0.05)",
       glyph: "✦",
@@ -181,7 +199,10 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
       inputText: "var(--chat-text, #e2e8f0)",
       btnBg: "var(--chat-primary, #6366f1)",
       btnText: "#fff",
-      closeColor: "rgba(226,232,240,0.4)",
+      closeColor: "#a5b4fc",
+      closeBg: "rgba(99,102,241,0.14)",
+      closeBorder: "rgba(99,102,241,0.85)",
+      closeGlow: "0 0 8px rgba(99,102,241,0.6), 0 0 18px rgba(99,102,241,0.25)",
       fontFamily: "'Inter', sans-serif",
       panelBg: "rgba(99,102,241,0.04)",
       glyph: "◈",
@@ -197,7 +218,7 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}>
         <div style={{ position: "relative", width: "100%", maxWidth: 440, background: tk.bg, border: `1px solid ${tk.accentBorder}`, borderRadius: tk.decorBorderRadius, padding: 32, fontFamily: tk.fontFamily, boxShadow: `0 20px 80px rgba(0,0,0,0.5)` }}>
-          <button onClick={() => { play("click"); onClose(); }} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: tk.closeColor, fontSize: 18 }}>✕</button>
+          <button onClick={() => { play("click"); onClose(); }} style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: "50%", background: tk.closeBg, border: `2px solid ${tk.closeBorder}`, boxShadow: tk.closeGlow, color: tk.closeColor, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, transition: "transform 0.15s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.18)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>✕</button>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
             <div style={{ width: 60, height: 60, borderRadius: "50%", background: tk.accentSoft, border: `1px solid ${tk.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24, color: tk.accent }}>{mode === "create" ? <Wand2 size={24} /> : <Hash size={24} />}</div>
             <h2 style={{ fontSize: 22, color: tk.text, margin: "0 0 8px" }}>{mode === "create" ? "Establish Nexus" : "Link to Nexus"}</h2>
@@ -275,9 +296,11 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
         <button
           className="nao-close"
           onClick={() => { play("click"); onClose(); }}
-          style={{ position: "absolute", top: 20, right: 20, width: 32, height: 32, borderRadius: "50%", background: tk.accentSoft, border: `1px solid ${tk.accentBorder}`, color: tk.closeColor, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, opacity: 0.7, transition: "opacity 0.2s" }}
+          style={{ position: "absolute", top: 20, right: 20, width: 36, height: 36, borderRadius: "50%", background: tk.closeBg, border: `2px solid ${tk.closeBorder}`, boxShadow: tk.closeGlow, color: tk.closeColor, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, transition: "transform 0.15s, box-shadow 0.2s" }}
+          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.18)"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
         >
-          <X size={14} />
+          <X size={15} />
         </button>
 
         {/* Section label */}

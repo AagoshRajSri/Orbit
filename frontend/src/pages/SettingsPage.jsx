@@ -104,7 +104,7 @@ const ToggleRow = ({
 const SettingsPage = () => {
   const navigate = useNavigate();
   const authUser = useAuthStore((s) => s.authUser);
-  const { theme: currentTheme, setTheme, setIsConfirming } = useThemeStore();
+  const { theme: currentTheme, setTheme } = useThemeStore();
 
   const navItems = useMemo(
     () => [
@@ -314,11 +314,6 @@ const SettingsPage = () => {
 
   const handleSave = async (forceTheme) => {
     const finalTheme = forceTheme || draftTheme;
-    // If theme changed and not forced, show confirmation
-    if (!forceTheme && finalTheme !== currentTheme) {
-      setIsConfirming(true, finalTheme);
-      return;
-    }
 
     // Persist draft values locally (theme is applied globally via the theme store).
     try {
