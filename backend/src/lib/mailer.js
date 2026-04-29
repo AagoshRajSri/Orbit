@@ -86,7 +86,7 @@ function buildEmailPayload(to, otp, type = "verification") {
     : `${otp} is your Orbit verification code`;
 
   return {
-    from: process.env.SMTP_FROM || `"Orbit" <${process.env.SMTP_USER || "noreply@orbit.com"}>`,
+    from: process.env.SMTP_USER || process.env.EMAIL || "noreply@orbit.com",
     to,
     subject,
     text: [
