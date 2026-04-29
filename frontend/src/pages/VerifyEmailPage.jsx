@@ -14,7 +14,7 @@ const VerifyEmailPage = () => {
   const [resending, setResending] = useState(false);
   const refs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
 
-  const { verifyEmail, resendVerification, authUser } = useAuthStore();
+  const { verifyEmail, resendVerification, authUser, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -279,6 +279,31 @@ const VerifyEmailPage = () => {
           : "RESEND_SIGIL_CODE →"
         }
       </button>
+
+      {/* ── Return to Login ───────────────────────── */}
+      <div className="text-center mt-2">
+        <button
+          onClick={async () => {
+            await logout();
+            navigate("/login");
+          }}
+          style={{
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "9px",
+            letterSpacing: "0.15em",
+            color: "rgba(255,255,255,0.25)",
+            background: "none",
+            border: "none",
+            padding: "4px 8px",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = "rgba(167,139,250,0.8)"}
+          onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
+        >
+          ← BACK_TO_LOGIN / LOGOUT
+        </button>
+      </div>
 
       {/* ── Footer ─────────────────────────────── */}
       <div className="text-center pt-2">
