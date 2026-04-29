@@ -649,6 +649,7 @@ const AppContent = () => {
             )}
           </main>
           {authUser && !isAuthPage && <NowPlayingWidget />}
+          <GlobalMiniPlayer />
         </>
       )}
     </div>

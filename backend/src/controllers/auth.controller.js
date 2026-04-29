@@ -92,15 +92,14 @@ export const signup = async (req, res) => {
     const otp = generateOTP();
     await storeOTP(validation.data.email, otp);
     
-    // Call the mailer to send a real email
-    const mailResult = await sendOTP(validation.data.email, otp);
-    if (!mailResult.success) {
-      console.error("[Signup] Failed to send verification email:", mailResult.error);
-      // We still allow signup to proceed so the user isn't stuck, 
-      // but they will see a "Resend" option on the verification page.
-    }
-    
-    console.log(`[Email Verification] Sent to ${validation.data.email}: ${otp}`);
+    // Background the email dispatch to prevent blocking the UI response (6-8s delay reduction)
+    sendOTP(validation.data.email, otp).then(mailResult => {
+      if (!mailResult.success) {
+        console.warn(`[Signup] Verification email failed for ${validation.data.email}: ${mailResult.error}. OTP: ${otp}`);
+      } else {
+        console.log(`[Signup] Verification email sent to ${validation.data.email}`);
+      }
+    }).catch(err => console.error("[Signup] Email error:", err.message));
 
     let tokens;
     try {
@@ -127,8 +126,7 @@ export const signup = async (req, res) => {
         updatedAt: newUser.updatedAt,
         isEmailVerified: newUser.isEmailVerified,
         authToken: tokens.accessToken,
-        sessionId: tokens.sessionId,
-        ...(mailResult.previewUrl && { previewUrl: mailResult.previewUrl })
+        sessionId: tokens.sessionId
       },
       message: "User registered successfully",
     });
@@ -546,18 +544,14 @@ export const forgotPassword = async (req, res) => {
     const otp = generateOTP();
     await storeOTP(email, otp);
 
-    // Call the mailer to send a real email
-    const mailResult = await sendOTP(email, otp, "reset");
-    if (!mailResult.success) {
-      console.warn(`[Forgot Password] SMTP failed (${mailResult.error}). OTP for ${email}: ${otp}`);
-    } else {
-      console.log(`[Forgot Password] Sent to ${email}`);
-    }
+    // Background the email dispatch
+    sendOTP(email, otp, "reset").then(res => {
+      if (!res.success) console.warn(`[Forgot Password] Email failed: ${res.error}. OTP: ${otp}`);
+    }).catch(err => console.error("[Forgot Password] Email error:", err.message));
 
     res.status(200).json({
       success: true,
-      message: "OTP sent to your email",
-      ...(mailResult.previewUrl && { previewUrl: mailResult.previewUrl })
+      message: "OTP sent to your email"
     });
   } catch (error) {
     console.error("Error in forgotPassword controller:", error);
@@ -708,20 +702,14 @@ export const resendVerificationEmail = async (req, res) => {
     const otp = generateOTP();
     await storeOTP(email, otp);
     
-    // Attempt to send real email; fall back gracefully if SMTP is misconfigured
-    const mailResult = await sendOTP(email, otp);
-    if (!mailResult.success) {
-      // Log OTP to server console as fallback so admin can see it
-      console.warn(`[Email Verification] SMTP failed (${mailResult.error}). OTP for ${email}: ${otp}`);
-    } else {
-      console.log(`[Email Verification] Sent to ${email}`);
-    }
+    // Background dispatch
+    sendOTP(email, otp).then(res => {
+      if (!res.success) console.warn(`[Email Verification] Resend failed: ${res.error}. OTP: ${otp}`);
+    }).catch(err => console.error("[Email Verification] Resend error:", err.message));
 
     res.status(200).json({ 
       success: true, 
-      message: "Verification code sent",
-      // In development, expose preview URL if using Ethereal
-      ...(mailResult.previewUrl && { previewUrl: mailResult.previewUrl })
+      message: "Verification code sent"
     });
   } catch (error) {
     console.error("Error in resendVerificationEmail:", error);
@@ -818,7 +806,11 @@ export const constellationSignup = async (req, res) => {
     // Generate and store email verification OTP
     const otp = generateOTP();
     await storeOTP(email, otp);
-    console.log(`[Email Verification] Sent to ${email}: ${otp}`);
+    
+    // Background dispatch constellation verification email
+    sendOTP(email, otp).then(res => {
+      if (!res.success) console.warn(`[Constellation Signup] Email failed: ${res.error}. OTP: ${otp}`);
+    }).catch(err => console.error("[Constellation Signup] Email error:", err.message));
 
     // ── Hash pattern with Argon2id + salt + pepper ───────────────────────
     const salt = generateSalt();
