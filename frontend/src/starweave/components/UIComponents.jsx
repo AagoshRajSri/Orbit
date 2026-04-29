@@ -558,7 +558,7 @@ export function CommitButton({ onClick }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        position: 'fixed', bottom: 40, left: '50%', transform: 'translateX(-50%)',
+        position: 'fixed', bottom: 40, left: '50%',
         background: 'none', border: 'none', cursor: 'pointer',
         zIndex: 100, pointerEvents: 'auto',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
