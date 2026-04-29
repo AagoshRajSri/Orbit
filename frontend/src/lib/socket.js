@@ -30,9 +30,12 @@ export const getSocket = () => {
     auth: { token },
     parser: msgpackParser,
     withCredentials: true,
-    transports: ["websocket", "polling"],
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
+    // Prioritizing 'polling' first ensures the connection is established 
+    // even if Render's WebSocket upgrade is slow or being probed.
+    transports: ["polling", "websocket"],
+    reconnectionAttempts: 10, // Increase attempts for waking up free-tier servers
+    reconnectionDelay: 2000,
+    timeout: 20000, // 20s handshake timeout for slow cold-starts
   });
 
   socket.on("connect", () => {
