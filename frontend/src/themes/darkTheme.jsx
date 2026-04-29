@@ -15,7 +15,6 @@ import batLogo from "../bat.svg";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
-import { API_URL } from "../config";
 
 // ── Vampire-Orbit UI ──────────────────────────────────────────────
 // Fonts loaded via @import inside the style tag below

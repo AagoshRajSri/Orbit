@@ -12,7 +12,6 @@ import { useChatStore } from "../store/useChatStore";
 import { useSettingsStore } from "../store/useSettingsStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 import { Music } from "lucide-react";
-import { API_URL } from "../config";
 import RocketAnimation from "../components/RocketAnimation";
 
 
