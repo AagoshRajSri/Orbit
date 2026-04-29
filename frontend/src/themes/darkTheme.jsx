@@ -388,8 +388,9 @@ const style = `
   }
 
   .main-content-flow {
-    padding: 10px 48px 20px;
+    padding: 10px 20px 12px;
     flex: 1; display: flex; flex-direction: column;
+    min-height: 0;
   }
 
   /* ── Nexus Chat Theme Overrides ── */
@@ -520,11 +521,11 @@ const style = `
   .cards-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: auto;
-    gap: 16px;
-    max-width: 1250px;
-    width: 95%;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
     flex: 1;
+    min-height: 0;
   }
 
   .card {
@@ -532,12 +533,13 @@ const style = `
     border: 1px solid rgba(139,0,0,0.25);
     border-radius: 20px;
     padding: 20px;
-    min-height: 150px;
+    height: 100%;
     cursor: pointer; position: relative; overflow: hidden;
     transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
     display: flex;
     flex-direction: column;
     justify-content: center;
+    box-sizing: border-box;
   }
 
   .card::before {

@@ -854,85 +854,71 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                 <UniversalChatContainer key={selectedUser?._id} type="dm" />
               </div>
             ) : (
-              <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 28, position: "relative" }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowX: "hidden", padding: "12px 20px 10px", position: "relative", minHeight: 0, overflow: "hidden" }}>
                 <StarField count={40} />
                 <div className="oa-nebula" style={{ width: 420, height: 420, background: "rgba(198,160,110,.04)", top: "18%", left: "28%", animationDelay: "0s" }} />
                 <div className="oa-nebula" style={{ width: 300, height: 300, background: "rgba(78,205,196,.035)", top: "58%", right: "12%", animationDelay: "-5s" }} />
                 <div className="oa-nebula" style={{ width: 240, height: 240, background: "rgba(155,89,182,.03)", top: "8%", right: "38%", animationDelay: "-10s" }} />
-                <div style={{ maxWidth: 1100 }}>
 
                 {/* Header */}
-                <div style={{ marginBottom: 28, position: "relative", zIndex: 5, ...fade(.1) }}>
-                  <div className="oa-mono" style={{ fontSize: 10, color: "rgba(78,205,196,.65)", letterSpacing: 3, marginBottom: 6, display: "flex", alignItems: "center", gap: 9 }}>
+                <div style={{ marginBottom: 10, position: "relative", zIndex: 5, flexShrink: 0, ...fade(.1) }}>
+                  <div className="oa-mono" style={{ fontSize: 10, color: "rgba(78,205,196,.65)", letterSpacing: 3, marginBottom: 4, display: "flex", alignItems: "center", gap: 9 }}>
                     <div style={{ width: 6, height: 6, background: "#00FF88", borderRadius: "50%", boxShadow: "0 0 8px #00FF88" }} />
                     STATUS: ONLINE — GALAXY ENGINE ACTIVE
                   </div>
-                  <h1 className="oa-shimmer-text oa-orbitron" style={{ fontSize: 32, fontWeight: 900, letterSpacing: 5, marginBottom: 6 }}>WELCOME TO ORBIT</h1>
-                  <p className="oa-raj" style={{ fontSize: 13, color: "rgba(198,160,110,.45)", letterSpacing: 3, margin: 0, textTransform: "uppercase" }}>SECURE ACCESS TERMINAL</p>
+                  <h1 className="oa-shimmer-text oa-orbitron" style={{ fontSize: 28, fontWeight: 900, letterSpacing: 5, marginBottom: 4 }}>WELCOME TO ORBIT</h1>
+                  <p className="oa-raj" style={{ fontSize: 12, color: "rgba(198,160,110,.45)", letterSpacing: 3, margin: 0, textTransform: "uppercase" }}>SECURE ACCESS TERMINAL</p>
                 </div>
 
-                {/* Card Configuration - Change these to update everything at once */}
-                {(() => {
-                  const GRID_MAX_WIDTH = 1600;  // Expanded for luxury feel
-                  const CARD_HEIGHT_VH = "31vh"; // Reduced height to fit bottom status bar
-
-                  return (
-                    <div
-                      className="oa-main-grid"
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(2, 1fr)",
-                        gap: "1.5vh", // Slightly tighter gaps
-                        width: "100%",
-                        maxWidth: GRID_MAX_WIDTH,
-                        position: "relative",
-                        zIndex: 5,
-                        marginTop: "1vh"
-                      }}
-                    >
-                      {/* Spotify Sync */}
-                      <div style={{ ...fade(.2), height: CARD_HEIGHT_VH, display: "flex" }}>
-                        <SpotifyCard />
-                      </div>
-
-                      {/* Direct Mission */}
-                      <div style={{ ...fade(.3), height: CARD_HEIGHT_VH, display: "flex" }}>
-                        <ActionCard
-                          icon="💬"
-                          title="DIRECT MISSION"
-                          subtitle="Initiate secure peer-to-peer frequencies with elite contacts"
-                          color="#4ECDC4"
-                          onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))}
-                        />
-                      </div>
-
-                      {/* Priority Alerts */}
-                      <div style={{ ...fade(.4), height: CARD_HEIGHT_VH, display: "flex" }}>
-                        <ActionCard
-                          icon="🔔"
-                          title="PRIORITY ALERTS"
-                          subtitle="Real-time synchronization with your professional orbit"
-                          color="#C6A06E"
-                          badge={3}
-                        />
-                      </div>
-
-                      {/* Atelier */}
-                      <div style={{ ...fade(.5), height: CARD_HEIGHT_VH, display: "flex" }}>
-                        <ActionCard
-                          icon="⚙"
-                          title="ATELIER"
-                          subtitle="Fine-tune your workspace aesthetic and behavior"
-                          color="#9B59B6"
-                          onClick={() => navigate("/settings")}
-                        />
-                      </div>
-                    </div>
-                  );
-                })()}
+                {/* Cards grid — stretches to fill remaining space */}
+                <div
+                  className="oa-main-grid"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateRows: "1fr 1fr",
+                    gap: 10,
+                    width: "100%",
+                    flex: 1,
+                    minHeight: 0,
+                    position: "relative",
+                    zIndex: 5,
+                  }}
+                >
+                  <div style={{ ...fade(.2), height: "100%", display: "flex" }}>
+                    <SpotifyCard />
+                  </div>
+                  <div style={{ ...fade(.3), height: "100%", display: "flex" }}>
+                    <ActionCard
+                      icon="💬"
+                      title="DIRECT MISSION"
+                      subtitle="Initiate secure peer-to-peer frequencies with elite contacts"
+                      color="#4ECDC4"
+                      onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))}
+                    />
+                  </div>
+                  <div style={{ ...fade(.4), height: "100%", display: "flex" }}>
+                    <ActionCard
+                      icon="🔔"
+                      title="PRIORITY ALERTS"
+                      subtitle="Real-time synchronization with your professional orbit"
+                      color="#C6A06E"
+                      badge={3}
+                    />
+                  </div>
+                  <div style={{ ...fade(.5), height: "100%", display: "flex" }}>
+                    <ActionCard
+                      icon="⚙"
+                      title="ATELIER"
+                      subtitle="Fine-tune your workspace aesthetic and behavior"
+                      color="#9B59B6"
+                      onClick={() => navigate("/settings")}
+                    />
+                  </div>
+                </div>
 
                 {/* Status bar */}
-                <div style={{ marginTop: 26, width: "100%", display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap", position: "relative", zIndex: 5, ...fade(.7) }}>
+                <div style={{ marginTop: 8, width: "100%", display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap", position: "relative", zIndex: 5, flexShrink: 0, ...fade(.7) }}>
                   {[
                     { label: "LATENCY", value: "12ms", color: "#00FF88" },
                     { label: "ENCRYPTION", value: "AES-256", color: "#4ECDC4" },
@@ -950,8 +936,8 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+
         </div>
       </div>
 
