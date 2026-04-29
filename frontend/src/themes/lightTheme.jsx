@@ -12,6 +12,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { useSpotifyStore } from "../store/useSpotifyStore";
 import { THEMES, THEME_LABELS } from "../constants";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 const LUXURY_COLORS = {
