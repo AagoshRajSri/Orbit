@@ -44,6 +44,7 @@ import { soundManager } from "./lib/SoundManager";
 import ThemeMusic from "./components/ThemeMusic";
 import NowPlayingWidget from "./components/NowPlayingWidget";
 import ThemePortal from "./components/ThemePortal";
+import GlobalMiniPlayer from "./components/GlobalMiniPlayer";
 
 import OrbitChatApp from "./components/OrbitChatApp";
 import { useAnimationContext } from "./components/AnimLayer";
@@ -634,6 +635,7 @@ const AppContent = () => {
             )}
           </main>
           {authUser && !isAuthPage && <NowPlayingWidget />}
+          {authUser && !isAuthPage && <GlobalMiniPlayer />}
         </>
       )}
     </div>

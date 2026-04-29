@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { useThemeStore } from "../store/useThemeStore";
+import { useSpotifyStore } from "../store/useSpotifyStore";
 
 const THEME_TRACK_INFO = {
   "dark": { title: "Dark Electropop", artist: "PoorArtistt", color: "var(--crimson, #dc143c)", bg: "linear-gradient(135deg, #100000 0%, #2a0000 100%)", text: "#ffebf0" },
@@ -21,9 +22,11 @@ export default function NowPlayingWidget() {
   // Derive ambient enablement
   const ambientEnabled = rawSettings?.sound?.enabled && rawSettings?.sound?.orbitAmbientEnabled;
 
+  const { spotifyLinked } = useSpotifyStore();
+
   // Decide whether to show based on settings + theme
   useEffect(() => {
-    if (!ambientEnabled || !THEME_TRACK_INFO[theme]) {
+    if (!ambientEnabled || !THEME_TRACK_INFO[theme] || spotifyLinked) {
       // If already mounted, animate out; if not yet mounted, just clear track
       if (containerRef.current) {
         gsap.to(containerRef.current, { y: 150, opacity: 0, duration: 0.5, ease: "power3.in",

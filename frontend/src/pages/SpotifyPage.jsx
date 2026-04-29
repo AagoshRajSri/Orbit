@@ -1,251 +1,439 @@
+/**
+ * SpotifyPage — Theme-aware Spotify integration page.
+ * All themes use the same powerful SpotifyPlayer core,
+ * with per-theme chrome (header, colours, back button).
+ */
 import { useState, useEffect } from "react";
-import { LightSpotify } from "../themes/lightTheme";
-import { Music, LogOut, ChevronLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Music, LogOut, ChevronLeft, Loader } from "lucide-react";
+import { useSpotifyStore } from "../store/useSpotifyStore";
+import { useThemeStore } from "../store/useThemeStore";
+import { spotifyService } from "../services/spotifyService";
 import SpotifyPlayer from "../components/SpotifyPlayer";
 import SpotifySessionManager from "../components/SpotifySessionManager";
-import { useSpotifyStore } from "../store/useSpotifyStore";
-import { spotifyService } from "../services/spotifyService";
 import OrbitalPageWrapper from "../components/OrbitalPageWrapper";
-import { useNavigate } from "react-router-dom";
-import { useThemeStore } from "../store/useThemeStore";
-import { GamerSpotify } from "../themes/gamerTheme";
-import { CyberpunkSpotify } from "../themes/darkCyberpunkTheme";
-import { VampireSpotify } from "../themes/darkTheme";
-import { AmoledSpotify } from "../themes/amoledTheme";
+
+// ── Per-theme chrome config ──────────────────────────────────────────────────
+const CHROME = {
+  "light": {
+    bg:         "linear-gradient(180deg, #F8F5EF 0%, #F2EBE1 100%)",
+    headerBg:   "rgba(255,255,255,0.85)",
+    headerBorder:"rgba(234,228,216,0.8)",
+    accent:     "#6DA37A",
+    accentText: "#fff",
+    text:       "#1C2431",
+    subtext:    "#6B6560",
+    back:       { bg: "#fff", border: "#EAE4D8", color: "#6B6560" },
+    icon:       { bg: "linear-gradient(135deg, #6DA37A, #4a8856)", color: "#fff" },
+    fontTitle:  "'Cormorant Garamond', serif",
+  },
+  "pastel-dream": {
+    bg:         "linear-gradient(145deg, #ffd4ee 0%, #f0ccf8 100%)",
+    headerBg:   "rgba(255,255,255,0.7)",
+    headerBorder:"rgba(255,183,230,0.4)",
+    accent:     "#d464b0",
+    accentText: "#fff",
+    text:       "#7b3a6e",
+    subtext:    "#c084a8",
+    back:       { bg: "rgba(255,255,255,0.6)", border: "#f5c0e8", color: "#c084a8" },
+    icon:       { bg: "linear-gradient(135deg, #f472b6, #a855f7)", color: "#fff" },
+    fontTitle:  "'Nunito', sans-serif",
+  },
+  "dark": {
+    bg:         "linear-gradient(180deg, #0a0000 0%, #050000 100%)",
+    headerBg:   "rgba(10,0,0,0.85)",
+    headerBorder:"rgba(139,0,0,0.25)",
+    accent:     "#dc143c",
+    accentText: "#fff",
+    text:       "#f0d8d0",
+    subtext:    "rgba(240,216,208,0.5)",
+    back:       { bg: "rgba(139,0,0,0.1)", border: "rgba(139,0,0,0.3)", color: "rgba(240,216,208,0.7)" },
+    icon:       { bg: "linear-gradient(135deg, #8b0000, #dc143c)", color: "#fff" },
+    fontTitle:  "'Cinzel Decorative', serif",
+  },
+  "neon-cyberpunk": {
+    bg:         "linear-gradient(180deg, #060810 0%, #030508 100%)",
+    headerBg:   "rgba(4,2,20,0.85)",
+    headerBorder:"rgba(0,255,245,0.12)",
+    accent:     "#00fff5",
+    accentText: "#000",
+    text:       "#e0f8ff",
+    subtext:    "rgba(0,255,245,0.4)",
+    back:       { bg: "rgba(0,255,245,0.05)", border: "rgba(0,255,245,0.15)", color: "rgba(0,255,245,0.6)" },
+    icon:       { bg: "linear-gradient(135deg, #0a0030, #00fff5)", color: "#000" },
+    fontTitle:  "'Orbitron', monospace",
+  },
+  "gamer-high-energy": {
+    bg:         "linear-gradient(180deg, #080614 0%, #050410 100%)",
+    headerBg:   "rgba(8,6,20,0.85)",
+    headerBorder:"rgba(0,245,212,0.15)",
+    accent:     "#00f5d4",
+    accentText: "#000",
+    text:       "#e0fff8",
+    subtext:    "rgba(0,245,212,0.45)",
+    back:       { bg: "rgba(0,245,212,0.06)", border: "rgba(0,245,212,0.2)", color: "rgba(0,245,212,0.7)" },
+    icon:       { bg: "linear-gradient(135deg, #1DB954, #00f5d4)", color: "#000" },
+    fontTitle:  "'Orbitron', monospace",
+  },
+  "amoled-dark": {
+    bg:         "#000",
+    headerBg:   "rgba(0,0,0,0.92)",
+    headerBorder:"rgba(78,205,196,0.12)",
+    accent:     "#4ECDC4",
+    accentText: "#000",
+    text:       "#e0fff8",
+    subtext:    "rgba(78,205,196,0.45)",
+    back:       { bg: "rgba(78,205,196,0.05)", border: "rgba(78,205,196,0.15)", color: "rgba(78,205,196,0.6)" },
+    icon:       { bg: "linear-gradient(135deg, #0a2a2a, #4ECDC4)", color: "#000" },
+    fontTitle:  "'Orbitron', monospace",
+  },
+};
+
+const DEFAULT_CHROME = CHROME["amoled-dark"];
+
+// ── SpotifyLogo SVG ──────────────────────────────────────────────────────────
+function SpotifyLogo({ size = 22, color = "#1DB954" }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill={color}>
+      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.494 17.306c-.215.352-.674.463-1.025.249-2.857-1.745-6.452-2.14-10.686-1.171-.403.092-.806-.162-.899-.565-.092-.402.162-.806.565-.898 4.636-1.06 8.607-.611 11.796 1.338.351.214.463.673.249 1.047zm1.467-3.257c-.271.442-.846.582-1.288.311-3.27-2.007-8.256-2.589-12.122-1.416-.499.151-1.023-.133-1.174-.633-.151-.499.133-1.023.633-1.174 4.417-1.34 9.909-.691 13.639 1.602.443.271.583.847.312 1.31zm.126-3.411c-3.922-2.329-10.395-2.545-14.153-1.405-.6.181-1.237-.161-1.418-.761-.181-.6.161-1.237.761-1.418 4.304-1.306 11.455-1.053 15.986 1.636.539.319.715 1.014.396 1.553-.319.539-1.014.715-1.572.395z" />
+    </svg>
+  );
+}
+
+// ── Connection screen ────────────────────────────────────────────────────────
+function ConnectScreen({ chrome, onConnect, isLoading }) {
+  const t = chrome;
+  return (
+    <div style={{
+      flex: 1,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: t.bg,
+      padding: 32,
+    }}>
+      <div style={{
+        textAlign: "center",
+        maxWidth: 420,
+        padding: 48,
+        borderRadius: 28,
+        background: t.headerBg,
+        border: `1px solid ${t.headerBorder}`,
+        boxShadow: "0 24px 64px rgba(0,0,0,0.3)",
+        backdropFilter: "blur(20px)",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* Glow blobs */}
+        <div style={{ position: "absolute", top: -60, left: -60, width: 160, height: 160, borderRadius: "50%", background: t.accent, opacity: 0.08, filter: "blur(40px)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: -60, right: -60, width: 160, height: 160, borderRadius: "50%", background: t.accent, opacity: 0.05, filter: "blur(40px)", pointerEvents: "none" }} />
+
+        {/* Icon */}
+        <div style={{
+          width: 96, height: 96, borderRadius: 28, margin: "0 auto 28px",
+          background: t.icon.bg,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: `0 16px 40px ${t.accent}40`,
+          position: "relative",
+        }}>
+          <SpotifyLogo size={40} color={t.icon.color} />
+        </div>
+
+        <h1 style={{
+          fontFamily: t.fontTitle,
+          fontSize: 28, fontWeight: 800,
+          color: t.text,
+          marginBottom: 12, lineHeight: 1.2,
+        }}>
+          Connect Spotify
+        </h1>
+        <p style={{ fontSize: 14, color: t.subtext, marginBottom: 36, lineHeight: 1.7 }}>
+          Link your Spotify account to browse playlists, liked songs, and control playback directly inside Orbit.
+        </p>
+
+        <ul style={{ textAlign: "left", listStyle: "none", padding: 0, margin: "0 0 36px", display: "flex", flexDirection: "column", gap: 10 }}>
+          {[
+            "🎵 Full in-app music browser",
+            "🎛 Playback controls & seek bar",
+            "📋 Your playlists & liked songs",
+            "👥 Shared listening sessions",
+          ].map(f => (
+            <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: t.text, opacity: 0.85 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.accent, flexShrink: 0 }} />
+              {f}
+            </li>
+          ))}
+        </ul>
+
+        <button
+          onClick={onConnect}
+          disabled={isLoading}
+          style={{
+            width: "100%",
+            padding: "16px 24px",
+            borderRadius: 14,
+            background: t.accent,
+            color: t.accentText,
+            border: "none",
+            fontWeight: 800,
+            fontSize: 14,
+            letterSpacing: "0.08em",
+            cursor: "pointer",
+            boxShadow: `0 8px 24px ${t.accent}50`,
+            transition: "transform 0.15s, box-shadow 0.15s",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.boxShadow = `0 12px 32px ${t.accent}60`; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = `0 8px 24px ${t.accent}50`; }}
+        >
+          {isLoading
+            ? <><Loader size={16} style={{ animation: "spin 1s linear infinite" }} /> Connecting...</>
+            : <><SpotifyLogo size={18} color={t.accentText} /> Connect with Spotify</>
+          }
+        </button>
+
+        <p style={{ marginTop: 16, fontSize: 11, color: t.subtext, opacity: 0.5 }}>
+          Requires a Spotify account. Premium recommended for in-browser playback.
+        </p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────────────────────
 export default function SpotifyPage() {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
-  const { 
-    isHost,
-    spotifyProfile,
-    setSpotifyProfile,
-    spotifyLinked,
-    disconnectSpotify
+  const {
+    isHost, spotifyProfile, setSpotifyProfile,
+    spotifyLinked, disconnectSpotify, startPolling, stopPolling,
   } = useSpotifyStore();
+
   const [isLoading, setIsLoading] = useState(true);
-  const [showSessionManager, setShowSessionManager] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [showSession, setShowSession] = useState(false);
 
-  const isPastel = theme === "pastel-dream";
-  const isAmoled = theme === "amoled-dark";
+  const chrome = CHROME[theme] || DEFAULT_CHROME;
 
+  // Check if already linked on mount
   useEffect(() => {
-    const initialize = async () => {
+    const init = async () => {
       try {
-
-        // Always fetch profile to check if linked
         if (!spotifyLinked) {
           const result = await spotifyService.getProfile();
           if (result?.linked) {
             setSpotifyProfile(result.profile);
           }
         }
-      } catch (error) {
-        console.error("Failed to initialize Spotify:", error);
+      } catch (err) {
+        console.error("Spotify init:", err);
       } finally {
         setIsLoading(false);
       }
     };
-
-    initialize();
+    init();
   }, [spotifyLinked, setSpotifyProfile]);
 
-  const handleConnectSpotify = async () => {
+  // Start polling while on this page
+  useEffect(() => {
+    if (spotifyLinked) {
+      startPolling();
+      return () => stopPolling();
+    }
+  }, [spotifyLinked, startPolling, stopPolling]);
+
+  const handleConnect = async () => {
     try {
+      setIsConnecting(true);
       await spotifyService.initiateLogin();
-    } catch (error) {
-      console.error("Failed to initiate Spotify auth:", error);
+    } catch (err) {
+      console.error("Spotify connect failed:", err);
+      setIsConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
-    if (window.confirm("Are you sure you want to disconnect Spotify?")) {
-      try {
-        await disconnectSpotify();
-      } catch (error) {
-        console.error("Failed to disconnect Spotify:", error);
-      }
+    if (!window.confirm("Disconnect Spotify from Orbit?")) return;
+    try {
+      await disconnectSpotify();
+    } catch (err) {
+      console.error("Disconnect failed:", err);
     }
   };
 
+  // ── Loading state ────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <OrbitalPageWrapper>
-        <div className={`h-full flex items-center justify-center ${isAmoled ? "bg-[#000]" : ""}`}>
-          <div className="text-center">
-            <div className={`animate-spin inline-flex h-12 w-12 items-center justify-center rounded-full border-2 mb-4 ${isAmoled ? "border-[#4ECDC4]/30 border-t-[#4ECDC4]" : "border-green-500/30 border-t-green-500"}`} />
-            <p className={`text-sm ${isAmoled ? "text-[#4ECDC4]/60 font-['Orbitron'] tracking-widest text-xs" : "text-base-content/60"}`}>{isAmoled ? "SYNCHRONIZING..." : "Loading Spotify..."}</p>
-          </div>
-        </div>
-      </OrbitalPageWrapper>
+      <div style={{ position: "fixed", inset: 0, background: chrome.bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+        <div style={{ width: 48, height: 48, border: `3px solid ${chrome.accent}30`, borderTopColor: chrome.accent, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <p style={{ fontFamily: chrome.fontTitle, fontSize: 12, color: chrome.subtext, letterSpacing: "0.3em", textTransform: "uppercase" }}>Synchronizing...</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </div>
     );
   }
 
-  if (theme === "gamer-high-energy") {
-    return <GamerSpotify />;
-  }
+  return (
+    <OrbitalPageWrapper>
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", background: chrome.bg, position: "relative" }}>
 
-  if (theme === "neon-cyberpunk") {
-    return <CyberpunkSpotify />;
-  }
+        {/* ── Header ────────────────────────────────────────────────────── */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 20px",
+          background: chrome.headerBg,
+          borderBottom: `1px solid ${chrome.headerBorder}`,
+          backdropFilter: "blur(20px)",
+          flexShrink: 0,
+          zIndex: 10,
+        }}>
+          {/* Left: back + branding */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button
+              onClick={() => navigate("/")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "7px 12px", borderRadius: 10,
+                background: chrome.back.bg,
+                border: `1px solid ${chrome.back.border}`,
+                color: chrome.back.color,
+                cursor: "pointer",
+                fontSize: 12, fontWeight: 600,
+                transition: "opacity 0.15s",
+              }}
+            >
+              <ChevronLeft size={16} /> Back
+            </button>
 
-  if (theme === "dark") {
-    return <VampireSpotify />;
-  }
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 12,
+                background: chrome.icon.bg,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: `0 4px 16px ${chrome.accent}40`,
+                flexShrink: 0,
+              }}>
+                <SpotifyLogo size={22} color={chrome.icon.color} />
+              </div>
+              <div>
+                <h1 style={{
+                  fontFamily: chrome.fontTitle,
+                  fontSize: 18, fontWeight: 800,
+                  color: chrome.text,
+                  lineHeight: 1,
+                  margin: 0,
+                }}>
+                  {theme === "dark" ? "Nocturnal Harmony"
+                    : theme === "neon-cyberpunk" ? "Audio Sync"
+                    : theme === "gamer-high-energy" ? "Spotify Sync"
+                    : theme === "amoled-dark" ? "ORBIT PLAYER"
+                    : theme === "light" ? "Musical Resonance"
+                    : "Spotify Sync ✨"}
+                </h1>
+                {spotifyLinked && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: chrome.accent, animation: "pulse 1.5s infinite" }} />
+                    <span style={{ fontSize: 10, color: chrome.subtext, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em" }}>
+                      {isHost ? "Host" : "Connected"}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
-  if (theme === "amoled-dark") {
-    return <AmoledSpotify />;
-  }
-
-  if (theme === "light") {
-    return <LightSpotify />;
-  }
-
-  if (!spotifyLinked) {
-    /* ── Pastel / default connect screen ── */
-    return (
-      <OrbitalPageWrapper>
-        <div className="h-full flex items-center justify-center p-4 relative"
-          style={isPastel ? { background: "linear-gradient(145deg, #ffd4ee 0%, #f0ccf8 100%)", cursor: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E✨%3C/text%3E%3C/svg%3E\") 16 16, auto" } : {}}>
-          {isPastel && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <span className="absolute top-1/4 left-1/4 text-4xl animate-bounce">💖</span>
-              <span className="absolute bottom-1/4 right-1/4 text-3xl animate-pulse">✨</span>
-              <span className="absolute top-1/2 right-1/3 text-2xl animate-spin-slow">🌸</span>
+          {/* Right: profile + disconnect */}
+          {spotifyLinked && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              {isHost && (
+                <button
+                  onClick={() => setShowSession(s => !s)}
+                  style={{
+                    padding: "8px 14px", borderRadius: 10,
+                    background: showSession ? chrome.accent : "transparent",
+                    border: `1px solid ${chrome.headerBorder}`,
+                    color: showSession ? chrome.accentText : chrome.subtext,
+                    cursor: "pointer", fontSize: 11, fontWeight: 700,
+                    letterSpacing: "0.1em",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  Session
+                </button>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <img
+                  src={spotifyProfile?.profileImage || `https://ui-avatars.com/api/?name=${spotifyProfile?.displayName || "U"}&background=1DB954&color=fff`}
+                  alt="Profile"
+                  style={{ width: 34, height: 34, borderRadius: "50%", border: `2px solid ${chrome.accent}40`, objectFit: "cover" }}
+                />
+                <div style={{ lineHeight: 1.2 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: chrome.text }}>{spotifyProfile?.displayName}</div>
+                  <div style={{ fontSize: 10, color: chrome.subtext }}>Spotify</div>
+                </div>
+              </div>
+              <button
+                onClick={handleDisconnect}
+                title="Disconnect"
+                style={{
+                  padding: 7, borderRadius: 9,
+                  background: "transparent",
+                  border: `1px solid ${chrome.headerBorder}`,
+                  color: chrome.subtext,
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "color 0.15s",
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                onMouseLeave={e => e.currentTarget.style.color = chrome.subtext}
+              >
+                <LogOut size={15} />
+              </button>
             </div>
           )}
-          <div className={`w-full max-w-md p-8 rounded-3xl border backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col gap-6 relative transition-all duration-500 ${isPastel ? "bg-white/40 border-pink-200/50" : "border-white/5 bg-white/[0.02]"}`}>
-            {isPastel ? (
-              <>
-                <div className="absolute -top-24 -left-24 w-64 h-64 bg-pink-400/30 blur-[100px] rounded-full pointer-events-none" />
-                <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-400/20 blur-[100px] rounded-full pointer-events-none" />
-              </>
-            ) : (
-              <>
-                <div className="absolute -top-24 -left-24 w-64 h-64 bg-green-500/20 blur-[100px] rounded-full pointer-events-none" />
-                <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-emerald-500/15 blur-[100px] rounded-full pointer-events-none" />
-              </>
-            )}
-            <div className="relative z-10 text-center">
-              <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-3xl shadow-lg border mb-6 ${isPastel ? "from-pink-400 to-purple-500 border-pink-100" : "from-green-400 to-emerald-500 border-white/5"}`}>
-                <Music className="w-8 h-8 text-white" />
-              </div>
-              <h1 className={`text-4xl font-black tracking-tight mb-3 ${isPastel ? "text-pink-600 drop-shadow-sm" : "text-base-content"}`}>
-                Spotify Sync{isPastel && <span className="ml-2">✨</span>}
-              </h1>
-              <p className={`text-sm mb-8 leading-relaxed font-bold ${isPastel ? "text-purple-600/80" : "text-base-content/60"}`}>
-                Connect your Spotify account to vibeee with the squad! 💅 Listen together, share sessions, and manifest the best music in real-time. 🎀
-              </p>
-              <ul className="space-y-4 mb-8 text-left inline-block">
-                {["Play and control your jams 🎵", "Create cute shared sessions 💖", "Sync your vibe with everyone ✨"].map((feat, i) => (
-                  <li key={i} className={`flex items-center gap-3 text-sm font-bold ${isPastel ? "text-pink-500" : "text-base-content/70"}`}>
-                    <div className={`w-2 h-2 rounded-full ${isPastel ? "bg-pink-400 animate-pulse" : "bg-green-400"}`} />
-                    {feat}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={handleConnectSpotify}
-                className={`w-full px-6 py-4 rounded-2xl font-black transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95 ${isPastel ? "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white shadow-pink-500/30" : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white shadow-green-500/40"}`}
-              >
-                <Music className="w-6 h-6" />
-                CONNECT SPOTIFY ✨
-              </button>
-            </div>
-          </div>
-        </div>
-      </OrbitalPageWrapper>
-    );
-  }
-    return (
-    <OrbitalPageWrapper>
-      <div className={`h-full w-full flex flex-col transition-colors duration-500 ${isPastel ? "bg-[#fffafa]" : isAmoled ? "bg-[#000]" : "bg-[#090909]"}`}
-           style={isPastel ? { cursor: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E✨%3C/text%3E%3C/svg%3E\") 16 16, auto" } : {}}>
-        {/* Subtle top glow */}
-        <div className={`absolute top-0 left-1/4 right-1/4 h-64 blur-[120px] pointer-events-none ${isPastel ? "bg-pink-300/30" : isAmoled ? "bg-[#4ECDC4]/10" : "bg-green-500/10"}`} />
-        
-        {/* Header */}
-        <div className={`flex items-center justify-between p-6 relative z-10 border-b backdrop-blur-md transition-all
-              ${theme === "pastel-dream" ? "border-pink-100 bg-white/40 shadow-sm" : "border-white/5 bg-black/20"}`}>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => navigate("/")}
-              className={`group flex items-center justify-center h-10 w-10 rounded-full border transition-all mr-2
-                    ${theme === "pastel-dream" ? "bg-pink-50 border-pink-100 hover:bg-pink-100" : "bg-white/5 border-white/10 hover:bg-white/10"}`}
-              title="Back to Orbit"
-            >
-              <ChevronLeft className={`w-5 h-5 transition-colors ${theme === "pastel-dream" ? "text-pink-400 group-hover:text-pink-600" : "text-white/60 group-hover:text-green-500"}`} />
-            </button>
-            <div className="relative">
-              <div className={`absolute inset-0 blur-xl opacity-20 animate-pulse ${theme === "pastel-dream" ? "bg-pink-500" : "bg-green-500"}`} />
-              <div className={`relative h-12 w-12 flex items-center justify-center rounded-full shadow-lg transition-colors
-                    ${theme === "pastel-dream" ? "bg-gradient-to-br from-pink-400 to-purple-400" : "bg-[#1DB954]"}`}>
-                <svg viewBox="0 0 24 24" className="w-7 h-7 text-white fill-current">
-                   <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.494 17.306c-.215.352-.674.463-1.025.249-2.857-1.745-6.452-2.14-10.686-1.171-.403.092-.806-.162-.899-.565-.092-.402.162-.806.565-.898 4.636-1.06 8.607-.611 11.796 1.338.351.214.463.673.249 1.047zm1.467-3.257c-.271.442-.846.582-1.288.311-3.27-2.007-8.256-2.589-12.122-1.416-.499.151-1.023-.133-1.174-.633-.151-.499.133-1.023.633-1.174 4.417-1.34 9.909-.691 13.639 1.602.443.271.583.847.312 1.31zm.126-3.411c-3.922-2.329-10.395-2.545-14.153-1.405-.6.181-1.237-.161-1.418-.761-.181-.6.161-1.237.761-1.418 4.304-1.306 11.455-1.053 15.986 1.636.539.319.715 1.014.396 1.553-.319.539-1.014.715-1.572.395z" />
-                </svg>
-              </div>
-            </div>
-            <div>
-              <h1 className={`text-2xl font-black tracking-tight ${isPastel ? "text-pink-600" : isAmoled ? "text-[#fff] font-['Orbitron'] tracking-[3px]" : "text-base-content"}`}>Spotify Sync 🎀</h1>
-              <div className="flex items-center gap-2">
-                <div className={`h-2 w-2 rounded-full ${isPastel ? (isHost ? 'bg-pink-500' : 'bg-purple-500') : isAmoled ? (isHost ? 'bg-[#4ECDC4]' : 'bg-[#C6A06E]') : (isHost ? 'bg-green-500' : 'bg-blue-500')} animate-pulse`} />
-                <p className={`text-[10px] uppercase font-bold tracking-widest ${isPastel ? "text-pink-400" : isAmoled ? "text-white/40" : "text-white/40"}`}>
-                  {isHost ? (isAmoled ? "HOST ACTIVE // SYNC" : "Host Mode Active ✨") : (isAmoled ? "PARTICIPATING // LINKED" : "Participating ♡")}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {isHost && (
-              <button
-                onClick={() => setShowSessionManager(!showSessionManager)}
-                className={`px-5 py-2.5 rounded-full text-xs font-black transition-all border shadow-sm
-                      ${theme === "pastel-dream" 
-                        ? (showSessionManager ? "bg-pink-500 text-white border-pink-400" : "bg-white text-pink-500 border-pink-100 hover:bg-pink-50")
-                        : (showSessionManager ? "bg-white text-black border-white" : "bg-white/5 text-white border-white/10 hover:bg-white/10")}`}
-              >
-                {showSessionManager ? "CLOSE SETTINGS ♡" : "SESSION VIBES ✨"}
-              </button>
-            )}
-            <div className={`h-8 w-[1px] mx-1 ${theme === "pastel-dream" ? "bg-pink-100" : "bg-white/10"}`} />
-            <div className="flex items-center gap-3 pl-1">
-              <div className="text-right">
-                <p className={`text-xs font-black leading-none ${theme === "pastel-dream" ? "text-pink-600" : "text-base-content"}`}>{spotifyProfile?.displayName}</p>
-                <p className={`text-[10px] leading-none mt-1 font-bold ${theme === "pastel-dream" ? "text-purple-400" : "text-base-content/40"}`}>Premium Bestie ✨</p>
-              </div>
-              <img 
-                src={spotifyProfile?.profileImage || `https://ui-avatars.com/api/?name=${spotifyProfile?.displayName}&background=${theme === "pastel-dream" ? 'ffaad8' : '1DB954'}&color=fff`} 
-                className={`h-11 w-11 rounded-full border-2 p-0.5 shadow-md ${theme === "pastel-dream" ? "border-pink-200" : "border-[#1DB954]/20"}`}
-                alt="Profile"
-              />
-              <button 
-                onClick={handleDisconnect}
-                className={`p-2.5 rounded-full transition-all border
-                      ${theme === "pastel-dream" ? "bg-white border-pink-100 text-pink-300 hover:text-red-400 hover:bg-red-50" : "bg-white/5 border-white/5 text-white/40 hover:bg-red-500/20 hover:text-red-500"}`}
-                title="Disconnect Spotify"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
         </div>
 
-        {/* Main Layout */}
-        <div className="flex-1 flex min-h-0 overflow-hidden relative z-10">
-          {/* Left Session Pane (Sidebar style) */}
-          {isHost && showSessionManager && (
-            <div className={`w-80 border-r backdrop-blur-xl flex-shrink-0 animate-in slide-in-from-left duration-500 shadow-2xl z-20
-                  ${theme === "pastel-dream" ? "bg-white/60 border-pink-50" : "bg-black/40 border-white/5"}`}>
+        {/* ── Body ──────────────────────────────────────────────────────── */}
+        <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
+          {/* Session sidebar */}
+          {spotifyLinked && isHost && showSession && (
+            <div style={{
+              width: 300,
+              borderRight: `1px solid ${chrome.headerBorder}`,
+              background: chrome.headerBg,
+              backdropFilter: "blur(20px)",
+              flexShrink: 0,
+              overflowY: "auto",
+            }}>
               <SpotifySessionManager />
             </div>
           )}
 
-          {/* Main Player Component */}
-          <div className={`flex-1 min-w-0 transition-all duration-700
-                ${theme === "pastel-dream" ? "bg-gradient-to-b from-[#fffafa] to-[#ffd4ee]" : "bg-gradient-to-b from-[#121212] to-[#000000]"}`}>
-            <SpotifyPlayer />
+          {/* Main content */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {!spotifyLinked ? (
+              <ConnectScreen
+                chrome={chrome}
+                onConnect={handleConnect}
+                isLoading={isConnecting}
+              />
+            ) : (
+              <SpotifyPlayer />
+            )}
           </div>
         </div>
+
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+          }
+        `}</style>
       </div>
     </OrbitalPageWrapper>
   );
