@@ -20,13 +20,11 @@ const VerifyEmailPage = () => {
 
   const email = location.state?.email || authUser?.email;
 
-  if (!email && !authUser) return <Navigate to="/login" />;
-  if (authUser?.isEmailVerified) return <Navigate to="/" />;
-
   // Auto-focus first input
   useEffect(() => {
+    if (!email && !authUser) return;
     setTimeout(() => refs[0].current?.focus(), 100);
-  }, []);
+  }, [email, authUser]);
 
   // Cooldown countdown
   useEffect(() => {
@@ -48,6 +46,9 @@ const VerifyEmailPage = () => {
       setTimeout(() => refs[0].current?.focus(), 50);
     }
   }, [email, verifyEmail, navigate]);
+
+  if (!email && !authUser) return <Navigate to="/login" />;
+  if (authUser?.isEmailVerified) return <Navigate to="/" />;
 
   const handleChange = (i, val) => {
     if (val.length > 1) {

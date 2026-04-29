@@ -102,10 +102,39 @@ function buildEmailPayload(to, otp) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Verify your Orbit account</title>
+  <style>
+    @keyframes orbitSpin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes auroraPulse {
+      0%, 100% { opacity: 0.7; transform: scale(1) translate(0, 0); }
+      50% { opacity: 1; transform: scale(1.15) translate(8px, -8px); }
+    }
+    @keyframes digitGlow {
+      0%, 100% {
+        box-shadow: none;
+        border-color: rgba(139,92,246,0.2);
+        color: #c4b5fd;
+      }
+      50% {
+        box-shadow: 0 0 20px rgba(139,92,246,0.3), 0 0 6px rgba(139,92,246,0.15) inset;
+        border-color: rgba(167,139,250,0.55);
+        color: #ddd6fe;
+      }
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.08; transform: scale(1); }
+      50% { opacity: 0.65; transform: scale(1.6); }
+    }
+    @keyframes timerDrain {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#07050f;font-family:'Segoe UI',system-ui,sans-serif;">
+<body style="margin:0;padding:0;background:#060412;font-family:'Segoe UI',system-ui,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-    style="background:#07050f;padding:48px 16px;">
+    style="background:#060412;padding:48px 16px;">
     <tr>
       <td align="center">
         <table role="presentation" cellpadding="0" cellspacing="0"
@@ -113,66 +142,177 @@ function buildEmailPayload(to, otp) {
 
           <!-- Logo row -->
           <tr>
-            <td style="padding-bottom:32px;">
-              <span style="font-size:18px;font-weight:700;color:#a78bfa;letter-spacing:-0.3px;">
-                ✦ Orbit
-              </span>
-            </td>
-          </tr>
-
-          <!-- Card -->
-          <tr>
-            <td style="background:#0f0b1e;border:1px solid rgba(255,255,255,0.07);
-              border-radius:20px;padding:40px 36px;">
-
-              <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#f0ebff;
-                letter-spacing:-0.4px;">
-                Here's your code
-              </p>
-              <p style="margin:0 0 32px;font-size:14px;color:#6b7280;line-height:1.65;">
-                Use this to verify your Orbit account. It's only valid for
-                <strong style="color:#9ca3af;">${OTP_VALIDITY_MINUTES} minutes</strong>, so use it soon.
-              </p>
-
-              <!-- OTP block -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <td style="padding-bottom:28px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center"
-                    style="background:#13102a;border:1px solid rgba(167,139,250,0.15);
-                    border-radius:14px;padding:28px 20px;">
-                    <p style="margin:0 0 14px;font-size:10px;letter-spacing:0.2em;
-                      text-transform:uppercase;color:#4b5563;">
-                      Verification code
-                    </p>
-                    <div style="display:inline-block;">
-                      ${otp.split("").map(d => `<span style="
-                        display:inline-block;
-                        width:40px;height:52px;line-height:52px;
-                        text-align:center;
-                        font-size:30px;font-weight:800;
-                        color:#a78bfa;
-                        background:rgba(139,92,246,0.08);
-                        border:1px solid rgba(139,92,246,0.2);
-                        border-radius:10px;
-                        margin:0 3px;
-                        font-family:'Courier New',monospace;
-                      ">${d}</span>`).join("")}
+                  <td style="vertical-align:middle;padding-right:10px;">
+                    <!-- Spinning orbit ring -->
+                    <div style="
+                      width:26px;height:26px;border-radius:50%;
+                      background:conic-gradient(from 0deg,#7c3aed,#06b6d4,#7c3aed);
+                      animation:orbitSpin 8s linear infinite;
+                      position:relative;display:inline-block;
+                    ">
+                      <div style="
+                        position:absolute;inset:3px;border-radius:50%;background:#060412;
+                      "></div>
                     </div>
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <span style="
+                      font-size:18px;font-weight:800;letter-spacing:-0.5px;
+                      background:linear-gradient(90deg,#a78bfa,#67e8f9);
+                      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                      background-clip:text;
+                    ">Orbit</span>
                   </td>
                 </tr>
               </table>
+            </td>
+          </tr>
 
-              <!-- Note -->
-              <p style="margin:28px 0 0;font-size:13px;color:#4b5563;line-height:1.6;">
-                Didn't sign up? No worries — just ignore this email and nothing will happen.
-              </p>
+          <!-- Card (gradient border via wrapper) -->
+          <tr>
+            <td style="
+              background:linear-gradient(135deg,rgba(167,139,250,0.4),rgba(6,182,212,0.15),rgba(167,139,250,0.05));
+              border-radius:24px;padding:2px;
+            ">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                style="background:#0c0820;border-radius:22px;overflow:hidden;">
+                <tr>
+                  <td style="padding:40px 36px;position:relative;">
+
+                    <!-- Aurora glow top-right -->
+                    <div style="
+                      position:absolute;top:-60px;right:-60px;
+                      width:280px;height:280px;border-radius:50%;
+                      background:radial-gradient(ellipse,rgba(124,58,237,0.13) 0%,transparent 70%);
+                      animation:auroraPulse 6s ease-in-out infinite;
+                      pointer-events:none;
+                    "></div>
+
+                    <!-- Aurora glow bottom-left -->
+                    <div style="
+                      position:absolute;bottom:-80px;left:-40px;
+                      width:280px;height:280px;border-radius:50%;
+                      background:radial-gradient(ellipse,rgba(6,182,212,0.09) 0%,transparent 70%);
+                      animation:auroraPulse 8s ease-in-out infinite reverse;
+                      pointer-events:none;
+                    "></div>
+
+                    <!-- Twinkling stars -->
+                    ${[
+        [15, 20, 2.5, 0], [30, 75, 4, 1], [60, 10, 3, 0.5], [10, 55, 5, 2], [80, 85, 3.5, 1.5],
+        [50, 90, 2, 0.8], [20, 42, 4.5, 0.3], [70, 35, 3, 2.5], [88, 60, 2.8, 0.6]
+      ].map(([top, left, d, delay]) =>
+        `<div style="
+                        position:absolute;top:${top}%;left:${left}%;
+                        width:2px;height:2px;border-radius:50%;background:white;
+                        animation:twinkle ${d}s ease-in-out infinite ${delay}s;
+                        pointer-events:none;
+                      "></div>`
+      ).join("")}
+
+                    <!-- Heading -->
+                    <p style="
+                      margin:0 0 8px;font-size:24px;font-weight:800;
+                      color:#f0ebff;letter-spacing:-0.6px;position:relative;z-index:1;
+                    ">Here's your code</p>
+
+                    <p style="
+                      margin:0 0 28px;font-size:13.5px;color:#5b5475;line-height:1.7;
+                      position:relative;z-index:1;
+                    ">
+                      Use this to verify your Orbit account. It's only valid for
+                      <strong style="color:#7c6fa0;font-weight:600;">${OTP_VALIDITY_MINUTES} minutes</strong>,
+                      so use it soon.
+                    </p>
+
+                    <!-- Gradient divider -->
+                    <div style="
+                      height:1px;
+                      background:linear-gradient(90deg,transparent,rgba(167,139,250,0.2),transparent);
+                      margin-bottom:28px;position:relative;z-index:1;
+                    "></div>
+
+                    <!-- OTP block (gradient border wrapper) -->
+                    <div style="
+                      background:linear-gradient(135deg,rgba(167,139,250,0.3),rgba(6,182,212,0.2));
+                      border-radius:18px;padding:1.5px;
+                      margin-bottom:24px;position:relative;z-index:1;
+                    ">
+                      <div style="
+                        background:linear-gradient(160deg,#0e0a26,#130e2e);
+                        border-radius:17px;padding:28px 20px;text-align:center;
+                      ">
+                        <p style="
+                          margin:0 0 18px;font-size:9px;letter-spacing:0.22em;
+                          text-transform:uppercase;color:#3d3558;font-weight:600;
+                        ">Verification code</p>
+
+                        <!-- Individual digit cells -->
+                        <div style="display:inline-block;">
+                          ${otp.split("").map((d, i) => `<span style="
+                            display:inline-block;
+                            width:44px;height:56px;line-height:56px;
+                            text-align:center;
+                            font-size:28px;font-weight:800;
+                            color:#c4b5fd;
+                            background:linear-gradient(160deg,rgba(124,58,237,0.1),rgba(124,58,237,0.04));
+                            border:1px solid rgba(139,92,246,0.25);
+                            border-radius:12px;
+                            margin:0 4px;
+                            font-family:'Courier New',monospace;
+                            position:relative;
+                            animation:digitGlow 4s ease-in-out infinite ${(i * 0.15).toFixed(2)}s;
+                          ">${d}</span>`).join("")}
+                        </div>
+
+                        <p style="
+                          margin:16px 0 0;font-size:11px;color:#3d3558;
+                        ">Expires in ${OTP_VALIDITY_MINUTES} minutes</p>
+                      </div>
+                    </div>
+
+                    <!-- Timer bar -->
+                    <div style="
+                      height:3px;background:rgba(255,255,255,0.04);
+                      border-radius:2px;margin-bottom:28px;overflow:hidden;
+                      position:relative;z-index:1;
+                    ">
+                      <div style="
+                        height:100%;width:100%;border-radius:2px;
+                        background:linear-gradient(90deg,#7c3aed,#06b6d4);
+                        animation:timerDrain ${OTP_VALIDITY_MINUTES * 60}s linear forwards;
+                      "></div>
+                    </div>
+
+                    <!-- Note -->
+                    <p style="
+                      margin:0;font-size:12.5px;color:#3d3558;line-height:1.7;
+                      position:relative;z-index:1;
+                      padding-left:14px;
+                      border-left:2px solid rgba(167,139,250,0.12);
+                    ">
+                      Didn't sign up? No worries — just ignore this email and nothing will happen.
+                    </p>
+
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="padding-top:28px;text-align:center;">
-              <p style="margin:0;font-size:11px;color:#374151;line-height:1.7;">
+            <td style="padding-top:24px;text-align:center;">
+              <!-- Three decorative dots -->
+              <div style="margin-bottom:10px;">
+                <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(167,139,250,0.2);margin:0 3px;"></span>
+                <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(167,139,250,0.2);margin:0 3px;"></span>
+                <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(167,139,250,0.2);margin:0 3px;"></span>
+              </div>
+              <p style="margin:0;font-size:10.5px;color:#2a2440;line-height:1.8;">
                 © ${year} Orbit &nbsp;·&nbsp; This email was sent because an account was being created.
               </p>
             </td>

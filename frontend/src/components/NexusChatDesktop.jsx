@@ -842,7 +842,7 @@ function InfoPanel({t,group,setGroup,onClose,addToast}) {
         <div style={{display:"flex",gap:2,marginTop:12,background:t.msgIn,borderRadius:12,padding:3}}>
           {TABS.map(tab_=>( 
             <button key={tab_.id} onClick={()=>setTab(tab_.id)}
-              style={{flex:1,padding:"6px 4px",borderRadius:9,border:"none",background:tab===tab_.id?t.acc:Tab==="danger"?"rgba(239,68,68,.1)":"transparent",color:tab===tab_.id?t.sendTxt:tab_.id==="danger"?"#ef4444":t.txt2,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"all .15s",fontSize:9,fontFamily:t.font,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase"}}>
+              style={{flex:1,padding:"6px 4px",borderRadius:9,border:"none",background:tab===tab_.id?t.acc:tab_.id==="danger"?"rgba(239,68,68,.1)":"transparent",color:tab===tab_.id?t.sendTxt:tab_.id==="danger"?"#ef4444":t.txt2,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"all .15s",fontSize:9,fontFamily:t.font,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase"}}>
               <Ico d={tab_.icon} size={13} stroke="currentColor"/>
               {tab_.label}
             </button>

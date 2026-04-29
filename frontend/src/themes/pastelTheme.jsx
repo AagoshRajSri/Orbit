@@ -1035,10 +1035,23 @@ const SpotifyCard = memo(({ cardRef }) => {
     }
   };
 
+  const handleCardClick = (e) => {
+    if (e.target.closest("button")) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    if (durationMs) seekTo((percent / 100) * durationMs);
+  };
+
   return (
     <div
       ref={cardRef}
-      onClick={() => spotifyLinked && navigate("/spotify")}
+      onClick={(e) => {
+        if (!spotifyLinked) {
+          navigate("/spotify");
+          return;
+        }
+        handleCardClick(e);
+      }}
       style={{
         background: spotifyLinked 
           ? "linear-gradient(135deg, rgba(185,245,215,0.85) 0%, rgba(210,250,230,0.78) 100%)"
@@ -1048,99 +1061,136 @@ const SpotifyCard = memo(({ cardRef }) => {
           : "1px solid rgba(244,114,182,0.35)", 
         borderRadius: 20,
         backdropFilter: "blur(12px)",
-        padding: "14px 16px",
+        padding: 0,
         display: "flex",
         flexDirection: "column",
-        gap: 10,
         position: "relative",
         boxShadow: "0 4px 20px rgba(100,200,150,0.15)",
         cursor: "pointer",
+        overflow: "hidden"
       }}
     >
-      <CuteBadge label={spotifyLinked ? "vibing" : "offline"} color={spotifyLinked ? "linear-gradient(90deg,#4cba88,#70d4a8)" : "linear-gradient(90deg,#f472b6,#c084fc)"} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span
+      {spotifyLinked && (
+        <>
+          <div
             style={{
-              width: 9,
-              height: 9,
-              borderRadius: "50%",
-              background: spotifyLinked ? "#3dba78" : "#f472b6",
-              boxShadow: spotifyLinked ? "0 0 6px #3dba78" : "0 0 6px #f472b6",
-              display: "inline-block",
-              animation: "pulse 1.8s ease-in-out infinite",
+              position: "absolute",
+              top: 0, left: 0, bottom: 0,
+              width: `${prog}%`,
+              background: "linear-gradient(90deg, rgba(61,186,120,0.2) 0%, rgba(61,186,120,0.1) 100%)",
+              transition: "width 1s linear",
+              zIndex: 0,
+              pointerEvents: "none",
             }}
           />
-          <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.12em", color: spotifyLinked ? "#3dba78" : "#f472b6", textTransform: "uppercase" }}>
-            {spotifyLinked ? "Spotify Active" : "Connect Spotify"}
-          </span>
-        </div>
-        {spotifyLinked && (
-          <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.1em", color: "rgba(60,160,100,0.6)", textTransform: "uppercase" }}>
-            EXPAND
-          </span>
-        )}
-      </div>
+          <div
+            style={{
+              position: "absolute",
+              top: 0, bottom: 0,
+              left: `${prog}%`,
+              width: 3,
+              background: "rgba(61,186,120,0.4)",
+              transition: "left 1s linear",
+              zIndex: 1,
+              pointerEvents: "none",
+              filter: "blur(2px)",
+            }}
+          />
+        </>
+      )}
 
-      {spotifyLinked ? (
-        <>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 12, flexShrink: 0, overflow: "hidden", boxShadow: "0 3px 10px rgba(0,0,0,0.18)" }}>
-              {currentTrack?.imageUrl ? (
-                <img src={currentTrack.imageUrl} alt="Album Art" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <svg width="56" height="56" viewBox="0 0 56 56">
-                  <rect width="56" height="56" fill="#9a8899" />
-                  <rect x="0" y="10" width="56" height="18" fill="rgba(170,150,160,0.55)" />
-                  <rect x="0" y="34" width="56" height="12" fill="rgba(130,110,125,0.4)" />
-                  <rect x="14" y="0" width="14" height="56" fill="rgba(155,135,150,0.25)" />
-                </svg>
-              )}
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#2a5c3a", letterSpacing: "0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack?.name || "Awaiting..."}</div>
-              <div style={{ fontSize: 10.5, color: "rgba(60,100,70,0.7)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack?.artist || "The silent choir"}</div>
-              <div style={{ fontSize: 8, color: "#ff9ec8", marginTop: 3, letterSpacing: 2 }}>♡ ♡ ♡</div>
-            </div>
+      <div style={{ position: "relative", zIndex: 2, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10, height: "100%" }}>
+        <CuteBadge label={spotifyLinked ? "vibing" : "offline"} color={spotifyLinked ? "linear-gradient(90deg,#4cba88,#70d4a8)" : "linear-gradient(90deg,#f472b6,#c084fc)"} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: "50%",
+                background: spotifyLinked ? "#3dba78" : "#f472b6",
+                boxShadow: spotifyLinked ? "0 0 6px #3dba78" : "0 0 6px #f472b6",
+                display: "inline-block",
+                animation: "pulse 1.8s ease-in-out infinite",
+              }}
+            />
+            <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.12em", color: spotifyLinked ? "#3dba78" : "#f472b6", textTransform: "uppercase" }}>
+              {spotifyLinked ? "Spotify Active" : "Connect Spotify"}
+            </span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 18 }}>
-              <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(60,160,100,0.55)", fontSize: 13, padding: 0, lineHeight: 1 }}>⏮</button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  isPlaying ? pausePlayback() : playTrack();
-                }}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #3dba78, #60d4a0)",
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  fontSize: 12,
-                  boxShadow: "0 3px 12px rgba(60,180,100,0.45)",
-                  transition: "transform 0.15s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.12)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-              >
-                {isPlaying ? "⏸" : "▶"}
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(60,160,100,0.55)", fontSize: 13, padding: 0, lineHeight: 1 }}>⏭</button>
-            </div>
-            <div onClick={handleSeek} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-              <span style={{ fontSize: 10, color: "rgba(60,120,80,0.5)" }}>🎵</span>
-              <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(60,180,100,0.15)", position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${prog}%`, background: "linear-gradient(90deg, #3dba78, #70d4a0)", borderRadius: 2, transition: "width 1s linear" }} />
+          {spotifyLinked && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); navigate("/spotify"); }}
+              style={{ background: "none", border: "none", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.1em", color: "rgba(60,160,100,0.6)", textTransform: "uppercase", cursor: "pointer" }}
+            >
+              EXPAND
+            </button>
+          )}
+        </div>
+
+        {spotifyLinked ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 56, height: 56, borderRadius: 12, flexShrink: 0, overflow: "hidden", boxShadow: "0 3px 10px rgba(0,0,0,0.18)", border: "1px solid rgba(60,180,120,0.2)" }}>
+                {currentTrack?.imageUrl ? (
+                  <img src={currentTrack.imageUrl} alt="Album Art" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <svg width="56" height="56" viewBox="0 0 56 56">
+                    <rect width="56" height="56" fill="#9a8899" />
+                    <rect x="0" y="10" width="56" height="18" fill="rgba(170,150,160,0.55)" />
+                    <rect x="0" y="34" width="56" height="12" fill="rgba(130,110,125,0.4)" />
+                    <rect x="14" y="0" width="14" height="56" fill="rgba(155,135,150,0.25)" />
+                  </svg>
+                )}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#2a5c3a", letterSpacing: "0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack?.name || "Awaiting..."}</div>
+                <div style={{ fontSize: 11, color: "rgba(60,100,70,0.8)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack?.artist || "The silent choir"}</div>
+                <div style={{ fontSize: 8, color: "rgba(60,180,120,0.5)", marginTop: 4, letterSpacing: 2 }}>♡ ♡ ♡</div>
               </div>
             </div>
-          </div>
-        </>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(60,160,100,0.6)", fontSize: 14, padding: 4, lineHeight: 1 }}>⏮</button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    isPlaying ? pausePlayback() : playTrack();
+                  }}
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #3dba78, #60d4a0)",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 14,
+                    boxShadow: "0 3px 12px rgba(60,180,100,0.45)",
+                    transition: "transform 0.15s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                  onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.95)")}
+                  onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
+                >
+                  {isPlaying ? "⏸" : "▶"}
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(60,160,100,0.6)", fontSize: 14, padding: 4, lineHeight: 1 }}>⏭</button>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 9, color: "rgba(60,120,80,0.5)", fontWeight: 600 }}>
+                  {Math.floor(localPos/60000)}:{String(Math.floor((localPos%60000)/1000)).padStart(2,"0")}
+                </span>
+                <span style={{ fontSize: 11, color: "rgba(60,160,100,0.5)" }}>🔊</span>
+              </div>
+            </div>
+          </>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: 10, textAlign: "center" }}>
           <div style={{ fontSize: 11, color: "#d060a8", fontWeight: 700, lineHeight: 1.4 }}>Link your Spotify to vibeee together! 🎀</div>
@@ -1163,6 +1213,7 @@ const SpotifyCard = memo(({ cardRef }) => {
           </button>
         </div>
       )}
+    </div>
     </div>
   );
 });

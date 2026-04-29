@@ -212,7 +212,7 @@ export default function StarWeaveSignupPage() {
           userId={formData.email.trim()}
           onAuthenticated={handleVerificationComplete}
           onFailed={handleEnrollFailed}
-          challengeData={verificationChallenge}
+          challengeData={challengeData}
         />
       </div>
     );

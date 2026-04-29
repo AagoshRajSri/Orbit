@@ -445,6 +445,19 @@ const AppContent = () => {
     };
   }, [authUser, showPostAuthLoader, getUsers, getNexuses, requestFinishPostAuthLoader]);
 
+  const spotifyLinked = useSpotifyStore((state) => state.spotifyLinked);
+  const startPolling = useSpotifyStore((state) => state.startPolling);
+  const stopPolling = useSpotifyStore((state) => state.stopPolling);
+
+  useEffect(() => {
+    if (spotifyLinked) {
+      startPolling();
+    } else {
+      stopPolling();
+    }
+    return () => stopPolling();
+  }, [spotifyLinked, startPolling, stopPolling]);
+
   const [isOrbitMode, setIsOrbitMode] = useState(false);
   useEffect(() => {
     if (isOrbitMode) {

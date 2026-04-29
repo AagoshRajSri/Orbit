@@ -110,21 +110,8 @@ export async function submitAuth({ userId, pattern, nonce, behavioralMetrics }) 
       : undefined,
   };
 
-  const res = await fetch(`${CONSTELLATION_BASE}/constellation/login`, {
-    method:      'POST',
-    credentials: 'include',
-    headers:     { 'Content-Type': 'application/json' },
-    body:        JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const body       = await res.json().catch(() => ({}));
-    const retryAfter = body.retryAfterMs ?? null;
-    const code       = res.status === 429 ? 'RATE_LIMITED' : 'AUTH_FAILED';
-    throw new AuthError(body.message || 'Authentication failed', code, retryAfter);
-  }
-
-  const user = await res.json();
+  const res = await axiosInstance.post('/auth/constellation/login', payload);
+  const user = res.data;
   return { user };
 }
 

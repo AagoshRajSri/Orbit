@@ -127,7 +127,8 @@ export const signup = async (req, res) => {
         updatedAt: newUser.updatedAt,
         isEmailVerified: newUser.isEmailVerified,
         authToken: tokens.accessToken,
-        sessionId: tokens.sessionId
+        sessionId: tokens.sessionId,
+        ...(mailResult.previewUrl && { previewUrl: mailResult.previewUrl })
       },
       message: "User registered successfully",
     });
@@ -545,12 +546,18 @@ export const forgotPassword = async (req, res) => {
     const otp = generateOTP();
     await storeOTP(email, otp);
 
-    // In development, we just log the OTP to console
-    // In production, you would send via email
-    console.log(`[OTP] Sent to ${email}: ${otp}`);
+    // Call the mailer to send a real email
+    const mailResult = await sendOTP(email, otp);
+    if (!mailResult.success) {
+      console.warn(`[Forgot Password] SMTP failed (${mailResult.error}). OTP for ${email}: ${otp}`);
+    } else {
+      console.log(`[Forgot Password] Sent to ${email}`);
+    }
 
     res.status(200).json({
+      success: true,
       message: "OTP sent to your email",
+      ...(mailResult.previewUrl && { previewUrl: mailResult.previewUrl })
     });
   } catch (error) {
     console.error("Error in forgotPassword controller:", error);

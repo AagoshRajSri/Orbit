@@ -1084,7 +1084,7 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete}
               {label:"Archive Nexus",        sub:"Hide from active list, preserve data",   icon:I.settings, color:"#f59e0b",ok:false},
               {label:"Leave Nexus",          sub:"Exit this nexus and remove it from your list", icon:I.back,     color:"#f59e0b", leave:true},
               {label:"Delete Nexus Forever", sub:"Permanently destroy this nexus",         icon:I.trash,    color:dangerRed, delete:true},
-            ].map(({label,sub,icon,color,leave,delete:isDel})=>(
+            ].map(({label,sub,icon,color,leave,delete:isDel,ok})=>(
               <div key={label} style={{marginBottom:8}}>
                 <Btn3D onClick={()=>{
                   if(leave){ if(onLeave) onLeave(); else addToast("Leave not implemented"); }

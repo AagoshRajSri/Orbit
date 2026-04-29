@@ -437,7 +437,7 @@ const style = `
     background: transparent !important;
   }
   .vamp-chat-env textarea::placeholder { color: rgba(123, 110, 138, 0.4) !important; }
-  .vamp-chat-env .focus\:border-primary\/40:focus { border-color: var(--crimson) !important; box-shadow: 0 0 12px rgba(220,20,60,0.3) !important; background: rgba(139,0,0,0.05) !important; }
+  .vamp-chat-env .focus\\:border-primary\\/40:focus { border-color: var(--crimson) !important; box-shadow: 0 0 12px rgba(220,20,60,0.3) !important; background: rgba(139,0,0,0.05) !important; }
 
   /* Message Overrides */
   .vamp-chat-env .msg-bubble-mine { 
@@ -455,7 +455,7 @@ const style = `
     font-family: 'IM Fell English', serif !important;
     font-size: 15px !important;
   }
-  .vamp-chat-env .text-base-content\/40 { color: var(--mist) !important; font-size: 9px !important; letter-spacing: 1px !important; }
+  .vamp-chat-env .text-base-content\\/40 { color: var(--mist) !important; font-size: 9px !important; letter-spacing: 1px !important; }
 
   /* Scrollbar Override */
   .vamp-chat-env .custom-scrollbar::-webkit-scrollbar { width: 4px; }
