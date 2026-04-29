@@ -84,7 +84,12 @@ export const useAuthStore = create(
           const { authToken, sessionId } = res.data.data;
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
-          set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
+          set({ 
+            authUser: res.data.data, 
+            socketToken: authToken, 
+            showPostAuthLoader: res.data.data.isEmailVerified, 
+            sessionId 
+          });
           get().refreshSocketToken();
           toast.success("Logged in successfully");
           return { success: true };
@@ -129,7 +134,12 @@ export const useAuthStore = create(
           const { authToken, sessionId } = res.data.data;
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
-          set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
+          set({ 
+            authUser: res.data.data, 
+            socketToken: authToken, 
+            showPostAuthLoader: res.data.data.isEmailVerified, 
+            sessionId 
+          });
           get().refreshSocketToken();
           toast.success("Constellation identity sealed ✦");
           return true;
@@ -154,7 +164,12 @@ export const useAuthStore = create(
           const { authToken, sessionId } = res.data.data;
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
-          set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
+          set({ 
+            authUser: res.data.data, 
+            socketToken: authToken, 
+            showPostAuthLoader: res.data.data.isEmailVerified, 
+            sessionId 
+          });
           get().refreshSocketToken();
           if (res.data.data.behaviorWarning) {
             toast.warning("Pattern verified — unusual behavior noted.");
