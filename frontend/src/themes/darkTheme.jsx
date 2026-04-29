@@ -1139,14 +1139,14 @@ const VampireSidebar = memo(({
 
             <div className="sidebar-actions">
                 <button className="action-btn join" onClick={() => {
-                    setNexusActionView("join");
                     setSelectedNexus(null);
                     setSelectedUser(null);
+                    setNexusActionView("join");
                 }}># JOIN</button>
                 <button className="action-btn nexus" onClick={() => {
-                    setNexusActionView("create");
                     setSelectedNexus(null);
                     setSelectedUser(null);
+                    setNexusActionView("create");
                 }}>+ NEXUS</button>
             </div>
 
