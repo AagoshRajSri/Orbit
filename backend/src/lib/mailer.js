@@ -39,16 +39,16 @@ async function createTransporter() {
   const user = process.env.SMTP_USER || process.env.EMAIL;
   const pass = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
   const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const port = parseInt(process.env.SMTP_PORT || "587", 10);
+  const port = parseInt(process.env.SMTP_PORT || "465", 10); // Default to 465 for better Render compatibility
 
   if (user && pass) {
     cachedTransporter = nodemailer.createTransport({
       host,
       port,
-      secure: port === 465,
+      secure: port === 465, // Must be true for 465
       auth: { user, pass },
-      pool: true,
-      maxConnections: 5,
+      // Disabling pool for now as it can cause ENETUNREACH if Render closes idle sockets
+      pool: false, 
     });
 
     await cachedTransporter.verify();
