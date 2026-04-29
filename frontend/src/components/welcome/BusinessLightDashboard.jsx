@@ -107,55 +107,123 @@ export function ElegantSpotifyCard({ onClick }) {
     if (isPlaying) pausePlayback(); else playTrack();
   };
 
+  const handleCardClick = (e) => {
+    // Don't seek if a button was clicked
+    if (e.target.closest("button")) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    if (durationMs) seekTo((percent / 100) * durationMs);
+  };
+
   return (
-    <ThemeCardWrapper className="flex flex-col h-full relative p-6 cursor-pointer group" onClick={onClick}>
-      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:18 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ width:44, height:44, background:"#1DB954", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color:"white", boxShadow:"0 4px 12px rgba(0,0,0,0.08)" }}>🎵</div>
-          <span style={{ fontSize:11, fontWeight:800, letterSpacing:"0.15em", color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)", textTransform:"uppercase" }}>SPOTIFY ACTIVE</span>
-        </div>
-        <button style={{ fontSize:10, fontWeight:700, background:"transparent", border:`1px solid var(--chat-border)`, padding:"4px 12px", borderRadius:8, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)", letterSpacing:"0.05em" }}>EXPAND</button>
-      </div>
+    <ThemeCardWrapper
+      className="flex flex-col h-full relative overflow-hidden cursor-pointer group"
+      style={{ padding: 0 }}
+      onClick={handleCardClick}
+    >
+      {/* ── CARD-WIDE PROGRESS FILL (z=0, behind all content) ── */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0, left: 0, bottom: 0,
+          width: `${progress}%`,
+          background: "linear-gradient(90deg, rgba(29,185,84,0.14) 0%, rgba(29,185,84,0.07) 100%)",
+          transition: "width 1s linear",
+          zIndex: 0,
+          borderRadius: "inherit",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Leading-edge glow line */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0, bottom: 0,
+          left: `${progress}%`,
+          width: 2,
+          background: "rgba(29,185,84,0.5)",
+          transition: "left 1s linear",
+          zIndex: 1,
+          pointerEvents: "none",
+          filter: "blur(3px)",
+        }}
+      />
 
-      <div style={{ display:"flex", alignItems:"center", gap:18, marginBottom: 16 }}>
-        <div style={{ width:80, height:80, borderRadius:12, background:"#221f1d", border:`1px solid var(--chat-border)`, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 25px rgba(0,0,0,0.15)" }}>
-          {currentTrack?.imageUrl ? (
-             <img src={currentTrack.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          ) : (
-             <span style={{ fontSize:32, opacity:0.8 }}>🎵</span>
-          )}
-        </div>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div className="luxury-text transition-all duration-300 group-hover:tracking-widest" style={{ fontSize:20, fontWeight:700, color:"var(--color-base-content)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-            {currentTrack ? currentTrack.name : "Select Track"}
-          </div>
-          <div style={{ fontSize:14, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)", fontFamily:"Georgia, serif", fontStyle:"italic", marginTop:4 }}>
-            {currentTrack ? currentTrack.artist : "Premium Audio Experience"}
-          </div>
-        </div>
-        {isPlaying && (
-          <div style={{ width:60, opacity:0.4 }}>
-             <svg viewBox="0 0 100 20" style={{ width:"100%" }}>
-               <path d="M0,10 Q25,0 50,10 T100,10" fill="none" stroke="var(--chat-primary)" strokeWidth="1.5" />
-             </svg>
-          </div>
-        )}
-      </div>
+      {/* ── ALL CONTENT (z=2, above fill) ── */}
+      <div style={{ position:"relative", zIndex:2, display:"flex", flexDirection:"column", height:"100%", padding:"22px 22px 18px" }}>
 
-      <div style={{ marginTop:"auto", paddingTop:14, display:"flex", alignItems:"center", gap:8 }}>
-        <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ fontSize:14, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)", background:"none", border:"none", cursor:"pointer", transition:"color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color="var(--chat-primary)"} onMouseLeave={e => e.currentTarget.style.color="color-mix(in srgb, var(--color-base-content) 65%, transparent)"}>⏮</button>
-        <button onClick={handlePlayPause} style={{ width:32, height:32, borderRadius:"50%", background:"var(--chat-primary)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:11, border:"none", cursor:"pointer", boxShadow:"0 4px 8px rgba(176,141,87,0.3)", transform:"scale(1)", transition:"transform 0.1s active:scale-95" }} onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
-          {isPlaying ? "⏸" : "▶"}
-        </button>
-        <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ fontSize:14, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)", background:"none", border:"none", cursor:"pointer", transition:"color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color="var(--chat-primary)"} onMouseLeave={e => e.currentTarget.style.color="color-mix(in srgb, var(--color-base-content) 65%, transparent)"}>⏭</button>
-        <div onClick={handleSeek} style={{ flex:1, height:4, background:"rgba(0,0,0,0.06)", borderRadius:2, position:"relative", margin:"0 10px", cursor:"pointer" }}>
-          <div style={{ position:"absolute", top:0, left:0, width:`${progress}%`, height:"100%", background:"var(--chat-primary)", borderRadius:2, transition:"width 1s linear" }} />
-          <div style={{ position:"absolute", left:`${progress}%`, top:-2, width:8, height:8, background:"#fff", border:"1px solid var(--chat-primary)", borderRadius:"50%", transform:"translateX(-50%)", opacity:0 }} className="group-hover:opacity-100 transition-opacity" />
+        {/* Header row */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ width:34, height:34, background:"#1DB954", borderRadius:9, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, color:"white", boxShadow:"0 3px 10px rgba(29,185,84,0.3)" }}>🎵</div>
+            <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.15em", color:"color-mix(in srgb, var(--color-base-content) 60%, transparent)", textTransform:"uppercase" }}>SPOTIFY ACTIVE</span>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+            style={{ fontSize:10, fontWeight:700, background:"transparent", border:`1px solid var(--chat-border)`, padding:"4px 12px", borderRadius:8, color:"color-mix(in srgb, var(--color-base-content) 55%, transparent)", letterSpacing:"0.05em", cursor:"pointer" }}
+          >EXPAND</button>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ fontSize:12, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)" }}>🔊</span>
-          <div onClick={handleVol} style={{ width: 40, height: 4, background:"rgba(0,0,0,0.06)", borderRadius:2, cursor:"pointer", position:"relative" }}>
-             <div style={{ width:`${vol}%`, height:"100%", background:"var(--chat-primary)", borderRadius:2 }} />
+
+        {/* Track info */}
+        <div style={{ display:"flex", alignItems:"center", gap:14, flex:1 }}>
+          <div style={{ width:68, height:68, borderRadius:11, background:"#221f1d", border:`1px solid var(--chat-border)`, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 6px 20px rgba(0,0,0,0.15)", flexShrink:0 }}>
+            {currentTrack?.imageUrl
+              ? <img src={currentTrack.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              : <span style={{ fontSize:28, opacity:0.7 }}>🎵</span>
+            }
+          </div>
+          <div style={{ minWidth:0, flex:1 }}>
+            <div style={{ fontSize:17, fontWeight:700, color:"var(--color-base-content)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+              {currentTrack ? currentTrack.name : "Select Track"}
+            </div>
+            <div style={{ fontSize:12, color:"color-mix(in srgb, var(--color-base-content) 52%, transparent)", fontFamily:"Georgia, serif", fontStyle:"italic", marginTop:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+              {currentTrack ? currentTrack.artist : "Premium Audio Experience"}
+            </div>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:14 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); skipPrevious(); }}
+            style={{ fontSize:15, color:"color-mix(in srgb, var(--color-base-content) 45%, transparent)", background:"none", border:"none", cursor:"pointer", transition:"color 0.2s", lineHeight:1, padding:4 }}
+            onMouseEnter={e => e.currentTarget.style.color="var(--chat-primary)"}
+            onMouseLeave={e => e.currentTarget.style.color="color-mix(in srgb, var(--color-base-content) 45%, transparent)"}
+          >⏮</button>
+
+          <button
+            onClick={handlePlayPause}
+            style={{ width:34, height:34, borderRadius:"50%", background:"var(--chat-primary)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:13, border:"none", cursor:"pointer", boxShadow:"0 3px 10px rgba(29,185,84,0.3)", flexShrink:0, transition:"transform 0.1s" }}
+            onMouseDown={e => e.currentTarget.style.transform="scale(0.9)"}
+            onMouseUp={e => e.currentTarget.style.transform="scale(1)"}
+            onMouseLeave={e => e.currentTarget.style.transform="scale(1)"}
+          >
+            {isPlaying ? "⏸" : "▶"}
+          </button>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); skipNext(); }}
+            style={{ fontSize:15, color:"color-mix(in srgb, var(--color-base-content) 45%, transparent)", background:"none", border:"none", cursor:"pointer", transition:"color 0.2s", lineHeight:1, padding:4 }}
+            onMouseEnter={e => e.currentTarget.style.color="var(--chat-primary)"}
+            onMouseLeave={e => e.currentTarget.style.color="color-mix(in srgb, var(--color-base-content) 45%, transparent)"}
+          >⏭</button>
+
+          {/* Time */}
+          <span style={{ fontSize:10, color:"color-mix(in srgb, var(--color-base-content) 35%, transparent)", marginLeft:2, flexShrink:0 }}>
+            {Math.floor(localPos/60000)}:{String(Math.floor((localPos%60000)/1000)).padStart(2,"0")}
+            {" / "}
+            {Math.floor(durationMs/60000)}:{String(Math.floor((durationMs%60000)/1000)).padStart(2,"0")}
+          </span>
+
+          {/* Volume */}
+          <div style={{ display:"flex", alignItems:"center", gap:5, marginLeft:"auto" }}>
+            <span style={{ fontSize:10, color:"color-mix(in srgb, var(--color-base-content) 40%, transparent)" }}>🔊</span>
+            <div
+              onClick={handleVol}
+              style={{ width:40, height:3, background:"rgba(0,0,0,0.08)", borderRadius:2, cursor:"pointer", position:"relative" }}
+            >
+              <div style={{ width:`${vol}%`, height:"100%", background:"var(--chat-primary)", borderRadius:2 }} />
+            </div>
           </div>
         </div>
       </div>
