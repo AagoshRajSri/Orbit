@@ -9,6 +9,8 @@ import { gsap } from "gsap";
 import { THEMES, THEME_LABELS } from "../constants";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSpotifyStore } from "../store/useSpotifyStore";
+import { spotifyService } from "../services/spotifyService";
+import { API_URL } from "../config";
 import batLogo from "../bat.svg";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
@@ -2429,7 +2431,18 @@ export function VampireSpotify() {
                                 <div style={{ fontSize: 16, color: "var(--bone)", fontFamily: "'IM Fell English', serif", fontStyle: "italic", maxWidth: 460, lineHeight: 1.8 }}>
                                     The ritual requires a conduit. Link your Spotify existence to broadcast hymns across the crimson void.
                                 </div>
-                                <button onClick={() => window.location.href = `${API_URL}/api/spotify/login`} style={{ padding: "16px 36px", borderRadius: 4, background: "linear-gradient(135deg,rgba(139,0,0,0.4),rgba(220,20,60,0.2))", color: "var(--ivory)", border: "1px solid var(--crimson)", fontSize: 14, fontWeight: 900, fontFamily: "'Cinzel',serif", letterSpacing: "3px", cursor: "pointer", boxShadow: "0 0 20px rgba(139,0,0,0.3), inset 0 0 10px rgba(220,20,60,0.2)", transition: "all 0.3s" }} onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 0 30px rgba(220,20,60,0.5), inset 0 0 20px rgba(220,20,60,0.4)"; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 0 20px rgba(139,0,0,0.3), inset 0 0 10px rgba(220,20,60,0.2)"; }}>
+                                <button 
+                                  onClick={async () => {
+                                    try {
+                                      await spotifyService.initiateLogin();
+                                    } catch (error) {
+                                      console.error("Failed to connect Spotify:", error);
+                                    }
+                                  }}
+                                  style={{ padding: "16px 36px", borderRadius: 4, background: "linear-gradient(135deg,rgba(139,0,0,0.4),rgba(220,20,60,0.2))", color: "var(--ivory)", border: "1px solid var(--crimson)", fontSize: 14, fontWeight: 900, fontFamily: "'Cinzel',serif", letterSpacing: "3px", cursor: "pointer", boxShadow: "0 0 20px rgba(139,0,0,0.3), inset 0 0 10px rgba(220,20,60,0.2)", transition: "all 0.3s" }} 
+                                  onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 0 30px rgba(220,20,60,0.5), inset 0 0 20px rgba(220,20,60,0.4)"; }} 
+                                  onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 0 20px rgba(139,0,0,0.3), inset 0 0 10px rgba(220,20,60,0.2)"; }}
+                                >
                                     COMMENCE RITUAL
                                 </button>
                             </div>

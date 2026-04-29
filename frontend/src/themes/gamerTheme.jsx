@@ -9,6 +9,7 @@ import { gsap } from "gsap";
 import { useNexusStore } from "../store/useNexusStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { spotifyService } from "../services/spotifyService";
 import { API_URL } from "../config";
 
 /* ─────────────────────────────────────────────
@@ -1758,7 +1759,16 @@ export function GamerSpotify() {
             <div style={{ fontSize: 16, color: "rgba(255,255,255,0.7)", fontFamily: "'Rajdhani',monospace", maxWidth: 400, lineHeight: 1.5 }}>
               Link your Spotify account to synchronize audio playback across your squad. Drop into the same frequency.
             </div>
-            <button onClick={() => window.location.href = `${API_URL}/api/spotify/login`} className="shard-btn" style={{ padding: "12px 24px", borderRadius: 8, background: "#1DB954", color: "#000", border: "none", fontSize: 16, fontWeight: 900, fontFamily: "'Orbitron',monospace", letterSpacing: "0.1em", cursor: "pointer", boxShadow: "0 0 20px rgba(29,185,84,0.6)" }}>
+            <button 
+              onClick={async () => {
+                try {
+                  await spotifyService.initiateLogin();
+                } catch (error) {
+                  console.error("Failed to connect Spotify:", error);
+                }
+              }}
+              className="shard-btn" style={{ padding: "12px 24px", borderRadius: 8, background: "#1DB954", color: "#000", border: "none", fontSize: 16, fontWeight: 900, fontFamily: "'Orbitron',monospace", letterSpacing: "0.1em", cursor: "pointer", boxShadow: "0 0 20px rgba(29,185,84,0.6)" }}
+            >
               INITIALIZE CONNECTION
             </button>
           </div>

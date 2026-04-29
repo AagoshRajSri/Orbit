@@ -5,6 +5,8 @@ import { useAuthStore } from "../store/useAuthStore";
 import toast from "../lib/toast";
 import { THEMES, THEME_LABELS } from "../constants";
 import { useSpotifyStore } from "../store/useSpotifyStore";
+import { spotifyService } from "../services/spotifyService";
+import { API_URL } from "../config";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import { useSettingsStore } from "../store/useSettingsStore";
@@ -1342,7 +1344,14 @@ export function AmoledSpotify() {
                   Link your Spotify account to the orbital network. Sync music across the grid in real-time.
                 </p>
                 <button
-                  onClick={() => window.location.href = `${API_URL}/api/spotify/login`}
+                  onClick={async () => {
+                    try {
+                      await spotifyService.initiateLogin();
+                    } catch (error) {
+                      console.error("Failed to connect Spotify:", error);
+                    }
+                  }}
+                  className="amoled-btn"
                   style={{
                     width: "100%", padding: "16px 24px",
                     background: "linear-gradient(135deg, rgba(78,205,196,0.15) 0%, rgba(78,205,196,0.05) 100%)",

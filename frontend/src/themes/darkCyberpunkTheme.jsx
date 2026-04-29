@@ -10,6 +10,7 @@ import { gsap } from "gsap";
 import { useNexusStore } from "../store/useNexusStore";
 import { useSettingsStore } from "../store/useSettingsStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
+import { spotifyService } from "../services/spotifyService";
 import { API_URL } from "../config";
 
 /* ─────────────────────────────────────────────
@@ -1468,7 +1469,16 @@ export function CyberpunkSpotify() {
             <div style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", fontFamily: "'Rajdhani',monospace", maxWidth: 400, lineHeight: 1.6 }}>
               Link your Spotify account to sync spatial audio across all active dimensions and orbit sessions.
             </div>
-            <button onClick={() => window.location.href = `${API_URL}/api/spotify/login`} style={{ padding: "12px 28px", borderRadius: 6, background: `linear-gradient(90deg,${C},${P})`, color: "#000", border: "none", fontSize: 14, fontWeight: 900, fontFamily: "'Orbitron',monospace", letterSpacing: "0.1em", cursor: "pointer", boxShadow: `0 0 24px ${C}66` }}>
+            <button 
+              onClick={async () => {
+                try {
+                  await spotifyService.initiateLogin();
+                } catch (error) {
+                  console.error("Failed to connect Spotify:", error);
+                }
+              }}
+              style={{ padding: "12px 28px", borderRadius: 6, background: `linear-gradient(90deg,${C},${P})`, color: "#000", border: "none", fontSize: 14, fontWeight: 900, fontFamily: "'Orbitron',monospace", letterSpacing: "0.1em", cursor: "pointer", boxShadow: `0 0 24px ${C}66` }}
+            >
               INITIALIZE LINK
             </button>
           </div>

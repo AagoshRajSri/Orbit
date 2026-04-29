@@ -7,6 +7,7 @@ import {
   Compass, CheckCircle2, ArrowLeft 
 } from "lucide-react";
 
+import { spotifyService } from "../services/spotifyService";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
@@ -694,6 +695,7 @@ export default function LightTheme({ children }) {
    const { nexusActionView, setNexusActionView, selectedNexus, setSelectedNexus, selectedNexusId, nexuses } = useNexusStore();
    const { selectedUser, setSelectedUser, users } = useChatStore();
    const { logout } = useAuthStore();
+   const { spotifyLinked, currentTrack } = useSpotifyStore();
    const nexusSelected = Boolean(selectedNexus || selectedNexusId);
    const navigate = useNavigate();
 
@@ -781,40 +783,58 @@ export default function LightTheme({ children }) {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: 16, flex: 1, minHeight: 0 }}>
-               {/* SPOTIFY ACTIVE */}
-               <div className="luxury-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => navigate('/spotify')}>
+               {/* SPOTIFY CARD */}
+               <div className="luxury-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => {
+                 if (spotifyLinked) {
+                   navigate('/spotify');
+                 } else {
+                   spotifyService.initiateLogin().catch(e => console.error(e));
+                 }
+               }}>
                  <div className="luxury-card-overlay" />
                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, position: 'relative' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                        <div className="rich-icon-wrapper" style={{ width: 28, height: 28, borderRadius: '50%', background: '#E6EAE5', color: '#6DA37A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                          <Music size={14} />
                        </div>
-                       <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>SPOTIFY ACTIVE</span>
+                       <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>{spotifyLinked ? "SPOTIFY ACTIVE" : "CONNECT SPOTIFY"}</span>
                     </div>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#A0A0A0', letterSpacing: 1 }}>EXPAND</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#A0A0A0', letterSpacing: 1 }}>{spotifyLinked ? "EXPAND" : "CONNECT"}</span>
                  </div>
                  
-                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }}>
-                    <div style={{ width: 64, height: 64, borderRadius: 12, background: 'url(https://images.unsplash.com/photo-1493225457124-a1a2a5f5f9af?auto=format&fit=crop&w=200&q=80) center/cover', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }} />
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Reflections</div>
-                      <div style={{ fontSize: 12, color: LUXURY_COLORS.textSecondary }}>The Neighbourhood</div>
-                    </div>
-                 </div>
-
-                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, position: 'relative' }}>
-                    <div style={{ display: 'flex', gap: 16, color: '#6DA37A' }}>
-                       <SkipBack size={18} fill="currentColor" />
-                       <Play size={18} fill="currentColor" />
-                       <SkipForward size={18} fill="currentColor" />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                       <Bell size={14} color="#A0A0A0" />
-                       <div style={{ width: 60, height: 4, background: '#E0E0E0', borderRadius: 2 }}>
-                         <div style={{ width: '60%', height: '100%', background: '#6DA37A', borderRadius: 2 }} />
-                       </div>
-                    </div>
-                 </div>
+                 {spotifyLinked ? (
+                   <>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }}>
+                        <div style={{ width: 64, height: 64, borderRadius: 12, background: currentTrack ? `url(${currentTrack.imageUrl}) center/cover` : '#E6EAE5', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }} />
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{currentTrack ? currentTrack.name : "Awaiting Frequency..."}</div>
+                          <div style={{ fontSize: 12, color: LUXURY_COLORS.textSecondary }}>{currentTrack ? currentTrack.artist : "Ready to play"}</div>
+                        </div>
+                     </div>
+    
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, position: 'relative' }}>
+                        <div style={{ display: 'flex', gap: 16, color: '#6DA37A' }}>
+                           <SkipBack size={18} fill="currentColor" />
+                           <Play size={18} fill="currentColor" />
+                           <SkipForward size={18} fill="currentColor" />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                           <Bell size={14} color="#A0A0A0" />
+                           <div style={{ width: 60, height: 4, background: '#E0E0E0', borderRadius: 2 }}>
+                             <div style={{ width: '60%', height: '100%', background: '#6DA37A', borderRadius: 2 }} />
+                           </div>
+                        </div>
+                     </div>
+                   </>
+                 ) : (
+                   <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', position: 'relative', marginTop: 8 }}>
+                     <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Sync your music</div>
+                     <div style={{ fontSize: 12, color: LUXURY_COLORS.textSecondary }}>Connect to broadcast your frequency</div>
+                     <button className="luxury-button" style={{ marginTop: 16, background: '#1DB954', color: 'white', padding: '8px 16px', borderRadius: 20 }}>
+                       Authorize
+                     </button>
+                   </div>
+                 )}
                </div>
 
                {/* START CHATTING */}
@@ -872,6 +892,8 @@ export default function LightTheme({ children }) {
 
 export function LightSpotify() {
   const navigate = useNavigate();
+  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore();
+
   return (
     <LuxuryWrapper>
       <div className="board-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #Fdfbf9, #F2EBE1)', position: 'relative' }}>
@@ -881,18 +903,59 @@ export function LightSpotify() {
          >
            <ArrowLeft size={16} /> Dashboard
          </button>
-        <div style={{ textAlign: 'center', maxWidth: 500 }}>
-          <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', boxShadow: '0 20px 40px rgba(109, 163, 122, 0.2)', border: '2px solid #E6EAE5' }}>
-            <Music size={40} color="#6DA37A" />
+
+        {!spotifyLinked ? (
+          <div style={{ textAlign: 'center', maxWidth: 500 }}>
+            <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', boxShadow: '0 20px 40px rgba(109, 163, 122, 0.2)', border: '2px solid #E6EAE5' }}>
+              <Music size={40} color="#6DA37A" />
+            </div>
+            <h2 className="font-playfair" style={{ fontSize: 36, fontWeight: 700, color: "#1C2431", marginBottom: 16 }}>Musical Resonance</h2>
+            <p style={{ fontSize: 15, color: LUXURY_COLORS.textSecondary, marginBottom: 40, lineHeight: 1.6 }}>
+              The global auditory layer is tuned to high-fidelity standards. Link your Spotify account to broadcast your frequency across the orbit.
+            </p>
+            <button 
+              className="luxury-button btn-gold" 
+              onClick={async () => {
+                try {
+                  await spotifyService.initiateLogin();
+                } catch (err) {
+                  console.error(err);
+                }
+              }} 
+              style={{ padding: '14px 32px', fontSize: 14 }}
+            >
+              INITIALIZE CONNECTION
+            </button>
           </div>
-          <h2 className="font-playfair" style={{ fontSize: 36, fontWeight: 700, color: "#1C2431", marginBottom: 16 }}>Musical Resonance</h2>
-          <p style={{ fontSize: 15, color: LUXURY_COLORS.textSecondary, marginBottom: 40, lineHeight: 1.6 }}>
-            The global auditory layer is tuned to high-fidelity standards. Manage your frequency directly from the dashboard widget.
-          </p>
-          <button className="luxury-button btn-gold" onClick={() => navigate('/')} style={{ padding: '14px 32px', fontSize: 14 }}>
-            RETURN TO DASHBOARD
-          </button>
-        </div>
+        ) : (
+          <div style={{ textAlign: 'center', maxWidth: 600, width: '100%' }}>
+             <h2 className="font-playfair" style={{ fontSize: 36, fontWeight: 700, color: "#1C2431", marginBottom: 32 }}>Now Broadcasting</h2>
+             
+             <div className="luxury-card" style={{ padding: 40, background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+                <div style={{ width: 280, height: 280, borderRadius: 20, background: currentTrack ? `url(${currentTrack.imageUrl}) center/cover` : '#F7F5F0', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', border: '1px solid #E6EAE5' }} />
+                
+                <div style={{ textAlign: 'center' }}>
+                   <div style={{ fontSize: 24, fontWeight: 700, color: '#1C2431', marginBottom: 8 }}>{currentTrack ? currentTrack.name : "Awaiting Frequency..."}</div>
+                   <div style={{ fontSize: 16, color: LUXURY_COLORS.textSecondary }}>{currentTrack ? currentTrack.artist : "Ready to play"}</div>
+                </div>
+
+                <div style={{ width: '100%', height: 4, background: '#E6EAE5', borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
+                   <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '45%', background: '#6DA37A', borderRadius: 2 }} />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 40, color: '#6DA37A' }}>
+                   <SkipBack size={32} style={{ cursor: 'pointer' }} />
+                   <div 
+                     onClick={() => isPlaying ? pausePlayback() : playTrack()}
+                     style={{ width: 80, height: 80, borderRadius: '50%', background: '#6DA37A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', boxShadow: '0 10px 25px rgba(109, 163, 122, 0.4)' }}
+                   >
+                     {isPlaying ? <div style={{ width: 24, height: 24, display: 'flex', gap: 6 }}><div style={{ flex: 1, background: 'white', borderRadius: 2 }} /><div style={{ flex: 1, background: 'white', borderRadius: 2 }} /></div> : <Play size={32} fill="white" />}
+                   </div>
+                   <SkipForward size={32} style={{ cursor: 'pointer' }} />
+                </div>
+             </div>
+          </div>
+        )}
       </div>
     </LuxuryWrapper>
   );
