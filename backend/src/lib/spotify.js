@@ -22,6 +22,11 @@ class SpotifyService {
       "user-read-currently-playing",
       "user-read-playback-state",
       "streaming",
+      "user-library-read",
+      "user-read-recently-played",
+      "playlist-read-private",
+      "playlist-modify-private",
+      "playlist-modify-public"
     ];
 
     const params = new URLSearchParams({
