@@ -79,20 +79,23 @@ async function createTransporter() {
 
 // ─── Email Template ───────────────────────────────────────────────────────────
 
-function buildEmailPayload(to, otp) {
+function buildEmailPayload(to, otp, type = "verification") {
   const year = new Date().getFullYear();
+  const subject = type === "reset" 
+    ? `${otp} is your Orbit password reset code`
+    : `${otp} is your Orbit verification code`;
 
   return {
-    from: `"Orbit" <${process.env.SMTP_FROM || "noreply@orbit.com"}>`,
+    from: process.env.SMTP_FROM || `"Orbit" <${process.env.SMTP_USER || "noreply@orbit.com"}>`,
     to,
-    subject: `${otp} is your Orbit verification code`,
+    subject,
     text: [
       `Hey,`,
       ``,
-      `Your Orbit verification code is: ${otp}`,
+      `Your Orbit ${type === "reset" ? "password reset" : "verification"} code is: ${otp}`,
       ``,
       `It expires in ${OTP_VALIDITY_MINUTES} minutes.`,
-      `If you didn't sign up for Orbit, you can safely ignore this.`,
+      `If you didn't request this, you can safely ignore this email.`,
       ``,
       `— Orbit`,
     ].join("\n"),
@@ -348,9 +351,10 @@ async function withRetry(fn, retries = MAX_RETRIES, delayMs = RETRY_DELAY_MS) {
  *
  * @param {string} to   - Recipient email address
  * @param {string|number} otp - The one-time password to send
+ * @param {string} type - The type of email (verification or reset)
  * @returns {{ success: boolean, messageId?: string, previewUrl?: string, error?: string }}
  */
-export async function sendOTP(to, otp) {
+export async function sendOTP(to, otp, type = "verification") {
   // ── Input validation ──
   if (!to || !EMAIL_REGEX.test(to)) {
     console.error("[MAILER] Invalid recipient email:", to);
@@ -371,7 +375,7 @@ export async function sendOTP(to, otp) {
   // ── Send with retry ──
   try {
     const transporter = await createTransporter();
-    const payload = buildEmailPayload(to, otp);
+    const payload = buildEmailPayload(to, otp, type);
 
     const info = await withRetry(() => transporter.sendMail(payload));
 

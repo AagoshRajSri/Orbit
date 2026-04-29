@@ -547,7 +547,7 @@ export const forgotPassword = async (req, res) => {
     await storeOTP(email, otp);
 
     // Call the mailer to send a real email
-    const mailResult = await sendOTP(email, otp);
+    const mailResult = await sendOTP(email, otp, "reset");
     if (!mailResult.success) {
       console.warn(`[Forgot Password] SMTP failed (${mailResult.error}). OTP for ${email}: ${otp}`);
     } else {
