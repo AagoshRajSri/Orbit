@@ -995,15 +995,36 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
 });
 
 const SpotifyCard = memo(({ cardRef }) => {
-  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore();
+  const { 
+    spotifyLinked, currentTrack, isPlaying, 
+    pausePlayback, playTrack, skipNext, skipPrevious,
+    positionMs, durationMs, seekTo
+  } = useSpotifyStore();
   const navigate = useNavigate();
-  const [prog, setProg] = useState(38);
+
+  const [localPos, setLocalPos] = useState(positionMs || 0);
 
   useEffect(() => {
-    if (!isPlaying) return;
-    const iv = setInterval(() => setProg(p => (p >= 100 ? 0 : p + 0.25)), 200);
-    return () => clearInterval(iv);
-  }, [isPlaying]);
+    setLocalPos(positionMs || 0);
+  }, [positionMs]);
+
+  useEffect(() => {
+    let t;
+    if (isPlaying && durationMs) {
+      t = setInterval(() => setLocalPos(p => Math.min(p + 1000, durationMs)), 1000);
+    }
+    return () => clearInterval(t);
+  }, [isPlaying, durationMs]);
+
+  const prog = durationMs ? (localPos / durationMs) * 100 : 0;
+
+  const handleSeek = (e) => {
+    e.stopPropagation();
+    if (!durationMs) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    seekTo((percent / 100) * durationMs);
+  };
 
   const handleConnect = async (e) => {
     e.stopPropagation();
@@ -1076,15 +1097,15 @@ const SpotifyCard = memo(({ cardRef }) => {
                 </svg>
               )}
             </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#2a5c3a", letterSpacing: "0.02em" }}>{currentTrack?.name || "Awaiting..."}</div>
-              <div style={{ fontSize: 10.5, color: "rgba(60,100,70,0.7)", marginTop: 2 }}>{currentTrack?.artist || "The silent choir"}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#2a5c3a", letterSpacing: "0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack?.name || "Awaiting..."}</div>
+              <div style={{ fontSize: 10.5, color: "rgba(60,100,70,0.7)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack?.artist || "The silent choir"}</div>
               <div style={{ fontSize: 8, color: "#ff9ec8", marginTop: 3, letterSpacing: 2 }}>♡ ♡ ♡</div>
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 18 }}>
-              <button style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(60,160,100,0.55)", fontSize: 13, padding: 0, lineHeight: 1 }}>⏮</button>
+              <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(60,160,100,0.55)", fontSize: 13, padding: 0, lineHeight: 1 }}>⏮</button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1110,12 +1131,12 @@ const SpotifyCard = memo(({ cardRef }) => {
               >
                 {isPlaying ? "⏸" : "▶"}
               </button>
-              <button style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(60,160,100,0.55)", fontSize: 13, padding: 0, lineHeight: 1 }}>⏭</button>
+              <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(60,160,100,0.55)", fontSize: 13, padding: 0, lineHeight: 1 }}>⏭</button>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div onClick={handleSeek} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
               <span style={{ fontSize: 10, color: "rgba(60,120,80,0.5)" }}>🎵</span>
               <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(60,180,100,0.15)", position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${prog}%`, background: "linear-gradient(90deg, #3dba78, #70d4a0)", borderRadius: 2, transition: "width 0.2s linear" }} />
+                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${prog}%`, background: "linear-gradient(90deg, #3dba78, #70d4a0)", borderRadius: 2, transition: "width 1s linear" }} />
               </div>
             </div>
           </div>

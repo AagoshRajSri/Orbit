@@ -42,9 +42,7 @@ const itemVariants = {
  * Micro-component to isolate playback progress updates
  */
 const MiniProgressBar = memo(() => {
-  const positionMs = useSpotifyStore(s => s.positionMs);
-  const durationMs = useSpotifyStore(s => s.durationMs);
-  const isPlaying = useSpotifyStore(s => s.isPlaying);
+  const { positionMs, durationMs, isPlaying, seekTo } = useSpotifyStore();
   const [animatedPos, setAnimatedPos] = useState(positionMs);
 
   // Sync when positionMs changes from store
@@ -65,15 +63,29 @@ const MiniProgressBar = memo(() => {
 
   const progress = durationMs > 0 ? (animatedPos / durationMs) * 100 : 0;
 
+  const handleSeek = (e) => {
+    e.stopPropagation();
+    if (!durationMs) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    seekTo((percent / 100) * durationMs);
+  };
+
   return (
-    <div className="relative z-10 h-0.5 w-full bg-[var(--chat-border)] rounded-full overflow-hidden mt-4">
+    <div 
+      className="relative z-10 h-1.5 w-full bg-[var(--chat-border)] rounded-full overflow-visible mt-4 cursor-pointer group"
+      onClick={handleSeek}
+    >
       <div
-        className="absolute left-0 top-0 h-full bg-[#1DB954] transition-all duration-1000 ease-linear"
+        className="absolute left-0 top-0 h-full bg-[#1DB954] transition-all duration-1000 ease-linear rounded-full"
         style={{ width: `${progress}%` }}
+      />
+      <div 
+        className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full shadow border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ left: `calc(${progress}% - 5px)` }}
       />
     </div>
   );
-
 });
 
 const StarryBackground = memo(() => (

@@ -1304,9 +1304,57 @@ const VampireSidebar = memo(({
 });
 VampireSidebar.displayName = "VampireSidebar";
 
-const VampireSpotifyCard = memo(({ addCardRef, isPlaying, setIsPlaying, volume, setVolume, navigate }) => {
+const VampireSpotifyCard = memo(({ addCardRef, navigate }) => {
+    const { 
+      spotifyLinked, currentTrack, isPlaying, 
+      pausePlayback, playTrack, skipNext, skipPrevious,
+      positionMs, durationMs, seekTo, setVolume
+    } = useSpotifyStore();
+    
+    const [localPos, setLocalPos] = useState(positionMs || 0);
+    const [vol, setVol] = useState(70);
+  
+    useEffect(() => {
+      setLocalPos(positionMs || 0);
+    }, [positionMs]);
+  
+    useEffect(() => {
+      let t;
+      if (isPlaying && durationMs) {
+        t = setInterval(() => setLocalPos(p => Math.min(p + 1000, durationMs)), 1000);
+      }
+      return () => clearInterval(t);
+    }, [isPlaying, durationMs]);
+  
+    const progress = durationMs ? (localPos / durationMs) * 100 : 0;
+  
+    const handleSeek = (e) => {
+      e.stopPropagation();
+      if (!durationMs) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+      seekTo((percent / 100) * durationMs);
+    };
+
+    if (!spotifyLinked) {
+        return (
+            <div className="card spotify" ref={el => addCardRef && addCardRef(el, 0)} onClick={() => navigate("/spotify")}>
+                <div className="spotify-header">
+                    <div className="spotify-badge">
+                        <div className="spotify-dot">🎵</div>
+                        <span className="spotify-label">Spotify Sync</span>
+                    </div>
+                </div>
+                <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center", padding: "10px 0" }}>
+                   <span style={{ fontSize:22, fontWeight:700, color:"#fff" }}>Connect Spotify</span>
+                   <span style={{ fontSize:14, color:"#F0E6D3", marginTop:6, fontStyle:"italic" }}>Share your listening experience</span>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="card spotify" ref={el => addCardRef(el, 0)} onClick={() => navigate("/spotify")}>
+        <div className="card spotify" ref={el => addCardRef && addCardRef(el, 0)} onClick={() => navigate("/spotify")}>
             <div className="spotify-header">
                 <div className="spotify-badge">
                     <div className="spotify-dot">🎵</div>
@@ -1316,36 +1364,49 @@ const VampireSpotifyCard = memo(({ addCardRef, isPlaying, setIsPlaying, volume, 
             </div>
 
             <div className="spotify-track">
-                <div className="track-art">🎼</div>
-                <div>
-                    <div className="track-name">Reflections</div>
-                    <div className="track-artist">The Neighbourhood</div>
+                {currentTrack?.imageUrl ? (
+                    <img src={currentTrack.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit:"cover" }} />
+                ) : (
+                    <div className="track-art">🎼</div>
+                )}
+                <div style={{ minWidth:0 }}>
+                    <div className="track-name" style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{currentTrack ? currentTrack.name : "Orbit Anthems"}</div>
+                    <div className="track-artist" style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{currentTrack ? currentTrack.artist : "Premium Audio"}</div>
                 </div>
             </div>
 
-            <div className="spotify-controls">
-                <div className="controls-center">
-                    <button className="ctrl-btn" onClick={(e) => e.stopPropagation()}>⏮</button>
-                    <button
-                        className="play-btn"
-                        onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }}
-                    >
-                        {isPlaying ? "⏸" : "▶"}
-                    </button>
-                    <button className="ctrl-btn" onClick={(e) => e.stopPropagation()}>⏭</button>
+            <div className="spotify-controls" style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%" }}>
+                    <div className="controls-center" style={{ display:"flex", alignItems:"center", gap:12 }}>
+                        <button className="ctrl-btn" onClick={(e) => { e.stopPropagation(); skipPrevious(); }}>⏮</button>
+                        <button
+                            className="play-btn"
+                            onClick={(e) => { e.stopPropagation(); isPlaying ? pausePlayback() : playTrack(); }}
+                        >
+                            {isPlaying ? "⏸" : "▶"}
+                        </button>
+                        <button className="ctrl-btn" onClick={(e) => { e.stopPropagation(); skipNext(); }}>⏭</button>
+                    </div>
+                    <div className="volume-row" style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <span className="vol-icon">🔊</span>
+                        <input
+                            className="vol-slider" type="range"
+                            min="0" max="100" value={vol}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={e => {
+                                setVol(e.target.value);
+                                if (setVolume) setVolume(e.target.value);
+                            }}
+                            style={{
+                                background: `linear-gradient(90deg, #1DB954 ${vol}%, rgba(29,185,84,0.2) ${vol}%)`,
+                                width: '60px'
+                            }}
+                        />
+                    </div>
                 </div>
-                <div className="volume-row">
-                    <span className="vol-icon">🔊</span>
-                    <input
-                        className="vol-slider" type="range"
-                        min="0" max="100" value={volume}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={e => setVolume(e.target.value)}
-                        style={{
-                            background: `linear-gradient(90deg, #1DB954 ${volume}%, rgba(29,185,84,0.2) ${volume}%)`,
-                            width: '100%'
-                        }}
-                    />
+                {/* Progress Bar */}
+                <div onClick={handleSeek} style={{ width:"100%", height:4, background:"rgba(0,0,0,0.4)", borderRadius:2, cursor:"pointer", position:"relative" }}>
+                    <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${progress}%`, background:"#dc143c", borderRadius:2, transition:"width 1s linear" }} />
                 </div>
             </div>
         </div>

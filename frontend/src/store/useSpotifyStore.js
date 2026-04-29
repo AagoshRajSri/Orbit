@@ -168,6 +168,17 @@ export const useSpotifyStore = create((set, get) => ({
     }
   },
 
+  setVolume: async (volumePercent) => {
+    const { activeDevice } = get();
+    if (!activeDevice) return; // Silent return if no device, as this is often spammed
+    try {
+      await spotifyService.setVolume(activeDevice.id, volumePercent);
+      set({ _lastLocalAction: Date.now() });
+    } catch (error) {
+      console.error("Failed to set volume:", error);
+    }
+  },
+
   toggleShuffle: async () => {
     const { activeDevice, isShuffle } = get();
     if (!activeDevice) return;

@@ -22,6 +22,7 @@ import OrbitAuth from "./pages/OrbitAuth";
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatStore } from "./store/useChatStore";
 import { useNexusStore } from "./store/useNexusStore";
+import { useSpotifyStore } from "./store/useSpotifyStore";
 import { getSocket, disconnectSocket } from "./lib/socket";
 import ChatLoader from "./components/ChatLoader";
 import OrbitLoader from "./components/OrbitLoader";
@@ -635,7 +636,6 @@ const AppContent = () => {
             )}
           </main>
           {authUser && !isAuthPage && <NowPlayingWidget />}
-          {authUser && !isAuthPage && <GlobalMiniPlayer />}
         </>
       )}
     </div>
@@ -647,6 +647,11 @@ const App = () => {
   const authUser = useAuthStore(s => s.authUser);
   const ambientEnabled = useSettingsStore(s => (s.settings?.sound?.enabled ?? true) && (s.settings?.sound?.orbitAmbientEnabled ?? true));
   const masterVolume = useSettingsStore(s => s.settings?.sound?.volume ?? 0.5);
+  const location = useLocation();
+  const isSpotifyPlaying = useSpotifyStore(s => s.isPlaying);
+  
+  const isSpotifyPage = location.pathname === "/spotify";
+  const shouldPlayAmbient = ambientEnabled && !isSpotifyPage && !isSpotifyPlaying;
 
   return (
     <ErrorBoundary>
@@ -655,7 +660,7 @@ const App = () => {
           <ThemeMusic 
             folder={THEME_AUDIO_CONFIG[theme].folder} 
             tracks={THEME_AUDIO_CONFIG[theme].tracks} 
-            isPlaying={ambientEnabled}
+            isPlaying={shouldPlayAmbient}
             volume={masterVolume * 100} 
           />
         )}

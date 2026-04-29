@@ -160,13 +160,62 @@ export function HeroTitle() {
 }
 
 export function TruePastelSpotifyCard({ cardRef, onClick }) {
-  const [playing, setPlaying] = useState(true);
-  const [prog, setProg] = useState(38);
+  const { 
+    spotifyLinked, currentTrack, isPlaying, 
+    pausePlayback, playTrack, skipNext, skipPrevious,
+    positionMs, durationMs, seekTo
+  } = useSpotifyStore();
+
+  const [localPos, setLocalPos] = useState(positionMs);
+
   useEffect(() => {
-    if (!playing) return;
-    const iv = setInterval(() => setProg(p => p >= 100 ? 0 : p + 0.25), 200);
-    return () => clearInterval(iv);
-  }, [playing]);
+    setLocalPos(positionMs);
+  }, [positionMs]);
+
+  useEffect(() => {
+    let t;
+    if (isPlaying && durationMs) {
+      t = setInterval(() => setLocalPos(p => Math.min(p + 1000, durationMs)), 1000);
+    }
+    return () => clearInterval(t);
+  }, [isPlaying, durationMs]);
+
+  const prog = durationMs ? (localPos / durationMs) * 100 : 0;
+
+  const handleSeek = (e) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    seekTo((percent / 100) * durationMs);
+  };
+
+  const handlePlayPause = (e) => {
+    e.stopPropagation();
+    if (isPlaying) pausePlayback(); else playTrack();
+  };
+
+  if (!spotifyLinked) {
+    return (
+      <div ref={cardRef} onClick={onClick} style={{
+        background:"linear-gradient(135deg, #ffd6f0 0%, #f0d8ff 100%)",
+        border:"2px solid rgba(255,180,220,0.8)", borderRadius:24,
+        backdropFilter:"blur(16px)", padding:"18px 20px",
+        display:"flex", flexDirection:"column", gap:12, position:"relative",
+        boxShadow:"0 8px 32px rgba(255,150,200,0.25), inset 0 0 15px rgba(255,255,255,0.6)",
+        cursor: "pointer", transition: "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.25), box-shadow 0.3s",
+        height: "100%", minHeight: 140
+      }}
+      onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.025) translateY(-5px)"; e.currentTarget.style.boxShadow="0 15px 45px rgba(255,100,180,0.4), inset 0 0 20px rgba(255,255,255,1)"}}
+      onMouseLeave={e=>{e.currentTarget.style.transform="scale(1) translateY(0)"; e.currentTarget.style.boxShadow="0 8px 32px rgba(255,150,200,0.25), inset 0 0 15px rgba(255,255,255,0.6)"}}
+      >
+        <CuteBadge label="spotify" color="linear-gradient(90deg,#ff479c,#ff85cc)" />
+        <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center", padding: "10px 0" }}>
+           <span className="luxury-text transition-all duration-300 group-hover:tracking-widest" style={{ fontSize:22, fontWeight:700, color:"#9c27b0" }}>Connect Spotify</span>
+           <span style={{ fontSize:14, color:"#e91e63", marginTop:6, fontWeight:700 }}>Share your listening experience 🎀</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={cardRef} onClick={onClick} style={{
@@ -192,21 +241,29 @@ export function TruePastelSpotifyCard({ cardRef, onClick }) {
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:16 }}>
         <div style={{ width:72, height:72, borderRadius:16, flexShrink:0, overflow:"hidden", boxShadow:"0 5px 15px rgba(255,100,180,0.3)", border:"3px solid white" }}>
-          <div className="w-full h-full bg-gradient-to-br from-pink-300 to-purple-400 flex items-center justify-center relative">
-            <span style={{fontSize: 32, animation: "float 2s ease-in-out infinite"}}>🎵</span>
-            <div style={{position:"absolute", top:4, right:4, fontSize:12}}>✨</div>
-          </div>
+          {currentTrack?.imageUrl ? (
+            <img src={currentTrack.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-pink-300 to-purple-400 flex items-center justify-center relative">
+              <span style={{fontSize: 32, animation: "float 2s ease-in-out infinite"}}>🎵</span>
+              <div style={{position:"absolute", top:4, right:4, fontSize:12}}>✨</div>
+            </div>
+          )}
         </div>
-        <div className="flex-1">
-          <div style={{ fontSize:18, fontWeight:900, color:"#9c27b0", letterSpacing:"0.01em", textShadow: "0 1px 2px rgba(255,255,255,0.8)" }}>Orbit Anthems</div>
-          <div style={{ fontSize:13, color:"#e91e63", marginTop:2, fontWeight:700 }}>Listening with the squad 🎀</div>
-          <div style={{ fontSize:12, color:"#ff85cc", marginTop:4, letterSpacing:4, animation: "pulse 2s infinite" }}>♡ ♡ ♡ ♡</div>
+        <div className="flex-1" style={{ minWidth:0 }}>
+          <div style={{ fontSize:18, fontWeight:900, color:"#9c27b0", letterSpacing:"0.01em", textShadow: "0 1px 2px rgba(255,255,255,0.8)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+            {currentTrack ? currentTrack.name : "Orbit Anthems"}
+          </div>
+          <div style={{ fontSize:13, color:"#e91e63", marginTop:2, fontWeight:700, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+            {currentTrack ? currentTrack.artist : "Listening with the squad 🎀"}
+          </div>
+          <div style={{ fontSize:12, color:"#ff85cc", marginTop:4, letterSpacing:4, animation: isPlaying ? "pulse 2s infinite" : "none" }}>♡ ♡ ♡ ♡</div>
         </div>
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
         <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:24 }}>
-          <button style={{ background:"none", border:"none", cursor:"pointer", color:"#ff85cc", fontSize:18, padding:0, lineHeight:1, transition: "transform 0.2s" }} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.2)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>⏮</button>
-          <button onClick={(e) => { e.stopPropagation(); setPlaying(p=>!p); }} style={{
+          <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#ff85cc", fontSize:18, padding:0, lineHeight:1, transition: "transform 0.2s" }} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.2)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>⏮</button>
+          <button onClick={handlePlayPause} style={{
             width:44, height:44, borderRadius:"50%",
             background:"linear-gradient(135deg, #ff479c, #e860ff)",
             border:"3px solid white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
@@ -215,14 +272,14 @@ export function TruePastelSpotifyCard({ cardRef, onClick }) {
           }}
           onMouseEnter={e=>e.currentTarget.style.transform="scale(1.15)"}
           onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}
-          >{playing ? "⏸" : "▶"}</button>
-          <button style={{ background:"none", border:"none", cursor:"pointer", color:"#ff85cc", fontSize:18, padding:0, lineHeight:1, transition: "transform 0.2s" }} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.2)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>⏭</button>
+          >{isPlaying ? "⏸" : "▶"}</button>
+          <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#ff85cc", fontSize:18, padding:0, lineHeight:1, transition: "transform 0.2s" }} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.2)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>⏭</button>
         </div>
         {/* progress bar */}
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div onClick={handleSeek} style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }}>
           <span style={{ fontSize:14 }}>💖</span>
           <div style={{ flex:1, height:8, borderRadius:4, background:"rgba(255,255,255,0.4)", position:"relative", overflow:"hidden", border: "1px solid rgba(255,180,220,0.4)" }}>
-            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${prog}%`, background:"linear-gradient(90deg, #ff479c, #e860ff)", borderRadius:4, transition:"width 0.2s linear" }}>
+            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${prog}%`, background:"linear-gradient(90deg, #ff479c, #e860ff)", borderRadius:4, transition:"width 1s linear" }}>
               <div style={{ position:"absolute", right:-4, top:0, bottom:0, width:8, background:"white", filter:"blur(4px)" }} />
             </div>
           </div>

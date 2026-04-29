@@ -47,10 +47,44 @@ export function FloatingDust() {
 }
 
 export function ElegantSpotifyCard({ onClick }) {
-  const spotifyLinked = useSpotifyStore(s => s.spotifyLinked);
-  const currentTrack = useSpotifyStore(s => s.currentTrack);
-  const { isPlaying, pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore();
-  
+  const { 
+    spotifyLinked, currentTrack, isPlaying, 
+    pausePlayback, playTrack, skipNext, skipPrevious,
+    positionMs, durationMs, seekTo, setVolume
+  } = useSpotifyStore();
+
+  const [localPos, setLocalPos] = useState(positionMs);
+  const [vol, setVol] = useState(70);
+
+  useEffect(() => {
+    setLocalPos(positionMs);
+  }, [positionMs]);
+
+  useEffect(() => {
+    let t;
+    if (isPlaying && durationMs) {
+      t = setInterval(() => setLocalPos(p => Math.min(p + 1000, durationMs)), 1000);
+    }
+    return () => clearInterval(t);
+  }, [isPlaying, durationMs]);
+
+  const progress = durationMs ? (localPos / durationMs) * 100 : 0;
+
+  const handleSeek = (e) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    seekTo((percent / 100) * durationMs);
+  };
+
+  const handleVol = (e) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const v = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    setVol(v);
+    if (setVolume) setVolume(v);
+  };
+
   if (!spotifyLinked) {
     return (
       <ThemeCardWrapper onClick={onClick} className="flex flex-col h-full relative p-6">
@@ -85,7 +119,7 @@ export function ElegantSpotifyCard({ onClick }) {
 
       <div style={{ display:"flex", alignItems:"center", gap:18, marginBottom: 16 }}>
         <div style={{ width:80, height:80, borderRadius:12, background:"#221f1d", border:`1px solid var(--chat-border)`, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 25px rgba(0,0,0,0.15)" }}>
-          {currentTrack ? (
+          {currentTrack?.imageUrl ? (
              <img src={currentTrack.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
           ) : (
              <span style={{ fontSize:32, opacity:0.8 }}>🎵</span>
@@ -99,7 +133,7 @@ export function ElegantSpotifyCard({ onClick }) {
             {currentTrack ? currentTrack.artist : "Premium Audio Experience"}
           </div>
         </div>
-        {currentTrack && (
+        {isPlaying && (
           <div style={{ width:60, opacity:0.4 }}>
              <svg viewBox="0 0 100 20" style={{ width:"100%" }}>
                <path d="M0,10 Q25,0 50,10 T100,10" fill="none" stroke="var(--chat-primary)" strokeWidth="1.5" />
@@ -109,15 +143,21 @@ export function ElegantSpotifyCard({ onClick }) {
       </div>
 
       <div style={{ marginTop:"auto", paddingTop:14, display:"flex", alignItems:"center", gap:8 }}>
-        <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ fontSize:14, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)", background:"none", border:"none", cursor:"pointer" }}>⏮</button>
-        <button onClick={handlePlayPause} style={{ width:32, height:32, borderRadius:"50%", background:"var(--chat-primary)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:11, border:"none", cursor:"pointer", boxShadow:"0 4px 8px rgba(176,141,87,0.3)" }}>
+        <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ fontSize:14, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)", background:"none", border:"none", cursor:"pointer", transition:"color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color="var(--chat-primary)"} onMouseLeave={e => e.currentTarget.style.color="color-mix(in srgb, var(--color-base-content) 65%, transparent)"}>⏮</button>
+        <button onClick={handlePlayPause} style={{ width:32, height:32, borderRadius:"50%", background:"var(--chat-primary)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:11, border:"none", cursor:"pointer", boxShadow:"0 4px 8px rgba(176,141,87,0.3)", transform:"scale(1)", transition:"transform 0.1s active:scale-95" }} onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
           {isPlaying ? "⏸" : "▶"}
         </button>
-        <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ fontSize:14, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)", background:"none", border:"none", cursor:"pointer" }}>⏭</button>
-        <div style={{ flex:1, height:2, background:"rgba(0,0,0,0.06)", borderRadius:1, position:"relative", margin:"0 10px" }}>
-          <div style={{ position:"absolute", top:0, left:0, width:"42%", height:"100%", background:"var(--chat-primary)", transition:"width 0.5s" }} />
+        <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ fontSize:14, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)", background:"none", border:"none", cursor:"pointer", transition:"color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color="var(--chat-primary)"} onMouseLeave={e => e.currentTarget.style.color="color-mix(in srgb, var(--color-base-content) 65%, transparent)"}>⏭</button>
+        <div onClick={handleSeek} style={{ flex:1, height:4, background:"rgba(0,0,0,0.06)", borderRadius:2, position:"relative", margin:"0 10px", cursor:"pointer" }}>
+          <div style={{ position:"absolute", top:0, left:0, width:`${progress}%`, height:"100%", background:"var(--chat-primary)", borderRadius:2, transition:"width 1s linear" }} />
+          <div style={{ position:"absolute", left:`${progress}%`, top:-2, width:8, height:8, background:"#fff", border:"1px solid var(--chat-primary)", borderRadius:"50%", transform:"translateX(-50%)", opacity:0 }} className="group-hover:opacity-100 transition-opacity" />
         </div>
-        <span style={{ fontSize:12, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)" }}>🔊</span>
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ fontSize:12, color:"color-mix(in srgb, var(--color-base-content) 65%, transparent)" }}>🔊</span>
+          <div onClick={handleVol} style={{ width: 40, height: 4, background:"rgba(0,0,0,0.06)", borderRadius:2, cursor:"pointer", position:"relative" }}>
+             <div style={{ width:`${vol}%`, height:"100%", background:"var(--chat-primary)", borderRadius:2 }} />
+          </div>
+        </div>
       </div>
     </ThemeCardWrapper>
   );

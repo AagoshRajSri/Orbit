@@ -267,26 +267,66 @@ Waveform.displayName = "Waveform";
 
 /* ── Spotify mock card ── */
 const SpotifyCard = memo(() => {
-  const [playing, setPlaying] = useState(true);
-  const [progress, setProgress] = useState(38);
+  const { 
+    spotifyLinked, currentTrack, isPlaying, 
+    pausePlayback, playTrack, skipNext, skipPrevious,
+    positionMs, durationMs, seekTo, setVolume
+  } = useSpotifyStore();
+
+  const [localPos, setLocalPos] = useState(positionMs || 0);
   const [vol, setVol] = useState(70);
   const [hov, setHov] = useState(false);
 
   useEffect(() => {
-    if (!playing) return;
-    const t = setInterval(() => setProgress(p => p >= 100 ? 0 : +(p + 0.22).toFixed(2)), 200);
+    setLocalPos(positionMs || 0);
+  }, [positionMs]);
+
+  useEffect(() => {
+    let t;
+    if (isPlaying && durationMs) {
+      t = setInterval(() => setLocalPos(p => Math.min(p + 1000, durationMs)), 1000);
+    }
     return () => clearInterval(t);
-  }, [playing]);
+  }, [isPlaying, durationMs]);
+
+  const progress = durationMs ? (localPos / durationMs) * 100 : 0;
+
+  const handleSeek = (e) => {
+    e.stopPropagation();
+    if (!durationMs) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    seekTo((percent / 100) * durationMs);
+  };
 
   const handleVol = (e) => {
+    e.stopPropagation();
     const r = e.currentTarget.getBoundingClientRect();
-    setVol(Math.round(Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100))));
+    const v = Math.round(Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100)));
+    setVol(v);
+    if (setVolume) setVolume(v);
   };
 
   const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-  const totalSec = 214;
-  const currSec = (progress / 100) * totalSec;
+  const currSec = localPos / 1000;
+  const totalSec = (durationMs || 0) / 1000;
   const navigate = useNavigate();
+
+  if (!spotifyLinked) {
+    return (
+      <div className="oa-card oa-bracket oa-borderglow" 
+        onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+        style={{ padding: "24px 40px", cursor: "pointer", height: "100%", width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", boxSizing: "border-box", background: `linear-gradient(135deg,rgba(78,205,196,${hov ? 0.08 : 0.03}),rgba(2,2,2,.98))`, borderColor: hov ? "rgba(78,205,196,.4)" : "rgba(198,160,110,.2)", transition: "all .4s ease" }} 
+        onClick={() => navigate("/spotify")}
+      >
+        <div className="oa-scan" />
+        <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center", position:"relative", zIndex:1 }}>
+           <span className="oa-orbitron" style={{ fontSize:22, fontWeight:800, letterSpacing:2, color:"#fff" }}>Connect Spotify</span>
+           <span className="oa-raj" style={{ fontSize:16, color:"rgba(198,160,110,.5)", letterSpacing:1.5, marginTop:8 }}>Share your listening experience</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="oa-card oa-bracket oa-borderglow" 
@@ -298,39 +338,43 @@ const SpotifyCard = memo(() => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 30, position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", gap: 24, alignItems: "center", flex: 1 }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
-            <div style={{ width: 80, height: 80, borderRadius: 16, background: "linear-gradient(135deg,#4ECDC4,#121212)", border: `1.5px solid ${hov ? "#4ECDC4" : "rgba(198,160,110,.4)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, animation: "oa-float 4s ease-in-out infinite", transition: "all .4s" }}>🎵</div>
+            {currentTrack?.imageUrl ? (
+              <img src={currentTrack.imageUrl} alt="" style={{ width: 80, height: 80, borderRadius: 16, border: `1.5px solid ${hov ? "#4ECDC4" : "rgba(198,160,110,.4)"}`, objectFit: "cover" }} />
+            ) : (
+              <div style={{ width: 80, height: 80, borderRadius: 16, background: "linear-gradient(135deg,#4ECDC4,#121212)", border: `1.5px solid ${hov ? "#4ECDC4" : "rgba(198,160,110,.4)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, animation: "oa-float 4s ease-in-out infinite", transition: "all .4s" }}>🎵</div>
+            )}
             <div style={{ position: "absolute", inset: -5, border: `1px solid ${hov ? "rgba(78,205,196,.3)" : "rgba(198,160,110,.2)"}`, borderRadius: 20, animation: "oa-cw 12s linear infinite" }} />
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <div style={{ width: 8, height: 8, background: "#4ECDC4", borderRadius: "50%", boxShadow: "0 0 10px #4ECDC4" }} />
-              <span className="oa-mono" style={{ fontSize: 10, color: "#4ECDC4", letterSpacing: 2 }}>SPOTIFY // {playing ? "ACTIVE" : "PAUSED"}</span>
+              <div style={{ width: 8, height: 8, background: "#4ECDC4", borderRadius: "50%", boxShadow: isPlaying ? "0 0 10px #4ECDC4" : "none" }} />
+              <span className="oa-mono" style={{ fontSize: 10, color: "#4ECDC4", letterSpacing: 2 }}>SPOTIFY // {isPlaying ? "ACTIVE" : "PAUSED"}</span>
             </div>
-            <div className="oa-orbitron" style={{ fontSize: 22, color: "#fff", fontWeight: 800, letterSpacing: 2, marginBottom: 4 }}>Reflections</div>
-            <div className="oa-raj" style={{ fontSize: 16, color: "rgba(198,160,110,.5)", letterSpacing: 1.5 }}>The Neighbourhood</div>
+            <div className="oa-orbitron" style={{ fontSize: 22, color: "#fff", fontWeight: 800, letterSpacing: 2, marginBottom: 4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{currentTrack ? currentTrack.name : "Orbit Anthems"}</div>
+            <div className="oa-raj" style={{ fontSize: 16, color: "rgba(198,160,110,.5)", letterSpacing: 1.5, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{currentTrack ? currentTrack.artist : "Premium Audio"}</div>
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-           <Waveform playing={playing} />
+           <Waveform playing={isPlaying} />
         </div>
       </div>
 
       <div style={{ marginTop: 28, position: "relative", zIndex: 1 }}>
-        <div style={{ height: 4, background: "rgba(198,160,110,.1)", borderRadius: 4, marginBottom: 16, position: "relative" }}>
-          <div className="oa-progress-fill" style={{ width: `${progress}%`, background: "#4ECDC4" }} />
+        <div onClick={handleSeek} style={{ height: 4, background: "rgba(198,160,110,.1)", borderRadius: 4, marginBottom: 16, position: "relative", cursor: "pointer" }}>
+          <div className="oa-progress-fill" style={{ width: `${progress}%`, background: "#4ECDC4", height:"100%" }} />
           <div style={{ position: "absolute", top: "50%", left: `${progress}%`, width: 12, height: 12, background: "#fff", borderRadius: "50%", transform: "translate(-50%,-50%)", boxShadow: "0 0 15px #4ECDC4" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
-            {[["⏮", false], [playing ? "⏸" : "▶", true], ["⏭", false]].map(([icon, primary], i) => (
-              <button key={i} onClick={(e) => { e.stopPropagation(); if (i === 1) setPlaying(p => !p); }} style={{ background: "none", border: "none", cursor: "pointer", color: primary ? "#4ECDC4" : "rgba(198,160,110,.4)", fontSize: primary ? 26 : 18, transition: "all .2s" }}>{icon}</button>
-            ))}
+            <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(198,160,110,.4)", fontSize: 18, transition: "all .2s" }}>⏮</button>
+            <button onClick={(e) => { e.stopPropagation(); isPlaying ? pausePlayback() : playTrack(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#4ECDC4", fontSize: 26, transition: "all .2s" }}>{isPlaying ? "⏸" : "▶"}</button>
+            <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(198,160,110,.4)", fontSize: 18, transition: "all .2s" }}>⏭</button>
             <span className="oa-mono" style={{ fontSize: 11, color: "rgba(198,160,110,.3)", letterSpacing: 2 }}>{fmt(currSec)} / {fmt(totalSec)}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 14, color: "rgba(198,160,110,.3)" }}>🔊</span>
-            <div onClick={(e) => { e.stopPropagation(); handleVol(e); }} style={{ width: 100, height: 4, background: "rgba(198,160,110,.15)", borderRadius: 4, cursor: "pointer", position: "relative" }}>
+            <div onClick={handleVol} style={{ width: 100, height: 4, background: "rgba(198,160,110,.15)", borderRadius: 4, cursor: "pointer", position: "relative" }}>
               <div style={{ width: `${vol}%`, background: "#4ECDC4", borderRadius: 4, height: "100%" }} />
             </div>
           </div>
