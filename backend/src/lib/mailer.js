@@ -36,23 +36,42 @@ let cachedTransporter = null;
 async function createTransporter() {
   if (cachedTransporter) return cachedTransporter;
 
-  const user = process.env.SMTP_USER || process.env.EMAIL;
-  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
-  const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const port = parseInt(process.env.SMTP_PORT || "465", 10); // Default to 465 for better Render compatibility
+  const user = process.env.SMTP_USER || process.env.EMAIL || process.env.EMAIL_USER || process.env.MAIL_USER;
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS || process.env.MAIL_PASS || process.env.MAIL_PASSWORD;
+  const host = process.env.SMTP_HOST || process.env.EMAIL_HOST || process.env.MAIL_HOST || "smtp.gmail.com";
+  const port = parseInt(process.env.SMTP_PORT || process.env.EMAIL_PORT || process.env.MAIL_PORT || "465", 10);
+  const service = process.env.SMTP_SERVICE || process.env.EMAIL_SERVICE;
 
   if (user && pass) {
-    cachedTransporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465, // Must be true for 465
+    const config = {
+      host: service ? undefined : host,
+      port: service ? undefined : port,
+      secure: service ? undefined : (port === 465), 
+      service,
       auth: { user, pass },
-      // Disabling pool for now as it can cause ENETUNREACH if Render closes idle sockets
       pool: false, 
-    });
+    };
 
-    await cachedTransporter.verify();
-    console.log("[MAILER] SMTP connection verified ✓");
+    // Clean up undefined values
+    if (!service) {
+      delete config.service;
+    } else {
+      delete config.host;
+      delete config.port;
+      delete config.secure;
+    }
+
+    cachedTransporter = nodemailer.createTransport(config);
+
+    try {
+      await cachedTransporter.verify();
+      console.log(`[MAILER] SMTP connection verified ✓ (${service || host}:${service ? 'auto' : port})`);
+    } catch (verifyError) {
+      console.error("[MAILER] SMTP verification failed:", verifyError.message);
+      // Don't cache a broken transporter
+      cachedTransporter = null;
+      throw verifyError;
+    }
     return cachedTransporter;
   }
 
@@ -86,7 +105,7 @@ function buildEmailPayload(to, otp, type = "verification") {
     : `${otp} is your Orbit verification code`;
 
   return {
-    from: process.env.SMTP_USER || process.env.EMAIL || "noreply@orbit.com",
+    from: process.env.SMTP_USER || process.env.EMAIL || process.env.EMAIL_USER || process.env.MAIL_USER || "noreply@orbit.com",
     to,
     subject,
     text: [

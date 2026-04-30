@@ -197,7 +197,16 @@ const validateEnv = () => {
     "CLOUDINARY_API_KEY",
     "CLOUDINARY_SECRET_KEY",
   ];
-  const optional = ["CONSTELLATION_PEPPER", "FRONTEND_URL", "NODE_ENV", "PORT"];
+  const optional = [
+    "CONSTELLATION_PEPPER",
+    "FRONTEND_URL",
+    "NODE_ENV",
+    "PORT",
+    "EMAIL_USER",
+    "EMAIL_PASSWORD",
+    "SMTP_USER",
+    "SMTP_PASS",
+  ];
 
   const missing = required.filter((key) => !process.env[key]);
   if (missing.length > 0) {
@@ -206,6 +215,15 @@ const validateEnv = () => {
 
   if (process.env.NODE_ENV === "production") {
     const missingOptional = optional.filter((key) => !process.env[key]);
+    
+    // Specifically check for email if in production
+    const hasEmail = process.env.SMTP_USER || process.env.EMAIL || process.env.EMAIL_USER;
+    const hasPass = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
+    
+    if (!hasEmail || !hasPass) {
+      console.warn("⚠️  Warning: Email credentials (SMTP_USER/PASS or EMAIL_USER/PASS) are missing. Mail system will not work in production.");
+    }
+
     if (missingOptional.length > 0) {
       console.warn(`Warning: Missing optional env vars in production: ${missingOptional.join(", ")}`);
     }
