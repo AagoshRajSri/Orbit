@@ -25,7 +25,6 @@ import { registerSpotifyEvents } from "./socket/spotify-events.js";
 import { pubClient, subClient, connectRedis, isRedisAvailable } from "./lib/redis.js";
 import { createAdapter } from "@socket.io/redis-adapter";
 import dotenv from "dotenv";
-import { createTransporter } from "./lib/mailer.js";
 
 dotenv.config();
 
@@ -213,12 +212,8 @@ const validateEnv = () => {
   if (process.env.NODE_ENV === "production") {
     const missingOptional = optional.filter((key) => !process.env[key]);
     
-    // Specifically check for email if in production
-    const hasEmail = process.env.SMTP_USER || process.env.EMAIL || process.env.EMAIL_USER;
-    const hasPass = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
-    
-    if (!hasEmail || !hasPass) {
-      console.warn("⚠️  Warning: Email credentials (SMTP_USER/PASS or EMAIL_USER/PASS) are missing. Mail system will not work in production.");
+    if (!process.env.RESEND_API_KEY) {
+      console.warn("⚠️  Warning: RESEND_API_KEY is missing. Mail system will not work in production.");
     }
 
     if (missingOptional.length > 0) {
@@ -253,13 +248,6 @@ const startServer = async () => {
         `✓ Socket.IO initialized with CORS origins: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(", ") : allowedOrigins
         }`,
       );
-
-      // Verify mailer connection on startup in production
-      if (process.env.NODE_ENV === "production") {
-        createTransporter().catch(err => {
-          console.error("⚠️  Mailer verification failed at startup:", err.message);
-        });
-      }
     });
 
     // Graceful shutdown — prevents zombie processes holding the port

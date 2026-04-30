@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -29,82 +29,27 @@ function isRateLimited(email) {
   return false;
 }
 
-// ─── Transporter Factory ──────────────────────────────────────────────────────
+// ─── Resend Initialization ──────────────────────────────────────────────────────
 
-let cachedTransporter = null;
+let resendInstance = null;
 
-export async function createTransporter() {
-  if (cachedTransporter) return cachedTransporter;
+function getResend() {
+  if (resendInstance) return resendInstance;
 
-  const user = process.env.SMTP_USER || process.env.EMAIL || process.env.EMAIL_USER || process.env.MAIL_USER;
-  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS || process.env.MAIL_PASS || process.env.MAIL_PASSWORD;
-  const host = process.env.SMTP_HOST || process.env.EMAIL_HOST || process.env.MAIL_HOST || "smtp.gmail.com";
-  const port = parseInt(process.env.SMTP_PORT || process.env.EMAIL_PORT || process.env.MAIL_PORT || "587", 10);
-  const service = process.env.SMTP_SERVICE || process.env.EMAIL_SERVICE;
-
-  if (user && pass) {
-    const config = {
-      host: service ? undefined : host,
-      port: service ? undefined : port,
-      secure: service ? undefined : (port === 465), 
-      service,
-      auth: { user, pass },
-      pool: false,
-      tls: {
-        // Do not fail on invalid certs (common in some proxy environments)
-        rejectUnauthorized: false
-      }
-    };
-
-    // Clean up undefined values
-    if (!service) {
-      delete config.service;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    if (process.env.NODE_ENV === "production") {
+      const errorMsg = "[MAILER] ❌ No RESEND_API_KEY found. Please set it in your environment variables.";
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     } else {
-      delete config.host;
-      delete config.port;
-      delete config.secure;
+      console.warn("[MAILER] ⚠️ No RESEND_API_KEY found in development. Emails will be logged to console instead of sent.");
+      return null;
     }
-
-    cachedTransporter = nodemailer.createTransport(config);
-
-    try {
-      console.log(`[MAILER] Attempting to verify SMTP connection (${service || host})...`);
-      
-      // Add a 20s timeout to verification to prevent hanging on blocked ports
-      await Promise.race([
-        cachedTransporter.verify(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("SMTP verification timed out after 20s")), 20000))
-      ]);
-
-      console.log(`[MAILER] SMTP connection verified ✓ (${service || host}:${service ? 'auto' : port})`);
-    } catch (verifyError) {
-      console.error("[MAILER] SMTP verification failed:", verifyError.message);
-      // Don't cache a broken transporter
-      cachedTransporter = null;
-      throw verifyError;
-    }
-    return cachedTransporter;
   }
 
-  // Fallback: ephemeral Ethereal account (dev only)
-  if (process.env.NODE_ENV === "production") {
-    const errorMsg = "[MAILER] ❌ No SMTP credentials found. Please set SMTP_USER and SMTP_PASS in your environment variables.";
-    console.error(errorMsg);
-    throw new Error(errorMsg);
-  }
-
-  console.warn(
-    "\n[MAILER] ⚠️  No SMTP credentials found. Using Ethereal test account (dev only)."
-  );
-  const testAccount = await nodemailer.createTestAccount();
-  cachedTransporter = nodemailer.createTransport({
-    host: "smtp.ethereal.email",
-    port: 587,
-    secure: false,
-    auth: { user: testAccount.user, pass: testAccount.pass },
-  });
-
-  return cachedTransporter;
+  resendInstance = new Resend(apiKey);
+  return resendInstance;
 }
 
 // ─── Email Template ───────────────────────────────────────────────────────────
@@ -263,34 +208,48 @@ export async function sendOTP(to, otp, type = "verification") {
 
   // ── Send with retry ──
   try {
-    const transporter = await createTransporter();
     const payload = buildEmailPayload(to, otp, type);
+    const resend = getResend();
 
-    const info = await withRetry(() => transporter.sendMail(payload));
-
-    console.log("[MAILER] ✓ Message sent:", info.messageId);
-
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    if (previewUrl) {
+    if (!resend) {
+      // Development mock
       console.log("\n───────────────────────────────────────────────────");
-      console.log("  ✉️  VIEW YOUR TEST EMAIL:");
-      console.log(`  👉 ${previewUrl}`);
+      console.log(`  📧 [MOCK EMAIL] To: ${to}`);
+      console.log(`  🔑 OTP: ${otp}`);
       console.log("───────────────────────────────────────────────────\n");
+      return { success: true, messageId: "mock-" + Date.now() };
     }
 
-    return { success: true, messageId: info.messageId, ...(previewUrl && { previewUrl }) };
+    // Note: Resend's free tier requires using onboarding@resend.dev as the 'from'
+    // address and you can only send to the email address registered to your Resend account.
+    // To send to other users, you must verify a custom domain on Resend.
+    const sender = process.env.RESEND_FROM_EMAIL || "Orbit <onboarding@resend.dev>";
+
+    const { data, error } = await withRetry(async () => {
+      const response = await resend.emails.send({
+        from: sender,
+        to: to,
+        subject: payload.subject,
+        html: payload.html,
+        text: payload.text
+      });
+      
+      if (response.error) throw new Error(response.error.message);
+      return response;
+    });
+
+    console.log("[MAILER] ✓ Message sent via Resend API. ID:", data.id);
+    return { success: true, messageId: data.id };
+
   } catch (error) {
-    console.error("[MAILER] Failed to send email after retries:", error.message);
+    console.error("[MAILER] Failed to send email via Resend:", error.message);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Tear down the cached transporter (useful in tests or graceful shutdown).
+ * Empty teardown function to maintain API compatibility
  */
 export function closeMailer() {
-  if (cachedTransporter) {
-    cachedTransporter.close?.();
-    cachedTransporter = null;
-  }
+  resendInstance = null;
 }
