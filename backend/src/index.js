@@ -25,6 +25,7 @@ import { registerSpotifyEvents } from "./socket/spotify-events.js";
 import { pubClient, subClient, connectRedis, isRedisAvailable } from "./lib/redis.js";
 import { createAdapter } from "@socket.io/redis-adapter";
 import dotenv from "dotenv";
+import { createTransporter } from "./lib/mailer.js";
 
 dotenv.config();
 
@@ -256,6 +257,13 @@ const startServer = async () => {
         `✓ Socket.IO initialized with CORS origins: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(", ") : allowedOrigins
         }`,
       );
+
+      // Verify mailer connection on startup in production
+      if (process.env.NODE_ENV === "production") {
+        createTransporter().catch(err => {
+          console.error("⚠️  Mailer verification failed at startup:", err.message);
+        });
+      }
     });
 
     // Graceful shutdown — prevents zombie processes holding the port

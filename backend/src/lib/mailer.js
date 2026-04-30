@@ -33,7 +33,7 @@ function isRateLimited(email) {
 
 let cachedTransporter = null;
 
-async function createTransporter() {
+export async function createTransporter() {
   if (cachedTransporter) return cachedTransporter;
 
   const user = process.env.SMTP_USER || process.env.EMAIL || process.env.EMAIL_USER || process.env.MAIL_USER;
