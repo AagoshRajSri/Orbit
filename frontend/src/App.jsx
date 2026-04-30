@@ -479,8 +479,12 @@ const AppContent = () => {
   }, []);
 
   useEffect(() => {
-    soundManager.playAmbient(theme);
-  }, [theme]);
+    if (!isAuthPage) {
+      soundManager.playAmbient(theme);
+    } else {
+      soundManager.stopAmbient();
+    }
+  }, [theme, isAuthPage]);
 
   useEffect(() => {
     const isOverlayPage = isOrbitMode || location.pathname === "/spotify";
