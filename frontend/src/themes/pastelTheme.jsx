@@ -2001,10 +2001,7 @@ export function PastelSettings({
                     <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Click Sparkles ✨</div>
                     <input type="checkbox" checked={draftSoundSettings.clickSound} onChange={e => { const v = e.target.checked; setDraftSoundSettings({ ...draftSoundSettings, clickSound: v }); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) {} }} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
-                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
-                    <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Background Ambience 🌌</div>
-                    <input type="checkbox" checked={draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true} onChange={e => { const v = e.target.checked; setDraftSoundSettings({ ...draftSoundSettings, orbitAmbientEnabled: v, ambientStorm: v }); try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) {} }} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
-                  </label>
+
                 </div>
               )}
 

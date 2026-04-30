@@ -1112,7 +1112,7 @@ export function AmoledSettings({
                 <ToggleRow label="GLOBAL EFFECTS" description="Enable or disable all acoustic signals." checked={draftSoundSettings.effectsEnabled} onChange={v => { setDraftSoundSettings(p => ({ ...p, effectsEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.enabled', v); } catch (_) {} }} />
                 <ToggleRow label="TRANSMISSION SOUNDS" description="Auditory ping when a direct message is received." checked={draftSoundSettings.messageSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, messageSound: v })); try { useSettingsStore.getState().updateSetting('sound.notificationEnabled', v); } catch (_) {} }} />
                 <ToggleRow label="HAPTIC CLICKS" description="Subtle acoustic clicks on UI interactions." checked={draftSoundSettings.clickSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, clickSound: v })); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) {} }} />
-                <ToggleRow label="BACKGROUND AMBIENCE" description="Play a soothing background atmosphere." checked={draftSoundSettings.orbitAmbientEnabled ?? true} onChange={v => { setDraftSoundSettings(p => ({ ...p, orbitAmbientEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) {} }} />
+
 
                 <div style={{ marginTop: 20 }}>
                   <label className="oa-mono" style={{ fontSize: 11, color: "rgba(198,160,110,.6)", letterSpacing: 2, display: "block", marginBottom: 10 }}>MASTER GAIN {(draftSoundSettings.volume * 100).toFixed(0)}%</label>

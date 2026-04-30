@@ -1149,15 +1149,7 @@ export function LightSettings({
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Background Ambience</div>
-                    <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Play a soothing background atmosphere.</div>
-                  </div>
-                  <div onClick={() => { const v = !(draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true); setDraftSoundSettings(p => ({...p, ambientStorm: v, orbitAmbientEnabled: v})); try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) {} }} style={{ width: 50, height: 28, borderRadius: 14, background: (draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true) ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
-                    <div style={{ position: 'absolute', top: 2, left: (draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true) ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s' }} />
-                  </div>
-                </div>
+
               </div>
             )}
 

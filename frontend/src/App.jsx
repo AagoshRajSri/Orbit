@@ -39,11 +39,8 @@ import { IdentityProvider } from "./contexts/IdentityContext";
 import { useSettingsStore } from "./store/useSettingsStore";
 import { useThemeStore } from "./store/useThemeStore";
 import { THEMES, THEME_LABELS } from "./constants/index";
-import { THEME_AUDIO_CONFIG } from "./constants/themeAudio";
 import NexusActionOverlay from "./components/NexusActionOverlay";
 import { soundManager } from "./lib/SoundManager";
-import ThemeMusic from "./components/ThemeMusic";
-import NowPlayingWidget from "./components/NowPlayingWidget";
 import ThemePortal from "./components/ThemePortal";
 import GlobalMiniPlayer from "./components/GlobalMiniPlayer";
 
@@ -479,14 +476,6 @@ const AppContent = () => {
   }, []);
 
   useEffect(() => {
-    if (!isAuthPage) {
-      soundManager.playAmbient(theme);
-    } else {
-      soundManager.stopAmbient();
-    }
-  }, [theme, isAuthPage]);
-
-  useEffect(() => {
     const isOverlayPage = isOrbitMode || location.pathname === "/spotify";
     if (isOverlayPage) {
       window.dispatchEvent(new CustomEvent("orbit:fade-out-for-overlay"));
@@ -652,7 +641,6 @@ const AppContent = () => {
               </div>
             )}
           </main>
-          {authUser && !isAuthPage && <NowPlayingWidget />}
           <GlobalMiniPlayer />
         </>
       )}
@@ -663,25 +651,11 @@ const AppContent = () => {
 const App = () => {
   const { theme } = useThemeStore();
   const authUser = useAuthStore(s => s.authUser);
-  const ambientEnabled = useSettingsStore(s => (s.settings?.sound?.enabled ?? true) && (s.settings?.sound?.orbitAmbientEnabled ?? true));
-  const masterVolume = useSettingsStore(s => s.settings?.sound?.volume ?? 0.5);
-  const location = useLocation();
-  const isSpotifyPlaying = useSpotifyStore(s => s.isPlaying);
-  
-  const isSpotifyPage = location.pathname === "/spotify";
-  const shouldPlayAmbient = ambientEnabled && !isSpotifyPage && !isSpotifyPlaying;
+
 
   return (
     <ErrorBoundary>
       <IdentityProvider>
-        {authUser && THEME_AUDIO_CONFIG[theme] && (
-          <ThemeMusic 
-            folder={THEME_AUDIO_CONFIG[theme].folder} 
-            tracks={THEME_AUDIO_CONFIG[theme].tracks} 
-            isPlaying={shouldPlayAmbient}
-            volume={masterVolume * 100} 
-          />
-        )}
         <AppContent />
       </IdentityProvider>
     </ErrorBoundary>

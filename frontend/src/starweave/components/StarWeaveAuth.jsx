@@ -221,9 +221,7 @@ export function StarWeaveAuth({
         setPhase('tracking');
         setInitialising(false);
         setTracking(true);
-        // Start ambient hum on first interaction
         audioEngine.init();
-        audioEngine.startAmbient();
       },
       onError: (err) => {
         const ignore = err?.message?.includes?.('gl_context') ||
@@ -271,7 +269,7 @@ export function StarWeaveAuth({
   function _teardown() {
     cancelAnimationFrame(animRef.current);
     stopHandTracking();
-    audioEngine.stopAmbient();
+
     fxRef.current?._cleanup?.();
     gestureRef.current   = null;
     renderRef.current    = null;

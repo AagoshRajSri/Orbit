@@ -2266,16 +2266,7 @@ export function VampireSettings({
                                         {draftSoundSettings.effectsEnabled ? '◉' : '○'}
                                     </button>
                                 </div>
-                                <div className="v-toggle" onClick={() => {
-                                    const v = !draftSoundSettings.ambientStorm;
-                                    setDraftSoundSettings({ ...draftSoundSettings, ambientStorm: v });
-                                    try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) { }
-                                }} style={{ cursor: 'pointer' }}>
-                                    <div className="v-label" style={{ marginBottom: 0 }}>BACKGROUND AMBIENCE</div>
-                                    <button type="button" style={{ color: draftSoundSettings.ambientStorm ? 'var(--crimson)' : 'var(--mist)', background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', pointerEvents: 'none' }}>
-                                        {draftSoundSettings.ambientStorm ? '◉' : '○'}
-                                    </button>
-                                </div>
+
                             </div>
                         )}
 

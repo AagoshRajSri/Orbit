@@ -8,8 +8,7 @@
  *   success()     — tri-chord resolution
  *   failure()     — descending dissonance
  *   reset()       — soft reset click
- *   startAmbient()— sub-bass living hum (fade in 3s)
- *   stopAmbient() — fade ambient out
+
  *   setMuted(bool)
  *   getMuted()
  */
@@ -17,9 +16,7 @@
 const A_MIN_PENT = [220, 277.18, 329.63, 415.30, 493.88, 554.37, 659.25];
 
 let _ctx          = null;
-let _ambientNode  = null;
-let _ambientGain  = null;
-let _ambientLFO   = null;
+
 let _isMuted      = false;
 let _initialized  = false;
 
@@ -80,7 +77,7 @@ function chord(freqs, duration, gain, delay = 0) {
 // ── Public API ────────────────────────────────────────────────────────────────
 export const audioEngine = {
 
-  setMuted(m) { _isMuted = m; if (m) this.stopAmbient(); },
+  setMuted(m) { _isMuted = m; },
   getMuted()  { return _isMuted; },
 
   /** Call on first mousemove/touchstart to unlock AudioContext */
@@ -172,61 +169,5 @@ export const audioEngine = {
     tone({ frequency: 440, duration: 0.05, gain: 0.03, type: 'triangle', attack: 0.002, decay: 0.02 });
   },
 
-  /** Sub-bass ambient hum — felt more than heard */
-  startAmbient() {
-    if (_isMuted) return;
-    this.stopAmbient();
-    const ctx = getCtx();
-    if (!ctx) return;
 
-    const osc  = ctx.createOscillator();
-    const flt  = ctx.createBiquadFilter();
-    const gn   = ctx.createGain();
-    const lfo  = ctx.createOscillator();
-    const lfg  = ctx.createGain();
-
-    flt.type             = 'lowpass';
-    flt.frequency.value  = 110;
-    flt.Q.value          = 3;
-
-    osc.type             = 'sawtooth';
-    osc.frequency.value  = 42;
-    osc.connect(flt);
-    flt.connect(gn);
-    gn.connect(ctx.destination);
-
-    // LFO modulates oscillator frequency ±9 Hz at 0.08 Hz
-    lfo.type             = 'sine';
-    lfo.frequency.value  = 0.08;
-    lfg.gain.value       = 9;
-    lfo.connect(lfg);
-    lfg.connect(osc.frequency);
-
-    gn.gain.setValueAtTime(0, ctx.currentTime);
-    gn.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 3.0);
-
-    osc.start();
-    lfo.start();
-
-    _ambientNode = osc;
-    _ambientGain = gn;
-    _ambientLFO  = lfo;
-  },
-
-  stopAmbient() {
-    try {
-      if (_ambientGain && _ctx) {
-        const t = _ctx.currentTime;
-        _ambientGain.gain.setValueAtTime(_ambientGain.gain.value, t);
-        _ambientGain.gain.linearRampToValueAtTime(0, t + 0.8);
-      }
-      setTimeout(() => {
-        try { _ambientNode?.stop(); } catch (e) { /* ignore */ }
-        try { _ambientLFO?.stop(); } catch (e) { /* ignore */ }
-        _ambientNode = null;
-        _ambientGain = null;
-        _ambientLFO  = null;
-      }, 900);
-    } catch (e) { /* ignore */ }
-  },
 };

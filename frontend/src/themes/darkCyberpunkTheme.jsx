@@ -1365,7 +1365,7 @@ export function CyberpunkSettings({
               <ToggleSwitch label="GLOBAL EFFECTS" checked={draftSoundSettings.effectsEnabled} onChange={v => { setDraftSoundSettings(p => ({ ...p, effectsEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.enabled', v); } catch (_) {} }} />
               <ToggleSwitch label="TRANSMISSION PINGS" checked={draftSoundSettings.messageSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, messageSound: v })); try { useSettingsStore.getState().updateSetting('sound.notificationEnabled', v); } catch (_) {} }} />
               <ToggleSwitch label="HAPTIC CLICKS" checked={draftSoundSettings.clickSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, clickSound: v })); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) {} }} />
-              <ToggleSwitch label="BACKGROUND AMBIENCE" checked={draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true} onChange={v => { setDraftSoundSettings(p => ({ ...p, ambientStorm: v, orbitAmbientEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.orbitAmbientEnabled', v); } catch (_) {} }} />
+
             </div>
           )}
 

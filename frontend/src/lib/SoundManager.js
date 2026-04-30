@@ -27,15 +27,6 @@ class SoundManager {
 
     // Interaction unlocker to bypass browser autoplay restrictions
     this._unlockAudio = () => {
-      if (this.currentAmbient && this.sounds[this.currentAmbient]?.paused) {
-        // Retry playing ambient if it was blocked
-        const theme = this.currentAmbient.replace('ambient_', '')
-          .replace('vampire', 'dark')
-          .replace('gamer', 'gamer-high-energy')
-          .replace('pastel', 'pastel-dream')
-          .replace('cyberpunk', 'neon-cyberpunk');
-        this.playAmbient(theme);
-      }
       document.removeEventListener('click', this._unlockAudio);
       document.removeEventListener('keydown', this._unlockAudio);
     };
@@ -92,24 +83,16 @@ class SoundManager {
       { name: "notification", path: "/sounds/notification.wav" },
       { name: "incomingmsg", path: "/sounds/incomingmsg.wav" },
       { name: "yourorbit", path: "/sounds/yourorbit.wav" },
-      { name: "ambient_dark", path: "/sounds/darkTheme/darkelectropop - PoorArtistt.mp3" },
-      { name: "ambient_gamer", path: "/sounds/gamerTheme/Retro Synthwave - UsefulPix.mp3" },
-      { name: "ambient_pastel", path: "/sounds/pastelTheme/pastelAmbience.mp3" },
-      { name: "ambient_cyberpunk", path: "/sounds/neonTheme/Cyberpunk - Tunetrove.mp3" },
     ];
 
     soundAssets.forEach(({ name, path }) => {
       const audio = new Audio(path);
       audio.preload = "auto";
-      // Ensure ambient tracks always loop
-      if (name.startsWith("ambient_")) {
-        audio.loop = true;
-      }
       audio.volume = this.globalVolume;
       this.sounds[name] = audio;
     });
 
-    this.currentAmbient = null;
+
     this.isInitialized = true;
   }
 
@@ -125,7 +108,6 @@ class SoundManager {
    * Sound rules respect settings:
    * - "click": Requires sound.enabled && sound.clickEnabled
    * - "notification": Requires sound.enabled && sound.notificationEnabled
-   * - "ambient": Requires sound.enabled && sound.orbitAmbientEnabled
    */
   play(soundName, options = {}) {
     if (!this.settingsStore) {
@@ -152,9 +134,7 @@ class SoundManager {
         case "notification":
           if (!soundSettings.notificationEnabled) return;
           break;
-        case "ambient":
-          if (!soundSettings.orbitAmbientEnabled) return;
-          break;
+
         // Other sounds respect master toggle only
       }
     }
@@ -320,51 +300,7 @@ class SoundManager {
     }, intervalTime);
   }
 
-  /**
-   * Play the ambient theme sound
-   */
-  playAmbient(theme) {
-    if (!this.settingsStore) return;
 
-    const settings = this.settingsStore.getState().settings;
-    if (!settings?.sound?.enabled || !settings?.sound?.orbitAmbientEnabled) {
-      this.stopAmbient();
-      return;
-    }
-
-    let ambientName = null;
-    if (theme === "dark") ambientName = "ambient_dark";
-    else if (theme === "gamer-high-energy") ambientName = "ambient_gamer";
-    else if (theme === "pastel-dream") ambientName = "ambient_pastel";
-    else if (theme === "neon-cyberpunk") ambientName = "ambient_cyberpunk";
-
-    // If changing tracks or stopping
-    if (this.currentAmbient && this.currentAmbient !== ambientName) {
-      this.stopAmbient();
-    }
-
-    if (ambientName) {
-      const audio = this.sounds[ambientName];
-      if (audio) {
-        this.fadeAudio(audio, this.globalVolume, 1500);
-        this.currentAmbient = ambientName;
-      }
-    }
-  }
-
-  /**
-   * Stop specifically the ambient theme sound
-   */
-  stopAmbient() {
-    if (this.currentAmbient && this.sounds[this.currentAmbient]) {
-      const audio = this.sounds[this.currentAmbient];
-      this.currentAmbient = null;
-      
-      this.fadeAudio(audio, 0, 1500, () => {
-        audio.pause();
-      });
-    }
-  }
 }
 
 // Export singleton instance

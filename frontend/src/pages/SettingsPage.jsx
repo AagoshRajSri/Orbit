@@ -369,7 +369,6 @@ const SettingsPage = () => {
         "sound.effectsEnabled": draftSoundSettings.effectsEnabled ?? true,
         "sound.clickEnabled": draftSoundSettings.clickSound ?? true,
         "sound.notificationEnabled": draftSoundSettings.messageSound ?? true,
-        "sound.orbitAmbientEnabled": draftSoundSettings.ambientStorm ?? draftSoundSettings.orbitAmbientEnabled ?? true,
         "notifications.desktopEnabled": draftNotifications.desktop ?? true,
         "notifications.soundEnabled": draftNotifications.sound ?? true,
         "orbit.showRings": draftOrbitBehavior.showRings ?? true,

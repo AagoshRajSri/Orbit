@@ -27,7 +27,6 @@ const DEFAULT_SETTINGS = {
     enabled: true, // Master sound toggle
     clickEnabled: true, // Button/interaction clicks
     notificationEnabled: true, // Message notifications
-    orbitAmbientEnabled: true, // Background ambient sound
     volume: 0.3, // 0.0 - 1.0
   },
 

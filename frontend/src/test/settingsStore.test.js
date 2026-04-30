@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const defaultSettings = {
-  sound: { enabled: true, clickEnabled: true, notificationEnabled: true, orbitAmbientEnabled: true, volume: 0.3 },
+  sound: { enabled: true, clickEnabled: true, notificationEnabled: true, volume: 0.3 },
   notifications: { enabled: true, messageAlerts: true, groupActivity: true, muteWhileActive: true, desktopEnabled: true },
   appearance: { theme: 'dark', accentColor: 'purple', fontSize: 'medium', animationsEnabled: true },
   orbit: { animationsEnabled: true, smoothTransitionsEnabled: true, autoLoadOnLogin: true, showLoaderAnimation: true, showRings: true, autoPauseOnHover: true, interactionFilter: 'all', orbitalTheme: 'nebula', showAvatar: true },
