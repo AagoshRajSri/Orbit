@@ -49,7 +49,13 @@ export async function createTransporter() {
       secure: service ? undefined : (port === 465), 
       service,
       auth: { user, pass },
-      pool: false, 
+      pool: false,
+      tls: {
+        // Do not fail on invalid certs (common in some proxy environments)
+        rejectUnauthorized: false,
+        // Ensure STARTTLS is used on port 587
+        ciphers: port === 587 ? 'SSLv3' : undefined
+      }
     };
 
     // Clean up undefined values
