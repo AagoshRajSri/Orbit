@@ -64,7 +64,14 @@ export async function createTransporter() {
     cachedTransporter = nodemailer.createTransport(config);
 
     try {
-      await cachedTransporter.verify();
+      console.log(`[MAILER] Attempting to verify SMTP connection (${service || host})...`);
+      
+      // Add a 10s timeout to verification to prevent hanging on blocked ports
+      await Promise.race([
+        cachedTransporter.verify(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("SMTP verification timed out after 10s")), 10000))
+      ]);
+
       console.log(`[MAILER] SMTP connection verified ✓ (${service || host}:${service ? 'auto' : port})`);
     } catch (verifyError) {
       console.error("[MAILER] SMTP verification failed:", verifyError.message);
@@ -77,9 +84,9 @@ export async function createTransporter() {
 
   // Fallback: ephemeral Ethereal account (dev only)
   if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "[MAILER] No SMTP credentials found. Set SMTP_USER and SMTP_PASS in .env"
-    );
+    const errorMsg = "[MAILER] ❌ No SMTP credentials found. Please set SMTP_USER and SMTP_PASS in your environment variables.";
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   console.warn(

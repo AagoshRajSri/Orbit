@@ -203,10 +203,6 @@ const validateEnv = () => {
     "FRONTEND_URL",
     "NODE_ENV",
     "PORT",
-    "EMAIL_USER",
-    "EMAIL_PASSWORD",
-    "SMTP_USER",
-    "SMTP_PASS",
   ];
 
   const missing = required.filter((key) => !process.env[key]);
