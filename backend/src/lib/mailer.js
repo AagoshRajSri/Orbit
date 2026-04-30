@@ -52,9 +52,7 @@ export async function createTransporter() {
       pool: false,
       tls: {
         // Do not fail on invalid certs (common in some proxy environments)
-        rejectUnauthorized: false,
-        // Ensure STARTTLS is used on port 587
-        ciphers: port === 587 ? 'SSLv3' : undefined
+        rejectUnauthorized: false
       }
     };
 
@@ -72,10 +70,10 @@ export async function createTransporter() {
     try {
       console.log(`[MAILER] Attempting to verify SMTP connection (${service || host})...`);
       
-      // Add a 10s timeout to verification to prevent hanging on blocked ports
+      // Add a 20s timeout to verification to prevent hanging on blocked ports
       await Promise.race([
         cachedTransporter.verify(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("SMTP verification timed out after 10s")), 10000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error("SMTP verification timed out after 20s")), 20000))
       ]);
 
       console.log(`[MAILER] SMTP connection verified ✓ (${service || host}:${service ? 'auto' : port})`);
