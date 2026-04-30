@@ -598,11 +598,8 @@ const Sidebar = () => {
         } : {}}
       >
         <button
-          onClick={() => {
-            play("click");
-            window.dispatchEvent(new CustomEvent("toggle-orbit-mode"));
-          }}
-          className="w-full relative group overflow-hidden rounded-[1.25rem] p-3.5 transition-all duration-300 hover:scale-[1.01] active:scale-95 shadow-xl shadow-primary/5 ring-1 ring-[var(--chat-border)] hover:ring-primary/40"
+          className="w-full relative group overflow-hidden rounded-[1.25rem] p-3.5 transition-all duration-300 shadow-xl shadow-primary/5 ring-1 ring-[var(--chat-border)] opacity-60 cursor-not-allowed"
+          style={{ pointerEvents: 'none' }}
         >
           {/* Background Effect */}
           <div
@@ -636,7 +633,7 @@ const Sidebar = () => {
                 backgroundImage: "linear-gradient(90deg, var(--chat-primary), var(--chat-text), var(--color-accent))",
               }}
             >
-              Enter Your Orbit
+              Enter Your Orbit (Soon)
             </div>
               <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--chat-muted)] group-hover:text-[var(--chat-text)]/50 transition-colors">
                 60 FPS GALAXY ENGINE

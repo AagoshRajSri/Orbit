@@ -18,9 +18,12 @@ import nexusRoutes from "./routes/nexus.route.js";
 import spotifyRoutes from "./routes/spotify.route.js";
 import spotifySessionRoutes from "./routes/spotifySession.route.js";
 import starweaveRoutes from "./routes/starweave.route.js";
-
+import adminRoutes from "./routes/admin.route.js";
+import configRoutes from "./routes/config.route.js";
 import { connectDB } from "./lib/db.js";
+import { initializeConfig } from "./lib/config.init.js";
 import { initializeSocketIO } from "./socket/socket.js";
+import "./services/insights.service.js"; // Initialize rule engine on startup
 import { registerSpotifyEvents } from "./socket/spotify-events.js";
 import { pubClient, subClient, connectRedis, isRedisAvailable } from "./lib/redis.js";
 import { createAdapter } from "@socket.io/redis-adapter";
@@ -113,7 +116,8 @@ app.use("/api/nexus", nexusRoutes);
 app.use("/api/spotify", spotifyRoutes);
 app.use("/api/spotify/session", spotifySessionRoutes);
 app.use("/api/starweave", starweaveRoutes);
-
+app.use("/api/admin", adminRoutes);
+app.use("/api/config", configRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Orbit API is running", version: "1.0.0" });
 });
@@ -174,6 +178,8 @@ const io = new Server(httpServer, {
 });
 
 async function initApp() {
+  await connectDB();
+  await initializeConfig();
   await connectRedis();
   if (isRedisAvailable) {
     io.adapter(createAdapter(pubClient, subClient));

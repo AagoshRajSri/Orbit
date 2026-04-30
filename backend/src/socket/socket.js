@@ -71,11 +71,19 @@ export const initializeSocketIO = (io) => {
         token = null;
       }
 
-      if (!token && socket.handshake.headers.cookie) {
+      // Check for admin cookie first to prioritize admin room access
+      if (socket.handshake.headers.cookie) {
         const cookies = socket.handshake.headers.cookie.split(";");
-        const jwtCookie = cookies.find((c) => c.trim().startsWith("jwt="));
-        if (jwtCookie) {
-          token = jwtCookie.split("=")[1];
+        const adminJwtCookie = cookies.find((c) => c.trim().startsWith("admin_jwt="));
+        if (adminJwtCookie) {
+          token = adminJwtCookie.split("=")[1];
+          socket.isAdmin = true;
+        } else if (!token) {
+          // If no admin cookie and no auth token, check for regular user jwt cookie
+          const jwtCookie = cookies.find((c) => c.trim().startsWith("jwt="));
+          if (jwtCookie) {
+            token = jwtCookie.split("=")[1];
+          }
         }
       }
 
@@ -89,8 +97,13 @@ export const initializeSocketIO = (io) => {
       }
 
       // 3. Token Verification
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || (socket.isAdmin ? "fallback_secret" : process.env.JWT_SECRET));
       
+      if (socket.isAdmin && decoded.role === "admin") {
+        socket.userId = "admin";
+        return next();
+      }
+
       // Resolve real ID if it was obfuscated at the client layer
       const realUserId = getRealId(decoded.userId);
       const user = await User.findById(realUserId).select("-password");
@@ -118,6 +131,12 @@ export const initializeSocketIO = (io) => {
   });
 
   io.on("connection", async (socket) => {
+    if (socket.isAdmin) {
+      console.log("Admin connected to socket");
+      socket.join("admin_room");
+      return; // Admins don't need the standard user presence tracking
+    }
+
     console.log(`User connected: ${socket.userId || 'Guest(Tether)'}`);
     
     if (socket.userId) {
@@ -350,4 +369,11 @@ export const initializeSocketIO = (io) => {
 export const getIO = () => {
   if (!ioInstance) throw new Error("Socket.IO not initialized");
   return ioInstance;
+};
+
+export const getOnlineUsersCount = async () => {
+  if (isRedisAvailable) {
+    return await redisClient.scard("global:online_users");
+  }
+  return memOnlineUsers.size;
 };

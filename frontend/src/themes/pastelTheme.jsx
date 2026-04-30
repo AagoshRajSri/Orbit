@@ -974,20 +974,13 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
       </div>
 
       {/* Orbit Footer Button */}
-      <div onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))}
-        className="rounded-3xl p-3 px-[14px] bg-gradient-to-r from-[#ffaadd] to-[#c8ccff] cursor-pointer flex items-center gap-3 shadow-[0_8px_30px_rgba(255,150,210,0.4)] border-2 border-white/40 relative overflow-hidden"
+      <div 
+        style={{ borderRadius: "24px", padding: "12px 14px", background: "rgba(0,0,0,0.05)", border: "2px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: 12, cursor: "not-allowed", opacity: 0.6, pointerEvents: "none" }}
       >
-        <div className="w-10 h-10 rounded-xl bg-white/40 flex items-center justify-center text-xl flex-shrink-0">🌸</div>
+        <div style={{ width: 40, height: 40, borderRadius: "12px", background: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🔒</div>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 900, color: "white", letterSpacing: "0.05em", textShadow: "0 1px 4px rgba(200,80,160,0.2)" }}>ENTER YOUR ORBIT</div>
-          <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.9)", letterSpacing: "0.02em" }}>88 FPS GALAXY ENGINE</div>
-          <div style={{ fontSize: 10, color: "white", opacity: 0.8 }}>✦</div>
-        </div>
-        {/* Wrapping Snake */}
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.4 }}>
-          <svg viewBox="0 0 400 100" style={{ width: "130%", height: "130%", position: "absolute", left: "-15%", top: "-15%", transform: "rotate(-2deg)" }}>
-            <path className="animate-snake" fill="none" stroke="#fff" strokeWidth="10" strokeLinecap="round" d="M20,75 Q100,15 180,75 Q260,135 340,75" />
-          </svg>
+          <div style={{ fontSize: 11, fontWeight: 900, color: "#8B6B8A", letterSpacing: "0.05em" }}>ORBIT: COMING SOON</div>
+          <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(139,107,138,0.6)", letterSpacing: "0.02em" }}>DIMENSIONAL SYNC</div>
         </div>
       </div>
     </div>

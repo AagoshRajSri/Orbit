@@ -1291,10 +1291,10 @@ const VampireSidebar = memo(({
             </div>
 
             <div className="sidebar-footer">
-                <div className="enter-orbit-card" onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))}>
+                <div className="enter-orbit-card" style={{ opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'none' }}>
                     <div className="orbit-icon">🌑</div>
                     <div>
-                        <div className="orbit-label">Enter Your Orbit</div>
+                        <div className="orbit-label">Enter Your Orbit (Soon)</div>
                         <div className="orbit-sub">60 FPS Galaxy Engine</div>
                     </div>
                 </div>

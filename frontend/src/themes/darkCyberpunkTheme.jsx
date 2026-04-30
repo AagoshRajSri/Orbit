@@ -834,19 +834,13 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
 
       {/* Enter Your Orbit */}
       <div
-        onClick={() => {
-          play("yourorbit");
-          window.dispatchEvent(new CustomEvent("toggle-orbit-mode"));
-        }}
-        style={{ marginTop: "auto", borderRadius: 6, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8, background: `linear-gradient(90deg,${P}18,${C}10)`, border: `1.5px solid ${C}`, cursor: "pointer", boxShadow: `0 0 12px ${C}44`, position: "relative", zIndex: 2, flexShrink: 0, overflow: "hidden", transition: "all 0.2s" }}
-        onMouseEnter={e => e.currentTarget.style.boxShadow = `0 0 24px ${C}88`}
-        onMouseLeave={e => e.currentTarget.style.boxShadow = `0 0 12px ${C}44`}
+        style={{ marginTop: "auto", borderRadius: 6, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,0.4)", border: `1.5px solid ${C}33`, cursor: "not-allowed", position: "relative", zIndex: 2, flexShrink: 0, overflow: "hidden", opacity: 0.5, pointerEvents: "none" }}
       >
         <DataStreams count={3} color={C} />
-        <div style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${C}55`, background: `${C}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, boxShadow: `0 0 10px ${C}44` }}>🌀</div>
+        <div style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${C}22`, background: `${C}08`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🔒</div>
         <div style={{ position: "relative", zIndex: 2 }}>
-          <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: "0.12em", color: C, textTransform: "uppercase", textShadow: `0 0 8px ${C}`, fontFamily: "'Orbitron',monospace" }}>ENTER YOUR ORBIT</div>
-          <div style={{ fontSize: 7.5, color: `${C}77`, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace" }}>3D SPATIAL ENGINE</div>
+          <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: "0.12em", color: C, textTransform: "uppercase", opacity: 0.7, fontFamily: "'Orbitron',monospace" }}>ORBIT: COMING SOON</div>
+          <div style={{ fontSize: 7.5, color: `${C}44`, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace" }}>3D SPATIAL ENGINE</div>
         </div>
       </div>
     </div>

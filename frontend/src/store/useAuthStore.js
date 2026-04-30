@@ -13,8 +13,9 @@ export const useAuthStore = create(
       isCheckingAuth: true,
       showPostAuthLoader: false,
       onlineUsers: [],
-      sessionId: null, // Critical: Binding to server-side session
+      sessionId: null,
       socketToken: null,
+      appConfig: null,
 
       checkAuth: async () => {
         const startToken = get().socketToken;
@@ -257,6 +258,15 @@ export const useAuthStore = create(
           reconnectSocket();
         } catch (e) {
           console.error("Failed to refresh socket:", e);
+        }
+      },
+
+      fetchAppConfig: async () => {
+        try {
+          const res = await axiosInstance.get("/config/public");
+          set({ appConfig: res.data.config });
+        } catch (error) {
+          console.error("[fetchAppConfig] Error:", error);
         }
       },
     }),

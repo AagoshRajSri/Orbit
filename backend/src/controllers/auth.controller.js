@@ -24,6 +24,9 @@ import {
 } from "../services/constellation.service.js";
 import { issueNonce, consumeNonce } from "../lib/nonceStore.js";
 import securityService from "../services/security.service.js";
+import AppConfig from "../models/config.model.js";
+import { systemEmitter } from "../lib/systemEmitter.js";
+
 const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
@@ -45,6 +48,14 @@ export const signup = async (req, res) => {
   let savedUser = null;
 
   try {
+    const config = await AppConfig.findOne();
+    if (config && !config.registrationEnabled) {
+      return res.status(403).json({
+        success: false,
+        error: { code: "REGISTRATION_DISABLED", message: "Registrations are currently disabled by the administrator." },
+      });
+    }
+
     const validation = z.object({
       username: usernameSchema,
       email: emailSchema,
@@ -115,6 +126,8 @@ export const signup = async (req, res) => {
       });
     }
 
+    systemEmitter.broadcast('user_signup', { username: newUser.username, email: newUser.email });
+
     res.status(201).json({
       success: true,
       data: {
@@ -178,6 +191,7 @@ export const login = async (req, res) => {
 
     const user = await User.findOne({ email: validation.data.email });
     if (!user || !user.password) {
+      systemEmitter.broadcast('login_failed', { email, reason: "invalid_user" }, "warning");
       return res.status(401).json({
         success: false,
         error: { code: "INVALID_CREDENTIALS", message: "Invalid credentials" },
@@ -186,6 +200,7 @@ export const login = async (req, res) => {
 
     const isPasswordValid = await bcrypt.compare(validation.data.password, user.password);
     if (!isPasswordValid) {
+      systemEmitter.broadcast('login_failed', { email, reason: "invalid_password" }, "warning");
       return res.status(401).json({
         success: false,
         error: { code: "INVALID_CREDENTIALS", message: "Invalid credentials" },
@@ -218,6 +233,8 @@ export const login = async (req, res) => {
       },
       message: "Login successful",
     });
+
+    systemEmitter.broadcast('user_login', { userId: user._id, username: user.username, email: user.email });
   } catch (error) {
     console.error("Error in login controller:", error.message);
     res.status(500).json({

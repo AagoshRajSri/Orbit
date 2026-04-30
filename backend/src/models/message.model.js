@@ -30,6 +30,10 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
     idempotencyKey: {
       type: String,
       sparse: true,

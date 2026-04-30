@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import Session from "../models/session.model.js";
+import AppConfig from "../models/config.model.js";
 
 export const protectRoute = async (req, res, next) => {
   try {
@@ -57,11 +58,22 @@ export const protectRoute = async (req, res, next) => {
         .json({ success: false, error: { code: "SESSION_INVALID", message: "Unauthorized - Session Expired or Revoked" } });
     }
 
+    const config = await AppConfig.findOne();
+    if (config && config.maintenanceMode) {
+      console.warn("[AuthMiddleware] Blocked user due to Maintenance Mode:", decoded.userId);
+      return res.status(503).json({ success: false, error: { code: "MAINTENANCE_MODE", message: "System is currently undergoing maintenance. Please try again later." } });
+    }
+
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {
       console.warn("[AuthMiddleware] User not found for ID:", decoded.userId);
       return res.status(404).json({ success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } });
+    }
+
+    if (user.isLocked) {
+      console.warn("[AuthMiddleware] User is locked/banned:", decoded.userId);
+      return res.status(403).json({ success: false, error: { code: "USER_LOCKED", message: "Account has been suspended by an administrator." } });
     }
 
     if (Date.now() - activeSession.lastActive.getTime() > 60000) {

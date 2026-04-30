@@ -17,7 +17,7 @@ export default function OrbitalFooter() {
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--chat-primary)]">80 FPS GALAXY ENGINE</span>
               </div>
               <div className="h-4 w-px bg-[var(--chat-primary)]/20" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--chat-muted)]">ENTER YOUR ORBIT</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--chat-muted)]">COMING SOON</span>
             </div>
             <div className="flex items-center gap-4 text-[10px] font-bold text-[var(--chat-muted)]">
               <span className="opacity-60 uppercase tracking-widest">System Latency: 4ms</span>

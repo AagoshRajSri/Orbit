@@ -645,21 +645,18 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
         )}
       </div>
       {/* Footer trigger for Orbit Explorer */}
-      <div onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))} 
-        style={{ padding: "16px 18px", borderTop: "1px solid rgba(198,160,110,.1)", background: "linear-gradient(0deg,rgba(198,160,110,.04),transparent)", position: "relative", zIndex: 10, cursor: "pointer", transition: "all .2s" }} 
-        onMouseEnter={e => e.currentTarget.style.background = "linear-gradient(0deg,rgba(198,160,110,.08),transparent)"} 
-        onMouseLeave={e => e.currentTarget.style.background = "linear-gradient(0deg,rgba(198,160,110,.04),transparent)"}
+      <div 
+        style={{ padding: "16px 18px", borderTop: "1px solid rgba(198,160,110,.1)", background: "rgba(0,0,0,0.5)", position: "relative", zIndex: 10, cursor: "not-allowed", opacity: 0.5, pointerEvents: "none" }} 
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ position: "relative" }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#3d1a00,#1a0a00)", border: "2px solid rgba(198,160,110,.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, animation: "oa-float 4s ease-in-out infinite" }}>🚀</div>
-            <div style={{ position: "absolute", bottom: 2, right: 2, width: 12, height: 12, background: "#00FF88", borderRadius: "50%", border: "2px solid #000", boxShadow: "0 0 8px #00FF88" }} />
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#3d1a00,#1a0a00)", border: "2px solid rgba(198,160,110,.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🔒</div>
           </div>
           <div>
             <div className="oa-orbitron" style={{ fontSize: 13, color: "#C6A06E", letterSpacing: 2, fontWeight: 900 }}>
-              ENTER YOUR ORBIT
+              ORBIT: COMING SOON
             </div>
-            <div className="oa-mono" style={{ fontSize: 10, color: "rgba(78,205,196,.55)", letterSpacing: 2 }}>INITIATE HYPERSPACE</div>
+            <div className="oa-mono" style={{ fontSize: 10, color: "rgba(78,205,196,.35)", letterSpacing: 2 }}>SEQUENCING DIMENSION</div>
           </div>
         </div>
       </div>

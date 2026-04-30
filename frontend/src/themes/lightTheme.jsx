@@ -672,17 +672,14 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
       {/* Global Action Footer */}
       <div style={{ padding: 24, borderTop: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
         <div 
-          onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))} 
-          style={{ width: '100%', padding: '16px 20px', borderRadius: 16, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, background: 'white', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', transition: 'all 0.3s' }}
-          onMouseOver={(e) => e.currentTarget.style.borderColor = LUXURY_COLORS.goldMedium}
-          onMouseOut={(e) => e.currentTarget.style.borderColor = LUXURY_COLORS.borderSubtle}
+          style={{ width: '100%', padding: '16px 20px', borderRadius: 16, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, background: 'rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 16, cursor: 'not-allowed', opacity: 0.5, pointerEvents: 'none' }}
         >
-          <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #F5F1E8, #DFD1C1)', border: `2px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
-             <Globe size={20} color={LUXURY_COLORS.goldDark} />
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F5F1E8', border: `2px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+             🔒
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }}>ENTER YOUR ORBIT</div>
-            <div style={{ fontSize: 10, color: '#A0A0A0', fontWeight: 700, letterSpacing: 1 }}>60 FPS GALAXY ENGINE</div>
+            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }}>ORBIT: COMING SOON</div>
+            <div style={{ fontSize: 10, color: '#A0A0A0', fontWeight: 700, letterSpacing: 1 }}>SEQUENCING NODES</div>
           </div>
         </div>
       </div>

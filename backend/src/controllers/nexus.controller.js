@@ -2,6 +2,7 @@ import Nexus from "../models/nexus.model.js";
 import Message from "../models/message.model.js";
 import { getIO } from "../socket/socket.js";
 import cloudinary from "../lib/cloudinary.js";
+import { systemEmitter } from "../lib/systemEmitter.js";
 import { z } from "zod";
 
 const escapeHtml = (str) => {
@@ -170,6 +171,8 @@ export const createNexus = async (req, res) => {
 
     const io = getIO();
     io.to(creatorId.toString()).emit("nexusJoined", populatedNexus);
+
+    systemEmitter.broadcast('nexus_created', { nexusId: populatedNexus._id, name: populatedNexus.name, creatorId });
 
     res.status(201).json(populatedNexus);
   } catch (error) {

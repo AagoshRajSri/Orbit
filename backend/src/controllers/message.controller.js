@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getIO } from "../socket/socket.js";
 import { redisClient } from "../lib/redis.js";
+import { systemEmitter } from "../lib/systemEmitter.js";
 import { z } from "zod";
 
 const messageSchema = z
@@ -207,6 +208,8 @@ export const sendMessage = async (req, res) => {
     } catch (socketError) {
       console.warn("Socket.IO emission failed globally:", socketError.message);
     }
+
+    systemEmitter.broadcast('message_sent', { messageId: populatedMessage._id, senderId });
 
     res.status(201).json(populatedMessage);
   } catch (error) {

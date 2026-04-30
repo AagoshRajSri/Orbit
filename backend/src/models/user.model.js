@@ -8,6 +8,8 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 8 },
     profilePic: { type: String, default: "" },
     bio: { type: String, default: "", maxlength: 500 },
+    isLocked: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
     contacts: [
       {
         type: mongoose.Schema.Types.ObjectId,

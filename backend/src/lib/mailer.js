@@ -253,3 +253,32 @@ export async function sendOTP(to, otp, type = "verification") {
 export function closeMailer() {
   resendInstance = null;
 }
+
+/**
+ * Generic email sender for admin broadcasts.
+ * @param {string} to - Recipient email
+ * @param {string} subject - Email subject
+ * @param {string} html - HTML body
+ */
+export async function sendEmail(to, subject, html) {
+  if (!to || !EMAIL_REGEX.test(to)) {
+    return { success: false, error: "Invalid recipient email address." };
+  }
+  
+  try {
+    const resend = getResend();
+    const sender = process.env.RESEND_FROM_EMAIL || "Orbit <onboarding@resend.dev>";
+
+    if (!resend) {
+      console.log(`[MAILER] [MOCK BROADCAST] To: ${to} | Subject: ${subject}`);
+      return { success: true, messageId: "mock-" + Date.now() };
+    }
+
+    const { data, error } = await resend.emails.send({ from: sender, to, subject, html });
+    if (error) throw new Error(error.message);
+    return { success: true, messageId: data.id };
+  } catch (error) {
+    console.error("[MAILER] sendEmail failed:", error.message);
+    return { success: false, error: error.message };
+  }
+}

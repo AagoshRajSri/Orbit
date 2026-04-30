@@ -212,58 +212,73 @@ const SignUpPage = () => {
       </div>
 
       {/* ── Constellation Auth ─────────────────── */}
-      <Link
-        to="/signup/constellation"
+      <div
         className="w-full flex items-center justify-center gap-2"
         style={{
           padding: "12px",
           borderRadius: "12px",
-          border: "1px solid rgba(139,92,246,0.2)",
-          background: "rgba(139,92,246,0.05)",
+          border: "1px solid rgba(139,92,246,0.1)",
+          background: "rgba(139,92,246,0.03)",
           fontFamily: "'Space Mono', monospace",
           fontSize: "10px",
           letterSpacing: "0.15em",
-          color: "rgba(167,139,250,0.8)",
+          color: "rgba(167,139,250,0.4)",
           textDecoration: "none",
-          transition: "all 0.25s",
+          cursor: "not-allowed",
+          opacity: 0.6
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = "rgba(139,92,246,0.12)"; e.currentTarget.style.borderColor = "rgba(139,92,246,0.5)"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "rgba(139,92,246,0.05)"; e.currentTarget.style.borderColor = "rgba(139,92,246,0.2)"; }}
       >
         <Sparkles className="w-3.5 h-3.5" />
-        TRY CONSTELLATION AUTH
-      </Link>
+        TRY CONSTELLATION (SOON)
+      </div>
 
       {/* ── StarWeave Auth ─────────────────── */}
-      <Link
-        to="/signup/starweave"
+      <div
         className="w-full flex items-center justify-center gap-2"
         style={{
           padding: "12px",
           borderRadius: "12px",
-          border: "1px solid rgba(192,100,255,0.2)",
-          background: "rgba(192,100,255,0.05)",
+          border: "1px solid rgba(192,100,255,0.1)",
+          background: "rgba(192,100,255,0.03)",
           fontFamily: "'Space Mono', monospace",
           fontSize: "10px",
           letterSpacing: "0.15em",
-          color: "rgba(192,100,255,0.8)",
+          color: "rgba(192,100,255,0.4)",
           textDecoration: "none",
-          transition: "all 0.25s",
+          cursor: "not-allowed",
+          opacity: 0.6
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = "rgba(192,100,255,0.12)"; e.currentTarget.style.borderColor = "rgba(192,100,255,0.5)"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "rgba(192,100,255,0.05)"; e.currentTarget.style.borderColor = "rgba(192,100,255,0.2)"; }}
       >
         <Star className="w-3.5 h-3.5" />
-        TRY STARWEAVE GESTURE
-      </Link>
+        TRY STARWEAVE (SOON)
+      </div>
 
       {/* ── Footer ────────────────────────────────── */}
-      <p className="text-center" style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: "rgba(255,255,255,0.2)" }}>
-        EXISTING_NODE?{" "}
-        <Link to="/login" style={{ color: "#a78bfa", textDecoration: "none" }}>
-          AUTHENTICATE →
+      <div className="text-center flex flex-col gap-2">
+        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: "rgba(255,255,255,0.2)" }}>
+          EXISTING_NODE?{" "}
+          <Link to="/login" style={{ color: "#a78bfa", textDecoration: "none" }}>
+            AUTHENTICATE →
+          </Link>
+        </p>
+        
+        <Link 
+          to="/admin/login" 
+          style={{ 
+            fontFamily: "'Space Mono', monospace", 
+            fontSize: "8px", 
+            letterSpacing: "0.1em", 
+            color: "rgba(255,255,255,0.1)", 
+            textDecoration: "none",
+            marginTop: "8px",
+            transition: "color 0.2s"
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+          onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.1)"}
+        >
+          // ACCESS_ADMIN_TERMINAL
         </Link>
-      </p>
+      </div>
     </>
   );
 };

@@ -19,6 +19,17 @@ import FaceLock from "./components/FaceLock";
 import AmbientPresence from "./components/AmbientPresence";
 import OrbitAuth from "./pages/OrbitAuth";
 
+// Admin Imports
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
+const AdminNexuses = lazy(() => import("./pages/admin/AdminNexuses"));
+const AdminSystem = lazy(() => import("./pages/admin/AdminSystem"));
+const AdminSecurity = lazy(() => import("./pages/admin/AdminSecurity"));
+const AdminBroadcast = lazy(() => import("./pages/admin/AdminBroadcast"));
+
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatStore } from "./store/useChatStore";
 import { useNexusStore } from "./store/useNexusStore";
@@ -43,6 +54,7 @@ import NexusActionOverlay from "./components/NexusActionOverlay";
 import { soundManager } from "./lib/SoundManager";
 import ThemePortal from "./components/ThemePortal";
 import GlobalMiniPlayer from "./components/GlobalMiniPlayer";
+import GlobalAnnouncementBanner from "./components/GlobalAnnouncementBanner";
 
 import OrbitChatApp from "./components/OrbitChatApp";
 import { useAnimationContext } from "./components/AnimLayer";
@@ -158,6 +170,8 @@ const AppContent = () => {
     location.pathname === "/verify-email" ||
     location.pathname === "/signup/ambient";
 
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
   const { isOnline } = useConnectivity();
   const authUser = useAuthStore((state) => state.authUser);
   const { theme } = useThemeStore();
@@ -192,6 +206,7 @@ const AppContent = () => {
   useEffect(() => {
     ensureAppSettings();
     performanceDetector.detect();
+    useAuthStore.getState().fetchAppConfig();
   }, []);
 
   const requestFinishPostAuthLoader = useCallback(() => {
@@ -325,6 +340,28 @@ const AppContent = () => {
           soundManager.play("notification");
         }
         enqueueMessage(nexusMessageBuffer, { msg: message, ack });
+      });
+
+      socket.on("admin_notification", (data) => {
+        toast((t) => (
+          <div className="flex flex-col gap-1">
+            <span className="font-bold text-sm flex items-center gap-2">
+              <Megaphone size={14} className="text-primary" />
+              {data.title || "Announcement"}
+            </span>
+            <span className="text-xs opacity-90">{data.message}</span>
+          </div>
+        ), {
+          duration: 6000,
+          position: "top-center",
+          style: {
+            background: data.severity === 'critical' ? '#ef4444' : data.severity === 'warning' ? '#f59e0b' : '#1e1b4b',
+            color: '#fff',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }
+        });
+        soundManager.play("notification");
       });
 
       socket.on("nexusJoined", (nexus) => {
@@ -498,16 +535,17 @@ const AppContent = () => {
 
   return (
     <div className={`relative h-screen bg-base-300 text-[var(--chat-text)] overflow-hidden flex flex-col ${isOrbitMode ? 'orbit-active' : ''}`}>
+      <GlobalAnnouncementBanner />
       <ThemePortal />
       {!isOnline && <ConnectionStatus />}
       <NotificationContainer />
-      {(!hydrated || (isCheckingAuth && !!authUser)) && !isAuthPage ? (
+      {(!hydrated || (isCheckingAuth && !!authUser)) && !isAuthPage && !isAdminRoute ? (
         <OrbitLoader />
       ) : (
         <>
-          {!isAuthPage && !isFullscreenTheme && !isOrbitMode && <Navbar />}
+          {!isAuthPage && !isAdminRoute && !isFullscreenTheme && !isOrbitMode && <Navbar />}
           <main
-            className={`flex flex-col flex-1 min-h-0 overflow-hidden ${isAuthPage || isFullscreenTheme ? "" : "pt-12"} relative`}
+            className={`flex flex-col flex-1 min-h-0 overflow-hidden ${isAuthPage || isFullscreenTheme || isAdminRoute ? "" : "pt-12"} relative`}
           >
             {isAuthPage ? (
               <Suspense fallback={<OrbitLoader />}>
@@ -622,6 +660,18 @@ const AppContent = () => {
                   <Route path="/login/starweave"  element={<StarWeaveLoginPage />} />
                   <Route path="/signup/starweave" element={<StarWeaveSignupPage />} />
                   <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+                  {/* Admin Routes */}
+                  <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="users" element={<AdminUsers />} />
+                    <Route path="messages" element={<AdminMessages />} />
+                    <Route path="nexuses" element={<AdminNexuses />} />
+                    <Route path="security" element={<AdminSecurity />} />
+                    <Route path="system" element={<AdminSystem />} />
+                    <Route path="broadcast" element={<AdminBroadcast />} />
+                  </Route>
                 </Routes>
               </Suspense>
             )}
