@@ -7,7 +7,7 @@ import { CyberAuthStyles, GlitchText, MorphInput } from "../components/CyberAuth
 import toast from "react-hot-toast";
 
 const SignUpPage = () => {
-  const [formData, setFormData] = useState({ username: "", email: "", password: "" });
+  const [formData, setFormData] = useState({ username: "", email: "", password: "", telegramId: "" });
   const [focused, setFocused] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const { signup, isSigningUp, authUser } = useAuthStore();
@@ -28,6 +28,12 @@ const SignUpPage = () => {
     if (formData.username.includes(" ")) return toast.error("No spaces in username");
     if (!formData.email.trim()) return toast.error("Email is required");
     if (!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("Invalid email address");
+    
+    // Optional: Validate Telegram ID format if provided
+    if (formData.telegramId && !/^\d+$/.test(formData.telegramId)) {
+      return toast.error("Telegram ID must be numeric (get it from @userinfobot)");
+    }
+
     if (!formData.password) return toast.error("Password is required");
     if (formData.password.length < 8) return toast.error("Password must be at least 8 characters");
     if (!/[A-Z]/.test(formData.password)) return toast.error("Password must contain an uppercase letter");
@@ -139,6 +145,34 @@ const SignUpPage = () => {
           onFocus={() => setFocused("email")}
           onBlur={() => setFocused(null)}
         />
+
+        {/* Telegram ID (Optional) */}
+        <div className="relative">
+          <MorphInput
+            label="Telegram ID (Optional)"
+            type="text"
+            icon={
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            }
+            value={formData.telegramId}
+            onChange={(e) => setFormData({ ...formData, telegramId: e.target.value.replace(/\D/g, "") })}
+            focused={focused === "telegramId"}
+            onFocus={() => setFocused("telegramId")}
+            onBlur={() => setFocused(null)}
+          />
+          <p style={{
+            fontSize: "8px",
+            color: "rgba(167,139,250,0.5)",
+            fontFamily: "'Space Mono', monospace",
+            marginTop: "4px",
+            paddingLeft: "10px"
+          }}>
+            Get yours from @userinfobot. Message our bot to start.
+          </p>
+        </div>
 
         {/* Password */}
         <div>

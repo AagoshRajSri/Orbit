@@ -35,6 +35,7 @@ const ProfilePage = () => {
     email: "",
     bio: "",
     profilePic: "",
+    telegramId: "",
   });
   const [selectedImg, setSelectedImg] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -48,6 +49,7 @@ const ProfilePage = () => {
       email: authUser.email || "",
       bio: authUser.bio || "",
       profilePic: authUser.profilePic || "",
+      telegramId: authUser.telegramId || "",
     });
   }, [authUser]);
 
@@ -57,6 +59,7 @@ const ProfilePage = () => {
       profileDraft.username !== authUser.username ||
       profileDraft.email !== authUser.email ||
       profileDraft.bio !== (authUser.bio || "") ||
+      profileDraft.telegramId !== (authUser.telegramId || "") ||
       selectedImg !== null
     );
   }, [profileDraft, authUser, selectedImg]);
@@ -86,6 +89,7 @@ const ProfilePage = () => {
         username: profileDraft.username.trim(),
         email: profileDraft.email.trim(),
         bio: profileDraft.bio,
+        telegramId: profileDraft.telegramId,
       };
       if (selectedImg) payload.profilePic = selectedImg;
 
@@ -338,6 +342,30 @@ const ProfilePage = () => {
                   />
                 </label>
 
+                <label className="block">
+                  <span className="orbital-label flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                    Telegram ID
+                  </span>
+                  <input
+                    type="text"
+                    value={profileDraft.telegramId}
+                    onChange={(e) =>
+                      setProfileDraft((prev) => ({
+                        ...prev,
+                        telegramId: e.target.value.replace(/\D/g, ""),
+                      }))
+                    }
+                    className="orbital-input"
+                    disabled={!isEditing}
+                    placeholder="Get yours from @userinfobot"
+                    aria-label="Telegram ID"
+                  />
+                </label>
+
                   <label className="block space-y-2">
                     <span className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest ${
                       theme === "pastel-dream" ? "text-purple-500"
@@ -383,6 +411,7 @@ const ProfilePage = () => {
                           email: authUser.email || "",
                           bio: authUser.bio || "",
                           profilePic: authUser.profilePic || "",
+                          telegramId: authUser.telegramId || "",
                         });
                         setSelectedImg(null);
                         setIsEditing(false);
