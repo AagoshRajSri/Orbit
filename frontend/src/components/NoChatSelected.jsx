@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import {
   Bell, Zap, MessageCircle, Settings, Music,
-  Disc, Pause, Play, SkipBack, SkipForward, Volume2
+  Disc, Pause, Play, SkipBack, SkipForward, Volume2, Gamepad2, Lock
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSpotifyStore } from "../store/useSpotifyStore";
@@ -291,9 +291,10 @@ const NoChatSelected = () => {
   const infoBoxes = useMemo(() => [
     {
       id: 2,
-      icon: MessageCircle,
-      title: "Start Chatting",
-      description: "Select a Constellation or create a private conversation",
+      icon: Gamepad2,
+      title: "Orbit Games",
+      description: "Coming soon. A new way to play together.",
+      locked: true,
       colors: { gamer: "#ff2bd6", pastel: "rgba(255,142,200,0.2)", default: "#a855f7" }
     },
     {
@@ -403,7 +404,10 @@ const NoChatSelected = () => {
                             )}
                           </div>
                           <div>
-                            <h3 className="text-sm font-black tracking-widest mb-2 uppercase text-[var(--chat-text)]">{box.title}</h3>
+                            <h3 className="text-sm font-black tracking-widest mb-2 uppercase text-[var(--chat-text)] flex items-center gap-2">
+                              {box.title}
+                              {box.locked && <Lock className="size-3 text-[var(--chat-muted)]" />}
+                            </h3>
                             <p className="text-xs text-[var(--chat-muted)] leading-relaxed font-bold">{box.description}</p>
                           </div>
                           <div className="mt-auto pt-4 flex items-center justify-end">

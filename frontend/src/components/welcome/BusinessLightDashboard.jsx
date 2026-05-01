@@ -338,11 +338,12 @@ export function BusinessLightDashboard() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:24, position:"relative", zIndex:2, flex:1 }}>
             <ElegantSpotifyCard onClick={() => navigate("/spotify")} />
             <ElegantActionCard 
-              title="Direct Mission" 
-              subtitle="Initiate secure peer-to-peer frequencies with elite contacts" 
-              icon="💬" 
+              title="Orbit Games" 
+              subtitle="Coming soon. A new way to play together." 
+              icon="🎮" 
               iconBg="linear-gradient(135deg, #1a1512, #3d2b2b)" 
-              onClick={() => navigate("/")}
+              badge="🔒" 
+              onClick={() => {}}
             />
             <ElegantActionCard 
               title="Priority Alerts" 
