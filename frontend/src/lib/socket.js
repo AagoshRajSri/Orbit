@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 import { API_URL } from "../config.js";
-
-const SOCKET_TOKEN_KEY = "orbit_socket_token";
+import { useAuthStore } from "../store/useAuthStore";
+import { axiosInstance } from "./axios.jsx";
 
 let socket = null;
 let connectionState = "disconnected";
@@ -12,18 +12,20 @@ import * as msgpackParser from "socket.io-msgpack-parser";
 export const getSocket = () => {
   if (socket) return socket;
 
-  /* Removed socket token from localStorage fallback */
-  
+  const authState = useAuthStore.getState();
+
   socket = io(API_URL, {
+    auth: {
+      token: authState.socketToken,
+    },
     // Auth token is passed via httpOnly cookie (withCredentials: true)
     parser: msgpackParser,
     withCredentials: true,
-    // Prioritizing 'polling' first ensures the connection is established 
-    // even if Render's WebSocket upgrade is slow or being probed.
-    transports: ["polling", "websocket"],
-    reconnectionAttempts: 10, // Increase attempts for waking up free-tier servers
-    reconnectionDelay: 2000,
-    timeout: 20000, // 20s handshake timeout for slow cold-starts
+    // Start with websocket to avoid polling-to-websocket upgrade failures on Render
+    transports: ["websocket", "polling"],
+    reconnectionAttempts: 15, // High attempts to wake up sleeping free-tier servers
+    reconnectionDelay: 1000,
+    timeout: 45000, // 45s handshake timeout for heavy cold-starts
   });
 
   socket.on("connect", () => {
@@ -32,10 +34,21 @@ export const getSocket = () => {
     console.log("[Socket.IO] Connected to backend");
   });
 
-  socket.on("connect_error", (error) => {
+  socket.on("connect_error", async (error) => {
     connectionState = "error";
     connectionError = error.message;
     console.error("[Socket.IO] Connection error:", error.message);
+    
+    // Check if error is related to Authentication/Token expiry
+    if (error.message.includes("Authentication") || error.message.includes("Token expired") || error.message.includes("Access Denied")) {
+      console.log("[Socket.IO] Auth error detected. Attempting to trigger token refresh...");
+      try {
+        // Hitting a protected route to trigger the axios interceptor's silent refresh
+        await axiosInstance.get("/auth/check");
+      } catch (err) {
+        console.warn("[Socket.IO] Token refresh triggered by socket failed.");
+      }
+    }
   });
 
   socket.on("disconnect", (reason) => {
@@ -52,6 +65,18 @@ export const disconnectSocket = () => {
     socket = null;
     connectionState = "disconnected";
   }
+};
+
+export const updateSocketToken = (newToken) => {
+  if (!socket) return;
+
+  socket.auth = { token: newToken };
+
+  if (socket.connected) {
+    socket.disconnect();
+  }
+
+  socket.connect();
 };
 
 export const reconnectSocket = () => {

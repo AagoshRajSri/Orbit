@@ -90,9 +90,18 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      
+      // Normalize origin by removing trailing slash for comparison
+      const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+      const isAllowed = allowedOrigins.some(allowed => {
+        const normalizedAllowed = allowed.endsWith('/') ? allowed.slice(0, -1) : allowed;
+        return normalizedAllowed === normalizedOrigin;
+      });
+
+      if (isAllowed) {
         callback(null, true);
       } else {
+        console.warn(`[CORS] Blocked request from: ${origin}`);
         callback(new Error("Not allowed by CORS"));
       }
     },
