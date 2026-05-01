@@ -124,6 +124,7 @@ export const refreshAccessToken = async (req, res) => {
 
     return res.status(200).json({
       authToken: tokens.accessToken,
+      sessionId: tokens.sessionId,
       message: "Token refreshed",
     });
   } catch (error) {
