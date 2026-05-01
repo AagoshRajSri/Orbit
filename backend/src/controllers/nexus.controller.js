@@ -414,10 +414,13 @@ export const getMyNexuses = async (req, res) => {
   }
 };
 
-export const getNexusMessages = async (req, res) => {
+  export const getNexusMessages = async (req, res) => {
   try {
     const { nexusId } = req.params;
+    const { cursor, limit = 50 } = req.query;
     const userId = req.user._id;
+
+    const parsedLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
 
     // Check if user is a member
     const nexus = await Nexus.findById(nexusId);
@@ -428,10 +431,18 @@ export const getNexusMessages = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    const messages = await Message.find({ nexusId })
+    const query = { nexusId };
+    if (cursor) {
+      query.createdAt = { $lt: new Date(cursor) };
+    }
+
+    let messages = await Message.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parsedLimit)
       .populate("senderId", "username profilePic")
-      .sort({ createdAt: 1 })
       .lean();
+
+    messages = messages.reverse();
 
     res.status(200).json(messages);
   } catch (error) {

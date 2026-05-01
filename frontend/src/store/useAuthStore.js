@@ -62,8 +62,6 @@ export const useAuthStore = create(
         try {
           const res = await axiosInstance.post("/auth/signup", data);
           const { authToken, sessionId } = res.data.data;
-          localStorage.setItem("orbit_socket_token", authToken);
-          axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
            set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
           get().refreshSocketToken();
           toast.success("Account created successfully!");
@@ -83,8 +81,6 @@ export const useAuthStore = create(
         try {
           const res = await axiosInstance.post("/auth/login", data);
           const { authToken, sessionId } = res.data.data;
-          localStorage.setItem("orbit_socket_token", authToken);
-          axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
           set({ 
             authUser: res.data.data, 
             socketToken: authToken, 
@@ -133,8 +129,6 @@ export const useAuthStore = create(
             nonce,
           });
           const { authToken, sessionId } = res.data.data;
-          localStorage.setItem("orbit_socket_token", authToken);
-          axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
           set({ 
             authUser: res.data.data, 
             socketToken: authToken, 
@@ -163,8 +157,6 @@ export const useAuthStore = create(
             behavioral: behavioral || undefined,
           });
           const { authToken, sessionId } = res.data.data;
-          localStorage.setItem("orbit_socket_token", authToken);
-          axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
           set({ 
             authUser: res.data.data, 
             socketToken: authToken, 
@@ -196,7 +188,6 @@ export const useAuthStore = create(
         } catch (error) {
           console.warn("Server logout failed, forcing local session clear.");
         } finally {
-          localStorage.removeItem("orbit_socket_token");
           set({ authUser: null, sessionId: null, socketToken: null });
         }
       },
@@ -276,7 +267,6 @@ export const useAuthStore = create(
       partialize: (state) => ({
         authUser: state.authUser,
         sessionId: state.sessionId,
-        socketToken: state.socketToken,
         showPostAuthLoader: state.showPostAuthLoader,
       }),
     }

@@ -12,22 +12,10 @@ import * as msgpackParser from "socket.io-msgpack-parser";
 export const getSocket = () => {
   if (socket) return socket;
 
-  let token = localStorage.getItem(SOCKET_TOKEN_KEY);
-  
-  if (!token) {
-    try {
-      const authData = JSON.parse(localStorage.getItem("orbit-auth-storage"));
-      token = authData?.state?.socketToken;
-      if (token) {
-        localStorage.setItem(SOCKET_TOKEN_KEY, token); // Sync it for next time
-      }
-    } catch (e) {
-      console.warn("[Socket.IO] Could not parse auth storage for token backup");
-    }
-  }
+  /* Removed socket token from localStorage fallback */
   
   socket = io(API_URL, {
-    auth: { token },
+    // Auth token is passed via httpOnly cookie (withCredentials: true)
     parser: msgpackParser,
     withCredentials: true,
     // Prioritizing 'polling' first ensures the connection is established 

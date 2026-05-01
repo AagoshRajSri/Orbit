@@ -58,7 +58,7 @@ export const sendSMSOTP = async (to, otp) => {
   console.log("\n───────────────────────────────────────────────────");
   console.log("  📱 VIEW YOUR TEST SMS TO " + formattedNumber + ":");
   console.log(`  👉 💬 [Orbit Auth]`);
-  console.log(`      Your verification code is ${otp}.`);
+  console.log(`      Your verification code is [REDACTED].`);
   console.log(`      It expires in 5 minutes. Do not share it.`);
   console.log("───────────────────────────────────────────────────\n");
   return true; // We pretend it succeeded so the frontend flow works

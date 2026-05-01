@@ -12,14 +12,24 @@ export const apiLimiter = rateLimit({
   message: { success: false, error: { code: "RATE_LIMIT", message: "Too many requests. Please slow down." } },
 });
 
-// 2. Strict Login Limiter - 10 attempts per 15 minutes
+// 2. Strict Login Limiter - 5 attempts per 1 minute
 export const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
+  windowMs: 60 * 1000,
+  max: 5,
   standardHeaders,
   legacyHeaders,
   message: { success: false, error: { code: "RATE_LIMIT", message: "Too many login attempts. Please try again later." } },
 });
+
+// 2.5 Password Reset Limiter - 3 attempts per 15 minutes
+export const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  standardHeaders,
+  legacyHeaders,
+  message: { success: false, error: { code: "RATE_LIMIT", message: "Too many password reset attempts. Please try again later." } },
+});
+
 
 // 3. Account Creation Limiter - 5 accounts per hour
 export const signupLimiter = rateLimit({

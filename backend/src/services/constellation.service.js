@@ -154,12 +154,23 @@ export function isBehaviorAcceptable(
   return durationDelta <= maxDurationDelta;
 }
 
+import { redisClient, isRedisAvailable } from "../lib/redis.js";
+
 // IP-Level Failure Tracking
 const _ipFailureMap = new Map();
 export const IP_BLOCK_THRESHOLD = 15;
 const IP_WINDOW_MS = 15 * 60 * 1000;
 
-export function recordIpFailure(ip) {
+export async function recordIpFailure(ip) {
+  if (isRedisAvailable) {
+    const key = `ip_failure:${ip}`;
+    const count = await redisClient.incr(key);
+    if (count === 1) {
+      await redisClient.pexpire(key, IP_WINDOW_MS);
+    }
+    return count;
+  }
+
   const now = Date.now();
   const data = _ipFailureMap.get(ip);
 
@@ -172,11 +183,20 @@ export function recordIpFailure(ip) {
   return data.count;
 }
 
-export function resetIpFailures(ip) {
-  _ipFailureMap.delete(ip);
+export async function resetIpFailures(ip) {
+  if (isRedisAvailable) {
+    await redisClient.del(`ip_failure:${ip}`);
+  } else {
+    _ipFailureMap.delete(ip);
+  }
 }
 
-export function getIpFailureCount(ip) {
+export async function getIpFailureCount(ip) {
+  if (isRedisAvailable) {
+    const count = await redisClient.get(`ip_failure:${ip}`);
+    return count ? parseInt(count) : 0;
+  }
+
   const now = Date.now();
   const data = _ipFailureMap.get(ip);
   if (!data || data.resetAt < now) return 0;

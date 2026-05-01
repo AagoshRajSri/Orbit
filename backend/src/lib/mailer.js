@@ -267,7 +267,7 @@ export async function sendOTP(to, otp, type = "verification", method = "email") 
 
     if (!mailer) {
       console.log("\n───────────────────────────────────────────────────");
-      console.log(`  📧 [MOCK EMAIL] To: ${to} | OTP: ${otp}`);
+      console.log(`  📧 [MOCK EMAIL] To: [REDACTED] | OTP: [REDACTED]`);
       console.log("───────────────────────────────────────────────────\n");
       return { success: true, messageId: "mock-" + Date.now() };
     }

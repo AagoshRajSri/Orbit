@@ -1,5 +1,5 @@
 import express from "express";
-import { loginLimiter, signupLimiter, apiLimiter } from "../middleware/rate-limit.middleware.js";
+import { loginLimiter, signupLimiter, apiLimiter, passwordResetLimiter } from "../middleware/rate-limit.middleware.js";
 import {
   login,
   logout,
@@ -52,9 +52,9 @@ router.delete("/contacts/:contactId", protectRoute, removeContact);
 router.put("/contacts/:contactId", protectRoute, renameContact);
 
 // Password Reset
-router.post("/forgot-password", loginLimiter, forgotPassword);
-router.post("/verify-otp", loginLimiter, verifyPasswordOTP);
-router.post("/reset-password", loginLimiter, resetPassword);
+router.post("/forgot-password", passwordResetLimiter, forgotPassword);
+router.post("/verify-otp", passwordResetLimiter, verifyPasswordOTP);
+router.post("/reset-password", passwordResetLimiter, resetPassword);
 
 // Constellation Auth
 router.get("/constellation/challenge", apiLimiter, constellationChallenge);

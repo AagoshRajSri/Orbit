@@ -991,7 +991,7 @@ export const constellationLogin = async (req, res) => {
 
     if (!user) {
       // Record IP failure even on unknown user — prevents user-enumeration via timing
-      const ipCount = recordIpFailure(ip);
+      const ipCount = await recordIpFailure(ip);
       if (ipCount >= IP_BLOCK_THRESHOLD) {
         await securityService.blockIp(
           ip,
@@ -1033,7 +1033,7 @@ export const constellationLogin = async (req, res) => {
       canonicalPattern = buildCanonicalPattern(edges);
     } catch {
       await recordFailure(user._id);
-      recordIpFailure(ip);
+      await recordIpFailure(ip);
       return res.status(400).json({ message: "Invalid pattern format." });
     }
 
@@ -1048,7 +1048,7 @@ export const constellationLogin = async (req, res) => {
       await recordFailure(user._id);
 
       // ── IP-level failure tracking & auto-block ──────────────────────────
-      const ipCount = recordIpFailure(ip);
+      const ipCount = await recordIpFailure(ip);
       const riskScore = securityService.evaluateRisk(ip, ua, ipCount);
 
       if (ipCount >= IP_BLOCK_THRESHOLD) {
@@ -1094,7 +1094,7 @@ export const constellationLogin = async (req, res) => {
 
     // ── Reset counters on success ─────────────────────────────────────────
     await recordSuccess(user._id);
-    resetIpFailures(ip); // Clear per-IP counter — legitimate user confirmed
+    await resetIpFailures(ip); // Clear per-IP counter — legitimate user confirmed
 
     // ── Audit log success ─────────────────────────────────────────────────
     await securityService.logAuditEvent(

@@ -7,7 +7,7 @@ export const generateOTP = () => {
 export const storeOTP = async (email, otp) => {
   await OTP.deleteMany({ email });
   await OTP.create({ email, otp });
-  console.log(`[DEV] OTP stored for ${email} (valid for 5 mins)`);
+  console.log(`[Auth] OTP generated for user metadata flow`);
 };
 
 export const verifyOTP = async (email, otp) => {
