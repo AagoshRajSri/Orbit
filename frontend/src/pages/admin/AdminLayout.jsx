@@ -58,13 +58,13 @@ export default function AdminLayout() {
       <aside className={`admin-sidebar ${expanded ? "expanded" : ""}`}>
         <div className="admin-sidebar-header">
           <OrbitLogo size={32} />
-          <span className="admin-sidebar-title">Admin</span>
+          {expanded && <span className="admin-sidebar-title">Admin</span>}
         </div>
 
-        <nav style={{ flex: 1, padding: expanded ? "0" : "0 12px" }}>
+        <nav className="admin-sidebar-nav">
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="admin-nav-group">
-              <div className="admin-nav-label-small">{group.label}</div>
+              {expanded && <div className="admin-nav-label-small">{group.label}</div>}
               {group.items.map(({ name, path, icon: Icon }) => {
                 const active = location.pathname.startsWith(path);
                 return (
@@ -75,7 +75,7 @@ export default function AdminLayout() {
                     title={!expanded ? name : undefined}
                   >
                     <Icon className="admin-nav-icon" size={18} />
-                    <span className="admin-nav-text">{name}</span>
+                    {expanded && <span className="admin-nav-text">{name}</span>}
                   </Link>
                 );
               })}
@@ -83,15 +83,14 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <div className="admin-nav-group" style={{ marginTop: 'auto', marginBottom: 0 }}>
+        <div className="admin-sidebar-footer">
           <button
             onClick={handleLogout}
-            className="admin-nav-item"
+            className="admin-nav-item logout"
             title={!expanded ? "Sign Out" : undefined}
-            style={{ color: "var(--danger)", width: '100%', background: 'transparent', border: 'none', padding: expanded ? '0 14px' : 0 }}
           >
             <LogOut size={18} />
-            <span className="admin-nav-text">Sign Out</span>
+            {expanded && <span className="admin-nav-text">Sign Out</span>}
           </button>
         </div>
       </aside>
