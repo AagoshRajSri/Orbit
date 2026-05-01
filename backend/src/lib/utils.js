@@ -54,18 +54,20 @@ export const generateToken = async (userId, req, res) => {
       { expiresIn: "15m" },
     );
 
+    const isProduction = process.env.NODE_ENV === "production" || req.hostname !== "localhost";
+
     res.cookie("jwt", accessToken, {
       maxAge: 15 * 60 * 1000,
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction,
     });
 
     res.cookie("refresh_jwt", refreshToken, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction,
       path: "/api/auth/refresh", // Only sent on refresh endpoint
     });
 

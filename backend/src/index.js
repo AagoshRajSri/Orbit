@@ -64,9 +64,11 @@ const findAvailablePort = async (startPort, maxAttempts = 10) => {
 
 const app = express();
 
+// Trust proxy is required for secure cookies behind Render/Vercel
+app.set("trust proxy", 1);
+
 // ── Enforce HTTPS in Production ──────────────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
   app.use((req, res, next) => {
     if (req.header("x-forwarded-proto") !== "https") {
       res.redirect(`https://${req.header("host")}${req.url}`);
