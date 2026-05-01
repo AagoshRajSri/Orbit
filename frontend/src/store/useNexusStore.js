@@ -33,10 +33,12 @@ export const useNexusStore = create((set, get) => ({
   createNexus: async (nexusData) => {
     try {
       const res = await axiosInstance.post("/nexus/create", nexusData);
-      // Do NOT manually add here — the backend emits nexusJoined via socket,
-      // which calls addNexus (with dedup). Adding here too causes duplicate keys.
       const socket = getSocket();
       socket.emit("joinNexusRoom", res.data._id);
+
+      // Manually add the newly created Nexus to the state.
+      // addNexus handles deduplication if the socket event also arrives.
+      get().addNexus(res.data);
 
       toast.success(`Nexus "${res.data.name}" created!`);
       return res.data;
