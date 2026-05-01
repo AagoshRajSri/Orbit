@@ -569,6 +569,11 @@ export default function UniversalChatContainer({ type }) {
 
       {/* ── INPUT AREA ── */}
       <div className="nxi-shell" style={{ borderTop: `1px solid ${t.border}`, background: t.inputBar, position: "relative", zIndex: 10, flexShrink: 0 }}>
+        <style>{`
+          .orb-input::placeholder { color: ${t.txt2}; opacity: 0.5; font-style: italic; }
+          .orb-input-wrapper { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+          .orb-input-wrapper:focus-within { border-color: ${t.acc} !important; box-shadow: 0 8px 32px ${t.glow} !important; transform: translateY(-1px); }
+        `}</style>
 
         {/* Media/Emoji panel */}
         {mediaPanel && (
@@ -590,44 +595,34 @@ export default function UniversalChatContainer({ type }) {
         )}
 
         {/* Toolbar row */}
-        <div style={{ display: "flex", alignItems: "center", padding: "8px 16px 4px", gap: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "12px 20px 4px", gap: 2 }}>
           <TBtn t={t} d={I.emoji}   label="Emoji"    active={mediaPanel === "emoji"}   onClick={() => setMediaPanel(mediaPanel === "emoji"   ? null : "emoji")} />
           <TBtn t={t} d={I.sticker} label="Stickers" active={mediaPanel === "sticker"} onClick={() => setMediaPanel(mediaPanel === "sticker" ? null : "sticker")} />
           <TBtn t={t} d={I.gif}     label="GIF"      active={mediaPanel === "gif"}     onClick={() => setMediaPanel(mediaPanel === "gif"     ? null : "gif")} />
           <TBtn t={t} d={I.img}     label="Image"    onClick={() => addToast("Image upload coming soon")} />
           <TBtn t={t} d={I.attach}  label="File"     onClick={() => addToast("File sharing coming soon")} />
           <div style={{ flex: 1 }} />
-          <span style={{ color: t.txt3, fontSize: 10, fontFamily: t.font, letterSpacing: ".06em", textTransform: "uppercase" }}>
-            🔒 Encrypted
+          <span style={{ color: t.txt3, fontSize: 10, fontFamily: t.font, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 700, opacity: 0.6 }}>
+            🔒 E2EE Encrypted
           </span>
         </div>
 
         {/* Input row */}
-        <div style={{ display: "flex", alignItems: "flex-end", padding: "8px 20px 20px", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", padding: "8px 20px 24px", gap: 12 }}>
           {/* Text field wrapper */}
           <div
-            className="nxi-textarea-wrapper"
+            className="orb-input-wrapper"
             style={{ 
               flex: 1, display: "flex", alignItems: "center", 
-              background: t.input, border: `1.5px solid ${t.inputBrd}`, 
-              borderRadius: 24, padding: "4px 8px 4px 20px", gap: 12, 
-              transition: "all .3s cubic-bezier(0.4, 0, 0.2, 1)",
-              boxShadow: `0 4px 12px ${t.glow2}`,
-            }}
-            onFocusCapture={e => { 
-              e.currentTarget.style.borderColor = t.acc; 
-              e.currentTarget.style.boxShadow = `0 6px 20px ${t.glow}`; 
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onBlurCapture={e => { 
-              e.currentTarget.style.borderColor = t.inputBrd; 
-              e.currentTarget.style.boxShadow = `0 4px 12px ${t.glow2}`; 
-              e.currentTarget.style.transform = "translateY(0)";
+              background: t.input, border: `2px solid ${t.inputBrd}`, 
+              borderRadius: 30, padding: "4px 12px 4px 24px", gap: 12, 
+              boxShadow: `0 4px 15px ${t.glow2}`,
+              minHeight: 56
             }}
           >
             <input
               ref={inputRef}
-              className="nxi-textarea"
+              className="orb-input"
               value={input}
               onChange={handleInputChange}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMsg(input); } }}
@@ -635,16 +630,16 @@ export default function UniversalChatContainer({ type }) {
               placeholder={recording ? "🎙️ Recording…" : `Message ${entityName}…`}
               style={{ 
                 flex: 1, background: "transparent", border: "none", outline: "none", 
-                color: t.txt, fontSize: 15, fontFamily: t.font, 
-                padding: "12px 0", lineHeight: 1.5, letterSpacing: ".02em" 
+                color: t.txt, fontSize: 16, fontFamily: t.font, 
+                padding: "14px 0", lineHeight: 1.5, letterSpacing: ".01em" 
               }}
               spellCheck="false"
             />
             {input.length > 0 && (
               <span style={{ 
-                color: t.acc, fontSize: 11, fontFamily: t.font, fontWeight: 700,
-                background: `${t.acc}15`, padding: "4px 10px", borderRadius: 12,
-                flexShrink: 0, transition: "opacity .2s", letterSpacing: ".04em"
+                color: t.acc, fontSize: 11, fontFamily: t.font, fontWeight: 800,
+                background: `${t.acc}18`, padding: "5px 12px", borderRadius: 20,
+                flexShrink: 0, transition: "opacity .2s", letterSpacing: ".05em"
               }}>
                 {input.length}
               </span>
@@ -652,40 +647,40 @@ export default function UniversalChatContainer({ type }) {
           </div>
 
           {/* Action Buttons Container */}
-          <div style={{ display: "flex", gap: 8, paddingBottom: 2 }}>
+          <div style={{ display: "flex", gap: 10, paddingBottom: 4 }}>
             {/* Mic button */}
             <Btn3D
               onClick={recording ? () => { addToast("Voice message sent"); setRecording(false); } : () => setRecording(true)}
               style={{ 
-                width: 48, height: 48, borderRadius: 24, 
-                border: recording ? "none" : `1.5px solid ${t.border}`, 
-                background: recording ? "#cc2200" : t.msgIn, 
+                width: 52, height: 52, borderRadius: 26, 
+                border: recording ? "none" : `2px solid ${t.border}`, 
+                background: recording ? "#ff3b30" : t.msgIn, 
                 color: recording ? "#fff" : t.toolC, 
                 flexShrink: 0, 
-                boxShadow: recording ? "0 4px 24px rgba(200,34,0,.5)" : `0 4px 12px ${t.glow2}` 
+                boxShadow: recording ? "0 8px 32px rgba(255,59,48,0.4)" : `0 4px 15px ${t.glow2}` 
               }}
               title={recording ? "Send voice message" : "Record voice message"}
             >
-              <Ico d={recording ? I.mic2 : I.mic} size={20} stroke="currentColor" />
+              <Ico d={recording ? I.mic2 : I.mic} size={22} stroke="currentColor" />
             </Btn3D>
 
             {/* Send button — appears when text is non-empty */}
             {input.trim() && (
               <Btn3D
                 onClick={() => sendMsg(input)}
-                className={`nxi-send ${input.trim() ? 'ready' : ''}`}
                 style={{ 
-                  width: 48, height: 48, borderRadius: 24, border: "none", 
+                  width: 52, height: 52, borderRadius: 26, border: "none", 
                   background: t.send, color: t.sendTxt, flexShrink: 0, 
-                  boxShadow: `0 6px 20px ${t.glow}`, animation: "popIn .25s cubic-bezier(0.4, 0, 0.2, 1)" 
+                  boxShadow: `0 8px 32px ${t.glow}`, animation: "popIn .3s cubic-bezier(0.34, 1.56, 0.64, 1)" 
                 }}
                 title="Send message"
               >
-                <Ico d={I.send} size={20} stroke={t.sendTxt} style={{ transform: "translate(1px, -1px)" }} />
+                <Ico d={I.send} size={22} stroke={t.sendTxt} style={{ transform: "translate(1px, -1px)" }} />
               </Btn3D>
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* ── INFO PANEL (slide-in) ── */}
