@@ -923,13 +923,12 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                   <div style={{ ...fade(.2), height: "100%", display: "flex" }}>
                     <SpotifyCard />
                   </div>
-                  <div style={{ ...fade(.3), height: "100%", display: "flex" }}>
+                  <div style={{ ...fade(.3), height: "100%", display: "flex", opacity: 0.7 }}>
                     <ActionCard
-                      icon="💬"
-                      title="DIRECT MISSION"
-                      subtitle="Initiate secure peer-to-peer frequencies with elite contacts"
+                      icon="🎮"
+                      title="ORBIT GAMES 🔒"
+                      subtitle="Coming soon. A new way to play together across the elite grid."
                       color="#4ECDC4"
-                      onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))}
                     />
                   </div>
                   <div style={{ ...fade(.4), height: "100%", display: "flex" }}>

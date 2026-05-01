@@ -1772,14 +1772,16 @@ export default function OrbitVampire({ children }) {
                                     navigate={navigate}
                                 />
 
-                                {/* Start Chatting */}
-                                <div className="card" ref={el => addCardRef(el, 1)} onClick={() => { setActiveTab("orbits"); setNexusActionView(null); }}>
-                                    <div className="card-icon icon-chat">💬</div>
-                                    <div className="card-title">Start Chatting</div>
-                                    <div className="card-desc">
-                                        Select a Constellation or open a private channel into the dark beyond.
+                                {/* Orbit Games */}
+                                <div className="card" ref={el => addCardRef(el, 1)} style={{ cursor: 'not-allowed', opacity: 0.8 }}>
+                                    <div className="card-icon icon-chat">🎮</div>
+                                    <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        Orbit Games <span style={{ fontSize: 12 }}>🔒</span>
                                     </div>
-                                    <span className="card-arrow">↗</span>
+                                    <div className="card-desc">
+                                        Coming soon. A new way to play together in the dark beyond.
+                                    </div>
+                                    <span className="card-arrow">🔒</span>
                                 </div>
 
                                 {/* Get Notifications */}

@@ -915,9 +915,11 @@ function ChatCard() {
     <NeonCard color={M} style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6, height: "100%", position: "relative" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 7, border: `1.5px solid ${M}88`, background: `${M}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: `0 0 8px ${M}44`, marginBottom: 8 }}>💬</div>
-          <div style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: "0.15em", color: M, textTransform: "uppercase", textShadow: `0 0 8px ${M}`, fontFamily: "'Orbitron',monospace", marginBottom: 4 }}>START CHATTING</div>
-          <div style={{ fontSize: 9.5, color: "rgba(200,140,200,0.65)", lineHeight: 1.5 }}>Select a Constellation or create a private conversation</div>
+          <div style={{ width: 30, height: 30, borderRadius: 7, border: `1.5px solid ${M}88`, background: `${M}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: `0 0 8px ${M}44`, marginBottom: 8 }}>🎮</div>
+          <div style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: "0.15em", color: M, textTransform: "uppercase", textShadow: `0 0 8px ${M}`, fontFamily: "'Orbitron',monospace", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+            ORBIT GAMES <span style={{ fontSize: 10 }}>🔒</span>
+          </div>
+          <div style={{ fontSize: 9.5, color: "rgba(200,140,200,0.65)", lineHeight: 1.5 }}>Coming soon. A new way to play together.</div>
         </div>
         <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <ConstellationGrid />

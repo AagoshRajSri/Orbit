@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Globe, Settings, User, LogOut, Music, Bell, Shield, Layers, 
   Coffee, Play, SkipForward, SkipBack, MessageCircle, Maximize2, 
-  Compass, CheckCircle2, ArrowLeft 
+  Compass, CheckCircle2, ArrowLeft, Gamepad2, Lock
 } from "lucide-react";
 
 import { spotifyService } from "../services/spotifyService";
@@ -835,18 +835,20 @@ export default function LightTheme({ children }) {
                  )}
                </div>
 
-               {/* START CHATTING */}
-               <div className="luxury-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={() => setNexusActionView("join")}>
+               {/* ORBIT GAMES */}
+               <div className="luxury-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', cursor: 'not-allowed', opacity: 0.6 }}>
                   <div className="luxury-card-overlay" />
                   <div className="rich-icon-wrapper" style={{ width: 48, height: 48, borderRadius: 16, background: 'linear-gradient(135deg, #DEBBBC, #A36B6D)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', marginBottom: 'auto', position: 'relative' }}>
-                     <MessageCircle size={20} />
+                     <Gamepad2 size={20} />
                   </div>
                   <div style={{ position: 'relative' }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, marginTop: 16, letterSpacing: 0.5 }}>START CHATTING</h3>
-                    <p style={{ fontSize: 12, color: LUXURY_COLORS.textSecondary }}>Select a Constellation or create a private conversation.</p>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, marginTop: 16, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      ORBIT GAMES <Lock size={14} />
+                    </h3>
+                    <p style={{ fontSize: 12, color: LUXURY_COLORS.textSecondary }}>Coming soon. A new way to play together in our curated spaces.</p>
                   </div>
                   <div style={{ position: 'absolute', right: 20, bottom: 20, color: '#E0E0E0' }}>
-                    <Maximize2 size={16} />
+                    <Lock size={16} />
                   </div>
                </div>
 
