@@ -13,6 +13,7 @@ import { useSettingsStore } from "../store/useSettingsStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 import { Music } from "lucide-react";
 import RocketAnimation from "../components/RocketAnimation";
+import OrbitLogo from "../components/OrbitLogo";
 
 
 /* ─────────────────────────────── KEYFRAMES ─────────────────────────────── */
@@ -235,15 +236,7 @@ const DataStream = memo(({ x, delay, dur }) => {
 });
 DataStream.displayName = "DataStream";
 
-const OrbitLogo = memo(() => (
-  <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
-    <div style={{ position: "absolute", inset: 0, border: "1.2px solid rgba(198,160,110,.55)", borderRadius: "50%", animation: "oa-cw 12s linear infinite" }} />
-    <div style={{ position: "absolute", inset: 4.5, border: "1px solid rgba(78,205,196,.45)", borderRadius: "50%", animation: "oa-ccw 8s linear infinite" }} />
-    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 7, height: 7, background: "#C6A06E", borderRadius: "50%", boxShadow: "0 0 8px #C6A06E,0 0 15px rgba(198,160,110,.4)" }} />
-    <div style={{ position: "absolute", top: "50%", left: "-2px", width: 5, height: 5, background: "#4ECDC4", borderRadius: "50%", boxShadow: "0 0 6px #4ECDC4", marginTop: -2.5, animation: "oa-cw 12s linear infinite", transformOrigin: "16px 0" }} />
-  </div>
-));
-OrbitLogo.displayName = "OrbitLogo";
+// OrbitLogo is now imported from ../components/OrbitLogo
 
 const Waveform = memo(({ playing }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 2, height: 28 }}>
