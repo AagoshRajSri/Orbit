@@ -51,10 +51,13 @@ export const useNexusStore = create((set, get) => ({
   joinNexus: async (joinCode) => {
     try {
       const res = await axiosInstance.post("/nexus/join", { joinCode });
-      // Do NOT manually add here — the backend emits nexusJoined via socket,
-      // which calls addNexus (with dedup). Adding here too causes duplicate keys.
+      
       const socket = getSocket();
       socket.emit("joinNexusRoom", res.data._id);
+
+      // Manually add the joined Nexus to the state using the API response.
+      // addNexus has deduplication to handle the case where the socket event also arrives.
+      get().addNexus(res.data);
 
       toast.success(`Joined Nexus: ${res.data.name}`);
       return res.data;
