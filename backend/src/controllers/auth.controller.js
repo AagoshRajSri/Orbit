@@ -282,6 +282,7 @@ export const updateProfile = async (req, res) => {
       username: z.string().min(2, "Username too short").max(50, "Username too long").trim().optional(),
       email: z.string().email("Invalid email").optional(),
       bio: z.string().max(500, "Bio too long").optional(),
+      telegramId: z.string().optional(),
     });
 
     const parsed = updateProfileSchema.safeParse(req.body);
@@ -292,7 +293,7 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    const { profilePic, username, email, bio } = parsed.data;
+    const { profilePic, username, email, bio, telegramId } = parsed.data;
     const userId = req.user._id;
 
     const updater = {};
@@ -320,6 +321,7 @@ export const updateProfile = async (req, res) => {
     if (username) updater.username = username;
     if (email) updater.email = email;
     if (typeof bio === "string") updater.bio = bio;
+    if (typeof telegramId === "string") updater.telegramId = telegramId;
 
     if (Object.keys(updater).length === 0) {
       return res.status(400).json({ message: "No profile fields provided" });
