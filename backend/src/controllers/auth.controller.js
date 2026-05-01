@@ -60,7 +60,7 @@ export const signup = async (req, res) => {
       username: usernameSchema,
       email: emailSchema,
       password: passwordSchema,
-      telegramId: z.string().optional(),
+      telegramId: z.string().min(1, "Telegram ID is required for verification"),
     }).safeParse({ username, email, password, telegramId });
 
     if (!validation.success) {

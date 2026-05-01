@@ -193,11 +193,11 @@ export const useAuthStore = create(
       logout: async () => {
         try {
           await axiosInstance.post("/auth/logout");
-          localStorage.removeItem("orbit_socket_token");
-          set({ authUser: null, sessionId: null });
-          toast.success("Logged out successfully");
         } catch (error) {
-          toast.error("Logout failed");
+          console.warn("Server logout failed, forcing local session clear.");
+        } finally {
+          localStorage.removeItem("orbit_socket_token");
+          set({ authUser: null, sessionId: null, socketToken: null });
         }
       },
 

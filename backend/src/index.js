@@ -7,6 +7,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import hpp from "hpp";
 import net from "net";
+import compression from "compression";
 
 import { threatDetectionMiddleware } from "./middleware/threat-detection.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
@@ -82,6 +83,7 @@ const allowedOrigins = process.env.FRONTEND_URL
   : ["http://localhost:5173"];
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+app.use(compression());
 app.use(requestLogger);
 app.use(helmet());
 app.use(
@@ -218,8 +220,8 @@ const validateEnv = () => {
   if (process.env.NODE_ENV === "production") {
     const missingOptional = optional.filter((key) => !process.env[key]);
     
-    if (!process.env.RESEND_API_KEY) {
-      console.warn("⚠️  Warning: RESEND_API_KEY is missing. Mail system will not work in production.");
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.warn("⚠️  Warning: SMTP credentials (SMTP_USER/PASS) are missing. Mail system will not work in production.");
     }
 
     if (missingOptional.length > 0) {

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { useAuthStore } from "../store/useAuthStore";
 import { useLocation, useNavigate, Navigate } from "react-router-dom";
 import { CyberAuthStyles } from "../components/CyberAuth";
@@ -93,12 +94,30 @@ const VerifyEmailPage = () => {
   const code = digits.join("");
   const ready = code.length === 6;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15, filter: "blur(4px)" },
+    visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <>
+    <motion.div 
+      initial="hidden" 
+      animate="visible" 
+      variants={containerVariants}
+      className="flex flex-col gap-2 relative z-10 w-full"
+    >
       <CyberAuthStyles />
 
       {/* ── Header ─────────────────────────────── */}
-      <div className="text-center flex flex-col items-center gap-2 mb-1">
+      <motion.div variants={itemVariants} className="text-center flex flex-col items-center gap-2 mb-1">
         {/* Spinning orbit icon */}
         <div className="relative flex items-center justify-center" style={{ width: "48px", height: "48px" }}>
           <div
@@ -137,10 +156,10 @@ const VerifyEmailPage = () => {
         }}>
           EMAIL_VERIFICATION_SEQUENCE
         </p>
-      </div>
+      </motion.div>
 
       {/* ── Sub-text ───────────────────────────── */}
-      <div className="text-center mb-4">
+      <motion.div variants={itemVariants} className="text-center mb-4">
         <p style={{
           fontFamily: "'Space Mono', monospace",
           fontSize: "10px",
@@ -152,10 +171,10 @@ const VerifyEmailPage = () => {
           <br />
           <span style={{ color: "rgba(167,139,250,0.85)", fontWeight: "600" }}>{email}</span>
         </p>
-      </div>
+      </motion.div>
 
       {/* ── OTP Inputs ─────────────────────────── */}
-      <div className="flex flex-col gap-3">
+      <motion.div variants={itemVariants} className="flex flex-col gap-3">
         <label style={{
           fontFamily: "'Space Mono', monospace",
           fontSize: "9px",
@@ -218,34 +237,38 @@ const VerifyEmailPage = () => {
         }}>
           {errorMsg}
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Submit button ──────────────────────── */}
-      <button
-        className="cyber-submit-btn"
-        onClick={() => ready && !submitting && submit(code)}
-        disabled={!ready || submitting}
-      >
-        {submitting ? (
-          <span className="flex items-center justify-center gap-3">
-            <div className="beating-loader" />
-            VALIDATING...
-          </span>
-        ) : (
-          <span>UNSEAL_ACCOUNT //</span>
-        )}
-      </button>
+      <motion.div variants={itemVariants}>
+        <button
+          className="cyber-submit-btn"
+          onClick={() => ready && !submitting && submit(code)}
+          disabled={!ready || submitting}
+          style={{ width: "100%" }}
+        >
+          {submitting ? (
+            <span className="flex items-center justify-center gap-3">
+              <div className="beating-loader" />
+              VALIDATING...
+            </span>
+          ) : (
+            <span>UNSEAL_ACCOUNT //</span>
+          )}
+        </button>
+      </motion.div>
 
       {/* ── Divider ────────────────────────────── */}
-      <div className="flex items-center gap-3 py-1">
+      <motion.div variants={itemVariants} className="flex items-center gap-3 py-1">
         <div style={{ flex: 1, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }} />
         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: "rgba(255,255,255,0.15)" }}>OR</span>
         <div style={{ flex: 1, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }} />
-      </div>
+      </motion.div>
 
       {/* ── Resend ─────────────────────────────── */}
-      <button
-        onClick={handleResend}
+      <motion.div variants={itemVariants}>
+        <button
+          onClick={handleResend}
         disabled={cooldown > 0 || resending}
         style={{
           width: "100%",
@@ -278,10 +301,11 @@ const VerifyEmailPage = () => {
           ? `RESEND_AVAILABLE_IN_${cooldown}s`
           : "RESEND_SIGIL_CODE →"
         }
-      </button>
+        </button>
+      </motion.div>
 
       {/* ── Return to Login ───────────────────────── */}
-      <div className="text-center mt-2">
+      <motion.div variants={itemVariants} className="text-center mt-2">
         <button
           onClick={async () => {
             await logout();
@@ -303,10 +327,10 @@ const VerifyEmailPage = () => {
         >
           ← BACK_TO_LOGIN / LOGOUT
         </button>
-      </div>
+      </motion.div>
 
       {/* ── Footer ─────────────────────────────── */}
-      <div className="text-center pt-2">
+      <motion.div variants={itemVariants} className="text-center pt-2">
         <p style={{
           fontFamily: "'Space Mono', monospace",
           fontSize: "8px",
@@ -315,8 +339,8 @@ const VerifyEmailPage = () => {
         }}>
           ◈ SECURE_NODE_COMMUNICATION_ESTABLISHED ◈
         </p>
-      </div>
-    </>
+      </motion.div>
+    </motion.div>
   );
 };
 

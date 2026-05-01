@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import MessageStatusRing from "./MessageStatusRing";
 
@@ -520,7 +520,7 @@ const GLOWS = {
 // ══════════════════════════════════════════════════════════════════════════════
 //  MESSAGE BUBBLE
 // ══════════════════════════════════════════════════════════════════════════════
-function MsgBubble({msg,t,onReact,isMe}) {
+export const MsgBubble = memo(function MsgBubble({msg,t,onReact,isMe}) {
   const [hov,setHov]=useState(false);
   const [showPicker, setShowPicker] = useState(false);
   
@@ -590,12 +590,12 @@ function MsgBubble({msg,t,onReact,isMe}) {
       ))}
     </div>
   );
-}
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  VOICE MESSAGE BUBBLE
 // ══════════════════════════════════════════════════════════════════════════════
-function VoiceBubble({t,out}) {
+export const VoiceBubble = memo(function VoiceBubble({t,out}) {
   const [playing,setPlaying]=useState(false);
   return (
     <div style={{display:"flex",justifyContent:out?"flex-end":"flex-start",marginBottom:14}}>
@@ -608,12 +608,12 @@ function VoiceBubble({t,out}) {
       </div>
     </div>
   );
-}
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  IMAGE BUBBLE
 // ══════════════════════════════════════════════════════════════════════════════
-function ImgBubble({t,out}) {
+export const ImgBubble = memo(function ImgBubble({t,out}) {
   return (
     <div style={{display:"flex",justifyContent:out?"flex-end":"flex-start",marginBottom:14}}>
       <div style={{background:out?t.msgOut:t.msgIn,border:`1px solid ${out?t.msgOutBrd:t.border}`,borderRadius:18,[`borderBottom${out?"Right":"Left"}Radius`]:3,padding:4,overflow:"hidden",maxWidth:280}}>
@@ -622,12 +622,12 @@ function ImgBubble({t,out}) {
       </div>
     </div>
   );
-}
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  FILE BUBBLE
 // ══════════════════════════════════════════════════════════════════════════════
-function FileBubble({t,out}) {
+export const FileBubble = memo(function FileBubble({t,out}) {
   return (
     <div style={{display:"flex",justifyContent:out?"flex-end":"flex-start",marginBottom:14}}>
       <div style={{background:out?t.msgOut:t.msgIn,border:`1px solid ${out?t.msgOutBrd:t.border}`,borderRadius:18,[`borderBottom${out?"Right":"Left"}Radius`]:3,padding:"12px 16px",display:"flex",alignItems:"center",gap:14,maxWidth:300}}>

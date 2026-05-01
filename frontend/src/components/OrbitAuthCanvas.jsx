@@ -444,6 +444,28 @@ const OrbitAuthCanvas = forwardRef(function OrbitAuthCanvas(
   }
 
   // ── Background ──────────────────────────────────────────────────────────────
+  const gridCacheRef = useRef(null);
+
+  function getGridCache(W, H) {
+    if (!gridCacheRef.current || gridCacheRef.current.width !== W || gridCacheRef.current.height !== H) {
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const x = c.getContext('2d');
+      x.fillStyle = 'rgba(255,255,255,.018)';
+      const gs = 48;
+      x.beginPath();
+      for (let px = gs; px < W; px += gs) {
+        for (let py = gs; py < H; py += gs) {
+          x.moveTo(px, py);
+          x.arc(px, py, 0.7, 0, Math.PI*2);
+        }
+      }
+      x.fill();
+      gridCacheRef.current = c;
+    }
+    return gridCacheRef.current;
+  }
+
   function initBgOrbs() {
     bgOrbs.current = Array.from({ length: 7 }, (_, i) => ({
       x: Math.random(), y: Math.random(),
@@ -465,13 +487,8 @@ const OrbitAuthCanvas = forwardRef(function OrbitAuthCanvas(
       g.addColorStop(1, 'transparent');
       x.fillStyle = g; x.fillRect(0, 0, W, H);
     });
-    // Subtle dot grid
-    x.fillStyle = 'rgba(255,255,255,.018)';
-    const gs = 48;
-    for (let px = gs; px < W; px += gs)
-      for (let py = gs; py < H; py += gs) {
-        x.beginPath(); x.arc(px, py, 0.7, 0, Math.PI*2); x.fill();
-      }
+    // Draw pre-rendered subtle dot grid
+    x.drawImage(getGridCache(W, H), 0, 0);
   }
 
   function animateBg() {
@@ -489,12 +506,8 @@ const OrbitAuthCanvas = forwardRef(function OrbitAuthCanvas(
       g.addColorStop(1, 'transparent');
       x.fillStyle = g; x.fillRect(0, 0, W, H);
     });
-    x.fillStyle = 'rgba(255,255,255,.018)';
-    const gs = 48;
-    for (let px = gs; px < W; px += gs)
-      for (let py = gs; py < H; py += gs) {
-        x.beginPath(); x.arc(px, py, 0.7, 0, Math.PI*2); x.fill();
-      }
+    // Draw pre-rendered subtle dot grid
+    x.drawImage(getGridCache(W, H), 0, 0);
     rafs.current.bg = requestAnimationFrame(animateBg);
   }
 
