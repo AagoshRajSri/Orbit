@@ -194,7 +194,8 @@ async function initApp() {
   global.io = io;
 }
 
-initApp();
+await initApp();
+// startServer() is called at the end of the file; we'll let it handle the listen.
 
 // ── Env validation ────────────────────────────────────────────────────────────
 const validateEnv = () => {
@@ -242,8 +243,7 @@ const startServer = async () => {
     validateEnv();
     console.log("✓ Environment variables validated");
 
-    await connectDB();
-    console.log("✓ Database connected successfully");
+    // We don't call connectDB() here because initApp() handles it.
 
     const port = process.env.NODE_ENV === "production"
       ? parseInt(process.env.PORT || "3000", 10)

@@ -135,7 +135,14 @@ export const createNexus = async (req, res) => {
     let avatarUrl = "";
     if (avatar) {
       try {
-        const uploadResponse = await cloudinary.uploader.upload(avatar);
+        const uploadResponse = await cloudinary.uploader.upload(avatar, {
+          folder: "orbit_nexuses",
+          transformation: [
+            { width: 400, height: 400, crop: "fill", gravity: "face" },
+            { quality: "auto" },
+            { fetch_format: "auto" }
+          ]
+        });
         avatarUrl = uploadResponse.secure_url;
       } catch (uploadError) {
         console.error(
@@ -235,10 +242,16 @@ export const removeNexusMember = async (req, res) => {
       isSystem: true,
     });
     await systemMsg.save();
-    const populated = await Message.findById(systemMsg._id).populate(
-      "senderId",
-      "username profilePic",
-    );
+
+    // Construct populated system message manually
+    const populated = {
+      ...systemMsg.toObject(),
+      senderId: {
+        _id: req.user._id,
+        username: req.user.username,
+        profilePic: req.user.profilePic,
+      },
+    };
     io.to(nexusId.toString()).emit("newNexusMessage", populated);
 
     io.to(nexusId.toString()).emit("memberRemovedFromNexus", {
@@ -277,7 +290,14 @@ export const updateNexus = async (req, res) => {
     if (description) nexus.description = description;
 
     if (avatar) {
-      const uploadResponse = await cloudinary.uploader.upload(avatar);
+      const uploadResponse = await cloudinary.uploader.upload(avatar, {
+        folder: "orbit_nexuses",
+        transformation: [
+          { width: 400, height: 400, crop: "fill", gravity: "face" },
+          { quality: "auto" },
+          { fetch_format: "auto" }
+        ]
+      });
       nexus.avatar = uploadResponse.secure_url;
     }
 
@@ -353,10 +373,15 @@ export const joinNexus = async (req, res) => {
       isSystem: true,
     });
     await systemMsg.save();
-    const populated = await Message.findById(systemMsg._id).populate(
-      "senderId",
-      "username profilePic",
-    );
+
+    const populated = {
+      ...systemMsg.toObject(),
+      senderId: {
+        _id: req.user._id,
+        username: req.user.username,
+        profilePic: req.user.profilePic,
+      },
+    };
     io.to(nexus._id.toString()).emit("newNexusMessage", populated);
 
     io.to(nexus._id.toString()).emit("userJoinedNexus", {
@@ -405,7 +430,8 @@ export const getNexusMessages = async (req, res) => {
 
     const messages = await Message.find({ nexusId })
       .populate("senderId", "username profilePic")
-      .sort({ createdAt: 1 });
+      .sort({ createdAt: 1 })
+      .lean();
 
     res.status(200).json(messages);
   } catch (error) {
@@ -457,7 +483,14 @@ export const sendNexusMessage = async (req, res) => {
 
     let imageUrl = image;
     if (image && image.startsWith("data:")) {
-      const uploadResponse = await cloudinary.uploader.upload(image);
+      const uploadResponse = await cloudinary.uploader.upload(image, {
+        folder: "orbit_chats",
+        transformation: [
+          { width: 1200, crop: "limit" },
+          { quality: "auto" },
+          { fetch_format: "auto" }
+        ]
+      });
       imageUrl = uploadResponse.secure_url;
     }
 
@@ -471,10 +504,14 @@ export const sendNexusMessage = async (req, res) => {
 
     await newMessage.save();
 
-    const populatedMessage = await Message.findById(newMessage._id).populate(
-      "senderId",
-      "username profilePic",
-    );
+    const populatedMessage = {
+      ...newMessage.toObject(),
+      senderId: {
+        _id: req.user._id,
+        username: req.user.username,
+        profilePic: req.user.profilePic,
+      },
+    };
 
     // Emit to all nexus members
     const io = getIO();
@@ -519,10 +556,14 @@ export const leaveNexus = async (req, res) => {
     });
     await systemMsg.save();
 
-    const populated = await Message.findById(systemMsg._id).populate(
-      "senderId",
-      "username profilePic",
-    );
+    const populated = {
+      ...systemMsg.toObject(),
+      senderId: {
+        _id: req.user._id,
+        username: req.user.username,
+        profilePic: req.user.profilePic,
+      },
+    };
 
     const io = getIO();
     io.to(nexusId.toString()).emit("newNexusMessage", populated);

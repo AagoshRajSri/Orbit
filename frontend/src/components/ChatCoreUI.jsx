@@ -642,7 +642,7 @@ export const FileBubble = memo(function FileBubble({t,out}) {
       </div>
     </div>
   );
-}
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  PANEL TOGGLE SECTION

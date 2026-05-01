@@ -511,30 +511,62 @@ export const useSpotifyStore = create((set, get) => ({
 
   // Polling Management
   _pollingInterval: null,
+  _visibilityListener: null,
   startPolling: () => {
-    if (get()._pollingInterval) return;
+    const store = get();
+    if (store._pollingInterval) return;
     
     // Setup WebSocket too if not already
-    get().setupWebSocketListeners();
+    store.setupWebSocketListeners();
 
-    if (!get().spotifyLinked) return;
+    if (!store.spotifyLinked) return;
 
     // Initial fetch
-    get().getPlaybackState();
+    store.getPlaybackState();
 
-    const interval = setInterval(() => {
-      if (get().spotifyLinked) {
+    // Visibility-aware Adaptive Polling
+    const poll = () => {
+      if (document.hidden) return; // Don't poll if tab is backgrounded
+      
+      const { spotifyLinked, isPlaying } = get();
+      if (spotifyLinked) {
         get().getPlaybackState();
       }
-    }, 5000); // 5s polling is standard for dashboard players
-    
+
+      // Adaptive timing: Poll slower (10s) if paused, faster (5s) if playing
+      const nextInterval = isPlaying ? 5000 : 10000;
+      
+      if (get()._pollingInterval) {
+        clearInterval(get()._pollingInterval);
+        const newInterval = setInterval(poll, nextInterval);
+        set({ _pollingInterval: newInterval });
+      }
+    };
+
+    const interval = setInterval(poll, 5000);
     set({ _pollingInterval: interval });
+
+    // Stop polling when tab is hidden to save battery/bandwidth
+    if (!store._visibilityListener) {
+      const listener = () => {
+        if (document.hidden) {
+          get().stopPolling();
+        } else {
+          get().startPolling();
+        }
+      };
+      document.addEventListener("visibilitychange", listener);
+      set({ _visibilityListener: listener });
+    }
   },
 
   stopPolling: () => {
-    if (get()._pollingInterval) {
-      clearInterval(get()._pollingInterval);
+    const { _pollingInterval, _visibilityListener } = get();
+    if (_pollingInterval) {
+      clearInterval(_pollingInterval);
       set({ _pollingInterval: null });
     }
+    // We don't remove the listener here to allow auto-resume, 
+    // unless explicitly disconnected.
   },
 }));

@@ -87,9 +87,10 @@ export const getMessage = async (req, res) => {
     // Fetch chronologically backwards, then reverse for the client
     let messages = await Message.find(query)
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
+      .limit(parsedLimit)
       .populate("senderId", "username profilePic")
-      .populate("receiverId", "username profilePic");
+      .populate("receiverId", "username profilePic")
+      .lean();
 
     messages = messages.reverse();
 
@@ -140,7 +141,14 @@ export const sendMessage = async (req, res) => {
       }
 
       try {
-        const uploadResponse = await cloudinary.uploader.upload(image);
+        const uploadResponse = await cloudinary.uploader.upload(image, {
+          folder: "orbit_chats",
+          transformation: [
+            { width: 1200, crop: "limit" },
+            { quality: "auto" },
+            { fetch_format: "auto" }
+          ]
+        });
         imageUrl = uploadResponse.secure_url;
       } catch (uploadError) {
         console.error("Cloudinary upload failed:", uploadError.message);
@@ -290,9 +298,17 @@ export const updateMessage = async (req, res) => {
     message.text = sanitizedText;
     await message.save();
 
-    const populatedMessage = await Message.findById(messageId)
-      .populate("senderId", "username profilePic")
-      .populate("receiverId", "username profilePic");
+    // Construct populated message for socket emission without re-fetching
+    const populatedMessage = {
+      ...message.toObject(),
+      senderId: {
+        _id: req.user._id,
+        username: req.user.username,
+        profilePic: req.user.profilePic,
+      },
+      receiverId: message.receiverId ? { _id: message.receiverId } : undefined,
+      nexusId: message.nexusId ? { _id: message.nexusId } : undefined,
+    };
 
     // Emit update event via socket
     const io = getIO();

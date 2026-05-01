@@ -231,9 +231,20 @@ export const useChatStore = create((set, get) => ({
             (m) => normalizeId(m._id) === normalizeId(message._id) || (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey)
           );
           if (!exists) {
-              newMessages = [...state.messages, message].sort((a, b) => 
-                new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-              );
+              const lastMsgDate = state.messages.length > 0 
+                ? new Date(state.messages[state.messages.length - 1].createdAt).getTime() 
+                : 0;
+              const newMsgDate = new Date(message.createdAt).getTime();
+
+              if (newMsgDate >= lastMsgDate) {
+                // Happy path: Append to end (No sort needed)
+                newMessages = [...state.messages, message];
+              } else {
+                // Out of order (Sync catchup): Sort required
+                newMessages = [...state.messages, message].sort((a, b) => 
+                  new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                );
+              }
           }
       }
 
@@ -260,6 +271,18 @@ export const useChatStore = create((set, get) => ({
   },
 
   setUserTyping: (userId, isTyping) => {
+    // Self-cleaning typing state: auto-clear after 3.5s if stop event is missed
+    if (isTyping) {
+      const existingTimeout = get()[`_typingTimer_${userId}`];
+      if (existingTimeout) clearTimeout(existingTimeout);
+      
+      const timer = setTimeout(() => {
+        get().setUserTyping(userId, false);
+      }, 3500);
+      
+      set({ [`_typingTimer_${userId}`]: timer });
+    }
+
     set((state) => {
       const users = state.users.map((user) =>
         user._id?.toString() === userId?.toString()
