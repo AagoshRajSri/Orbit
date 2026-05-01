@@ -1421,4 +1421,4 @@ const THEME_KEYS=["vampire","premium","amoled","cyberpunk","gamer","barbie"];
 
 
 
-export { ChatArea, THEMES, makeGroupState, Ico, I, Toast, CallOverlay, Btn3D, TBtn, Typing, MsgBubble, VoiceBubble, ImgBubble, FileBubble, InfoPanel, ParticleCanvas, Wave, MediaPanel };
+export { ChatArea, THEMES, makeGroupState, Ico, I, Toast, CallOverlay, Btn3D, TBtn, Typing, InfoPanel, ParticleCanvas, Wave, MediaPanel };
