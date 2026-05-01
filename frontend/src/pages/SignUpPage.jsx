@@ -29,9 +29,12 @@ const SignUpPage = () => {
     if (!formData.email.trim()) return toast.error("Email is required");
     if (!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("Invalid email address");
     
-    // Optional: Validate Telegram ID format if provided
-    if (formData.telegramId && !/^\d+$/.test(formData.telegramId)) {
-      return toast.error("Telegram ID must be numeric (get it from @userinfobot)");
+    // Telegram ID is now REQUIRED
+    if (!formData.telegramId) {
+      return toast.error("Telegram ID is required (Get it from @userinfobot)");
+    }
+    if (!/^\d+$/.test(formData.telegramId)) {
+      return toast.error("Telegram ID must be numeric");
     }
 
     if (!formData.password) return toast.error("Password is required");
@@ -146,10 +149,10 @@ const SignUpPage = () => {
           onBlur={() => setFocused(null)}
         />
 
-        {/* Telegram ID (Optional) */}
+        {/* Telegram ID */}
         <div className="relative">
           <MorphInput
-            label="Telegram ID (Optional)"
+            label="Telegram ID"
             type="text"
             icon={
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -170,7 +173,7 @@ const SignUpPage = () => {
             marginTop: "4px",
             paddingLeft: "10px"
           }}>
-            Get yours from @userinfobot. Message our bot to start.
+            Required for verification. Message our bot to start.
           </p>
         </div>
 
