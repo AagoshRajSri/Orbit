@@ -1,4 +1,3 @@
-import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -32,11 +31,10 @@ function isRateLimited(email) {
 
 // ─── Mailer Initialization ──────────────────────────────────────────────────────
 
-let resendInstance = null;
 let nodemailerInstance = null;
 
 function getMailer() {
-  // 1. Prefer SMTP (Gmail) if configured
+  // Use SMTP if configured
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     if (!nodemailerInstance) {
       nodemailerInstance = nodemailer.createTransport({
@@ -53,21 +51,11 @@ function getMailer() {
     return { type: "smtp", client: nodemailerInstance };
   }
 
-  // 2. Fallback to Resend
-  const apiKey = process.env.RESEND_API_KEY;
-  if (apiKey) {
-    if (!resendInstance) {
-      resendInstance = new Resend(apiKey);
-      console.log("[MAILER] 📧 Initialized Resend");
-    }
-    return { type: "resend", client: resendInstance };
-  }
-
-  // 3. Mock mode
+  // Mock mode fallback
   if (process.env.NODE_ENV === "production") {
-    console.error("[MAILER] ❌ No mailer configured (SMTP or Resend).");
+    console.error("[MAILER] ❌ No SMTP mailer configured.");
   } else {
-    console.warn("[MAILER] ⚠️ No mailer configured in development. Using Mock Mailer.");
+    console.warn("[MAILER] ⚠️ No SMTP mailer configured in development. Using Mock Mailer.");
   }
   return null;
 }
@@ -201,46 +189,90 @@ async function withRetry(fn, retries = MAX_RETRIES, delayMs = RETRY_DELAY_MS) {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Send an OTP verification email.
+ * Send an OTP via Telegram.
+ * @param {string} chatId - The recipient's Telegram Chat ID
+ * @param {string} otp - The OTP code
+ * @param {string} type - verification or reset
+ */
+async function sendTelegramOTP(chatId, otp, type = "verification") {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (!botToken) {
+    console.error("[MAILER] Telegram Bot Token is missing.");
+    return { success: false, error: "Telegram configuration error" };
+  }
+
+  const message = type === "reset"
+    ? `🔒 <b>Orbit Security Code</b>\n\nYour password reset code is: <code>${otp}</code>\n\nExpires in 5 minutes.`
+    : `🚀 <b>Welcome to Orbit</b>\n\nYour verification code is: <code>${otp}</code>\n\nExpires in 5 minutes.`;
+
+  try {
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: "HTML",
+      }),
+    });
+
+    const data = await response.json();
+    if (!data.ok) {
+      throw new Error(data.description || "Telegram API error");
+    }
+
+    console.log("[MAILER] ✓ Message sent via TELEGRAM. ID:", data.result.message_id);
+    return { success: true, messageId: data.result.message_id };
+  } catch (error) {
+    console.error("[MAILER] Telegram send failed:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Send an OTP verification email or Telegram message.
  *
- * @param {string} to   - Recipient email address
+ * @param {string} to   - Recipient email address or Telegram ID
  * @param {string|number} otp - The one-time password to send
  * @param {string} type - The type of email (verification or reset)
- * @returns {{ success: boolean, messageId?: string, previewUrl?: string, error?: string }}
+ * @param {string} method - 'email' or 'telegram'
+ * @returns {{ success: boolean, messageId?: string, error?: string }}
  */
-export async function sendOTP(to, otp, type = "verification") {
+export async function sendOTP(to, otp, type = "verification", method = "email") {
   // ── Input validation ──
-  if (!to || !EMAIL_REGEX.test(to)) {
-    console.error("[MAILER] Invalid recipient email:", to);
-    return { success: false, error: "Invalid recipient email address." };
+  if (!to) {
+    return { success: false, error: "Recipient is required." };
   }
 
   if (!otp) {
-    console.error("[MAILER] OTP is required.");
     return { success: false, error: "OTP is required." };
   }
 
   // ── Rate limiting ──
   if (isRateLimited(to)) {
     console.warn(`[MAILER] Rate limit exceeded for: ${to}`);
-    return { success: false, error: "Too many OTP requests. Please wait before requesting another." };
+    return { success: false, error: "Too many OTP requests. Please wait." };
   }
 
-  // ── Send with retry ──
+  // ── Telegram Dispatch ──
+  if (method === "telegram" || (!EMAIL_REGEX.test(to) && to.match(/^\d+$/))) {
+    return await sendTelegramOTP(to, otp, type);
+  }
+
+  // ── Email Dispatch (Existing SMTP logic) ──
   try {
     const payload = buildEmailPayload(to, otp, type);
     const mailer = getMailer();
 
     if (!mailer) {
-      // Development mock
       console.log("\n───────────────────────────────────────────────────");
-      console.log(`  📧 [MOCK EMAIL] To: ${to}`);
-      console.log(`  🔑 OTP: ${otp}`);
+      console.log(`  📧 [MOCK EMAIL] To: ${to} | OTP: ${otp}`);
       console.log("───────────────────────────────────────────────────\n");
       return { success: true, messageId: "mock-" + Date.now() };
     }
 
-    const { data, error } = await withRetry(async () => {
+    const response = await withRetry(async () => {
       if (mailer.type === "smtp") {
         const info = await mailer.client.sendMail({
           from: payload.from,
@@ -249,37 +281,28 @@ export async function sendOTP(to, otp, type = "verification") {
           html: payload.html,
           text: payload.text
         });
-        return { id: info.messageId };
-      } else {
-        // Resend
-        const sender = process.env.RESEND_FROM_EMAIL || "Orbit <onboarding@resend.dev>";
-        const response = await mailer.client.emails.send({
-          from: sender,
-          to: payload.to,
-          subject: payload.subject,
-          html: payload.html,
-          text: payload.text
-        });
-        if (response.error) throw new Error(response.error.message);
-        return { id: response.data.id };
+        return { data: { id: info.messageId } };
       }
+      throw new Error("Unsupported mailer type");
     });
 
-    console.log(`[MAILER] ✓ Message sent via ${mailer.type.toUpperCase()}. ID:`, data.id);
-    return { success: true, messageId: data.id };
+    console.log(`[MAILER] ✓ Message sent via ${mailer.type.toUpperCase()}. ID:`, response.data.id);
+    return { success: true, messageId: response.data.id };
 
   } catch (error) {
-    console.error("[MAILER] Failed to send email:", error.message);
+    console.error("[MAILER] Email failed:", error.message);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Empty teardown function to maintain API compatibility
+ * Teardown function to clean up connections
  */
 export function closeMailer() {
-  resendInstance = null;
-  nodemailerInstance = null;
+  if (nodemailerInstance) {
+    nodemailerInstance.close();
+    nodemailerInstance = null;
+  }
 }
 
 /**
@@ -309,13 +332,8 @@ export async function sendEmail(to, subject, html) {
         html
       });
       return { success: true, messageId: info.messageId };
-    } else {
-      // Resend
-      const sender = process.env.RESEND_FROM_EMAIL || "Orbit <onboarding@resend.dev>";
-      const { data, error } = await mailer.client.emails.send({ from: sender, to, subject, html });
-      if (error) throw new Error(error.message);
-      return { success: true, messageId: data.id };
     }
+    throw new Error("Unsupported mailer type");
   } catch (error) {
     console.error("[MAILER] sendEmail failed:", error.message);
     return { success: false, error: error.message };

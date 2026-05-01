@@ -44,7 +44,7 @@ const usernameSchema = z
   .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores");
 
 export const signup = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, telegramId } = req.body;
   let savedUser = null;
 
   try {
@@ -60,7 +60,8 @@ export const signup = async (req, res) => {
       username: usernameSchema,
       email: emailSchema,
       password: passwordSchema,
-    }).safeParse({ username, email, password });
+      telegramId: z.string().optional(),
+    }).safeParse({ username, email, password, telegramId });
 
     if (!validation.success) {
       return res.status(400).json({
@@ -96,6 +97,7 @@ export const signup = async (req, res) => {
       username: validation.data.username,
       email: validation.data.email,
       password: hashedPassword,
+      telegramId: validation.data.telegramId || "",
     });
 
     savedUser = await newUser.save();
@@ -103,14 +105,17 @@ export const signup = async (req, res) => {
     const otp = generateOTP();
     await storeOTP(validation.data.email, otp);
     
-    // Background the email dispatch to prevent blocking the UI response (6-8s delay reduction)
-    sendOTP(validation.data.email, otp).then(mailResult => {
+    // Background the email/telegram dispatch
+    const dispatchTo = validation.data.telegramId || validation.data.email;
+    const method = validation.data.telegramId ? "telegram" : "email";
+    
+    sendOTP(dispatchTo, otp, "verification", method).then(mailResult => {
       if (!mailResult.success) {
-        console.warn(`[Signup] Verification email failed for ${validation.data.email}: ${mailResult.error}. OTP: ${otp}`);
+        console.warn(`[Signup] Verification dispatch failed for ${dispatchTo}: ${mailResult.error}. OTP: ${otp}`);
       } else {
-        console.log(`[Signup] Verification email sent to ${validation.data.email}`);
+        console.log(`[Signup] Verification sent via ${method} to ${dispatchTo}`);
       }
-    }).catch(err => console.error("[Signup] Email error:", err.message));
+    }).catch(err => console.error("[Signup] Dispatch error:", err.message));
 
     let tokens;
     try {
@@ -561,14 +566,17 @@ export const forgotPassword = async (req, res) => {
     const otp = generateOTP();
     await storeOTP(email, otp);
 
-    // Background the email dispatch
-    sendOTP(email, otp, "reset").then(res => {
-      if (!res.success) console.warn(`[Forgot Password] Email failed: ${res.error}. OTP: ${otp}`);
-    }).catch(err => console.error("[Forgot Password] Email error:", err.message));
+    // Background the dispatch
+    const dispatchTo = user.telegramId || email;
+    const method = user.telegramId ? "telegram" : "email";
+    
+    sendOTP(dispatchTo, otp, "reset", method).then(res => {
+      if (!res.success) console.warn(`[Forgot Password] Dispatch failed: ${res.error}. OTP: ${otp}`);
+    }).catch(err => console.error("[Forgot Password] Dispatch error:", err.message));
 
     res.status(200).json({
       success: true,
-      message: "OTP sent to your email"
+      message: `OTP sent to your ${method}`
     });
   } catch (error) {
     console.error("Error in forgotPassword controller:", error);
@@ -720,13 +728,16 @@ export const resendVerificationEmail = async (req, res) => {
     await storeOTP(email, otp);
     
     // Background dispatch
-    sendOTP(email, otp).then(res => {
-      if (!res.success) console.warn(`[Email Verification] Resend failed: ${res.error}. OTP: ${otp}`);
-    }).catch(err => console.error("[Email Verification] Resend error:", err.message));
+    const dispatchTo = user.telegramId || email;
+    const method = user.telegramId ? "telegram" : "email";
+
+    sendOTP(dispatchTo, otp, "verification", method).then(res => {
+      if (!res.success) console.warn(`[Email Verification] Dispatch failed: ${res.error}. OTP: ${otp}`);
+    }).catch(err => console.error("[Email Verification] Dispatch error:", err.message));
 
     res.status(200).json({ 
       success: true, 
-      message: "Verification code sent"
+      message: `Verification code sent via ${method}`
     });
   } catch (error) {
     console.error("Error in resendVerificationEmail:", error);
