@@ -320,6 +320,7 @@ export default function UniversalChatContainer({ type }) {
         time:      new Date(m.createdAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit", hour12: false }),
         reactions: localReactions[m._id] || {},
         status:    m.status || "sent",
+        isSystem:  m.isSystem,
       };
     });
   }, [rawMsgs, authUser, localReactions]);
@@ -539,6 +540,29 @@ export default function UniversalChatContainer({ type }) {
                 <div style={{ background: m.out ? t.msgOut : t.msgIn, border: `1px solid ${m.out ? t.msgOutBrd : t.border}`, borderRadius: 18, [`borderBottom${m.out ? "Right" : "Left"}Radius`]: 3, padding: 4, overflow: "hidden", maxWidth: 280 }}>
                   <img src={m.image} alt="Shared media" style={{ width: 272, height: "auto", borderRadius: 14, objectFit: "cover", display: "block" }} />
                   <div style={{ padding: "4px 8px", fontSize: 11, color: t.txt2, fontFamily: t.font }}>{m.time}</div>
+                </div>
+              </div>
+            );
+          }
+
+          if (m.isSystem) {
+            return (
+              <div key={m.id} style={{ display: "flex", justifyContent: "center", margin: "16px 0", position: "relative", zIndex: 1, width: "100%" }}>
+                <div style={{
+                  padding: "6px 16px",
+                  background: `linear-gradient(135deg, ${t.msgIn}, transparent)`,
+                  border: `1px solid ${t.border}`,
+                  borderRadius: 16,
+                  color: t.txt2,
+                  fontFamily: t.font,
+                  fontSize: 12,
+                  fontStyle: "italic",
+                  textAlign: "center",
+                  opacity: 0.8,
+                  boxShadow: `0 4px 12px ${t.glow}`
+                }}>
+                  {m.text}
+                  <span style={{ opacity: 0.5, marginLeft: 8, fontSize: 10 }}>{m.time}</span>
                 </div>
               </div>
             );

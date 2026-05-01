@@ -300,12 +300,12 @@ const AppContent = () => {
 
       const flushBuffers = () => {
         if (messageBuffer.length > 0) {
-          useChatStore.getState().addMessages(messageBuffer.map(i => i.msg));
+          messageBuffer.forEach(i => useChatStore.getState().addMessage(i.msg));
           messageBuffer.forEach(({ ack }) => ack && ack());
           messageBuffer = [];
         }
         if (nexusMessageBuffer.length > 0) {
-          useNexusStore.getState().addNexusMessages(nexusMessageBuffer.map(i => i.msg));
+          nexusMessageBuffer.forEach(i => useNexusStore.getState().addNexusMessage(i.msg));
           nexusMessageBuffer.forEach(({ ack }) => ack && ack());
           nexusMessageBuffer = [];
         }
