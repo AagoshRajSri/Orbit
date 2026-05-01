@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -29,27 +30,46 @@ function isRateLimited(email) {
   return false;
 }
 
-// ─── Resend Initialization ──────────────────────────────────────────────────────
+// ─── Mailer Initialization ──────────────────────────────────────────────────────
 
 let resendInstance = null;
+let nodemailerInstance = null;
 
-function getResend() {
-  if (resendInstance) return resendInstance;
-
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    if (process.env.NODE_ENV === "production") {
-      const errorMsg = "[MAILER] ❌ No RESEND_API_KEY found. Please set it in your environment variables.";
-      console.error(errorMsg);
-      throw new Error(errorMsg);
-    } else {
-      console.warn("[MAILER] ⚠️ No RESEND_API_KEY found in development. Emails will be logged to console instead of sent.");
-      return null;
+function getMailer() {
+  // 1. Prefer SMTP (Gmail) if configured
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    if (!nodemailerInstance) {
+      nodemailerInstance = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || "smtp.gmail.com",
+        port: parseInt(process.env.SMTP_PORT || "587", 10),
+        secure: process.env.SMTP_PORT == "465",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+      console.log("[MAILER] 📧 Initialized Nodemailer (SMTP)");
     }
+    return { type: "smtp", client: nodemailerInstance };
   }
 
-  resendInstance = new Resend(apiKey);
-  return resendInstance;
+  // 2. Fallback to Resend
+  const apiKey = process.env.RESEND_API_KEY;
+  if (apiKey) {
+    if (!resendInstance) {
+      resendInstance = new Resend(apiKey);
+      console.log("[MAILER] 📧 Initialized Resend");
+    }
+    return { type: "resend", client: resendInstance };
+  }
+
+  // 3. Mock mode
+  if (process.env.NODE_ENV === "production") {
+    console.error("[MAILER] ❌ No mailer configured (SMTP or Resend).");
+  } else {
+    console.warn("[MAILER] ⚠️ No mailer configured in development. Using Mock Mailer.");
+  }
+  return null;
 }
 
 // ─── Email Template ───────────────────────────────────────────────────────────
@@ -61,7 +81,7 @@ function buildEmailPayload(to, otp, type = "verification") {
     : `${otp} is your Orbit verification code`;
 
   return {
-    from: process.env.SMTP_USER || process.env.EMAIL || process.env.EMAIL_USER || process.env.MAIL_USER || "noreply@orbit.com",
+    from: process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@orbit.com",
     to,
     subject,
     text: [
@@ -209,9 +229,9 @@ export async function sendOTP(to, otp, type = "verification") {
   // ── Send with retry ──
   try {
     const payload = buildEmailPayload(to, otp, type);
-    const resend = getResend();
+    const mailer = getMailer();
 
-    if (!resend) {
+    if (!mailer) {
       // Development mock
       console.log("\n───────────────────────────────────────────────────");
       console.log(`  📧 [MOCK EMAIL] To: ${to}`);
@@ -220,29 +240,36 @@ export async function sendOTP(to, otp, type = "verification") {
       return { success: true, messageId: "mock-" + Date.now() };
     }
 
-    // Note: Resend's free tier requires using onboarding@resend.dev as the 'from'
-    // address and you can only send to the email address registered to your Resend account.
-    // To send to other users, you must verify a custom domain on Resend.
-    const sender = process.env.RESEND_FROM_EMAIL || "Orbit <onboarding@resend.dev>";
-
     const { data, error } = await withRetry(async () => {
-      const response = await resend.emails.send({
-        from: sender,
-        to: to,
-        subject: payload.subject,
-        html: payload.html,
-        text: payload.text
-      });
-      
-      if (response.error) throw new Error(response.error.message);
-      return response;
+      if (mailer.type === "smtp") {
+        const info = await mailer.client.sendMail({
+          from: payload.from,
+          to: payload.to,
+          subject: payload.subject,
+          html: payload.html,
+          text: payload.text
+        });
+        return { id: info.messageId };
+      } else {
+        // Resend
+        const sender = process.env.RESEND_FROM_EMAIL || "Orbit <onboarding@resend.dev>";
+        const response = await mailer.client.emails.send({
+          from: sender,
+          to: payload.to,
+          subject: payload.subject,
+          html: payload.html,
+          text: payload.text
+        });
+        if (response.error) throw new Error(response.error.message);
+        return { id: response.data.id };
+      }
     });
 
-    console.log("[MAILER] ✓ Message sent via Resend API. ID:", data.id);
+    console.log(`[MAILER] ✓ Message sent via ${mailer.type.toUpperCase()}. ID:`, data.id);
     return { success: true, messageId: data.id };
 
   } catch (error) {
-    console.error("[MAILER] Failed to send email via Resend:", error.message);
+    console.error("[MAILER] Failed to send email:", error.message);
     return { success: false, error: error.message };
   }
 }
@@ -252,6 +279,7 @@ export async function sendOTP(to, otp, type = "verification") {
  */
 export function closeMailer() {
   resendInstance = null;
+  nodemailerInstance = null;
 }
 
 /**
@@ -266,17 +294,28 @@ export async function sendEmail(to, subject, html) {
   }
   
   try {
-    const resend = getResend();
-    const sender = process.env.RESEND_FROM_EMAIL || "Orbit <onboarding@resend.dev>";
+    const mailer = getMailer();
 
-    if (!resend) {
+    if (!mailer) {
       console.log(`[MAILER] [MOCK BROADCAST] To: ${to} | Subject: ${subject}`);
       return { success: true, messageId: "mock-" + Date.now() };
     }
 
-    const { data, error } = await resend.emails.send({ from: sender, to, subject, html });
-    if (error) throw new Error(error.message);
-    return { success: true, messageId: data.id };
+    if (mailer.type === "smtp") {
+      const info = await mailer.client.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to,
+        subject,
+        html
+      });
+      return { success: true, messageId: info.messageId };
+    } else {
+      // Resend
+      const sender = process.env.RESEND_FROM_EMAIL || "Orbit <onboarding@resend.dev>";
+      const { data, error } = await mailer.client.emails.send({ from: sender, to, subject, html });
+      if (error) throw new Error(error.message);
+      return { success: true, messageId: data.id };
+    }
   } catch (error) {
     console.error("[MAILER] sendEmail failed:", error.message);
     return { success: false, error: error.message };

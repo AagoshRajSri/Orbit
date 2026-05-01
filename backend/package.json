@@ -28,6 +28,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.3",
     "nanoid": "^5.1.7",
+    "nodemailer": "^8.0.7",
     "otpauth": "^9.5.0",
     "otplib": "^13.4.0",
     "qrcode": "^1.5.4",
