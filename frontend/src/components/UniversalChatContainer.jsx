@@ -681,7 +681,6 @@ export default function UniversalChatContainer({ type }) {
           </div>
         </div>
       </div>
-      </div>
 
       {/* ── INFO PANEL (slide-in) ── */}
       {showInfo && isNexus && localNexusGroup && (
