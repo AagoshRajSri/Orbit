@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAdminStore } from "../../store/useAdminStore.js";
 import { useNavigate, Link } from "react-router-dom";
-import OrbitLogo from "../../components/OrbitLogo.jsx";
+import OrbitLogo from "../../components/OrbitLogo";
 import "./admin.css";
 
 const LOGS = [
