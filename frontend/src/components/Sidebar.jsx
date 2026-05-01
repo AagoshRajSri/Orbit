@@ -55,7 +55,7 @@ const AddContactAction = memo(({ users, contactList, addContact }) => {
   );
 });
 
-const Sidebar = () => {
+const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   const getUsers = useChatStore((state) => state.getUsers);
   const users = useChatStore((state) => state.users);
   const contactList = useChatStore((state) => state.contactList);
@@ -76,7 +76,8 @@ const Sidebar = () => {
 
   const onlineUsers = useAuthStore((state) => state.onlineUsers);
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
-  const [activeTab, setActiveTab] = useState("nexus"); // "nexus" or "contacts"
+  // Use mobileInitialTab if provided (from bottom nav), otherwise default to "nexus"
+  const [activeTab, setActiveTab] = useState(mobileInitialTab || "nexus");
   const [aliasEditingUserId, setAliasEditingUserId] = useState(null);
   const [aliasInputValue, setAliasInputValue] = useState("");
   const onlineSet = new Set(onlineUsers.map((id) => id?.toString()));
@@ -85,6 +86,11 @@ const Sidebar = () => {
   const { theme } = useThemeStore();
   const isPastel = theme === "pastel-dream";
   const isLight = theme === "light";
+
+  // Sync tab when drawer re-opens with a different initial tab
+  useEffect(() => {
+    if (mobileInitialTab) setActiveTab(mobileInitialTab);
+  }, [mobileInitialTab]);
 
   useEffect(() => {
     // Prevent multiple fetches
@@ -111,19 +117,21 @@ const Sidebar = () => {
   const handleUserSelect = (user) => {
     setSelectedUser(user);
     setSelectedNexus(null);
+    onMobileSelect?.(); // close drawer on mobile
   };
 
   const handleNexusSelect = (nexus) => {
     setSelectedNexus(nexus);
     setSelectedUser(null);
+    onMobileSelect?.(); // close drawer on mobile
   };
 
   if (isUsersLoading || isNexusesLoading) return <SidebarSkeleton />;
 
   return (
     <aside
-      className={`h-full w-full lg:w-72 shrink-0 border-r flex flex-col backdrop-blur-md chat-sidebar ${
-        !isPastel && !isLight ? "bg-base-100 border-[var(--chat-border)]" : ""
+      className={`h-full w-full md:w-56 lg:w-64 xl:w-72 shrink-0 flex flex-col backdrop-blur-md chat-sidebar border-r ${
+        !isPastel && !isLight ? "bg-base-100/90 border-[var(--chat-border)]" : ""
       }`}
       style={isPastel ? {
         background: "linear-gradient(180deg, #ffdcf3 0%, #fef4f9 100%)",
@@ -135,7 +143,7 @@ const Sidebar = () => {
     >
       {/* Tabs / Toggle */}
       <div
-        className={`flex w-full p-2.5 border-b backdrop-blur-xl sticky top-0 z-20 shrink-0 ${
+        className={`flex w-full p-2 border-b backdrop-blur-xl sticky top-0 z-20 shrink-0 ${
           !isPastel && !isLight ? "bg-base-200/80 border-[var(--chat-border)]" : ""
         }`}
         style={isPastel ? {
@@ -147,7 +155,7 @@ const Sidebar = () => {
         } : {}}
       >
         <div
-          className={`flex w-full p-1.5 rounded-2xl relative border group overflow-hidden ${
+          className={`flex w-full p-1 rounded-xl relative border group overflow-hidden ${
             !isPastel && !isLight ? "bg-base-300/40 border-[var(--chat-border)]" : ""
           }`}
           style={isPastel ? {
@@ -163,7 +171,7 @@ const Sidebar = () => {
 
           <button
             onClick={() => setActiveTab("nexus")}
-            className={`flex-1 relative z-10 rounded-xl px-2 py-2.5 text-[10px] font-black transition-all duration-500 flex items-center justify-center gap-2 uppercase tracking-[0.2em] ${
+            className={`flex-1 relative z-10 rounded-lg px-1.5 py-1.5 text-[9px] font-black transition-all duration-500 flex items-center justify-center gap-1.5 uppercase tracking-[0.15em] ${
               activeTab === "nexus"
                 ? isPastel
                   ? "text-[#d060a8] bg-white/60"
@@ -183,7 +191,7 @@ const Sidebar = () => {
 
           <button
             onClick={() => setActiveTab("contacts")}
-            className={`flex-1 relative z-10 rounded-xl px-2 py-2.5 text-[10px] font-black transition-all duration-500 flex items-center justify-center gap-2 uppercase tracking-[0.2em] ${
+            className={`flex-1 relative z-10 rounded-lg px-1.5 py-1.5 text-[9px] font-black transition-all duration-500 flex items-center justify-center gap-1.5 uppercase tracking-[0.15em] ${
               activeTab === "contacts"
                 ? isPastel
                   ? "text-[#d060a8] bg-white/60"
@@ -203,7 +211,7 @@ const Sidebar = () => {
 
           {/* Sliding Indicator */}
           <div
-            className={`absolute top-1 bottom-1 w-[calc(50%-6px)] rounded-[1.1rem] transition-all duration-500 border shadow-sm ${activeTab === "nexus" ? "left-1.5" : "left-[calc(50%+1.5px)]"}`}
+            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-500 border shadow-sm ${activeTab === "nexus" ? "left-1" : "left-[calc(50%+1px)]"}`}
             style={isPastel ? {
               background: "rgba(255,255,255,0.7)",
               borderColor: "rgba(255,160,210,0.4)",
@@ -267,7 +275,7 @@ const Sidebar = () => {
                 role="button"
                 tabIndex={0}
                 className={`
-                    w-full p-3.5 flex items-center gap-4 rounded-2xl border transition-colors duration-300 group relative
+                    w-full p-2.5 flex items-center gap-3 rounded-xl border transition-colors duration-300 group relative
                     ${selectedUser?._id === user._id
                     ? isPastel
                       ? "bg-white/80 border-[#ffaad0]/50 shadow-[0_4px_20px_rgba(255,150,200,0.15)]"
@@ -290,7 +298,7 @@ const Sidebar = () => {
                   <img
                     src={user.profilePic || "/avatar.png"}
                     alt={user.username}
-                    className="size-11 object-cover rounded-xl border border-[var(--chat-border)] relative z-10"
+                    className="size-9 object-cover rounded-lg border border-[var(--chat-border)] relative z-10"
                   />
                   {onlineSet.has(user._id?.toString()) && (
                     <motion.span
@@ -302,8 +310,8 @@ const Sidebar = () => {
                 </div>
 
                 <div className="text-left min-w-0 flex-1 relative z-10">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="font-bold truncate text-[13px] font-outfit" style={isPastel ? { color: "#d060a8" } : isLight ? { color: "#5c4a2a" } : { color: "var(--chat-text)" }}>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="font-bold truncate text-[11px] font-outfit" style={isPastel ? { color: "#d060a8" } : isLight ? { color: "#5c4a2a" } : { color: "var(--chat-text)" }}>
                       {contactAliases[user._id?.toString()] || user.username}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -315,7 +323,7 @@ const Sidebar = () => {
                     </div>
                   </div>
 
-                  <div className="text-[11px] truncate mt-0.5">
+                  <div className="text-[10px] truncate mt-0.5">
                     {user.isTyping ? (
                       <span className="text-secondary font-bold tracking-tight animate-pulse flex items-center gap-1">
                         typing...
@@ -415,7 +423,7 @@ const Sidebar = () => {
                   role="button"
                   tabIndex={0}
                   className={[
-                    "w-full p-3.5 flex items-center gap-4 rounded-2xl border transition-colors duration-300 group relative",
+                    "w-full p-2.5 flex items-center gap-3 rounded-xl border transition-colors duration-300 group relative",
                     isSelected
                       ? isPastel
                         ? "bg-white/80 border-[#ffaad0]/50 shadow-[0_4px_20px_rgba(255,150,200,0.15)]"
@@ -445,7 +453,7 @@ const Sidebar = () => {
                     />
 
                     <div
-                      className="size-12 rounded-xl border flex items-center justify-center font-black transition-transform relative z-10"
+                      className="size-10 rounded-lg border flex items-center justify-center font-black transition-transform relative z-10"
                       style={isPastel ? {
                         background: "rgba(255,160,210,0.1)",
                         borderColor: "rgba(255,160,210,0.3)",
@@ -466,10 +474,10 @@ const Sidebar = () => {
                       {nexus.avatar ? (
                         <img
                           src={nexus.avatar}
-                          className="size-full rounded-xl object-cover"
+                          className="size-full rounded-lg object-cover"
                         />
                       ) : (
-                        <span className="text-xl font-josefin">
+                        <span className="text-lg font-josefin">
                           {nexus.name.charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -498,7 +506,7 @@ const Sidebar = () => {
 
                   <div className="text-left min-w-0 flex-1 relative z-10">
                     <div
-                      className="font-bold truncate text-[14px] font-josefin tracking-wide leading-tight transition-colors duration-300"
+                      className="font-bold truncate text-[12px] font-josefin tracking-wide leading-tight transition-colors duration-300"
                       style={isPastel ? {
                         color: isSelected || hasUnread ? "#d060a8" : "#8e44ad",
                       } : isLight ? {
@@ -510,13 +518,13 @@ const Sidebar = () => {
                     >
                       {nexus.name}
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--chat-muted)] flex items-center gap-1.5 bg-[var(--chat-text)]/5 px-2 py-0.5 rounded-md">
-                        <UsersIcon className="size-3" />
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="text-[9px] font-bold uppercase tracking-widest text-[var(--chat-muted)] flex items-center gap-1 bg-[var(--chat-text)]/5 px-1.5 py-0.5 rounded-md">
+                        <UsersIcon className="size-2.5" />
                         {nexus.members?.length || 0}
                       </div>
                       <div
-                        className="text-[10px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-md border"
+                        className="text-[9px] font-mono font-bold tracking-widest px-1.5 py-0.5 rounded-md border"
                         style={isPastel ? {
                           color: "#d060a8",
                           background: "rgba(255,160,210,0.1)",
@@ -586,7 +594,7 @@ const Sidebar = () => {
       </div>
       {/* Sidebar Footer Action: Your Orbit */}
       <div
-        className={`p-4 border-t backdrop-blur-xl shrink-0 ${
+        className={`p-2.5 border-t backdrop-blur-xl shrink-0 ${
           !isPastel && !isLight ? "bg-base-200/50 border-[var(--chat-border)]" : ""
         }`}
         style={isPastel ? {
@@ -598,7 +606,7 @@ const Sidebar = () => {
         } : {}}
       >
         <button
-          className="w-full relative group overflow-hidden rounded-[1.25rem] p-3.5 transition-all duration-300 shadow-xl shadow-primary/5 ring-1 ring-[var(--chat-border)] opacity-60 cursor-not-allowed"
+          className="w-full relative group overflow-hidden rounded-[1rem] p-2.5 transition-all duration-300 shadow-xl shadow-primary/5 ring-1 ring-[var(--chat-border)] opacity-60 cursor-not-allowed"
           style={{ pointerEvents: 'none' }}
         >
           {/* Background Effect */}
@@ -614,8 +622,8 @@ const Sidebar = () => {
           />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--chat-primary),transparent_70%)] opacity-20" />
 
-          <div className="relative flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(var(--p),0.1)] group-hover:shadow-[0_0_20px_rgba(var(--p),0.3)] transition-all">
+          <div className="relative flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(var(--p),0.1)] group-hover:shadow-[0_0_20px_rgba(var(--p),0.3)] transition-all">
               {isPastel ? (
                 <Flower className="size-5.5 group-hover:rotate-[120deg] transition-transform duration-1000 ease-in-out text-[#d060a8]" />
               ) : (
@@ -624,7 +632,7 @@ const Sidebar = () => {
             </div>
             <div className="text-left">
             <div
-              className="text-[13px] font-bricolage font-black uppercase tracking-[0.12em] bg-clip-text text-transparent group-hover:brightness-110 transition-all"
+              className="text-[11px] font-bricolage font-black uppercase tracking-[0.12em] bg-clip-text text-transparent group-hover:brightness-110 transition-all"
               style={isPastel ? {
                 backgroundImage: "linear-gradient(90deg, #e060b0, #a060e0)",
               } : isLight ? {
@@ -633,10 +641,10 @@ const Sidebar = () => {
                 backgroundImage: "linear-gradient(90deg, var(--chat-primary), var(--chat-text), var(--color-accent))",
               }}
             >
-              Enter Your Orbit (Soon)
+              Enter Your Orbit
             </div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--chat-muted)] group-hover:text-[var(--chat-text)]/50 transition-colors">
-                60 FPS GALAXY ENGINE
+              <div className="text-[8px] font-bold uppercase tracking-[0.2em] text-[var(--chat-muted)] group-hover:text-[var(--chat-text)]/50 transition-colors">
+                GALAXY ENGINE
               </div>
             </div>
           </div>

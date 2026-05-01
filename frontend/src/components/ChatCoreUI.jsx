@@ -525,7 +525,7 @@ export const MsgBubble = memo(function MsgBubble({msg,t,onReact,isMe}) {
   const [showPicker, setShowPicker] = useState(false);
   
   return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start",marginBottom:14,animation:"fadeUp .28s ease", position: "relative"}}>
+    <div style={{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start",marginBottom:8,animation:"fadeUp .28s ease", position: "relative"}}>
       {!isMe&&<div style={{fontSize:11,color:t.txt2,marginBottom:4,marginLeft:14,fontFamily:t.font,fontWeight:600,letterSpacing:".04em"}}>{msg.from}</div>}
       <div 
         onMouseEnter={()=>{setHov(true)}} 
@@ -551,8 +551,8 @@ export const MsgBubble = memo(function MsgBubble({msg,t,onReact,isMe}) {
           style={{
             background:isMe?t.msgOut:t.msgIn,
             border:`1px solid ${isMe?t.msgOutBrd:t.border}`,
-            borderRadius:18, borderBottomRightRadius:isMe?3:18, borderBottomLeftRadius:isMe?18:3,
-            padding:"10px 14px", minWidth:95, maxWidth:520, color:t.txt, fontSize:15, lineHeight:1.5, fontFamily:t.font,
+            borderRadius:16, borderBottomRightRadius:isMe?3:16, borderBottomLeftRadius:isMe?16:3,
+            padding:"8px 12px", minWidth:80, maxWidth:480, color:t.txt, fontSize:14, lineHeight:1.4, fontFamily:t.font,
             boxShadow: hov?`0 10px 40px ${t.glow}`:isMe?`0 2px 12px ${t.glow2}`:"none",
             transition:"all .25s ease", position:"relative", overflow: "visible",
             display: "flex", flexDirection: "column", gap: 4
@@ -599,8 +599,8 @@ export const VoiceBubble = memo(function VoiceBubble({t,out}) {
   const [playing,setPlaying]=useState(false);
   return (
     <div style={{display:"flex",justifyContent:out?"flex-end":"flex-start",marginBottom:14}}>
-      <div style={{background:out?t.msgOut:t.msgIn,border:`1px solid ${out?t.msgOutBrd:t.border}`,borderRadius:18,[`borderBottom${out?"Right":"Left"}Radius`]:3,padding:"10px 14px",display:"flex",alignItems:"center",gap:12,minWidth:220}}>
-        <Btn3D style={{width:34,height:34,borderRadius:"50%",background:t.acc,color:t.sendTxt,border:"none"}} onClick={()=>setPlaying(!playing)}>
+      <div style={{background:out?t.msgOut:t.msgIn,border:`1px solid ${out?t.msgOutBrd:t.border}`,borderRadius:16,[`borderBottom${out?"Right":"Left"}Radius`]:3,padding:"8px 12px",display:"flex",alignItems:"center",gap:10,minWidth:200}}>
+        <Btn3D style={{width:30,height:30,borderRadius:"50%",background:t.acc,color:t.sendTxt,border:"none"}} onClick={()=>setPlaying(!playing)}>
           {playing?"⏸":"▶"}
         </Btn3D>
         <Wave color={t.wave} active={playing} bars={22} h={30}/>
@@ -616,8 +616,8 @@ export const VoiceBubble = memo(function VoiceBubble({t,out}) {
 export const ImgBubble = memo(function ImgBubble({t,out}) {
   return (
     <div style={{display:"flex",justifyContent:out?"flex-end":"flex-start",marginBottom:14}}>
-      <div style={{background:out?t.msgOut:t.msgIn,border:`1px solid ${out?t.msgOutBrd:t.border}`,borderRadius:18,[`borderBottom${out?"Right":"Left"}Radius`]:3,padding:4,overflow:"hidden",maxWidth:280}}>
-        <div style={{width:276,height:180,background:`linear-gradient(135deg,${t.acc}33,${t.acc2}22)`,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:48}}>{t.decoratorBig}</div>
+      <div style={{background:out?t.msgOut:t.msgIn,border:`1px solid ${out?t.msgOutBrd:t.border}`,borderRadius:16,[`borderBottom${out?"Right":"Left"}Radius`]:3,padding:4,overflow:"hidden",maxWidth:260}}>
+        <div style={{width:252,height:160,background:`linear-gradient(135deg,${t.acc}33,${t.acc2}22)`,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40}}>{t.decoratorBig}</div>
         <div style={{padding:"5px 10px 3px",fontSize:11,color:t.txt2,fontFamily:t.font}}>image.jpg · 2.4 MB</div>
       </div>
     </div>

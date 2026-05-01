@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { Menu } from "lucide-react";
 import { THEMES, Ico, I, Toast, CallOverlay, Btn3D, TBtn, Typing, MsgBubble, VoiceBubble, ImgBubble, FileBubble, InfoPanel, ParticleCanvas, Wave, MediaPanel } from "./ChatCoreUI";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
@@ -91,7 +92,7 @@ function NoSelection({ t }) {
  * UniversalChatContainer
  * @param {("nexus"|"dm")} type
  */
-export default function UniversalChatContainer({ type }) {
+export default function UniversalChatContainer({ type, onMobileBack, onOpenSidebar }) {
   const { theme } = useThemeStore();
   const themeId = THEME_BRIDGE[theme] || "vampire";
   const t       = THEMES[themeId];
@@ -393,18 +394,40 @@ export default function UniversalChatContainer({ type }) {
     >
       {/* ── HEADER ── */}
       <div className="nexus-chat-header" style={{ background: t.headerGrad, borderBottom: `1px solid ${t.border}`, padding: "0 20px", display: "flex", alignItems: "center", gap: 12, height: 64, flexShrink: 0, zIndex: 10, position: "relative" }}>
-        {/* Back Button */}
+        {onOpenSidebar && (
+          <button
+            onClick={() => onOpenSidebar(isNexus ? "nexus" : "contacts")}
+            style={{
+              background: "none", border: "none", color: t.txt2, cursor: "pointer",
+              width: 36, height: 36, display: "flex", alignItems: "center",
+              justifyContent: "center", borderRadius: "50%", transition: "all .2s",
+              marginRight: -4, flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = t.msgIn; e.currentTarget.style.color = t.txt; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = t.txt2; }}
+            title="Menu"
+          >
+            <Menu size={20} stroke="currentColor" />
+          </button>
+        )}
+        {/* Back Button — mobile uses onMobileBack, desktop navigates */}
         <button
-          onClick={() => navigate("/")}
+          onClick={() => {
+            if (onMobileBack) {
+              onMobileBack();
+            } else {
+              navigate("/");
+            }
+          }}
           style={{
             background: "none", border: "none", color: t.txt2, cursor: "pointer",
-            width: 32, height: 32, display: "flex", alignItems: "center",
+            width: 36, height: 36, display: "flex", alignItems: "center",
             justifyContent: "center", borderRadius: "50%", transition: "all .2s",
-            marginRight: -4,
+            marginRight: -4, flexShrink: 0,
           }}
           onMouseEnter={e => { e.currentTarget.style.background = t.msgIn; e.currentTarget.style.color = t.txt; }}
           onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = t.txt2; }}
-          title="Return to home"
+          title={onMobileBack ? "Back" : "Return to home"}
         >
           <Ico d={I.back} size={20} stroke="currentColor" />
         </button>

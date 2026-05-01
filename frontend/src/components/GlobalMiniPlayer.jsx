@@ -256,14 +256,14 @@ export default function GlobalMiniPlayer() {
         onMouseLeave={() => { setHovered(false); setHoverSeekPos(null); }}
         onClick={handleCardSeek}
         style={{
-          width: hovered ? 330 : 248,
-          borderRadius: 18,
+          width: hovered ? 280 : 200,
+          borderRadius: 14,
           background: palette.bg,
           border: `1px solid ${palette.border}`,
-          boxShadow: `0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px ${palette.border}, inset 0 1px 0 rgba(255,255,255,0.06)`,
+          boxShadow: `0 8px 30px rgba(0,0,0,0.5), 0 0 0 1px ${palette.border}, inset 0 1px 0 rgba(255,255,255,0.06)`,
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
-          padding: "12px 14px 10px",
+          padding: "8px 10px 8px",
           transform: visible ? "translateY(0) scale(1)" : "translateY(80px) scale(0.9)",
           opacity: visible ? 1 : 0,
           transition: "transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease, width 0.3s cubic-bezier(0.4,0,0.2,1)",
@@ -334,15 +334,15 @@ export default function GlobalMiniPlayer() {
         )}
 
         {/* ── Content above fill ── */}
-        <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: 6 }}>
           {/* Row 1: Album art + track info + play-state indicator */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {/* Album Art */}
             <div
               data-no-seek="1"
               onClick={(e) => { e.stopPropagation(); navigate("/spotify"); }}
               style={{
-                width: 40, height: 40, borderRadius: 10, overflow: "hidden", flexShrink: 0,
+                width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0,
                 background: `${palette.accent}22`, border: `1px solid ${palette.border}`,
                 position: "relative", cursor: "pointer", transition: "transform 0.2s",
               }}
@@ -352,7 +352,7 @@ export default function GlobalMiniPlayer() {
               {currentTrack.imageUrl ? (
                 <img src={currentTrack.imageUrl} alt="Album art" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
-                <Music size={18} color={palette.accent} style={{ margin: "auto", display: "block", marginTop: 11 }} />
+                <Music size={14} color={palette.accent} style={{ margin: "auto", display: "block", marginTop: 8 }} />
               )}
               {isPlaying && (
                 <div style={{
@@ -371,13 +371,13 @@ export default function GlobalMiniPlayer() {
               style={{ flex: 1, minWidth: 0, cursor: "pointer", textShadow: "0px 1px 4px rgba(0,0,0,0.8)" }}
             >
               <div style={{
-                fontSize: 12, fontWeight: 700, color: palette.text,
+                fontSize: 11, fontWeight: 700, color: palette.text,
                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.25,
               }}>
                 {currentTrack.name || "Unknown Track"}
               </div>
               <div style={{
-                fontSize: 10, color: palette.text, opacity: 0.7,
+                fontSize: 9, color: palette.text, opacity: 0.7,
                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2, lineHeight: 1.2,
               }}>
                 {currentTrack.artist || "Unknown Artist"}
@@ -410,14 +410,14 @@ export default function GlobalMiniPlayer() {
                   }}
                   title={isPlaying ? "Pause" : "Play"}
                   style={{
-                    width: 28, height: 28, borderRadius: "50%",
+                    width: 24, height: 24, borderRadius: "50%",
                     background: fillGreen, border: "none", cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#000", flexShrink: 0, boxShadow: `0 2px 14px ${fillGreen}60`,
+                    color: "#000", flexShrink: 0, boxShadow: `0 2px 10px ${fillGreen}60`,
                     transition: "transform 0.15s, box-shadow 0.15s",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = `0 4px 20px ${fillGreen}80`; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = `0 2px 14px ${fillGreen}60`; }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = `0 4px 15px ${fillGreen}80`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = `0 2px 10px ${fillGreen}60`; }}
                 >
                   {isPlaying
                     ? <Pause size={12} fill="currentColor" />
