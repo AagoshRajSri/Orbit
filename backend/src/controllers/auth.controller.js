@@ -98,10 +98,13 @@ export const signup = async (req, res) => {
       email: validation.data.email,
       password: hashedPassword,
       telegramId: validation.data.telegramId || "",
+      isEmailVerified: true,
+      isTelegramVerified: true,
     });
 
     savedUser = await newUser.save();
 
+    /* 
     const otp = generateOTP();
     await storeOTP(validation.data.email, otp);
     
@@ -116,6 +119,7 @@ export const signup = async (req, res) => {
         console.log(`[Signup] Verification sent via ${method} to ${dispatchTo}`);
       }
     }).catch(err => console.error("[Signup] Dispatch error:", err.message));
+    */
 
     let tokens;
     try {
@@ -831,8 +835,11 @@ export const constellationSignup = async (req, res) => {
       username,
       email,
       password: hashedDummyPassword,
+      isEmailVerified: true,
+      isTelegramVerified: true,
     }).save();
 
+    /*
     // Generate and store email verification OTP
     const otp = generateOTP();
     await storeOTP(email, otp);
@@ -841,6 +848,7 @@ export const constellationSignup = async (req, res) => {
     sendOTP(email, otp).then(res => {
       if (!res.success) console.warn(`[Constellation Signup] Email failed: ${res.error}. OTP: ${otp}`);
     }).catch(err => console.error("[Constellation Signup] Email error:", err.message));
+    */
 
     // ── Hash pattern with Argon2id + salt + pepper ───────────────────────
     const salt = generateSalt();
@@ -995,9 +1003,11 @@ export const constellationLogin = async (req, res) => {
       return res.status(401).json({ message: "Authentication failed." });
     }
 
+    /*
     if (!user.isEmailVerified) {
       return res.status(403).json({ message: "Please verify your email to log in." });
     }
+    */
 
     // ── Per-user lockout check ────────────────────────────────────────────
     const lockout = await checkLockout(user._id);

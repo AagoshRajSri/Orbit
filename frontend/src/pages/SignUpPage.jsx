@@ -15,6 +15,7 @@ const SignUpPage = () => {
   const navigate = useNavigate();
 
   // Redirect verified users to home, or unverified users to the verification screen
+  /*
   useEffect(() => {
     if (authUser?.isEmailVerified) {
       navigate("/");
@@ -22,6 +23,7 @@ const SignUpPage = () => {
       navigate("/verify-email", { state: { email: authUser.email } });
     }
   }, [authUser, navigate]);
+  */
 
   const validateForm = () => {
     if (!formData.username.trim()) return toast.error("Username is required");
@@ -52,7 +54,7 @@ const SignUpPage = () => {
     if (validateForm() !== true) return;
     const result = await signup(formData);
     if (result?.success) {
-      navigate("/verify-email", { state: { email: formData.email } });
+      navigate("/");
     }
   };
 

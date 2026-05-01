@@ -64,9 +64,9 @@ export const useAuthStore = create(
           const { authToken, sessionId } = res.data.data;
           localStorage.setItem("orbit_socket_token", authToken);
           axiosInstance.defaults.headers.common["X-Auth-Token"] = authToken;
-          set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: false, sessionId });
+           set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
           get().refreshSocketToken();
-          toast.success("Account created — verify your email to continue");
+          toast.success("Account created successfully!");
           return { success: true, email: data.email };
         } catch (error) {
           const backendMsg = error.response?.data?.error?.message || error.response?.data?.message;
@@ -88,7 +88,7 @@ export const useAuthStore = create(
           set({ 
             authUser: res.data.data, 
             socketToken: authToken, 
-            showPostAuthLoader: res.data.data.isEmailVerified, 
+            showPostAuthLoader: true, 
             sessionId 
           });
           get().refreshSocketToken();
@@ -138,7 +138,7 @@ export const useAuthStore = create(
           set({ 
             authUser: res.data.data, 
             socketToken: authToken, 
-            showPostAuthLoader: res.data.data.isEmailVerified, 
+            showPostAuthLoader: true, 
             sessionId 
           });
           get().refreshSocketToken();
@@ -168,7 +168,7 @@ export const useAuthStore = create(
           set({ 
             authUser: res.data.data, 
             socketToken: authToken, 
-            showPostAuthLoader: res.data.data.isEmailVerified, 
+            showPostAuthLoader: true, 
             sessionId 
           });
           get().refreshSocketToken();
