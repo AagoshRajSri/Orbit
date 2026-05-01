@@ -603,13 +603,27 @@ export default function UniversalChatContainer({ type }) {
         </div>
 
         {/* Input row */}
-        <div style={{ display: "flex", alignItems: "center", padding: "6px 16px 14px", gap: 10 }}>
-          {/* Text field */}
+        <div style={{ display: "flex", alignItems: "flex-end", padding: "8px 20px 20px", gap: 12 }}>
+          {/* Text field wrapper */}
           <div
             className="nxi-textarea-wrapper"
-            style={{ flex: 1, display: "flex", alignItems: "center", background: t.input, border: `1.5px solid ${t.inputBrd}`, borderRadius: 16, padding: "0 14px", gap: 8, transition: "border-color .2s, box-shadow .2s" }}
-            onFocusCapture={e => { e.currentTarget.style.borderColor = t.acc; e.currentTarget.style.boxShadow = `0 0 0 3px ${t.glow2}`; }}
-            onBlurCapture={e => { e.currentTarget.style.borderColor = t.inputBrd; e.currentTarget.style.shadow = "none"; }}
+            style={{ 
+              flex: 1, display: "flex", alignItems: "center", 
+              background: t.input, border: `1.5px solid ${t.inputBrd}`, 
+              borderRadius: 24, padding: "4px 8px 4px 20px", gap: 12, 
+              transition: "all .3s cubic-bezier(0.4, 0, 0.2, 1)",
+              boxShadow: `0 4px 12px ${t.glow2}`,
+            }}
+            onFocusCapture={e => { 
+              e.currentTarget.style.borderColor = t.acc; 
+              e.currentTarget.style.boxShadow = `0 6px 20px ${t.glow}`; 
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onBlurCapture={e => { 
+              e.currentTarget.style.borderColor = t.inputBrd; 
+              e.currentTarget.style.boxShadow = `0 4px 12px ${t.glow2}`; 
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
           >
             <input
               ref={inputRef}
@@ -619,35 +633,58 @@ export default function UniversalChatContainer({ type }) {
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMsg(input); } }}
               disabled={recording}
               placeholder={recording ? "🎙️ Recording…" : `Message ${entityName}…`}
-              style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: t.txt, fontSize: 15, fontFamily: t.font, padding: "11px 0", lineHeight: 1.5, letterSpacing: ".01em" }}
+              style={{ 
+                flex: 1, background: "transparent", border: "none", outline: "none", 
+                color: t.txt, fontSize: 15, fontFamily: t.font, 
+                padding: "12px 0", lineHeight: 1.5, letterSpacing: ".02em" 
+              }}
+              spellCheck="false"
             />
             {input.length > 0 && (
-              <span style={{ color: t.txt2, fontSize: 11, fontFamily: t.font, flexShrink: 0, opacity: .5 }}>
+              <span style={{ 
+                color: t.acc, fontSize: 11, fontFamily: t.font, fontWeight: 700,
+                background: `${t.acc}15`, padding: "4px 10px", borderRadius: 12,
+                flexShrink: 0, transition: "opacity .2s", letterSpacing: ".04em"
+              }}>
                 {input.length}
               </span>
             )}
           </div>
 
-          {/* Mic button */}
-          <Btn3D
-            onClick={recording ? () => { addToast("Voice message sent"); setRecording(false); } : () => setRecording(true)}
-            style={{ width: 46, height: 46, borderRadius: "50%", border: recording ? "none" : `1.5px solid ${t.border}`, background: recording ? "#cc2200" : t.msgIn, color: recording ? "#fff" : t.toolC, flexShrink: 0, boxShadow: recording ? "0 4px 24px rgba(200,34,0,.5)" : "none" }}
-            title={recording ? "Send voice message" : "Record voice message"}
-          >
-            <Ico d={recording ? I.mic2 : I.mic} size={19} stroke="currentColor" />
-          </Btn3D>
-
-          {/* Send button — appears when text is non-empty */}
-          {input.trim() && (
+          {/* Action Buttons Container */}
+          <div style={{ display: "flex", gap: 8, paddingBottom: 2 }}>
+            {/* Mic button */}
             <Btn3D
-              onClick={() => sendMsg(input)}
-              className={`nxi-send ${input.trim() ? 'ready' : ''}`}
-              style={{ width: 46, height: 46, borderRadius: "50%", border: "none", background: t.send, color: t.sendTxt, flexShrink: 0, boxShadow: `0 4px 24px ${t.glow}`, animation: "popIn .2s ease" }}
-              title="Send message"
+              onClick={recording ? () => { addToast("Voice message sent"); setRecording(false); } : () => setRecording(true)}
+              style={{ 
+                width: 48, height: 48, borderRadius: 24, 
+                border: recording ? "none" : `1.5px solid ${t.border}`, 
+                background: recording ? "#cc2200" : t.msgIn, 
+                color: recording ? "#fff" : t.toolC, 
+                flexShrink: 0, 
+                boxShadow: recording ? "0 4px 24px rgba(200,34,0,.5)" : `0 4px 12px ${t.glow2}` 
+              }}
+              title={recording ? "Send voice message" : "Record voice message"}
             >
-              <Ico d={I.send} size={19} stroke={t.sendTxt} />
+              <Ico d={recording ? I.mic2 : I.mic} size={20} stroke="currentColor" />
             </Btn3D>
-          )}
+
+            {/* Send button — appears when text is non-empty */}
+            {input.trim() && (
+              <Btn3D
+                onClick={() => sendMsg(input)}
+                className={`nxi-send ${input.trim() ? 'ready' : ''}`}
+                style={{ 
+                  width: 48, height: 48, borderRadius: 24, border: "none", 
+                  background: t.send, color: t.sendTxt, flexShrink: 0, 
+                  boxShadow: `0 6px 20px ${t.glow}`, animation: "popIn .25s cubic-bezier(0.4, 0, 0.2, 1)" 
+                }}
+                title="Send message"
+              >
+                <Ico d={I.send} size={20} stroke={t.sendTxt} style={{ transform: "translate(1px, -1px)" }} />
+              </Btn3D>
+            )}
+          </div>
         </div>
       </div>
 
