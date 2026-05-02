@@ -214,50 +214,52 @@ export const useChatStore = create((set, get) => ({
 
   addMessage: (message) => {
     set((state) => {
-      const normalizeId = (id) => (id == null ? id : id.toString());
+      const normalizeId = (id) => {
+        if (!id) return null;
+        if (typeof id === 'object' && id._id) return id._id.toString();
+        return id.toString();
+      };
       
-      const currentSelectedId = state.selectedUser?._id ? normalizeId(state.selectedUser._id) : null;
-      const senderId = message.senderId?._id ? normalizeId(message.senderId._id) : normalizeId(message.senderId);
-      const receiverId = message.receiverId?._id ? normalizeId(message.receiverId._id) : normalizeId(message.receiverId);
+      const currentSelectedId = state.selectedConversationId 
+        ? normalizeId(state.selectedConversationId) 
+        : (state.selectedUser?._id ? normalizeId(state.selectedUser._id) : null);
+        
+      const senderId = normalizeId(message.senderId);
+      const receiverId = normalizeId(message.receiverId);
       
-      // Check if the message belongs to the actively opened 1-on-1 chat
+      // The message belongs to current chat if we are talking to the sender OR the receiver
       const belongsToCurrentChat = 
         currentSelectedId === senderId || currentSelectedId === receiverId;
-
-      let newMessages = state.messages;
+      
+      let newMessages = [...state.messages];
+      let users = [...state.users];
       
       if (belongsToCurrentChat) {
-          const exists = state.messages.some(
-            (m) => normalizeId(m._id) === normalizeId(message._id) || (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey)
-          );
-          if (!exists) {
-              const lastMsgDate = state.messages.length > 0 
-                ? new Date(state.messages[state.messages.length - 1].createdAt).getTime() 
-                : 0;
-              const newMsgDate = new Date(message.createdAt).getTime();
-
-              if (newMsgDate >= lastMsgDate) {
-                // Happy path: Append to end (No sort needed)
-                newMessages = [...state.messages, message];
-              } else {
-                // Out of order (Sync catchup): Sort required
-                newMessages = [...state.messages, message].sort((a, b) => 
-                  new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-                );
-              }
+          const messageId = normalizeId(message._id);
+          const idempotencyKey = message.idempotencyKey;
+          
+          const existsIndex = newMessages.findIndex((m) => {
+             const mId = normalizeId(m._id);
+             if (mId && messageId && mId === messageId) return true;
+             if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
+             return false;
+          });
+          
+          if (existsIndex === -1) {
+              newMessages.push(message);
           } else {
-              // If it exists, we STILL need to update it (e.g. from pending to sent, adding real _id)
-              newMessages = state.messages.map((m) => 
-                (normalizeId(m._id) === normalizeId(message._id) || (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey))
-                  ? { ...m, ...message, status: "sent" } // merge optimistic with real
-                  : m
-              );
+              newMessages[existsIndex] = { ...newMessages[existsIndex], ...message, status: "sent" };
           }
+          
+          newMessages.sort((a, b) => {
+             const timeA = new Date(a.createdAt || 0).getTime();
+             const timeB = new Date(b.createdAt || 0).getTime();
+             return timeA - timeB;
+          });
       }
 
       // Update the user list (for last message preview / unread dot)
-      // Only bump unread if it came from someone else and it's not the active chat
-      const users = state.users.map((user) => {
+      users = users.map((user) => {
           const uId = normalizeId(user._id);
           if (uId === senderId) {
               return {
@@ -266,7 +268,6 @@ export const useChatStore = create((set, get) => ({
                  unreadCount: !belongsToCurrentChat ? (user.unreadCount || 0) + 1 : 0
               };
           }
-          // If the message is from US (we sent it), we update the receiver's preview text
           if (uId === receiverId) {
              return { ...user, lastMessage: "You sent a message" };
           }

@@ -439,23 +439,37 @@ export const useNexusStore = create((set, get) => ({
     const selNexusId = selectedNexus?._id?.toString?.() ?? selectedNexus?._id;
 
     if (selectedNexus && msgNexusId === selNexusId) {
-      const normalizeId = (id) => (id == null ? id : id.toString());
-      const exists = nexusMessages.some(
-        (m) => normalizeId(m._id) === normalizeId(message._id) || (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey),
-      );
-      if (!exists) {
-        const newMessages = [...nexusMessages, message].sort((a, b) => 
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-        set({ nexusMessages: newMessages });
+      const normalizeId = (id) => {
+        if (!id) return null;
+        if (typeof id === 'object' && id._id) return id._id.toString();
+        return id.toString();
+      };
+
+      const messageId = normalizeId(message._id);
+      const idempotencyKey = message.idempotencyKey;
+      
+      let newMessages = [...nexusMessages];
+
+      const existsIndex = newMessages.findIndex((m) => {
+         const mId = normalizeId(m._id);
+         if (mId && messageId && mId === messageId) return true;
+         if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
+         return false;
+      });
+
+      if (existsIndex === -1) {
+          newMessages.push(message);
       } else {
-        const newMessages = nexusMessages.map((m) =>
-          (normalizeId(m._id) === normalizeId(message._id) || (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey))
-            ? { ...m, ...message, status: "sent" }
-            : m
-        );
-        set({ nexusMessages: newMessages });
+          newMessages[existsIndex] = { ...newMessages[existsIndex], ...message, status: "sent" };
       }
+
+      newMessages.sort((a, b) => {
+         const timeA = new Date(a.createdAt || 0).getTime();
+         const timeB = new Date(b.createdAt || 0).getTime();
+         return timeA - timeB;
+      });
+      
+      set({ nexusMessages: newMessages });
     } else {
       // Increment unread count if not selected
       const currentCount = nexusUnread[msgNexusId] || 0;
