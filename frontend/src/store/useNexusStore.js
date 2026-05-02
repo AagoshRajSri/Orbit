@@ -448,6 +448,13 @@ export const useNexusStore = create((set, get) => ({
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
         set({ nexusMessages: newMessages });
+      } else {
+        const newMessages = nexusMessages.map((m) =>
+          (normalizeId(m._id) === normalizeId(message._id) || (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey))
+            ? { ...m, ...message, status: "sent" }
+            : m
+        );
+        set({ nexusMessages: newMessages });
       }
     } else {
       // Increment unread count if not selected
@@ -457,6 +464,40 @@ export const useNexusStore = create((set, get) => ({
           ...nexusUnread,
           [msgNexusId]: currentCount + 1,
         },
+      });
+    }
+  },
+
+  updateNexusMessage: (nexusId, messageId, updates) => {
+    const { selectedNexus, nexusMessages } = get();
+    const selNexusId = selectedNexus?._id?.toString?.() ?? selectedNexus?._id;
+    if (selNexusId === nexusId?.toString()) {
+      set({
+        nexusMessages: nexusMessages.map((m) =>
+          m._id?.toString() === messageId?.toString() ? { ...m, ...updates } : m
+        ),
+      });
+    }
+  },
+
+  deleteNexusMessage: (nexusId, messageId) => {
+    const { selectedNexus, nexusMessages } = get();
+    const selNexusId = selectedNexus?._id?.toString?.() ?? selectedNexus?._id;
+    if (selNexusId === nexusId?.toString()) {
+      set({
+        nexusMessages: nexusMessages.filter((m) => m._id?.toString() !== messageId?.toString()),
+      });
+    }
+  },
+
+  markNexusMessageSeen: (nexusId, messageId, seenAt) => {
+    const { selectedNexus, nexusMessages } = get();
+    const selNexusId = selectedNexus?._id?.toString?.() ?? selectedNexus?._id;
+    if (selNexusId === nexusId?.toString()) {
+      set({
+        nexusMessages: nexusMessages.map((m) =>
+          m._id?.toString() === messageId?.toString() ? { ...m, seenAt } : m
+        ),
       });
     }
   },

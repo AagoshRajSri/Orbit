@@ -245,6 +245,13 @@ export const useChatStore = create((set, get) => ({
                   new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
                 );
               }
+          } else {
+              // If it exists, we STILL need to update it (e.g. from pending to sent, adding real _id)
+              newMessages = state.messages.map((m) => 
+                (normalizeId(m._id) === normalizeId(message._id) || (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey))
+                  ? { ...m, ...message, status: "sent" } // merge optimistic with real
+                  : m
+              );
           }
       }
 
@@ -268,6 +275,28 @@ export const useChatStore = create((set, get) => ({
 
       return { messages: newMessages, users };
     });
+  },
+
+  updateMessage: (messageId, updates) => {
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m._id?.toString() === messageId?.toString() ? { ...m, ...updates } : m
+      ),
+    }));
+  },
+
+  deleteMessage: (messageId) => {
+    set((state) => ({
+      messages: state.messages.filter((m) => m._id?.toString() !== messageId?.toString()),
+    }));
+  },
+
+  markMessageSeen: (messageId, seenAt) => {
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m._id?.toString() === messageId?.toString() ? { ...m, seenAt } : m
+      ),
+    }));
   },
 
   setUserTyping: (userId, isTyping) => {
