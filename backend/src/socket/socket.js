@@ -324,7 +324,19 @@ export const initializeSocketIO = (io) => {
     };
     joinUserNexuses();
 
-    socket.on("joinNexusRoom", (nexusId) => socket.join(nexusId));
+    socket.on("joinNexusRoom", async (nexusId) => {
+      try {
+        const Nexus = (await import("../models/nexus.model.js")).default;
+        const nexus = await Nexus.findById(nexusId);
+        if (nexus && nexus.members.some(m => m.toString() === socket.userId)) {
+          socket.join(nexusId);
+        } else {
+          console.warn(`[Socket Security] User ${socket.userId} tried to join Nexus room ${nexusId} without membership.`);
+        }
+      } catch (e) {
+        console.error("joinNexusRoom error:", e);
+      }
+    });
     socket.on("leaveNexusRoom", (nexusId) => socket.leave(nexusId));
 
     socket.on("disconnect", async (reason) => {

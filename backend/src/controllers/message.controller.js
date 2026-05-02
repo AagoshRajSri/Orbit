@@ -73,10 +73,12 @@ export const getMessage = async (req, res) => {
 
     const parsedLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
 
+    const realUserToChatId = getRealId(userToChatId);
+    
     const query = {
       $or: [
-        { senderId: myId, receiverId: userToChatId },
-        { senderId: userToChatId, receiverId: myId },
+        { senderId: myId, receiverId: realUserToChatId },
+        { senderId: realUserToChatId, receiverId: myId },
       ],
     };
 
@@ -121,14 +123,22 @@ export const sendMessage = async (req, res) => {
     const { text, image, idempotencyKey } = parsed.data;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
+    const realReceiverId = getRealId(receiverId);
 
     // Idempotency check: if we already saved this message, return it immediately
     if (idempotencyKey) {
       const existing = await Message.findOne({ idempotencyKey })
         .populate("senderId", "username profilePic")
-        .populate("receiverId", "username profilePic");
+        .populate("receiverId", "username profilePic")
+        .lean();
       
       if (existing) {
+        // Re-emit for reliability: ensure receiver gets it even if first emit failed
+        try {
+          const io = getIO();
+          io.to(senderId.toString()).emit("newMessage", existing);
+          io.to(realReceiverId.toString()).emit("newMessage", existing);
+        } catch (e) {}
         return res.status(200).json(existing);
       }
     }
@@ -165,7 +175,7 @@ export const sendMessage = async (req, res) => {
 
     const newMessage = new Message({
       senderId,
-      receiverId,
+      receiverId: realReceiverId,
       text,
       image: imageUrl,
       idempotencyKey,
