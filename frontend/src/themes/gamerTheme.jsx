@@ -976,7 +976,7 @@ const Sidebar = memo(({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nex
   const ghostSt = () => ({ flex: 1, border: "1.5px solid rgba(255,255,255,0.1)", borderRadius: 4, padding: "7px 0", cursor: "pointer", fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", fontFamily: "'Orbitron',monospace", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.4)", transition: "all 0.2s" });
 
   return (
-    <div ref={sidebarRef} style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12, borderRight: "2px solid rgba(0,245,212,0.25)", background: "rgba(4,2,18,0.85)", backdropFilter: "blur(16px)", padding: "16px", position: "relative", overflow: "hidden", boxShadow: "4px 0 30px rgba(0,0,0,0.6)" }}>
+    <div className="gamer-sidebar" ref={sidebarRef} style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12, borderRight: "2px solid rgba(0,245,212,0.25)", background: "rgba(4,2,18,0.85)", backdropFilter: "blur(16px)", padding: "16px", position: "relative", overflow: "hidden", boxShadow: "4px 0 30px rgba(0,0,0,0.6)" }}>
       <CircuitLines />
 
       {/* Tab Switcher */}
@@ -1449,6 +1449,15 @@ export default function OrbitGrind({ children }) {
           font-family: 'Rajdhani', sans-serif !important;
           color: #fff !important;
         }
+
+        @media (max-width: 800px) {
+          .gamer-container { flex-direction: column !important; }
+          .gamer-container.chat-inactive { overflow-y: auto; overflow-x: hidden; }
+          .gamer-sidebar { width: 100% !important; border-right: none !important; border-bottom: 2px solid #333 !important; flex: none !important; }
+          .gamer-container.chat-active .gamer-sidebar { display: none !important; }
+          .gamer-main { min-height: 600px; flex: none !important; }
+          .gamer-container.chat-active .gamer-main { min-height: auto; flex: 1 !important; display: flex; flex-direction: column; overflow: hidden !important; }
+        }
       `}</style>
 
 
@@ -1468,7 +1477,7 @@ export default function OrbitGrind({ children }) {
         onReveal={onReveal}
       />
 
-      <div style={{ position: "absolute", top: 48, left: 0, right: 0, bottom: 0, display: "flex" }}>
+      <div className={`gamer-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 48, left: 0, right: 0, bottom: 0, display: "flex" }}>
         <Sidebar
           sidebarRef={sidebarRef}
           locked={locked}
@@ -1490,7 +1499,7 @@ export default function OrbitGrind({ children }) {
           toggleHide={toggleHide}
         />
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+        <div className="gamer-main" style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
           <MainCircuits />
 
           {children ? (

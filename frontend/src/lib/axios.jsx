@@ -76,8 +76,23 @@ axiosInstance.interceptors.response.use(
 
         _isRefreshing = false;
         
+        const newAuthToken = response.data.authToken;
+        const newSessionId = response.data.sessionId;
+
+        useAuthStore.setState({
+          socketToken: newAuthToken,
+          sessionId: newSessionId || authState.sessionId
+        });
+        
         // Background refresh socket token to keep it in sync
-        authState.refreshSocketToken().catch(console.error);
+        if (typeof authState.refreshSocketToken === "function") {
+          authState.refreshSocketToken().catch(console.error);
+        }
+
+        // Inform the socket immediately of the new token
+        import("./socket.js").then(({ updateSocketToken }) => {
+          if (updateSocketToken) updateSocketToken(newAuthToken);
+        }).catch(console.error);
 
         processQueue(null);
         return axiosInstance(originalRequest);

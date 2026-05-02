@@ -40,6 +40,7 @@ import OrbitLoader from "./components/OrbitLoader";
 import PostAuthLoader from "./components/PostAuthLoader";
 import AuthShell from "./components/AuthShell";
 import { NotificationContainer } from "./components/NotificationContainer";
+import MobileSidebarDrawer from "./components/MobileSidebarDrawer";
 import {
   ErrorBoundary,
   ConnectionStatus,
@@ -495,6 +496,8 @@ const AppContent = () => {
   }, [spotifyLinked, startPolling, stopPolling]);
 
   const [isOrbitMode, setIsOrbitMode] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [mobileDrawerTab, setMobileDrawerTab] = useState("nexus");
   useEffect(() => {
     if (isOrbitMode) {
       setIsOrbitMode(false);
@@ -545,9 +548,19 @@ const AppContent = () => {
         <OrbitLoader />
       ) : (
         <>
-          {!isAuthPage && !isAdminRoute && !isFullscreenTheme && !isOrbitMode && <Navbar />}
+          {!isAuthPage && !isAdminRoute && !isFullscreenTheme && !isOrbitMode && (
+            <Navbar onHamburger={() => { setMobileDrawerTab("nexus"); setMobileDrawerOpen(true); }} />
+          )}
+          {/* Mobile sidebar drawer — accessible from Navbar hamburger */}
+          {!isAuthPage && !isAdminRoute && authUser && (
+            <MobileSidebarDrawer
+              isOpen={mobileDrawerOpen}
+              onClose={() => setMobileDrawerOpen(false)}
+              initialTab={mobileDrawerTab}
+            />
+          )}
           <main
-            className={`flex flex-col flex-1 min-h-0 overflow-hidden ${isAuthPage || isFullscreenTheme || isAdminRoute ? "" : "pt-12"} relative`}
+            className={`flex flex-col flex-1 min-h-0 overflow-hidden main-content-mobile ${isAuthPage || isFullscreenTheme || isAdminRoute ? "" : "pt-12"} relative`}
           >
             {isAuthPage ? (
               <Suspense fallback={<OrbitLoader />}>

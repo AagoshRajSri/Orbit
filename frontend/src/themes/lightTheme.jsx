@@ -241,6 +241,41 @@ const CSS = `
 .luxury-root .nxc-utility-group .bg-white\\/20 { background: #C0C0C0 !important; } /* Frosted Silver dividers */
 .luxury-root .text-[#5dcaa5] { color: #2A52BE !important; }
 .luxury-root .nxc-signal-bars .nxc-bar { background-color: #2A52BE !important; }
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+  .luxury-nav {
+    padding: 12px 16px;
+  }
+  .board-container {
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    flex-direction: column;
+    box-shadow: none;
+  }
+  .board-container.chat-inactive {
+    overflow-y: auto;
+  }
+  .board-container.chat-active {
+    overflow: hidden;
+  }
+  .sidebar-container {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid ${LUXURY_COLORS.borderSubtle};
+    flex: none !important;
+  }
+  .sidebar-container.chat-active {
+    display: none !important;
+  }
+  .chat-area-wrapper {
+    min-height: 600px;
+  }
+  .luxury-nav span {
+    font-size: 18px !important;
+  }
+}
 `;
 
 /* ─────────────────────────────── CORE COMPONENTS ─────────────────────────────── */
@@ -447,7 +482,7 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
   }, []);
 
   return (
-    <div style={{ width: 320, borderRight: `1px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', flexDirection: 'column', background: '#FDFCFB', zIndex: 10 }}>
+    <div className={`sidebar-container ${selectedNexus || selectedUser ? 'chat-active' : ''}`} style={{ width: 320, borderRight: `1px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', flexDirection: 'column', background: '#FDFCFB', zIndex: 10 }}>
       {/* Tabs */}
       <div style={{ padding: 24, paddingBottom: 0 }}>
         <div style={{ display: 'flex', borderRadius: 24, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, padding: 4, marginBottom: 20, background: 'white' }}>
@@ -468,10 +503,10 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
         {/* Action Buttons */}
         {tab === 'orbits' && (
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="luxury-button" onClick={() => setNexusActionView("join")} style={{ flex: 1, background: '#7A7A7A', color: 'white' }}>
+            <button className="luxury-button" onClick={() => setNexusActionView("join")} style={{ flex: 1, background: LUXURY_COLORS.surfaceHover, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, color: LUXURY_COLORS.textPrimary }}>
                # JOIN
             </button>
-            <button className="luxury-button" onClick={() => setNexusActionView("create")} style={{ flex: 1, background: '#71A5BD', color: 'white' }}>
+            <button className="luxury-button btn-gold" onClick={() => setNexusActionView("create")} style={{ flex: 1 }}>
                + NEXUS
             </button>
           </div>
@@ -734,7 +769,7 @@ export default function LightTheme({ children }) {
         hiddenNexuses={hiddenNexuses}
         onReveal={onReveal}
      >
-       <div className="board-container">
+       <div className={`board-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`}>
           <LuxurySidebar 
             nexuses={nexuses} 
             selectedNexus={selectedNexus} 
@@ -747,7 +782,7 @@ export default function LightTheme({ children }) {
             hiddenNexuses={hiddenNexuses}
           />
          
-         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+         <div className="chat-area-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
             
             {nexusActionView && (
               <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', zIndex: 100, padding: 40, overflowY: 'auto' }}>

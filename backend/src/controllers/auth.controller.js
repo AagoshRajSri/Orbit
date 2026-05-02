@@ -528,6 +528,7 @@ export const checkAuth = async (req, res) => {
         ...userObj,
         hasConstellation: !!constellationHash,
         sessionId: req.sessionId,
+        socketToken: req.cookies?.jwt || req.headers["x-auth-token"] || req.headers.authorization?.split(" ")[1],
       },
     });
   } catch (error) {

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, Menu } from "lucide-react";
 import { useThemeStore } from "../store/useThemeStore";
 import Saturn from "./Saturn";
 
@@ -43,7 +43,7 @@ const NavbarCat = () => (
   </div>
 );
 
-const Navbar = () => {
+const Navbar = ({ onHamburger }) => {
   const { logout, authUser } = useAuthStore();
   const { theme } = useThemeStore();
 
@@ -155,7 +155,29 @@ const Navbar = () => {
         {/* Center Cat */}
         {isPastel && <NavbarCat />}
 
-        <div className="flex items-center gap-2 relative z-10">
+      <div className="flex items-center gap-2 relative z-10">
+          {/* Mobile hamburger — opens sidebar drawer */}
+          {onHamburger && (
+            <button
+              onClick={onHamburger}
+              className={`md:hidden h-10 w-10 rounded-[1.2rem] border flex items-center justify-center transition-all ${
+                isPastel
+                  ? "border-pink-300/40 bg-gradient-to-r from-pink-50 to-purple-50 text-[#d946a8]"
+                  : isCyber
+                  ? "border-[rgba(0,245,212,0.4)] bg-[rgba(0,245,212,0.08)] text-[#a0f0e8]"
+                  : isGamer
+                  ? "border-[var(--chat-primary)]/40 bg-[var(--chat-primary)]/10 text-[var(--chat-primary)]"
+                  : isAmoled
+                  ? "border-white/[0.08] bg-white/[0.04] text-white/70"
+                  : isLight
+                  ? "border-[#b08d57]/30 bg-[rgba(176,141,87,0.06)] text-[#8c7055]"
+                  : "border-base-300/70 bg-base-100/30"
+              }`}
+              aria-label="Open navigation"
+            >
+              <Menu size={20} />
+            </button>
+          )}
           <Link
             to={"/settings"}
             className={`h-10 px-4 rounded-[1.2rem] border transition-all duration-300 text-xs flex items-center gap-2.5 font-bold group/btn ${isPastel 

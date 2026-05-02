@@ -199,8 +199,13 @@ const CSS = `
 @media (max-width: 800px) {
   .oa-main-grid { grid-template-columns: 1fr !important; }
   .oa-desktop-nav { flex-wrap: wrap !important; height: auto !important; padding: 10px !important; gap: 8px !important; }
-  .oa-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(198,160,110,.12) !important; max-height: 240px !important; }
   .oa-main-wrapper { flex-direction: column !important; }
+  .oa-app-container.chat-inactive .oa-main-wrapper { overflow-y: auto; overflow-x: hidden; display: block !important; }
+  .oa-app-container.chat-inactive .oa-main-content { display: none !important; }
+  .oa-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(198,160,110,.12) !important; max-height: none !important; flex: none !important; }
+  .oa-app-container.chat-active .oa-sidebar { display: none !important; }
+  .oa-main-content { min-height: 600px; flex: none !important; display: flex; flex-direction: column; }
+  .oa-app-container.chat-active .oa-main-content { min-height: auto; flex: 1 !important; }
   .oa-settings-wrapper { flex-direction: column !important; gap: 16px !important; }
   .oa-settings-nav { width: 100% !important; }
   .oa-profile-wrapper { flex-direction: column !important; gap: 16px !important; }
@@ -844,7 +849,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       {/* Root */}
-      <div style={{ width: "100%", height: "100vh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter','Rajdhani',sans-serif", position: "relative" }}>
+      <div className={`oa-app-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ width: "100%", height: "100vh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter','Rajdhani',sans-serif", position: "relative" }}>
 
         <TopBar logout={logout} hiddenNexuses={hiddenNexuses} onReveal={onReveal} />
 
@@ -866,7 +871,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
           />
 
           {/* ── Main content ── */}
-          <div style={{ flex: 1, overflow: "hidden", position: "relative", background: "#000", display: "flex", flexDirection: "column" }}>
+          <div className="oa-main-content" style={{ flex: 1, overflow: "hidden", position: "relative", background: "#000", display: "flex", flexDirection: "column" }}>
 
             {children ? (
               <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 28, position: "relative" }}>

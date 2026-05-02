@@ -67,7 +67,11 @@ const STYLES = `
     .ncb-desktop-nav > div { flex-wrap: wrap !important; }
     .ncb-center-hud { display: none !important; }
     .ncb-container { flex-direction: column !important; }
-    .ncb-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(176,38,255,0.3) !important; max-height: 240px !important; }
+    .ncb-container.chat-inactive { overflow-y: auto; overflow-x: hidden; }
+    .ncb-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(176,38,255,0.3) !important; max-height: none !important; flex: none !important; }
+    .ncb-container.chat-active .ncb-sidebar { display: none !important; }
+    .ncb-main { min-height: 600px; flex: none !important; }
+    .ncb-container.chat-active .ncb-main { min-height: auto; flex: 1 !important; display: flex; flexDirection: column; }
     .ncb-grid { grid-template-columns: 1fr !important; }
     .ncb-hero h1 { font-size: 26px !important; }
     .ncb-hero-btn { width: 100% !important; text-align: center !important; }
@@ -1168,7 +1172,7 @@ export default function OrbitNeonCyberpunk({ children }) {
         onReveal={onReveal} 
       />
 
-      <div className="ncb-container" style={{ position: "absolute", top: 42, left: 0, right: 0, bottom: 0, display: "flex" }}>
+      <div className={`ncb-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 42, left: 0, right: 0, bottom: 0, display: "flex" }}>
         <Sidebar 
           sidebarRef={sidebarRef} 
           synced={synced} 
@@ -1187,7 +1191,7 @@ export default function OrbitNeonCyberpunk({ children }) {
         />
 
         {/* Main content */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
+        <div className="ncb-main" style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
           {children ? (
             <div style={{ flex: 1, overflowY: "auto", position: "relative" }}>
                {children}

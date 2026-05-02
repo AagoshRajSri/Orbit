@@ -416,6 +416,8 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
             if (onMobileBack) {
               onMobileBack();
             } else {
+              if (isNexus) setSelectedNexus(null);
+              else setSelectedUser(null);
               navigate("/");
             }
           }}

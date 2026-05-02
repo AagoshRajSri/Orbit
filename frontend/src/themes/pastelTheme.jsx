@@ -799,7 +799,7 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
   });
 
   return (
-    <div ref={sidebarRef} className="w-[290px] flex-shrink-0 flex flex-col border-r border-[#ffb4dc]/15 bg-gradient-to-b from-[#ffdcf3] to-[#fef4f9] px-3 py-[14px]">
+    <div ref={sidebarRef} className={`pastel-sidebar ${selectedNexus || selectedUser ? 'chat-active' : ''} w-[290px] flex-shrink-0 flex flex-col border-r border-[#ffb4dc]/15 bg-gradient-to-b from-[#ffdcf3] to-[#fef4f9] px-3 py-[14px]`}>
       {/* Sidebar Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22, paddingLeft: 4 }}>
         <div style={{
@@ -1473,6 +1473,15 @@ export default function PastelApp({ children }) {
           border: 1px solid rgba(255,255,255,0.8) !important; 
           color: #8b5a2b !important;
         }
+
+        /* Responsive Overrides */
+        @media (max-width: 768px) {
+          .pastel-main-container { flex-direction: column !important; }
+          .pastel-main-container.chat-inactive { overflow-y: auto; }
+          .pastel-sidebar { width: 100% !important; max-width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(255,183,178,0.4); flex: none !important; }
+          .pastel-sidebar.chat-active { display: none !important; }
+          .pastel-chat-wrapper { min-height: 600px; }
+        }
       `}</style>
 
 
@@ -1566,6 +1575,15 @@ export default function PastelApp({ children }) {
           border: 1px solid rgba(255,255,255,0.8) !important; 
           color: #8b5a2b !important;
         }
+
+        /* Responsive Overrides */
+        @media (max-width: 768px) {
+          .pastel-main-container { flex-direction: column !important; }
+          .pastel-main-container.chat-inactive { overflow-y: auto; }
+          .pastel-sidebar { width: 100% !important; max-width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(255,183,178,0.4); flex: none !important; }
+          .pastel-sidebar.chat-active { display: none !important; }
+          .pastel-chat-wrapper { min-height: 600px; }
+        }
       `}</style>
 
       <SparkleClick />
@@ -1573,7 +1591,7 @@ export default function PastelApp({ children }) {
       <Floaties />
       <TopNav navRef={navRef} authUser={authUser} handleLogout={handleLogout} loggingOut={loggingOut} hiddenNexuses={hiddenNexuses} onReveal={onReveal} />
 
-      <div style={{ position: "absolute", top: 50, left: 0, right: 0, bottom: 0, display: "flex" }}>
+      <div className={`pastel-main-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 50, left: 0, right: 0, bottom: 0, display: "flex" }}>
         <Sidebar
           sidebarRef={sidebarRef}
           nexuses={nexuses}
@@ -1587,7 +1605,7 @@ export default function PastelApp({ children }) {
           toggleHide={toggleHide}
         />
 
-        <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+        <div className="pastel-chat-wrapper" style={{ flex: 1, position: "relative", overflow: "hidden" }}>
           {nexusActionView && (
             <div style={{ position: "absolute", inset: 0, zIndex: 100 }}>
               <NexusActionOverlay

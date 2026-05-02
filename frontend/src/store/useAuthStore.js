@@ -23,12 +23,21 @@ export const useAuthStore = create(
         try {
           const res = await axiosInstance.get("/auth/check");
           const serverSessionId = res.data.data?.sessionId;
+          const serverSocketToken = res.data.data?.socketToken;
           const currentSessionId = get().sessionId;
           
           set({ 
             authUser: res.data.data, 
-            sessionId: serverSessionId || currentSessionId || crypto.randomUUID() 
+            sessionId: serverSessionId || currentSessionId || crypto.randomUUID(),
+            ...(serverSocketToken && { socketToken: serverSocketToken })
           });
+          
+          // Force socket update if we recovered the token
+          if (serverSocketToken) {
+            import("../lib/socket.js").then(({ updateSocketToken }) => {
+              if (updateSocketToken) updateSocketToken(serverSocketToken);
+            }).catch(console.error);
+          }
         } catch (error) {
           console.error("[checkAuth] Server error status:", error.response?.status);
           console.error("[checkAuth] Server error details:", error.response?.data);

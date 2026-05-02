@@ -781,6 +781,20 @@ const style = `
   .hanging-bat-container:hover .bat-eyes {
     opacity: 0 !important;
   }
+
+  /* Responsive Overrides */
+  @media (max-width: 768px) {
+    .orbit-root { flex-direction: column; }
+    .orbit-root.chat-inactive { overflow-y: auto; overflow-x: hidden; }
+    .sidebar { width: 100% !important; border-right: none; flex: none; }
+    .orbit-root.chat-active .sidebar { display: none !important; }
+    .main { min-height: 600px; flex: none; overflow: visible !important; }
+    .orbit-root.chat-active .main { min-height: auto; flex: 1; display: flex; flex-direction: column; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .navbar { padding: 0 16px; justify-content: space-between; }
+    .nav-actions { gap: 10px; }
+    .nav-btn span { display: none; }
+  }
 `;
 
 // ── Particle emitter ─────────────────────────────────────────────
@@ -1676,7 +1690,7 @@ export default function OrbitVampire({ children }) {
     return (
         <div className="vamp-theme-root">
             <style>{style}</style>
-            <div className="orbit-root">
+            <div className={`orbit-root ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`}>
                 <div className="bg-atmosphere" />
                 <div className="blood-drip" />
                 <BloodRain />
