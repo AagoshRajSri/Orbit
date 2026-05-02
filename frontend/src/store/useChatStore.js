@@ -250,14 +250,22 @@ export const useChatStore = create((set, get) => ({
           if (existsIndex === -1) {
               newMessages.push(message);
           } else {
-              newMessages[existsIndex] = { ...newMessages[existsIndex], ...message, status: "sent" };
+              // Preserve the local 'out' flag and other UI states
+              newMessages[existsIndex] = { 
+                ...newMessages[existsIndex], 
+                ...message, 
+                status: "sent" 
+              };
           }
           
+          // Improved sorting: newest at bottom, handle missing timestamps gracefully
           newMessages.sort((a, b) => {
-             const timeA = new Date(a.createdAt || 0).getTime();
-             const timeB = new Date(b.createdAt || 0).getTime();
-             return timeA - timeB;
+            const timeA = new Date(a.createdAt || Date.now()).getTime();
+            const timeB = new Date(b.createdAt || Date.now()).getTime();
+            return timeA - timeB;
           });
+          
+          set({ messages: newMessages });
       }
 
       // Update the user list (for last message preview / unread dot)

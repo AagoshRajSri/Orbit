@@ -418,12 +418,13 @@ export const getMyNexuses = async (req, res) => {
   try {
     const { nexusId } = req.params;
     const { cursor, limit = 50 } = req.query;
+    const realNexusId = getRealId(nexusId);
     const userId = req.user._id;
 
     const parsedLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
 
     // Check if user is a member
-    const nexus = await Nexus.findById(nexusId);
+    const nexus = await Nexus.findById(realNexusId);
     if (
       !nexus ||
       !nexus.members.some((id) => id.toString() === userId.toString())
@@ -431,7 +432,7 @@ export const getMyNexuses = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    const query = { nexusId };
+    const query = { nexusId: realNexusId };
     if (cursor) {
       query.createdAt = { $lt: new Date(cursor) };
     }
@@ -478,7 +479,8 @@ export const sendNexusMessage = async (req, res) => {
     }
 
     // Check if user is a member
-    const nexus = await Nexus.findById(nexusId);
+    const realNexusId = getRealId(nexusId);
+    const nexus = await Nexus.findById(realNexusId);
     if (!nexus) {
       return res.status(404).json({ message: "Nexus not found" });
     }
@@ -507,7 +509,7 @@ export const sendNexusMessage = async (req, res) => {
 
     const newMessage = new Message({
       senderId,
-      nexusId,
+      nexusId: realNexusId,
       text,
       image: imageUrl,
       idempotencyKey,

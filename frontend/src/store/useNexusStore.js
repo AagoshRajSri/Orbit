@@ -460,12 +460,18 @@ export const useNexusStore = create((set, get) => ({
       if (existsIndex === -1) {
           newMessages.push(message);
       } else {
-          newMessages[existsIndex] = { ...newMessages[existsIndex], ...message, status: "sent" };
+          // Merge server data with optimistic UI state
+          newMessages[existsIndex] = { 
+            ...newMessages[existsIndex], 
+            ...message, 
+            status: "sent" 
+          };
       }
 
+      // Improved sorting: newest at bottom, handle missing timestamps gracefully
       newMessages.sort((a, b) => {
-         const timeA = new Date(a.createdAt || 0).getTime();
-         const timeB = new Date(b.createdAt || 0).getTime();
+         const timeA = new Date(a.createdAt || Date.now()).getTime();
+         const timeB = new Date(b.createdAt || Date.now()).getTime();
          return timeA - timeB;
       });
       

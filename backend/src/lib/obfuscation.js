@@ -3,61 +3,80 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Use a stable key for encryption/decryption
 const SECRET = process.env.JWT_SECRET || "orbit-default-obfuscation-secret";
+const ALGORITHM = "aes-256-ctr";
+
+// Derived key for AES (must be 32 bytes)
+const key = crypto.createHash("sha256").update(SECRET).digest();
 
 /**
- * Obfuscates a database ID (or any string) into a session-safe temporary handle.
- * This prevents users from mapping our DB structure or scraping based on stable IDs.
+ * Obfuscates a database ID into a stateless, decryptable handle.
  */
-export const obfuscateId = (id, saltOrSession = "global") => {
+export const obfuscateId = (id) => {
   if (!id) return null;
-  const hash = crypto.createHmac("sha256", SECRET)
-    .update(`${id}:${saltOrSession}`)
-    .digest("hex");
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  const encrypted = Buffer.concat([cipher.update(id.toString()), cipher.final()]);
   
-  // Return a compact, readable version of the hash
-  return `orb_${hash.substring(0, 16)}`;
+  // Format: orb_ [IV in hex] [Encrypted in hex]
+  return `orb_${iv.toString("hex")}${encrypted.toString("hex")}`;
 };
 
 /**
- * Reverses the obfuscation (theoretical)
- * NOTE: In a production "Inside Out" system, we'd store a mapping in Redis
- * for the session's duration. For now, we'll use a deterministic approach
- * if the salt is consistent, or a lookup table.
+ * Resolves an obfuscated handle back to its real database ID.
  */
-const lookupMap = new Map();
-
-export const registerObfuscatedId = (realId, saltOrSession = "global") => {
-  const fakeId = obfuscateId(realId, saltOrSession);
-  lookupMap.set(fakeId, realId);
-  return fakeId;
-};
-
 export const getRealId = (fakeId) => {
-  return lookupMap.get(fakeId) || fakeId;
+  if (!fakeId || typeof fakeId !== "string" || !fakeId.startsWith("orb_")) {
+    return fakeId;
+  }
+
+  try {
+    const raw = fakeId.substring(4);
+    if (raw.length < 32) return fakeId; // Not enough for IV + data
+
+    const iv = Buffer.from(raw.substring(0, 32), "hex");
+    const encrypted = Buffer.from(raw.substring(32), "hex");
+    
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+    
+    return decrypted.toString();
+  } catch (err) {
+    console.error("[Obfuscation] Decryption failed:", err.message);
+    return fakeId;
+  }
 };
 
 /**
- * Sanitizes an object by obfuscating any 'id' or '_id' fields
+ * Legacy support / Utility
  */
-export const sanitizeForOrbit = (obj, saltOrSession = "global") => {
+export const registerObfuscatedId = (realId) => {
+  return obfuscateId(realId);
+};
+
+/**
+ * Sanitizes an object by obfuscating any 'id' or '_id' fields.
+ * Now deterministic and stateless.
+ */
+export const sanitizeForOrbit = (obj) => {
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeForOrbit(item, saltOrSession));
+    return obj.map(item => sanitizeForOrbit(item));
   }
   
   if (obj !== null && typeof obj === 'object') {
     const newObj = { ...obj };
     if (newObj._id) {
-       newObj.id = registerObfuscatedId(newObj._id.toString(), saltOrSession);
+       newObj.id = obfuscateId(newObj._id.toString());
        delete newObj._id;
     } else if (newObj.id) {
-       newObj.id = registerObfuscatedId(newObj.id.toString(), saltOrSession);
+       newObj.id = obfuscateId(newObj.id.toString());
     }
     
     // Obfuscate related fields if they look like IDs
     for (const key in newObj) {
-      if (key.endsWith('Id') && typeof newObj[key] === 'string' && newObj[key].length > 20) {
-        newObj[key] = registerObfuscatedId(newObj[key], saltOrSession);
+      if (key.endsWith('Id') && typeof newObj[key] === 'string' && newObj[key].length > 20 && !newObj[key].startsWith("orb_")) {
+        newObj[key] = obfuscateId(newObj[key]);
       }
     }
     

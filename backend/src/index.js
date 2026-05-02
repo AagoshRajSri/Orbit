@@ -121,6 +121,9 @@ app.use(hpp());
 app.use(cookieParser());
 app.use(threatDetectionMiddleware);
 
+import { resolveOrbitIds } from "./lib/idResolver.middleware.js";
+app.use("/api", resolveOrbitIds);
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/message", messageRoutes);
@@ -187,12 +190,13 @@ const io = new Server(httpServer, {
       }
     },
     credentials: true,
+    methods: ["GET", "POST"]
   },
   // Render free-tier does not support WS upgrades. Force polling-only.
   transports: ["polling"],
   allowUpgrades: false,
-  pingInterval: 25000,
-  pingTimeout: 60000,
+  pingInterval: 10000, 
+  pingTimeout: 5000,
 });
 
 async function initApp() {
