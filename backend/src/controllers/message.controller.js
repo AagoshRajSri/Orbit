@@ -173,17 +173,19 @@ export const sendMessage = async (req, res) => {
 
     await newMessage.save();
 
-    // Construct enriched payload manually with req.user (AVOID DB READ/POPULATE ON WRITE PATH)
     const populatedMessage = {
       ...newMessage.toObject(),
+      _id: newMessage._id.toString(),
       senderId: {
-        _id: req.user._id,
+        _id: req.user._id.toString(),
         username: req.user.username,
         profilePic: req.user.profilePic,
       },
       receiverId: {
-        _id: receiverId,
-      }
+        _id: receiverId.toString(),
+      },
+      createdAt: newMessage.createdAt.toISOString(),
+      updatedAt: newMessage.updatedAt.toISOString()
     };
 
     // Emit socket event for real-time messaging
@@ -301,13 +303,16 @@ export const updateMessage = async (req, res) => {
     // Construct populated message for socket emission without re-fetching
     const populatedMessage = {
       ...message.toObject(),
+      _id: message._id.toString(),
       senderId: {
-        _id: req.user._id,
+        _id: req.user._id.toString(),
         username: req.user.username,
         profilePic: req.user.profilePic,
       },
-      receiverId: message.receiverId ? { _id: message.receiverId } : undefined,
-      nexusId: message.nexusId ? { _id: message.nexusId } : undefined,
+      receiverId: message.receiverId ? { _id: message.receiverId.toString() } : undefined,
+      nexusId: message.nexusId ? { _id: message.nexusId.toString() } : undefined,
+      createdAt: message.createdAt ? message.createdAt.toISOString() : undefined,
+      updatedAt: message.updatedAt ? message.updatedAt.toISOString() : undefined,
     };
 
     // Emit update event via socket

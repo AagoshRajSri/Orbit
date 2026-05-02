@@ -517,11 +517,15 @@ export const sendNexusMessage = async (req, res) => {
 
     const populatedMessage = {
       ...newMessage.toObject(),
+      _id: newMessage._id.toString(),
       senderId: {
-        _id: req.user._id,
+        _id: req.user._id.toString(),
         username: req.user.username,
         profilePic: req.user.profilePic,
       },
+      nexusId: nexusId.toString(),
+      createdAt: newMessage.createdAt.toISOString(),
+      updatedAt: newMessage.updatedAt.toISOString(),
     };
 
     // Emit to all nexus members
