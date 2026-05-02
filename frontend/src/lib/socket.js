@@ -12,6 +12,8 @@ export const getSocket = () => {
 
   const authState = useAuthStore.getState();
 
+  console.log("[Socket.IO] Initializing client v2.0 - Polling Forced");
+
   socket = io(API_URL, {
     auth: {
       token: authState.socketToken,

@@ -191,10 +191,10 @@ export const sendMessage = async (req, res) => {
     // Emit socket event for real-time messaging
     try {
       const io = getIO();
-      // Emit to sender so other browser tabs stay in sync
+      // Emit to sender using their real ID (which is their room name)
       io.to(senderId.toString()).emit("newMessage", populatedMessage);
-      // Emit to receiver — simple fire-and-forget; reliable with persistent connections
-      io.to(receiverId.toString()).emit("newMessage", populatedMessage);
+      // Emit to receiver using their real ID
+      io.to(realReceiverId.toString()).emit("newMessage", populatedMessage);
     } catch (socketError) {
       console.warn("Socket.IO emission failed:", socketError.message);
     }

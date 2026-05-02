@@ -68,7 +68,7 @@ axiosInstance.interceptors.response.use(
 
       try {
         const authState = useAuthStore.getState();
-        await axios.post(
+        const refreshRes = await axios.post(
           `${API_URL}/api/auth/refresh`,
           { sessionId: authState.sessionId },
           { withCredentials: true }
@@ -76,8 +76,8 @@ axiosInstance.interceptors.response.use(
 
         _isRefreshing = false;
         
-        const newAuthToken = response.data.authToken;
-        const newSessionId = response.data.sessionId;
+        const newAuthToken = refreshRes.data.authToken;
+        const newSessionId = refreshRes.data.sessionId;
 
         useAuthStore.setState({
           socketToken: newAuthToken,
