@@ -6,24 +6,36 @@ import { getRealId } from "./obfuscation.js";
  * This simplifies controllers by allowing them to work with real IDs transparently.
  */
 export const resolveOrbitIds = (req, res, next) => {
-  const resolve = (obj) => {
-    if (!obj || typeof obj !== "object") return obj;
-    
-    for (const key in obj) {
-      const val = obj[key];
+  try {
+    const resolve = (obj) => {
+      if (!obj || typeof obj !== "object") return;
       
-      if (typeof val === "string" && val.startsWith("orb_")) {
-        obj[key] = getRealId(val);
-      } else if (typeof val === "object") {
-        resolve(val);
+      for (const key in obj) {
+        try {
+          const val = obj[key];
+          
+          if (typeof val === "string" && val.startsWith("orb_")) {
+            obj[key] = getRealId(val);
+          } else if (Array.isArray(val)) {
+            val.forEach((item, index) => {
+               if (typeof item === "string" && item.startsWith("orb_")) {
+                 val[index] = getRealId(item);
+               }
+            });
+          }
+        } catch (e) {
+          // Ignore individual field failures
+        }
       }
-    }
-    return obj;
-  };
+    };
 
-  if (req.params) resolve(req.params);
-  if (req.query) resolve(req.query);
-  if (req.body) resolve(req.body);
+    if (req.params) resolve(req.params);
+    if (req.query) resolve(req.query);
+    if (req.body) resolve(req.body);
 
-  next();
+    next();
+  } catch (globalError) {
+    console.error("[ID Resolver] Global failure:", globalError.message);
+    next(); // Always proceed even if resolver fails
+  }
 };
