@@ -737,7 +737,7 @@ const StatusPill = memo(() => {
   );
 });
 
-const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) => {
+const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, selectedNexus, users, setSelectedUser, selectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) => {
   const [activeTab, setActiveTab] = useState("orbits");
   const { play } = useSoundManager();
   const navigate = useNavigate();
@@ -1597,8 +1597,10 @@ export default function PastelApp({ children }) {
           nexuses={nexuses}
           isNexusesLoading={isNexusesLoading}
           setSelectedNexus={setSelectedNexus}
+          selectedNexus={selectedNexus}
           users={users || []}
           setSelectedUser={setSelectedUser}
+          selectedUser={selectedUser}
           nexusUnread={nexusUnread || {}}
           setNexusActionView={setNexusActionView}
           hiddenNexuses={hiddenNexuses}
