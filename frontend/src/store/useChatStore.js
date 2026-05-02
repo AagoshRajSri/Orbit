@@ -3,6 +3,8 @@ import toast from "../lib/toast";
 import { axiosInstance } from "../lib/axios.jsx";
 import { useAuthStore } from "./useAuthStore";
 
+import toast from "../lib/toast";
+
 export const useChatStore = create((set, get) => ({
   messages: [],
   hasMoreMessages: true,

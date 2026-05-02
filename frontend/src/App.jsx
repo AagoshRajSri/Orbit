@@ -294,15 +294,34 @@ const AppContent = () => {
       let flusherTimeout = null;
 
       const flushBuffers = () => {
+        // Process direct messages
         if (messageBuffer.length > 0) {
-          messageBuffer.forEach(i => useChatStore.getState().addMessage(i.msg));
-          messageBuffer.forEach(({ ack }) => ack && ack());
+          const msgs = [...messageBuffer];
           messageBuffer = [];
+          // Use the store's setState directly to ensure reactivity
+          const chatStore = useChatStore.getState();
+          msgs.forEach(i => {
+            try {
+              chatStore.addMessage(i.msg);
+              if (i.ack) i.ack();
+            } catch (err) {
+              console.error("Error processing message buffer:", err);
+            }
+          });
         }
+        // Process nexus messages
         if (nexusMessageBuffer.length > 0) {
-          nexusMessageBuffer.forEach(i => useNexusStore.getState().addNexusMessage(i.msg));
-          nexusMessageBuffer.forEach(({ ack }) => ack && ack());
+          const msgs = [...nexusMessageBuffer];
           nexusMessageBuffer = [];
+          const nexusStore = useNexusStore.getState();
+          msgs.forEach(i => {
+            try {
+              nexusStore.addNexusMessage(i.msg);
+              if (i.ack) i.ack();
+            } catch (err) {
+              console.error("Error processing nexus message buffer:", err);
+            }
+          });
         }
         flusherTimeout = null;
       };
@@ -310,7 +329,7 @@ const AppContent = () => {
       const enqueueMessage = (buffer, item) => {
         buffer.push(item);
         if (!flusherTimeout) {
-          flusherTimeout = setTimeout(flushBuffers, 150);
+          flusherTimeout = setTimeout(flushBuffers, 50);
         }
       };
 
@@ -328,6 +347,12 @@ const AppContent = () => {
         if (authUser && senderIdStr !== authUser._id) {
           soundManager.play("incomingmsg");
         }
+        console.log('[Socket] newMessage received:', { 
+          messageId: message._id, 
+          senderId: senderIdStr, 
+          receiverId: message.receiverId,
+          currentChatStore: useChatStore.getState().selectedConversationId 
+        });
         enqueueMessage(messageBuffer, { msg: message, ack });
       });
 
