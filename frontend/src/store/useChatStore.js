@@ -20,10 +20,10 @@ export const useChatStore = create((set, get) => ({
     set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/message/users");
-      const data = res.data;
-      const userIds = data.map((user) => user._id.toString());
+      const users = res.data.data || [];
+      const userIds = users.map((user) => user._id.toString());
       set((state) => ({
-        users: data,
+        users: users,
         contactList: state.contactList?.length ? state.contactList : userIds,
         // preserve existing alias map
         contactAliases: state.contactAliases || {},
