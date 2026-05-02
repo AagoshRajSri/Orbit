@@ -2,7 +2,7 @@ import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getIO } from "../socket/socket.js";
-import { redisClient } from "../lib/redis.js";
+
 import { systemEmitter } from "../lib/systemEmitter.js";
 import { z } from "zod";
 
@@ -191,32 +191,12 @@ export const sendMessage = async (req, res) => {
     // Emit socket event for real-time messaging
     try {
       const io = getIO();
-      // Emitting to sender's exact room without ack (optimistic send already handled sender side usually)
+      // Emit to sender so other browser tabs stay in sync
       io.to(senderId.toString()).emit("newMessage", populatedMessage);
-
-      // Emitting to receiver with Ack (Delivery Guarantee)
-      try {
-        const responses = await io
-          .to(receiverId.toString())
-          .timeout(5000)
-          .emitWithAck("newMessage", populatedMessage);
-
-        // If we got a response, message was delivered
-        if (responses && responses.length > 0) {
-          // Update delivery timestamp in background
-          Message.findByIdAndUpdate(populatedMessage._id, { deliveredAt: new Date() }).catch(err => {
-            console.warn("Failed to update delivery timestamp:", err.message);
-          });
-        }
-      } catch (ackError) {
-        console.log(`[Offline Queue] Receiver ${receiverId} offline or no ack. Queuing message.`);
-        const queueKey = `offline_queue:${receiverId}`;
-        await redisClient.lpush(queueKey, JSON.stringify(populatedMessage));
-        await redisClient.expire(queueKey, 86400); // 24-hour TTL queue limit
-      }
-
+      // Emit to receiver — simple fire-and-forget; reliable with persistent connections
+      io.to(receiverId.toString()).emit("newMessage", populatedMessage);
     } catch (socketError) {
-      console.warn("Socket.IO emission failed globally:", socketError.message);
+      console.warn("Socket.IO emission failed:", socketError.message);
     }
 
     systemEmitter.broadcast('message_sent', { messageId: populatedMessage._id, senderId });
