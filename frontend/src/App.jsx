@@ -157,19 +157,13 @@ const AppContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isAuthPage =
-    location.pathname === "/login" ||
-    location.pathname === "/signup" ||
-    location.pathname === "/forgot-password" ||
-    location.pathname === "/login/constellation" ||
-    location.pathname === "/signup/constellation" ||
-    location.pathname === "/login/facelock" ||
-    location.pathname === "/signup/facelock" ||
-    location.pathname === "/login/ambient" ||
-    location.pathname === "/login/starweave" ||
-    location.pathname === "/signup/starweave" ||
-    location.pathname === "/verify-email" ||
-    location.pathname === "/signup/ambient";
+  const isAuthPage = [
+    "/login", "/signup", "/forgot-password", "/verify-email",
+    "/login/constellation", "/signup/constellation",
+    "/login/facelock", "/signup/facelock",
+    "/login/ambient", "/signup/ambient",
+    "/login/starweave", "/signup/starweave"
+  ].some(path => location.pathname === path || location.pathname === path + "/");
 
   const isAdminRoute = location.pathname.startsWith("/admin");
 
@@ -564,7 +558,7 @@ const AppContent = () => {
           >
             {isAuthPage ? (
               <Suspense fallback={<OrbitLoader />}>
-                {authUser && !location.pathname.includes('starweave') ? (
+                {authUser && !isCheckingAuth && !location.pathname.includes('starweave') ? (
                   <Navigate to="/" />
                 ) : location.pathname === "/login/constellation" ? (
                   <OrbitAuth initialMode="login" />
