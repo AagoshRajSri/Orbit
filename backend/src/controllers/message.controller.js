@@ -2,6 +2,7 @@ import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getIO } from "../socket/socket.js";
+import { getRealId } from "../lib/obfuscation.js";
 
 import { systemEmitter } from "../lib/systemEmitter.js";
 import { z } from "zod";

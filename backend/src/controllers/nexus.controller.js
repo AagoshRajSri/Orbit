@@ -1,6 +1,7 @@
 import Nexus from "../models/nexus.model.js";
 import Message from "../models/message.model.js";
 import { getIO } from "../socket/socket.js";
+import { getRealId } from "../lib/obfuscation.js";
 import cloudinary from "../lib/cloudinary.js";
 import { systemEmitter } from "../lib/systemEmitter.js";
 import { z } from "zod";
