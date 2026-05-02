@@ -188,9 +188,11 @@ const io = new Server(httpServer, {
     },
     credentials: true,
   },
-  // Allow polling then upgrade — required for Render's proxy infrastructure
-  transports: ["polling", "websocket"],
-  allowUpgrades: true,
+  // Render free-tier does not support WS upgrades. Force polling-only.
+  transports: ["polling"],
+  allowUpgrades: false,
+  pingInterval: 25000,
+  pingTimeout: 60000,
 });
 
 async function initApp() {

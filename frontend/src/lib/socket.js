@@ -17,10 +17,13 @@ export const getSocket = () => {
       token: authState.socketToken,
     },
     withCredentials: true,
-    // polling first so Render can establish session before upgrading to WS
-    transports: ["polling", "websocket"],
-    reconnectionAttempts: 15,
-    reconnectionDelay: 1500,
+    // Render free-tier does not support WS upgrade from Socket.IO polling sessions.
+    // Polling-only is reliable and still delivers real-time events.
+    transports: ["polling"],
+    upgrade: false,
+    reconnectionAttempts: 20,
+    reconnectionDelay: 2000,
+    reconnectionDelayMax: 10000,
     timeout: 45000,
   });
 
