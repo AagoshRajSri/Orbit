@@ -7,8 +7,6 @@ let socket = null;
 let connectionState = "disconnected";
 let connectionError = null;
 
-import * as msgpackParser from "socket.io-msgpack-parser";
-
 export const getSocket = () => {
   if (socket) return socket;
 
@@ -18,14 +16,12 @@ export const getSocket = () => {
     auth: {
       token: authState.socketToken,
     },
-    // Auth token is passed via httpOnly cookie (withCredentials: true)
-    parser: msgpackParser,
     withCredentials: true,
-    // Start with websocket to avoid polling-to-websocket upgrade failures on Render
-    transports: ["websocket", "polling"],
-    reconnectionAttempts: 15, // High attempts to wake up sleeping free-tier servers
-    reconnectionDelay: 1000,
-    timeout: 45000, // 45s handshake timeout for heavy cold-starts
+    // polling first so Render can establish session before upgrading to WS
+    transports: ["polling", "websocket"],
+    reconnectionAttempts: 15,
+    reconnectionDelay: 1500,
+    timeout: 45000,
   });
 
   socket.on("connect", () => {
