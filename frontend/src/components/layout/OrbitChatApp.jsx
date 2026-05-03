@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
-import { useSoundManager } from "../hooks/useSoundManager";
+import { useSoundManager } from "../../hooks/useSoundManager";
 import {
   MessageSquare,
   Video,
@@ -23,9 +23,9 @@ import {
   Briefcase,
 } from "lucide-react";
 import "./OrbitChatApp.css";
-import { getSocket } from "../lib/socket";
-import GalaxyBackground from "./GalaxyBackground";
-import { useThemeStore } from "../store/useThemeStore";
+import { getSocket } from "../../lib/socket";
+import GalaxyBackground from "../effects/GalaxyBackground";
+import { useThemeStore } from "../../store/useThemeStore";
 
 const MOCK_USER = {
   id: "u1",

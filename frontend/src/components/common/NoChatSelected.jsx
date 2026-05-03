@@ -4,11 +4,11 @@ import {
   Disc, Pause, Play, SkipBack, SkipForward, Volume2, Gamepad2, Lock
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useSpotifyStore } from "../store/useSpotifyStore";
-import { spotifyService } from "../services/spotifyService";
+import { useSpotifyStore } from "../../store/useSpotifyStore";
+import { spotifyService } from "../../services/spotifyService";
 import React, { memo, useMemo, useState, useEffect, useRef } from "react";
 import { ThemeMainContainer, ThemeCardWrapper } from "./welcome/WelcomeWrappers";
-import { useThemeStore } from "../store/useThemeStore";
+import { useThemeStore } from "../../store/useThemeStore";
 import { TruePastelDashboard } from "./welcome/PastelDreamBoard";
 import { BusinessLightDashboard, GlowCurve, FloatingDust, ElegantSpotifyCard } from "./welcome/BusinessLightDashboard";
 import OrbitApp from "../../themes/amoledTheme";
@@ -16,7 +16,7 @@ import OrbitGrind from "../../themes/gamerTheme";
 import OrbitVampire from "../../themes/darkTheme";
 import OrbitNeonCyberpunk from "../../themes/darkCyberpunkTheme";
 import { createPortal } from "react-dom";
-import { useNexusStore } from "../store/useNexusStore";
+import { useNexusStore } from "../../store/useNexusStore";
 import NexusActionOverlay from "../nexus/NexusActionOverlay";
 
 const themeColorMap = {

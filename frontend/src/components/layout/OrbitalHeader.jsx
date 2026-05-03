@@ -1,8 +1,8 @@
 import { Settings, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useAuthStore } from "../store/useAuthStore";
-import { useSoundManager } from "../hooks/useSoundManager";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useSoundManager } from "../../hooks/useSoundManager";
 
 export default function OrbitalHeader() {
   const navigate = useNavigate();

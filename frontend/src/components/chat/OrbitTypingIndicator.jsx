@@ -4,7 +4,7 @@
 // =============================================================================
 import { memo } from "react";
 import { PixelAvatar } from "../avatar/PixelAvatar/PixelAvatar.jsx";
-import { useDevicePerformance } from "../hooks/useDevicePerformance";
+import { useDevicePerformance } from "../../hooks/useDevicePerformance";
 
 export const OrbitTypingIndicator = memo(function OrbitTypingIndicator({
   t,

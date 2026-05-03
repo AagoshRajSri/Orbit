@@ -1,7 +1,7 @@
 import { useEffect, useState, memo, useRef } from "react";
-import { useChatStore } from "../store/useChatStore";
-import { useAuthStore } from "../store/useAuthStore";
-import { useNexusStore } from "../store/useNexusStore";
+import { useChatStore } from "../../store/useChatStore";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useNexusStore } from "../../store/useNexusStore";
 import SidebarSkeleton from "../common/skeletons/SidebarSkeleton";
 import {
   Users,
@@ -14,11 +14,11 @@ import {
   Flower,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useSoundManager } from "../hooks/useSoundManager";
+import { useSoundManager } from "../../hooks/useSoundManager";
 import NexusActions from "../nexus/NexusActions";
-import toast from "../lib/toast";
+import toast from "../../lib/toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { useThemeStore } from "../store/useThemeStore";
+import { useThemeStore } from "../../store/useThemeStore";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 
 const AddContactAction = memo(({ users, contactList, addContact }) => {

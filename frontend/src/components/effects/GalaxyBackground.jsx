@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import gsap from "gsap";
 import "./GalaxyBackground.css";
-import { useThemeStore } from "../store/useThemeStore";
+import { useThemeStore } from "../../store/useThemeStore";
 
 export default function GalaxyBackground() {
   const canvasRef = useRef(null);

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useAnimationStore } from "../store/useAnimationStore";
+import { useAnimationStore } from "../../store/useAnimationStore";
 
 /**
  * AnimLayer is a wrapper component that conditionally renders animations

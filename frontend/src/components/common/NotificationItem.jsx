@@ -5,8 +5,8 @@
 
 import React, { useEffect, useState } from "react";
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
-import { useNotificationStore } from "../store/useNotificationStore";
-import { useThemeStore } from "../store/useThemeStore";
+import { useNotificationStore } from "../../store/useNotificationStore";
+import { useThemeStore } from "../../store/useThemeStore";
 
 const ICON_MAP = {
   success: CheckCircle,

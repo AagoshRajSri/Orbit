@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import { useNotificationStore } from "../store/useNotificationStore";
+import { useNotificationStore } from "../../store/useNotificationStore";
 import { NotificationItem } from "./NotificationItem";
 
 export const NotificationContainer = () => {

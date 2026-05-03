@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, Component } from "react";
 import { useNavigate } from "react-router-dom";
 import { THEMES, Ico, I, Toast, CallOverlay, VoiceBubble, ImgBubble, FileBubble, InfoPanel, Wave, MediaPanel } from "./ChatCoreUI";
-import { useNexusStore } from "../store/useNexusStore";
-import { useChatStore } from "../store/useChatStore";
-import { useAuthStore } from "../store/useAuthStore";
-import { useThemeStore } from "../store/useThemeStore";
-import { getSocket } from "../lib/socket";
-import { soundManager } from "../lib/SoundManager";
+import { useNexusStore } from "../../store/useNexusStore";
+import { useChatStore } from "../../store/useChatStore";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useThemeStore } from "../../store/useThemeStore";
+import { getSocket } from "../../lib/socket";
+import { soundManager } from "../../lib/SoundManager";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import { useAvatarState } from "../avatar/PixelAvatar/useAvatarState.js";
 import TelemeteryCapsule from "./TelemeteryCapsule.jsx";

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Plus, Hash, Wand2 } from "lucide-react";
-import { useNexusStore } from "../store/useNexusStore";
+import { useNexusStore } from "../../store/useNexusStore";
 import toast from "react-hot-toast";
-import { useSoundManager } from "../hooks/useSoundManager";
+import { useSoundManager } from "../../hooks/useSoundManager";
 
 const NexusActions = () => {
   const { play } = useSoundManager();

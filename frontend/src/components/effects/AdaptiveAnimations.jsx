@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import React, { useMemo } from "react";
-import { performanceDetector } from "../lib/performanceDetection";
+import { performanceDetector } from "../../lib/performanceDetection";
 
 /**
  * Adaptive Motion Component

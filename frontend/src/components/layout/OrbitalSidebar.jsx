@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import OrbitCard from "./OrbitCard";
+import OrbitCard from "../common/OrbitCard";
 
 export default function OrbitalSidebar() {
   const [activeTab, setActiveTab] = useState("orbits");

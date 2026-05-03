@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useSpotifyStore } from "../store/useSpotifyStore";
-import { spotifyService } from "../services/spotifyService";
+import { useSpotifyStore } from "../../store/useSpotifyStore";
+import { spotifyService } from "../../services/spotifyService";
 import {
   Users,
   Plus,

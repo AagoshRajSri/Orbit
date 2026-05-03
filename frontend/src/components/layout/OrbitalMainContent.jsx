@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import OrbitalSystem from "./OrbitalSystem";
-import RadarWidget from "./RadarWidget";
+import RadarWidget from "../common/RadarWidget";
 
 export default function OrbitalMainContent() {
   return (

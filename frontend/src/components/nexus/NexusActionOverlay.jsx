@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { X, Hash, Wand2, Sparkles, ArrowRight } from "lucide-react";
-import { useNexusStore } from "../store/useNexusStore";
-import { useThemeStore } from "../store/useThemeStore";
+import { useNexusStore } from "../../store/useNexusStore";
+import { useThemeStore } from "../../store/useThemeStore";
 import toast from "react-hot-toast";
-import { useSoundManager } from "../hooks/useSoundManager";
+import { useSoundManager } from "../../hooks/useSoundManager";
 
 export default function NexusActionOverlay({ mode, onClose, inline = false }) {
   const { play } = useSoundManager();

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, Loader2 } from "lucide-react";
-import { useSoundManager } from "../hooks/useSoundManager";
+import { useSoundManager } from "../../hooks/useSoundManager";
 
 const GIPHY_API_KEY = "zO14Dh7mYh9cbPGmEltqBVynZM99ZDuY";
 

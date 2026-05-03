@@ -1,5 +1,5 @@
 import React from "react";
-import { useAuthStore } from "../store/useAuthStore";
+import { useAuthStore } from "../../store/useAuthStore";
 import { Megaphone, X, Info, AlertTriangle, AlertOctagon } from "lucide-react";
 
 export default function GlobalAnnouncementBanner() {

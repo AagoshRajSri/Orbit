@@ -9,8 +9,8 @@
  * - Beat-reactive card scale illusion
  */
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSpotifyStore } from "../store/useSpotifyStore";
-import { useThemeStore } from "../store/useThemeStore";
+import { useSpotifyStore } from "../../store/useSpotifyStore";
+import { useThemeStore } from "../../store/useThemeStore";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Play, Pause, SkipForward, SkipBack, Music, Volume2, VolumeX } from "lucide-react";
 

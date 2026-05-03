@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import { useAuthStore } from "../store/useAuthStore";
+import { useAuthStore } from "../../store/useAuthStore";
 import { LogOut, Settings, User, Menu } from "lucide-react";
-import { useThemeStore } from "../store/useThemeStore";
-import Saturn from "./Saturn";
+import { useThemeStore } from "../../store/useThemeStore";
+import Saturn from "../effects/Saturn";
 
 
 const NavbarCat = () => (

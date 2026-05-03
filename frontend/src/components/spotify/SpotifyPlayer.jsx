@@ -25,9 +25,9 @@ import {
   Mic2,
   Maximize2
 } from "lucide-react";
-import { useSpotifyStore } from "../store/useSpotifyStore";
-import { spotifyService } from "../services/spotifyService";
-import { useThemeStore } from "../store/useThemeStore";
+import { useSpotifyStore } from "../../store/useSpotifyStore";
+import { spotifyService } from "../../services/spotifyService";
+import { useThemeStore } from "../../store/useThemeStore";
 import toast from "react-hot-toast";
 
 /**

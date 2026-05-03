@@ -1,5 +1,5 @@
 import React from "react";
-import { useAnimationStore } from "../store/useAnimationStore";
+import { useAnimationStore } from "../../store/useAnimationStore";
 
 export default function AnimationSettingsPanel({ isPastel = false }) {
   const { masterEnabled, preset, config, setMasterEnabled, setPreset, updateConfig } = useAnimationStore();

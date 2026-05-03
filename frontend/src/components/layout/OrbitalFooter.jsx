@@ -1,6 +1,6 @@
 import FooterVisualizer from "./FooterVisualizer";
-import { useThemeStore } from "../store/useThemeStore";
-import Saturn from "./Saturn";
+import { useThemeStore } from "../../store/useThemeStore";
+import Saturn from "../effects/Saturn";
 
 export default function OrbitalFooter() {
   const { theme } = useThemeStore();

@@ -1,5 +1,5 @@
 import { useEffect, useState, memo } from "react";
-import { useThemeStore } from "../store/useThemeStore";
+import { useThemeStore } from "../../store/useThemeStore";
 import EnhancedAnimalEasterEggs from "../common/welcome/EnhancedAnimalEasterEggs";
 
 /* =========================================================================

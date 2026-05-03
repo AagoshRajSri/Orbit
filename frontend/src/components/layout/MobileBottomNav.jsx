@@ -1,8 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
-import { useAuthStore } from "../store/useAuthStore";
-import { useThemeStore } from "../store/useThemeStore";
-import { useChatStore } from "../store/useChatStore";
-import { useNexusStore } from "../store/useNexusStore";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useThemeStore } from "../../store/useThemeStore";
+import { useChatStore } from "../../store/useChatStore";
+import { useNexusStore } from "../../store/useNexusStore";
 import { MessageSquare, Hash, User, Settings, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
