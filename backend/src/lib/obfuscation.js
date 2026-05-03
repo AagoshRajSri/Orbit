@@ -73,6 +73,10 @@ export const sanitizeForOrbit = (obj) => {
     return obj.map(item => sanitizeForOrbit(item));
   }
   
+  if (obj instanceof Date) {
+    return obj;
+  }
+
   if (obj !== null && typeof obj === 'object') {
     // If it's a Mongoose document, convert to object first
     const newObj = obj.toObject ? obj.toObject() : { ...obj };

@@ -143,8 +143,9 @@ const DynamicRouteHandler = (props) => {
     // If we have a nexusId in the URL, ensure it's selected in the store
     if (nid && nexuses.length > 0) {
       const currentId = normalizeId(selectedNexus);
-      if (currentId !== nid) {
-        const target = nexuses.find(n => normalizeId(n._id || n.id) === nid);
+      // Check if current selection doesn't match URL
+      if (currentId !== nid && selectedNexus?.id !== nid) {
+        const target = nexuses.find(n => n._id?.toString() === nid || n.id?.toString() === nid);
         if (target) {
           console.log(`[Router] Syncing nexus state: ${nid}`);
           setSelectedNexus(target);
@@ -154,9 +155,10 @@ const DynamicRouteHandler = (props) => {
     // If we have a userId in the URL, ensure it's selected in the store
     else if (uid) {
       const currentId = normalizeId(selectedUser);
-      if (currentId !== uid) {
+      // Check if current selection doesn't match URL
+      if (currentId !== uid && selectedUser?.id !== uid) {
         // Try to find the full user object in the loaded users array
-        const target = users.find(u => normalizeId(u._id || u.id) === uid);
+        const target = users.find(u => u._id?.toString() === uid || u.id?.toString() === uid);
         if (target) {
           // Full user object found — set normally
           setSelectedUser(target);

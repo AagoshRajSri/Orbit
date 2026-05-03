@@ -292,36 +292,26 @@ export const useChatStore = create((set, get) => ({
     const [decryptedMsg] = await decryptMessagesList([message]);
     
     set((state) => {
-      const normalizeId = (obj) => {
-        if (!obj) return null;
-        if (typeof obj === 'string') return obj;
-        // Always prefer the real _id for internal state matching if available
-        return (obj._id || obj.id || obj).toString();
-      };
-      
       const currentSelectedId = state.selectedConversationId 
-        ? normalizeId(state.selectedConversationId) 
-        : (state.selectedUser ? normalizeId(state.selectedUser) : null);
+        || (state.selectedUser ? (state.selectedUser._id || state.selectedUser.id) : null);
         
-      const senderId = normalizeId(decryptedMsg.senderId);
-      const receiverId = normalizeId(decryptedMsg.receiverId);
-      
-      // Robust matching helper to handle real vs obfuscated IDs
-      const isMatch = (idA, idB) => {
-        if (!idA || !idB) return false;
-        const a = idA.toString();
-        const b = idB.toString();
-        if (a === b) return true;
-        
-        // Try to match via users list if one is obfuscated and other is real
-        // state.users contains objects with both _id and id
-        return state.users.some(u => 
-          (u._id?.toString() === a || u.id?.toString() === a) &&
-          (u._id?.toString() === b || u.id?.toString() === b)
-        );
+      // Robust matching helper: checks if a string ID matches either _id or id of an object
+      const isMatchObj = (targetId, userObj) => {
+         if (!targetId || !userObj) return false;
+         const tId = targetId.toString();
+         if (typeof userObj === 'string') return userObj.toString() === tId;
+         if (userObj._id?.toString() === tId) return true;
+         if (userObj.id?.toString() === tId) return true;
+         
+         // Fallback to users list if both are somehow just strings
+         return state.users.some(u => 
+           (u._id?.toString() === tId || u.id?.toString() === tId) &&
+           (u._id?.toString() === userObj.toString() || u.id?.toString() === userObj.toString())
+         );
       };
 
-      const belongsToCurrentChat = currentSelectedId && (isMatch(currentSelectedId, senderId) || isMatch(currentSelectedId, receiverId));
+      const belongsToCurrentChat = currentSelectedId && 
+        (isMatchObj(currentSelectedId, decryptedMsg.senderId) || isMatchObj(currentSelectedId, decryptedMsg.receiverId));
       
       let newMessages = [...state.messages];
       const users = [...state.users];
@@ -360,15 +350,14 @@ export const useChatStore = create((set, get) => ({
 
       // Update the user list (for last message preview / unread dot)
       const updatedUsers = users.map((user) => {
-          const uId = normalizeId(user._id);
-          if (uId === senderId) {
+          if (isMatchObj(user._id || user.id, decryptedMsg.senderId)) {
               return {
                  ...user,
                  lastMessage: message.text || "Shared an image",
                  unreadCount: !belongsToCurrentChat ? (user.unreadCount || 0) + 1 : 0
               };
           }
-          if (uId === receiverId) {
+          if (isMatchObj(user._id || user.id, decryptedMsg.receiverId)) {
              return { ...user, lastMessage: "You sent a message" };
           }
           return user;

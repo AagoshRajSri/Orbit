@@ -486,15 +486,8 @@ export const useNexusStore = create((set, get) => ({
     set((state) => {
       const { selectedNexusId, nexusMessages, nexusUnread } = state;
       
-      const normalizeId = (obj) => {
-        if (!obj) return null;
-        if (typeof obj === 'string') return obj;
-        // Always prefer the real _id for internal state matching if available
-        return (obj._id || obj.id || obj).toString();
-      };
-
-      const msgNexusId = normalizeId(message.nexusId);
-      const selNexusId = normalizeId(selectedNexusId);
+      const msgNexusId = message.nexusId;
+      const selNexusId = selectedNexusId;
 
       // Robust matching helper for Nexus IDs
       const isNexusMatch = (idA, idB) => {
