@@ -292,75 +292,78 @@ export const useChatStore = create((set, get) => ({
     const [decryptedMsg] = await decryptMessagesList([message]);
     
     set((state) => {
-      const currentSelectedId = state.selectedConversationId 
-        || (state.selectedUser ? (state.selectedUser._id || state.selectedUser.id) : null);
-        
-      // Robust matching helper: checks if a string ID matches either _id or id of an object
-      const isMatchObj = (targetId, userObj) => {
-         if (!targetId || !userObj) return false;
-         const tId = targetId.toString();
-         if (typeof userObj === 'string') return userObj.toString() === tId;
-         if (userObj._id?.toString() === tId) return true;
-         if (userObj.id?.toString() === tId) return true;
-         
-         // Fallback to users list if both are somehow just strings
-         return state.users.some(u => 
-           (u._id?.toString() === tId || u.id?.toString() === tId) &&
-           (u._id?.toString() === userObj.toString() || u.id?.toString() === userObj.toString())
-         );
+      // Utility: extract a plain string ID from a string or object
+      const normalizeId = (obj) => {
+        if (!obj) return null;
+        if (typeof obj === 'string') return obj;
+        return (obj._id || obj.id || '').toString() || null;
       };
 
-      const belongsToCurrentChat = currentSelectedId && 
-        (isMatchObj(currentSelectedId, decryptedMsg.senderId) || isMatchObj(currentSelectedId, decryptedMsg.receiverId));
-      
+      // Utility: check if a string ID (targetId) matches the _id or id of a user object
+      const isMatchObj = (targetId, userObj) => {
+        if (!targetId || !userObj) return false;
+        const tId = targetId.toString();
+        if (typeof userObj === 'string') return userObj === tId;
+        if (userObj._id?.toString() === tId) return true;
+        if (userObj.id?.toString() === tId) return true;
+        // Fallback: resolve through users list when formats differ
+        return state.users.some(u =>
+          (u._id?.toString() === tId || u.id?.toString() === tId) &&
+          (u._id?.toString() === normalizeId(userObj) || u.id?.toString() === normalizeId(userObj))
+        );
+      };
+
+      const currentSelectedId = state.selectedConversationId
+        || normalizeId(state.selectedUser);
+
+      const belongsToCurrentChat = !!currentSelectedId && (
+        isMatchObj(currentSelectedId, decryptedMsg.senderId) ||
+        isMatchObj(currentSelectedId, decryptedMsg.receiverId)
+      );
+
       let newMessages = [...state.messages];
       const users = [...state.users];
-      
+
       if (belongsToCurrentChat) {
-          const messageId = normalizeId(decryptedMsg);
-          const idempotencyKey = decryptedMsg.idempotencyKey;
-          
-          const existsIndex = newMessages.findIndex((m) => {
-             const mId = normalizeId(m);
-             if (mId && messageId && mId === messageId) return true;
-             if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
-             return false;
-          });
-          
-          if (existsIndex === -1) {
-              newMessages.push(decryptedMsg);
-          } else {
-              // Preserve the real _id from server response and merge other fields
-              const existingMsg = newMessages[existsIndex];
-              newMessages[existsIndex] = {
-                ...decryptedMsg,
-                // Prioritize real _id from server, fallback to existing if server didn't provide one
-                _id: decryptedMsg._id || existingMsg._id,
-                status: "sent"
-              };
-          }
-          
-          // Improved sorting: newest at bottom, handle missing timestamps gracefully
-          newMessages.sort((a, b) => {
-            const timeA = new Date(a.createdAt || Date.now()).getTime();
-            const timeB = new Date(b.createdAt || Date.now()).getTime();
-            return timeA - timeB;
-          });
+        const messageId = normalizeId(decryptedMsg);
+        const idempotencyKey = decryptedMsg.idempotencyKey;
+
+        const existsIndex = newMessages.findIndex((m) => {
+          const mId = normalizeId(m);
+          if (mId && messageId && mId === messageId) return true;
+          if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
+          return false;
+        });
+
+        if (existsIndex === -1) {
+          newMessages.push(decryptedMsg);
+        } else {
+          const existingMsg = newMessages[existsIndex];
+          newMessages[existsIndex] = {
+            ...decryptedMsg,
+            _id: decryptedMsg._id || existingMsg._id,
+            status: "sent",
+          };
+        }
+
+        newMessages.sort((a, b) =>
+          new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+        );
       }
 
-      // Update the user list (for last message preview / unread dot)
+      // Update sidebar preview / unread badge
       const updatedUsers = users.map((user) => {
-          if (isMatchObj(user._id || user.id, decryptedMsg.senderId)) {
-              return {
-                 ...user,
-                 lastMessage: message.text || "Shared an image",
-                 unreadCount: !belongsToCurrentChat ? (user.unreadCount || 0) + 1 : 0
-              };
-          }
-          if (isMatchObj(user._id || user.id, decryptedMsg.receiverId)) {
-             return { ...user, lastMessage: "You sent a message" };
-          }
-          return user;
+        if (isMatchObj(user._id || user.id, decryptedMsg.senderId)) {
+          return {
+            ...user,
+            lastMessage: message.text || "Shared an image",
+            unreadCount: !belongsToCurrentChat ? (user.unreadCount || 0) + 1 : 0,
+          };
+        }
+        if (isMatchObj(user._id || user.id, decryptedMsg.receiverId)) {
+          return { ...user, lastMessage: "You sent a message" };
+        }
+        return user;
       });
 
       return { messages: newMessages, users: updatedUsers };

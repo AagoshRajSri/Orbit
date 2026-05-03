@@ -485,61 +485,64 @@ export const useNexusStore = create((set, get) => ({
   addNexusMessage: (message) => {
     set((state) => {
       const { selectedNexusId, nexusMessages, nexusUnread } = state;
-      
+
+      // Utility: extract a plain string ID from a string or object
+      const normalizeId = (obj) => {
+        if (!obj) return null;
+        if (typeof obj === 'string') return obj;
+        return (obj._id || obj.id || '').toString() || null;
+      };
+
       const msgNexusId = message.nexusId;
       const selNexusId = selectedNexusId;
 
-      // Robust matching helper for Nexus IDs
+      // Robust matching helper for Nexus IDs — handles obfuscated vs raw IDs
       const isNexusMatch = (idA, idB) => {
         if (!idA || !idB) return false;
         const a = idA.toString();
         const b = idB.toString();
         if (a === b) return true;
-        
+
         const nexuses = get().nexuses;
-        return nexuses.some(n => 
+        return nexuses.some(n =>
           (n._id?.toString() === a || n.id?.toString() === a) &&
           (n._id?.toString() === b || n.id?.toString() === b)
         );
       };
 
-      const belongsToCurrentNexus = selNexusId && isNexusMatch(msgNexusId, selNexusId);
+      const belongsToCurrentNexus = !!selNexusId && isNexusMatch(msgNexusId, selNexusId);
 
       if (belongsToCurrentNexus) {
         const messageId = normalizeId(message._id);
         const idempotencyKey = message.idempotencyKey;
-        
+
         let newMessages = [...nexusMessages];
 
         const existsIndex = newMessages.findIndex((m) => {
-           const mId = normalizeId(m._id);
-           if (mId && messageId && mId === messageId) return true;
-           if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
-           return false;
+          const mId = normalizeId(m._id);
+          if (mId && messageId && mId === messageId) return true;
+          if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
+          return false;
         });
 
         if (existsIndex === -1) {
-            newMessages.push(message);
+          newMessages.push(message);
         } else {
-            // Preserve real _id from server response and merge other fields
-            const existingMsg = newMessages[existsIndex];
-            newMessages[existsIndex] = {
-              ...message,
-              _id: existingMsg._id || message._id,
-              status: "sent"
-            };
+          const existingMsg = newMessages[existsIndex];
+          newMessages[existsIndex] = {
+            ...message,
+            _id: existingMsg._id || message._id,
+            status: "sent",
+          };
         }
 
-        // Sort messages chronologically
-        newMessages.sort((a, b) => {
-           const timeA = new Date(a.createdAt || Date.now()).getTime();
-           const timeB = new Date(b.createdAt || Date.now()).getTime();
-           return timeA - timeB;
-        });
-        
+        newMessages.sort((a, b) =>
+          new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+        );
+
         return { nexusMessages: newMessages };
       } else {
-        // Increment unread count if we're not currently looking at this Nexus
+        // Increment unread count if user isn't currently in this nexus
         const currentCount = nexusUnread[msgNexusId] || 0;
         return {
           nexusUnread: {
