@@ -2,6 +2,8 @@ import Navbar from "./components/layout/Navbar";
 import { Routes, Route, Navigate, useLocation, useParams, useNavigate } from "react-router-dom";
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import toast from "./lib/toast";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 const HomePage = lazy(() => import("./pages/HomePage"));
 import SignUpPage from "./pages/SignUpPage";
