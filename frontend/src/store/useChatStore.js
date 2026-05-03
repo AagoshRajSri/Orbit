@@ -326,11 +326,12 @@ export const useChatStore = create((set, get) => ({
           if (existsIndex === -1) {
               newMessages.push(decryptedMsg);
           } else {
-              // Preserve the local 'out' flag and other UI states
-              newMessages[existsIndex] = { 
-                ...newMessages[existsIndex], 
-                ...decryptedMsg, 
-                status: "sent" 
+              // Preserve the real _id from server response and merge other fields
+              const existingMsg = newMessages[existsIndex];
+              newMessages[existsIndex] = {
+                ...decryptedMsg,
+                _id: existingMsg._id || decryptedMsg._id,
+                status: "sent"
               };
           }
           

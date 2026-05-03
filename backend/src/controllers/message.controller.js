@@ -141,9 +141,12 @@ export const sendMessage = async (req, res) => {
         // Re-emit for reliability: ensure receiver gets it even if first emit failed
         try {
           const io = getIO();
-          io.to(senderId.toString()).emit("newMessage", existing);
-          io.to(realReceiverId.toString()).emit("newMessage", existing);
-        } catch (e) {}
+          const sanitizedExisting = sanitizeForOrbit(existing);
+          io.to(senderId.toString()).emit("newMessage", sanitizedExisting);
+          io.to(realReceiverId.toString()).emit("newMessage", sanitizedExisting);
+        } catch (e) {
+          console.warn("Socket.IO replay emission failed:", e.message);
+        }
         return res.status(200).json(existing);
       }
     }
@@ -244,8 +247,6 @@ export const deleteMessage = async (req, res) => {
     if (message.senderId.toString() !== userId.toString()) {
       return res.status(403).json({ success: false, error: { code: "FORBIDDEN", message: "Unauthorized" } });
     }
-
-    const receiverId = message.receiverId || message.nexusId;
 
     // Delete image from Cloudinary if it exists
     if (message.image) {

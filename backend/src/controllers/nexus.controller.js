@@ -527,7 +527,7 @@ export const sendNexusMessage = async (req, res) => {
         username: req.user.username,
         profilePic: req.user.profilePic,
       },
-      nexusId: nexusId.toString(),
+      nexusId: realNexusId.toString(),
       createdAt: newMessage.createdAt.toISOString(),
       updatedAt: newMessage.updatedAt.toISOString(),
     };

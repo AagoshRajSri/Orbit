@@ -36,7 +36,6 @@ const AUTH_ENDPOINTS = [
   "/auth/refresh",
   "/auth/login",
   "/auth/signup",
-  "/auth/check",
   "/auth/logout",
   "/starweave/login",
   "/starweave/enroll"

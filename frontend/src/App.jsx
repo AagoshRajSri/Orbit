@@ -323,35 +323,34 @@ const AppContent = () => {
       let nexusMessageBuffer = [];
       let flusherTimeout = null;
 
-      const flushBuffers = () => {
-        // Process direct messages
+      const flushBuffers = async () => {
+        // Process direct messages sequentially to maintain order
         if (messageBuffer.length > 0) {
           const msgs = [...messageBuffer];
           messageBuffer = [];
-          // Use the store's setState directly to ensure reactivity
           const chatStore = useChatStore.getState();
-          msgs.forEach(i => {
+          for (const i of msgs) {
             try {
-              chatStore.addMessage(i.msg);
+              await chatStore.addMessage(i.msg);
               if (i.ack) i.ack();
             } catch (err) {
               console.error("Error processing message buffer:", err);
             }
-          });
+          }
         }
-        // Process nexus messages
+        // Process nexus messages sequentially to maintain order
         if (nexusMessageBuffer.length > 0) {
           const msgs = [...nexusMessageBuffer];
           nexusMessageBuffer = [];
           const nexusStore = useNexusStore.getState();
-          msgs.forEach(i => {
+          for (const i of msgs) {
             try {
-              nexusStore.addNexusMessage(i.msg);
+              await nexusStore.addNexusMessage(i.msg);
               if (i.ack) i.ack();
             } catch (err) {
               console.error("Error processing nexus message buffer:", err);
             }
-          });
+          }
         }
         flusherTimeout = null;
       };

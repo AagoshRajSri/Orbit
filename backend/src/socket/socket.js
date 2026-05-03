@@ -156,8 +156,16 @@ export const initializeSocketIO = (io) => {
           try {
             const msg = JSON.parse(queuedMessageStr);
             socket.emit("newMessage", msg);
+            // Note: In production, consider implementing ack-based delivery
+            // to re-queue messages that fail to deliver
           } catch (e) {
             console.error("Failed to parse queued message", e);
+            // Re-queue the message if parsing fails
+            try {
+              await redisClient.lpush(queueKey, queuedMessageStr);
+            } catch (requeueErr) {
+              console.error("Failed to re-queue message:", requeueErr);
+            }
           }
           queuedMessageStr = await redisClient.rpop(queueKey);
         }
