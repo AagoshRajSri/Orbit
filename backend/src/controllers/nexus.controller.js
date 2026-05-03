@@ -535,8 +535,7 @@ export const sendNexusMessage = async (req, res) => {
     // Emit to all nexus members using the REAL room ID
     try {
       const io = getIO();
-      const sanitizedMessage = sanitizeForOrbit(populatedMessage);
-      io.to(realNexusId.toString()).emit("newNexusMessage", sanitizedMessage);
+      io.to(realNexusId.toString()).emit("newNexusMessage", populatedMessage);
     } catch (socketError) {
       console.warn("Nexus socket emission failed:", socketError.message);
     }

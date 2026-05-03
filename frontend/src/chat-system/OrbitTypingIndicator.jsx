@@ -4,6 +4,7 @@
 // =============================================================================
 import { memo } from "react";
 import { PixelAvatar } from "../components/PixelAvatar/PixelAvatar.jsx";
+import { useDevicePerformance } from "../hooks/useDevicePerformance";
 
 export const OrbitTypingIndicator = memo(function OrbitTypingIndicator({
   t,
@@ -11,6 +12,7 @@ export const OrbitTypingIndicator = memo(function OrbitTypingIndicator({
   peerAvatarState,
   typingUsers, // array of usernames for nexus; or just truthy for DM
 }) {
+  const { isLowEnd } = useDevicePerformance();
   const isCyber  = t.id === "cyberpunk" || t.id === "gamer";
   const isPastel = t.id === "pastel";
   const label = Array.isArray(typingUsers) && typingUsers.length > 0
@@ -20,11 +22,11 @@ export const OrbitTypingIndicator = memo(function OrbitTypingIndicator({
   return (
     <div style={{
       display: "flex", alignItems: "flex-end", gap: 8,
-      animation: "fadeUpMsg 0.3s ease",
+      animation: isLowEnd ? "none" : "fadeUpMsg 0.3s ease",
     }}>
       <PixelAvatar
         type={peerAnimal || "dog"}
-        state={peerAvatarState || "typing"}
+        state={isLowEnd ? "idle" : (peerAvatarState || "typing")}
         size={28}
         style={{
           imageRendering: "pixelated",
@@ -49,8 +51,9 @@ export const OrbitTypingIndicator = memo(function OrbitTypingIndicator({
                 width: 7, height: 7,
                 background: t["--acc"],
                 borderRadius: 0,
-                animation: `cyberBlink 1.4s infinite`,
+                animation: isLowEnd ? "none" : `cyberBlink 1.4s infinite`,
                 animationDelay: `${i * 0.2}s`,
+                opacity: isLowEnd ? 0.7 : 1,
               }} />
             ))
           ) : (
@@ -59,8 +62,9 @@ export const OrbitTypingIndicator = memo(function OrbitTypingIndicator({
                 width: 7, height: 7,
                 background: t["--acc"],
                 borderRadius: "50%",
-                animation: isPastel ? `pastelDot 1.4s infinite` : `typingBounce 1.4s infinite`,
+                animation: isLowEnd ? "none" : (isPastel ? `pastelDot 1.4s infinite` : `typingBounce 1.4s infinite`),
                 animationDelay: `${i * 0.2}s`,
+                opacity: isLowEnd ? 0.7 : 1,
               }} />
             ))
           )}

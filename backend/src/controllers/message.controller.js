@@ -141,9 +141,8 @@ export const sendMessage = async (req, res) => {
         // Re-emit for reliability: ensure receiver gets it even if first emit failed
         try {
           const io = getIO();
-          const sanitizedExisting = sanitizeForOrbit(existing);
-          io.to(senderId.toString()).emit("newMessage", sanitizedExisting);
-          io.to(realReceiverId.toString()).emit("newMessage", sanitizedExisting);
+          io.to(senderId.toString()).emit("newMessage", existing);
+          io.to(realReceiverId.toString()).emit("newMessage", existing);
         } catch (e) {
           console.warn("Socket.IO replay emission failed:", e.message);
         }
@@ -213,11 +212,10 @@ export const sendMessage = async (req, res) => {
     // Emit socket event for real-time messaging
     try {
       const io = getIO();
-      const sanitizedMessage = sanitizeForOrbit(populatedMessage);
       // Emit to sender using their real ID (which is their room name)
-      io.to(senderId.toString()).emit("newMessage", sanitizedMessage);
+      io.to(senderId.toString()).emit("newMessage", populatedMessage);
       // Emit to receiver using their real ID
-      io.to(realReceiverId.toString()).emit("newMessage", sanitizedMessage);
+      io.to(realReceiverId.toString()).emit("newMessage", populatedMessage);
     } catch (socketError) {
       console.warn("Socket.IO emission failed:", socketError.message);
     }

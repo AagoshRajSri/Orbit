@@ -33,6 +33,7 @@ const AdminBroadcast = lazy(() => import("./pages/admin/AdminBroadcast"));
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatStore } from "./store/useChatStore";
 import { useNexusStore } from "./store/useNexusStore";
+import { useDevicePerformance } from "./hooks/useDevicePerformance";
 import { useSpotifyStore } from "./store/useSpotifyStore";
 import { getSocket, disconnectSocket } from "./lib/socket";
 import ChatLoader from "./components/ChatLoader";
@@ -156,7 +157,6 @@ const DynamicRouteHandler = (props) => {
       if (currentId !== uid) {
         const target = users.find(u => normalizeId(u._id || u.id) === uid);
         if (target) {
-          console.log(`[Router] Syncing user state: ${uid}`);
           setSelectedUser(target);
         }
       }
@@ -226,6 +226,9 @@ const AppContent = () => {
     performanceDetector.detect();
     useAuthStore.getState().fetchAppConfig();
   }, []);
+
+  // Initialize and apply global device performance classes
+  useDevicePerformance();
 
   const requestFinishPostAuthLoader = useCallback(() => {
     if (!postAuthDataReadyRef.current || !postAuthAnimationReadyRef.current)
@@ -363,7 +366,6 @@ const AppContent = () => {
       };
 
       socket.on("connect", () => {
-        console.log("Socket connected - syncing data");
         syncConversationData();
       });
 
@@ -376,7 +378,7 @@ const AppContent = () => {
         if (authUser && senderIdStr !== authUser._id) {
           soundManager.play("incomingmsg");
         }
-        console.log('[Socket] newMessage received:', { 
+        console.log('[Socket] newMessage received details:', { 
           messageId: message._id, 
           senderId: senderIdStr, 
           receiverId: message.receiverId,

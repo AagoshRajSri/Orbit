@@ -3048,3 +3048,76 @@ button, [role="button"] {
   letter-spacing: 0.08em;
 }
 
+/* ==========================================================================
+   PERFORMANCE MODE (LOW-END DEVICE OVERRIDES)
+   ========================================================================== */
+.perf-low * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.perf-low .nxc-shell::before,
+.perf-low .nxc-shell::after,
+.perf-low .nxc-orb-1,
+.perf-low .nxc-orb-2,
+.perf-low .nxc-orb-3,
+.perf-low .nxc-messages-bg {
+  display: none !important;
+  animation: none !important;
+}
+
+.perf-low .nxc-header::after,
+.perf-low .nxc-header::before,
+.perf-low .nxi-shell::before,
+.perf-low .nxi-shell::after {
+  animation: none !important;
+  display: none !important;
+}
+
+.perf-low .msg-bubble-mine,
+.perf-low .msg-bubble-other,
+.perf-low .nxc-header,
+.perf-low .nxi-shell,
+.perf-low .nxp-panel {
+  box-shadow: none !important;
+}
+
+.perf-low[data-theme="pastel-dream"] .nxc-header,
+.perf-low[data-theme="pastel-dream"] .nxi-shell,
+.perf-low[data-theme="pastel-dream"] .nxp-panel {
+  background: #ffffff !important;
+}
+
+.perf-low[data-theme="light"] .nxc-header,
+.perf-low[data-theme="light"] .nxi-shell,
+.perf-low[data-theme="light"] .nxp-panel {
+  background: #fcfaf4 !important;
+}
+
+.perf-low[data-theme="amoled-dark"] .nxc-header,
+.perf-low[data-theme="amoled-dark"] .nxi-shell,
+.perf-low[data-theme="amoled-dark"] .nxp-panel {
+  background: #030405 !important;
+}
+
+.perf-low[data-theme="dark"] .nxc-header,
+.perf-low[data-theme="dark"] .nxi-shell,
+.perf-low[data-theme="dark"] .nxp-panel {
+  background: #081216 !important;
+}
+
+.perf-low[data-theme="gamer-high-energy"] .nxc-header,
+.perf-low[data-theme="gamer-high-energy"] .nxi-shell,
+.perf-low[data-theme="gamer-high-energy"] .nxp-panel {
+  background: #030812 !important;
+}
+
+.perf-low[data-theme="neon-cyberpunk"] .nxc-header,
+.perf-low[data-theme="neon-cyberpunk"] .nxi-shell,
+.perf-low[data-theme="neon-cyberpunk"] .nxp-panel {
+  background: #040510 !important;
+}
+
+.perf-low * {
+  transition-duration: 0.1s !important;
+}

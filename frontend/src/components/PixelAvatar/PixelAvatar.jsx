@@ -19,6 +19,7 @@
 import React, { useRef, useEffect, useCallback, memo } from 'react';
 import { getFrame }    from './animation.js';
 import { renderFrame } from './renderer.js';
+import { useDevicePerformance } from '../../hooks/useDevicePerformance';
 
 const PixelAvatar = memo(function PixelAvatar({
   type      = 'dog',
@@ -33,6 +34,8 @@ const PixelAvatar = memo(function PixelAvatar({
   const canvasRef = useRef(null);
   const rafRef    = useRef(null);
   const startRef  = useRef(performance.now());
+  const lastDrawRef = useRef(0);
+  const { isLowEnd } = useDevicePerformance();
 
   // ── Stable refs so the rAF loop never needs to restart ───────────────────
   const typeRef  = useRef(type);
@@ -54,12 +57,17 @@ const PixelAvatar = memo(function PixelAvatar({
   const loop = useCallback(() => {
     const cv = canvasRef.current;
     if (cv) {
-      const elapsed = (performance.now() - startRef.current) * speedRef.current;
-      const { rows, overlays } = getFrame(typeRef.current, stateRef.current, elapsed);
-      renderFrame(cv, rows, overlays);
+      const now = performance.now();
+      // Throttle to ~10fps on low-end devices to save CPU/battery
+      if (!isLowEnd || (now - lastDrawRef.current > 100)) {
+        const elapsed = (now - startRef.current) * speedRef.current;
+        const { rows, overlays } = getFrame(typeRef.current, stateRef.current, elapsed);
+        renderFrame(cv, rows, overlays);
+        lastDrawRef.current = now;
+      }
     }
     rafRef.current = requestAnimationFrame(loop);
-  }, []); // intentionally empty — all reads through stable refs
+  }, [isLowEnd]); // Re-bind if performance mode changes
 
   useEffect(() => {
     rafRef.current = requestAnimationFrame(loop);
