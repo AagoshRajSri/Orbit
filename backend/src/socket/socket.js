@@ -3,7 +3,9 @@ import User from "../models/user.model.js";
 import { z } from "zod";
 import { redisClient, isRedisAvailable } from "../lib/redis.js";
 import securityService from "../services/security.service.js";
-import { getRealId } from "../lib/obfuscation.js";
+import { getRealId, sanitizeForOrbit } from "../lib/obfuscation.js";
+import Message from "../models/message.model.js";
+import Nexus from "../models/nexus.model.js";
 
 // In-memory fallback for when Redis is unavailable (single-node dev)
 const memOnlineUsers = new Set();
@@ -301,28 +303,56 @@ export const initializeSocketIO = (io) => {
         }
         const { messageId, conversationId, conversationType } = parsed.data;
         const realConversationId = getRealId(conversationId);
+        const myUserId = socket.userId;
 
-        const Message = (await import("../models/message.model.js")).default;
-        await Message.findByIdAndUpdate(messageId, { seenAt: new Date() });
+        // Security: Find the message and verify participation
+        const message = await Message.findById(messageId);
+        if (!message) return;
+
+        // Check if user is recipient or nexus member
+        if (conversationType === "direct") {
+          const isParticipant = 
+            message.senderId.toString() === myUserId || 
+            message.receiverId.toString() === myUserId;
+          if (!isParticipant) return;
+
+          // Bulk update all messages in this conversation UP TO this messageId that were sent to me
+          await Message.updateMany(
+            { 
+              _id: { $lte: messageId }, 
+              receiverId: myUserId, 
+              senderId: message.senderId,
+              seenAt: null 
+            }, 
+            { seenAt: new Date() }
+          );
+        } else {
+          // Verify nexus membership
+          const nexus = await Nexus.findById(realConversationId);
+          if (!nexus || !nexus.members.includes(myUserId)) return;
+          
+          // For Nexus, we just update this specific message for now 
+          // (full membership seen tracking requires a model change)
+          await Message.findByIdAndUpdate(messageId, { seenAt: new Date() });
+        }
 
         if (conversationType === "direct") {
           io.to(realConversationId.toString()).emit("messageSeen", { 
             messageId, 
-            seenBy: socket.userId, 
+            seenBy: myUserId, 
             seenAt: new Date().toISOString() 
           });
         } else {
-          // Nexus room targeting - already joined via joinUserNexuses or joinNexusRoom
           io.to(realConversationId.toString()).emit("nexusMessageSeen", { 
             messageId, 
             nexusId: conversationId, 
-            seenBy: socket.userId, 
+            seenBy: myUserId, 
             username: socket.user?.username, 
             seenAt: new Date().toISOString() 
           });
         }
         
-        console.info(`[Socket Seen] Message ${messageId} marked seen in ${conversationType} ${conversationId}`);
+        console.info(`[Socket Seen] Message ${messageId} marked seen by ${myUserId}`);
       } catch (e) {
         console.error("[Socket Seen] Error:", e.message);
       }

@@ -50,6 +50,7 @@ const messageSchema = new mongoose.Schema(
       type: String,
       sparse: true,
       index: true,
+      unique: true,
     },
     deliveredAt: {
       type: Date,

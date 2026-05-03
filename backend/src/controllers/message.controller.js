@@ -201,7 +201,7 @@ export const sendMessage = async (req, res) => {
         profilePic: req.user.profilePic,
       },
       receiverId: {
-        _id: receiverId.toString(),
+        _id: realReceiverId.toString(), // Use the real ID here; sanitizeForOrbit will obfuscate it once
       },
       createdAt: newMessage.createdAt.toISOString(),
       updatedAt: newMessage.updatedAt.toISOString()
@@ -246,16 +246,39 @@ export const deleteMessage = async (req, res) => {
     }
 
     const receiverId = message.receiverId || message.nexusId;
+
+    // Delete image from Cloudinary if it exists
+    if (message.image) {
+      try {
+        // Extract public_id from secure_url
+        // URL format: .../upload/v12345/orbit_chats/abcde.jpg
+        const parts = message.image.split("/");
+        const folderIndex = parts.indexOf("orbit_chats");
+        if (folderIndex !== -1) {
+          const publicIdWithExt = parts.slice(folderIndex).join("/");
+          const publicId = publicIdWithExt.split(".")[0];
+          await cloudinary.uploader.destroy(publicId);
+          console.info(`[Cloudinary] Deleted asset: ${publicId}`);
+        }
+      } catch (cloudinaryErr) {
+        console.warn("[Cloudinary] Asset deletion failed:", cloudinaryErr.message);
+      }
+    }
+
     await Message.findByIdAndDelete(messageId);
 
     // Emit deletion event via socket
-    const io = getIO();
-    if (message.receiverId) {
-      io.to(userId.toString())
-        .to(message.receiverId.toString())
-        .emit("messageDeleted", { messageId });
-    } else {
-      io.to(message.nexusId.toString()).emit("messageDeleted", { messageId });
+    try {
+      const io = getIO();
+      if (message.receiverId) {
+        io.to(userId.toString())
+          .to(message.receiverId.toString())
+          .emit("messageDeleted", { messageId });
+      } else {
+        io.to(message.nexusId.toString()).emit("messageDeleted", { messageId });
+      }
+    } catch (socketErr) {
+      console.warn("[Message Delete] Socket emission failed:", socketErr.message);
     }
 
     res.status(200).json({ success: true, message: "Message deleted successfully" });

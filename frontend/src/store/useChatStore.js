@@ -45,7 +45,11 @@ export const useChatStore = create((set, get) => ({
       const users = res.data.data || [];
       const userIds = users.map((user) => user._id.toString());
       set((state) => ({
-        users: users,
+        users: users.map(u => {
+          const existing = state.users.find(eu => eu._id === u._id);
+          // Prefer server unreadCount if available, else keep existing local count
+          return { ...u, unreadCount: u.unreadCount !== undefined ? u.unreadCount : (existing?.unreadCount || 0) };
+        }),
         contactList: state.contactList?.length ? state.contactList : userIds,
         // preserve existing alias map
         contactAliases: state.contactAliases || {},
@@ -131,7 +135,7 @@ export const useChatStore = create((set, get) => ({
 
     try {
       // Show immediately in UI with pending state
-      addMessage(optimisticMessage);
+      await addMessage(optimisticMessage);
 
       let payload = { text, image, idempotencyKey };
 
@@ -240,12 +244,32 @@ export const useChatStore = create((set, get) => ({
     // It might be a direct message. Currently, retryMessage is only called on the current active chat via UI anyway.
     const targetId = msg.receiverId?._id || msg.receiverId;
 
+    let payload = {
+      text: msg.text,
+      image: msg.image,
+      idempotencyKey: msg.idempotencyKey
+    };
+
+    // Re-encrypt if E2EE keys are available
+    const e2eeKeys = useAuthStore.getState().e2eeKeys;
+    const targetUser = state.users.find(u => u._id === targetId || u.id === targetId);
+
+    if (e2eeKeys && targetUser && targetUser.publicKey) {
+      try {
+        const { encryptMessage } = await import("../lib/e2ee.js");
+        const encrypted = await encryptMessage(
+          { text: msg.text, image: msg.image },
+          e2eeKeys.publicKey,
+          targetUser.publicKey
+        );
+        payload = { ...payload, ...encrypted };
+      } catch (encErr) {
+        console.error("[Retry] Encryption failed:", encErr);
+      }
+    }
+
     try {
-      await axiosInstance.post(`/message/send/${targetId}`, {
-        text: msg.text,
-        image: msg.image,
-        idempotencyKey: msg.idempotencyKey
-      });
+      await axiosInstance.post(`/message/send/${targetId}`, payload);
       // The socket ack will override this, but we optimistically clear it
     } catch (err) {
       if (err.code === 'ERR_NETWORK' || !err.response) {

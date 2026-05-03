@@ -76,10 +76,11 @@ export const sanitizeForOrbit = (obj) => {
   if (obj !== null && typeof obj === 'object') {
     const newObj = { ...obj };
     if (newObj._id) {
-       newObj.id = obfuscateId(newObj._id.toString());
-       // Preserve _id for backwards compatibility with legacy UI components
+       const idStr = newObj._id.toString();
+       newObj.id = idStr.startsWith("orb_") ? idStr : obfuscateId(idStr);
     } else if (newObj.id) {
-       newObj.id = obfuscateId(newObj.id.toString());
+       const idStr = newObj.id.toString();
+       newObj.id = idStr.startsWith("orb_") ? idStr : obfuscateId(idStr);
     }
     
     // Obfuscate related fields if they look like IDs

@@ -533,8 +533,13 @@ export const sendNexusMessage = async (req, res) => {
     };
 
     // Emit to all nexus members using the REAL room ID
-    const sanitizedMessage = sanitizeForOrbit(populatedMessage);
-    io.to(realNexusId.toString()).emit("newNexusMessage", sanitizedMessage);
+    try {
+      const io = getIO();
+      const sanitizedMessage = sanitizeForOrbit(populatedMessage);
+      io.to(realNexusId.toString()).emit("newNexusMessage", sanitizedMessage);
+    } catch (socketError) {
+      console.warn("Nexus socket emission failed:", socketError.message);
+    }
 
     res.status(201).json(sanitizeForOrbit(populatedMessage));
   } catch (error) {
