@@ -4,8 +4,8 @@ import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react"
 import toast from "./lib/toast";
 
 const HomePage = lazy(() => import("./pages/HomePage"));
-const SignUpPage = lazy(() => import("./pages/SignUpPage"));
-const LoginPage = lazy(() => import("./pages/LoginPage"));
+import SignUpPage from "./pages/SignUpPage";
+import LoginPage from "./pages/LoginPage";
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -563,7 +563,7 @@ const AppContent = () => {
       <ThemePortal />
       {!isOnline && <ConnectionStatus />}
       <NotificationContainer />
-      {(!hydrated || (isCheckingAuth && !!authUser)) && !isAuthPage && !isAdminRoute ? (
+      {(!hydrated || (isCheckingAuth && !!authUser && location.pathname !== "/")) && !isAuthPage && !isAdminRoute ? (
         <OrbitLoader />
       ) : (
         <>
