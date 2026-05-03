@@ -1,4 +1,4 @@
-import { useThemeStore } from "../../store/useThemeStore";
+import { useThemeStore } from "../../../store/useThemeStore";
 
 const FLOATIES = [
   { x: "12%", y: "15%", char: "✦", size: 14, color: "#f8c8e8", opacity: 0.75, dur: 2.8 },

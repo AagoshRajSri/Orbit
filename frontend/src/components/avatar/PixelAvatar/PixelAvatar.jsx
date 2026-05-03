@@ -19,7 +19,7 @@
 import React, { useRef, useEffect, useCallback, memo } from 'react';
 import { getFrame }    from './animation.js';
 import { renderFrame } from './renderer.js';
-import { useDevicePerformance } from '../../hooks/useDevicePerformance';
+import { useDevicePerformance } from '../../../hooks/useDevicePerformance';
 
 const PixelAvatar = memo(function PixelAvatar({
   type      = 'dog',

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { useThemeStore } from "../../store/useThemeStore";
+import { useThemeStore } from "../../../store/useThemeStore";
 
 /* ─────────────── ANIMATIONS ─────────────── */
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSpotifyStore } from "../../store/useSpotifyStore";
-import { useNexusStore } from "../../store/useNexusStore";
+import { useSpotifyStore } from "../../../store/useSpotifyStore";
+import { useNexusStore } from "../../../store/useNexusStore";
 import { ThemeCardWrapper } from "./WelcomeWrappers";
 import Saturn from "../../effects/Saturn";
 import NexusActionOverlay from "../../nexus/NexusActionOverlay";

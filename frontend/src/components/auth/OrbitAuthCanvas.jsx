@@ -768,7 +768,7 @@ const OrbitAuthCanvas = forwardRef(function OrbitAuthCanvas(
     });
     if (!hit) return;
     spawnBurst(x, y, hit.color);
-    import('../lib/SoundManager').then(({ soundManager }) => {
+    import('../../lib/SoundManager').then(({ soundManager }) => {
       soundManager.play('click');
     });
     onClickRef.current?.(hit.defIdx, x, y);

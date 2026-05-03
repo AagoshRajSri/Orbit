@@ -9,7 +9,7 @@ export {
   AvatarProvider,
   useAvatarRegistry,
   useUserAvatar,
-} from '../../context/AvatarContext.jsx';
+} from '../../../context/AvatarContext.jsx';
 export { PAL, DOG, CAT, BUNNY, FRAME_SETS, ANIMAL_TYPES, AVATAR_STATES } from './sprites.js';
 export { getFrame }    from './animation.js';
 export { renderFrame } from './renderer.js';

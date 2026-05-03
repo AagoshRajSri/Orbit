@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useThemeStore } from "../../store/useThemeStore";
-import { useAuthStore } from "../../store/useAuthStore";
-import { useSpotifyStore } from "../../store/useSpotifyStore";
+import { useThemeStore } from "../../../store/useThemeStore";
+import { useAuthStore } from "../../../store/useAuthStore";
+import { useSpotifyStore } from "../../../store/useSpotifyStore";
 import AnimalEasterEggs, { SittingBird, Flower, Snake } from "./AnimalEasterEggs";
-import { useNexusStore } from "../../store/useNexusStore";
+import { useNexusStore } from "../../../store/useNexusStore";
 import NexusActionOverlay from "../../nexus/NexusActionOverlay";
 
 /* ── EXACT CODES FROM PASTEL THEME ── */
