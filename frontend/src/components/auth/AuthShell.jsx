@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import OrbitLoader from "./OrbitLoader";
+import OrbitLoader from "../common/OrbitLoader";
 import StarrySky from "../effects/StarrySky";
 import GalaxyDust from "../effects/GalaxyDust";
 

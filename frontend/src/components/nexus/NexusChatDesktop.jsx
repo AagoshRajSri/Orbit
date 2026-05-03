@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import MessageStatusRing from "./MessageStatusRing";
+import MessageStatusRing from "../chat/MessageStatusRing";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FONTS (add to index.html):
