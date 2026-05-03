@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
-import { THEMES, Ico, I, Toast, CallOverlay, Btn3D, TBtn, Typing, MsgBubble, VoiceBubble, ImgBubble, FileBubble, InfoPanel, ParticleCanvas, Wave, MediaPanel } from "./ChatCoreUI";
+import { THEMES, Ico, I, Toast, CallOverlay, Btn3D, TBtn, VoiceBubble, ImgBubble, FileBubble, InfoPanel, ParticleCanvas, Wave, MediaPanel } from "./ChatCoreUI";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
@@ -10,6 +10,11 @@ import { getSocket } from "../lib/socket";
 import { soundManager } from "../lib/SoundManager";
 import { PixelAvatarBadge } from "./PixelAvatar/PixelAvatarBadge.jsx";
 import { useAvatarState } from "./PixelAvatar/useAvatarState.js";
+import TelemeteryCapsule from "../chat-system/TelemeteryCapsule.jsx";
+import { OrbitMsgBubble } from "../chat-system/MsgBubble.jsx";
+import { OrbitTypingIndicator } from "../chat-system/OrbitTypingIndicator.jsx";
+import AeroInput from "../chat-system/AeroInput.jsx";
+import { resolveTheme } from "../chat-system/OrbitChatTheme.js";
 
 // ─── Theme bridge: Orbit theme IDs → NexusChatDesktop theme tokens ───────────
 const THEME_BRIDGE = {
@@ -33,14 +38,19 @@ function throttle(fn, wait) {
 // ─── Global animation CSS injected once ──────────────────────────────────────
 const ANIM_CSS = `
 @keyframes typingBounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-7px);opacity:1}}
+@keyframes cyberBlink{0%,100%{opacity:1;background:var(--acc)}50%{opacity:0}}
+@keyframes pastelDot{0%,100%{transform:translateY(0) scale(1)}30%{transform:translateY(-8px) scale(1.15)}}
 @keyframes recPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.15)}}
 @keyframes waveBar{0%,100%{height:4px}50%{height:var(--h,20px)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUpMsg{from{opacity:0;transform:translateY(12px) scale(0.97)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideInRight{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
 @keyframes notifSlide{0%{transform:translateY(-60px);opacity:0}15%,85%{transform:translateY(0);opacity:1}100%{transform:translateY(-60px);opacity:0}}
 @keyframes popIn{0%{opacity:0;transform:scale(.85) translateY(8px)}70%{transform:scale(1.04) translateY(-2px)}100%{opacity:1;transform:scale(1) translateY(0)}}
 @keyframes borderGlow{0%,100%{box-shadow:0 0 5px var(--acc)}50%{box-shadow:0 0 20px var(--acc),0 0 40px var(--acc)}}
+@keyframes scan{from{left:-60%}to{left:160%}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 *{box-sizing:border-box}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -98,6 +108,8 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const { theme } = useThemeStore();
   const themeId = THEME_BRIDGE[theme] || "vampire";
   const t       = THEMES[themeId];
+  // New orbit-messaging theme tokens for the new chat UI components
+  const ot = resolveTheme(theme);
   const navigate = useNavigate();
 
   const authUser = useAuthStore(s => s.authUser);
@@ -435,82 +447,46 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
   return (
     <div
-      style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", position: "relative", overflow: "hidden", background: t.bg, ...cssVars }}
+      style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", position: "relative", overflow: "hidden", background: ot["--bg"], ...cssVars }}
     >
-      {/* ── HEADER ── */}
-      <div className="nexus-chat-header" style={{ background: t.headerGrad, borderBottom: `1px solid ${t.border}`, padding: "0 20px", display: "flex", alignItems: "center", gap: 12, height: 64, flexShrink: 0, zIndex: 10, position: "relative" }}>
-        {onOpenSidebar && (
-          <button
-            onClick={() => onOpenSidebar(isNexus ? "nexus" : "contacts")}
-            style={{
-              background: "none", border: "none", color: t.txt2, cursor: "pointer",
-              width: 36, height: 36, display: "flex", alignItems: "center",
-              justifyContent: "center", borderRadius: "50%", transition: "all .2s",
-              marginRight: -4, flexShrink: 0,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = t.msgIn; e.currentTarget.style.color = t.txt; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = t.txt2; }}
-            title="Menu"
-          >
-            <Menu size={20} stroke="currentColor" />
-          </button>
-        )}
-        {/* Back Button — mobile uses onMobileBack, desktop navigates */}
+      {/* ── Cyber scanlines overlay ── */}
+      {ot.scanlines && (
+        <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 998,
+          background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,157,0.012) 2px,rgba(0,255,157,0.012) 4px)" }} />
+      )}
+
+      {/* ── NEW TelemeteryCapsule header ── */}
+      <div style={{ position: "relative" }}>
+        <TelemeteryCapsule
+          t={ot}
+          entityName={entityName}
+          entitySub={entitySub}
+          isNexus={isNexus}
+          isOnline={!isNexus ? true : true}
+          peerAnimal={peerAnimal}
+          peerAvatarState={peerAvatar.state}
+          onInfoToggle={() => setShowInfo(x => !x)}
+          onMobileMenuToggle={onOpenSidebar ? () => onOpenSidebar(isNexus ? "nexus" : "contacts") : null}
+        />
+        {/* Back button overlay */}
         <button
-          onClick={() => {
-            if (onMobileBack) {
-              onMobileBack();
-            } else {
-              if (isNexus) setSelectedNexus(null);
-              else setSelectedUser(null);
-              navigate("/");
-            }
-          }}
+          onClick={() => { if (onMobileBack) onMobileBack(); else { if (isNexus) setSelectedNexus(null); else setSelectedUser(null); navigate("/"); } }}
           style={{
-            background: "none", border: "none", color: t.txt2, cursor: "pointer",
-            width: 36, height: 36, display: "flex", alignItems: "center",
-            justifyContent: "center", borderRadius: "50%", transition: "all .2s",
-            marginRight: -4, flexShrink: 0,
+            position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
+            background: ot["--glass2"], border: `1px solid ${ot["--border"]}`,
+            color: ot["--text2"], cursor: "pointer", width: 32, height: 32,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: "50%", transition: "all .2s", zIndex: 5,
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = t.msgIn; e.currentTarget.style.color = t.txt; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = t.txt2; }}
-          title={onMobileBack ? "Back" : "Return to home"}
+          title="Back"
         >
-          <Ico d={I.back} size={20} stroke="currentColor" />
+          <Ico d={I.back} size={16} stroke="currentColor" />
         </button>
-
-
-        {/* Avatar — replaced with animated PixelAvatarBadge */}
-        <div
-          style={{ position: "relative", cursor: "pointer" }}
-          onClick={() => setShowInfo(x => !x)}
-        >
-          <PixelAvatarBadge
-            type={peerAnimal}
-            state={peerAvatar.state}
-            size={44}
-            showDot={!isNexus}
-            online={true}
-            style={{ borderRadius: "50%", overflow: "hidden", boxShadow: `0 0 20px ${t.glow}` }}
-          />
-        </div>
-
-        {/* Name + sub */}
-        <div style={{ flex: 1, cursor: "pointer" }} onClick={() => setShowInfo(x => !x)}>
-          <div className="nxc-name" style={{ color: t.txt, fontWeight: 800, fontSize: 16, fontFamily: t.font, letterSpacing: ".04em" }}>
-            {entityName}
-          </div>
-          <div style={{ color: t.txt2, fontSize: 12, fontFamily: t.font, letterSpacing: ".02em", transition: "color .2s" }}>
-            {entitySub}
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="nxc-utility-group" style={{ display: "flex", gap: 4 }}>
+        {/* Search + call buttons */}
+        <div style={{ position: "absolute", right: 130, top: "50%", transform: "translateY(-50%)", display: "flex", gap: 4, zIndex: 5 }}>
           <TBtn t={t} d={I.search} label="Search" active={searchOpen} onClick={() => { setSearchOpen(x => !x); setSearchQ(""); }} />
           <TBtn t={t} d={I.phone} label="Voice call" onClick={() => setCallType("voice")} sz={19} />
           <TBtn t={t} d={I.video} label="Video call" onClick={() => setCallType("video")} sz={19} />
-          <TBtn t={t} d={I.settings} label="Info" active={showInfo} onClick={() => setShowInfo(x => !x)} sz={19} />
         </div>
       </div>
 
@@ -556,21 +532,19 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
       {/* ── MESSAGE AREA ── */}
       <div style={{
-        flex: 1, overflowY: "auto", padding: "24px 28px",
-        backgroundImage: gridBg, backgroundSize: "32px 32px",
-        scrollbarWidth: "thin", scrollbarColor: `${t.scrollbar} transparent`,
-        position: "relative",
+        flex: 1, overflowY: "auto", padding: "20px 20px 10px",
+        background: ot["--bg"],
+        scrollbarWidth: "thin", scrollbarColor: `${ot["--border"]} transparent`,
+        position: "relative", display: "flex", flexDirection: "column", gap: 10,
       }}>
-        {/* Grid overlay (subtle) */}
-        <ParticleCanvas t={t} style={{ opacity: .08, pointerEvents: "none" }} />
 
         {/* Date divider */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, position: "relative", zIndex: 1 }}>
-          <div style={{ flex: 1, height: 1, background: t.border }} />
-          <span style={{ color: t.txt2, fontSize: 10, fontFamily: t.font, letterSpacing: ".1em", whiteSpace: "nowrap", textTransform: "uppercase" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "6px 0", fontSize: 10, color: ot["--text2"], opacity: 0.55, fontWeight: 700, letterSpacing: "1.5px" }}>
+          <div style={{ flex: 1, height: 1, background: ot["--border"] }} />
+          <span style={{ fontFamily: ot.fontMono, whiteSpace: "nowrap", textTransform: "uppercase" }}>
             {isNexus ? "Nexus Thread" : "Direct Line"} · {new Date().toLocaleDateString("en", { month: "short", day: "numeric" })}
           </span>
-          <div style={{ flex: 1, height: 1, background: t.border }} />
+          <div style={{ flex: 1, height: 1, background: ot["--border"] }} />
         </div>
 
         {/* Loading state */}
@@ -578,10 +552,10 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
         {/* Empty state */}
         {!isLoading && filtered.length === 0 && !searchQ && (
-          <div style={{ textAlign: "center", padding: "48px 0", position: "relative", zIndex: 1 }}>
-            <div style={{ fontSize: 40, marginBottom: 12, opacity: .6 }}>{t.decoratorBig}</div>
-            <div style={{ color: t.txt2, fontSize: 14, fontFamily: t.font, lineHeight: 1.6 }}>
-              No messages yet. Say something{t.decorator}
+          <div style={{ textAlign: "center", padding: "48px 0" }}>
+            <div style={{ fontSize: 40, marginBottom: 12, opacity: .6 }}>{ot.decorator}</div>
+            <div style={{ color: ot["--text2"], fontSize: 14, fontFamily: ot.font, lineHeight: 1.6 }}>
+              No messages yet. Say something {ot.decorator}
             </div>
           </div>
         )}
@@ -628,94 +602,90 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
             );
           }
 
-          // Text + optional image — with per-row pixel avatar (Pattern C)
+          // Text + optional image — using new OrbitMsgBubble
           const isLatest = mKey === (filtered[filtered.length - 1]?._id || filtered[filtered.length - 1]?.id);
           const rowAvatarType = m.out ? myAnimal : peerAnimal;
-          const rowAvatarState = isLatest ? (m.out ? myAvatar.state : peerAvatar.state) : 'idle';
+          const rowAvatarState = isLatest ? (m.out ? myAvatar.state : peerAvatar.state) : "idle";
 
           return (
-            <div key={mKey} style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "flex-end", gap: 8, flexDirection: m.out ? "row-reverse" : "row", marginBottom: 4 }}>
-              {/* Per-message pixel avatar */}
-              <div style={{ flexShrink: 0 }}>
-                <PixelAvatarBadge
-                  type={rowAvatarType}
-                  state={rowAvatarState}
-                  size={28}
-                  showDot={false}
-                  style={{ borderRadius: 6, opacity: isLatest ? 1 : 0.55 }}
-                />
-              </div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: m.out ? "flex-end" : "flex-start" }}>
-                {m.image && (
-                  <div style={{ marginBottom: 4 }}>
-                    <img src={m.image} alt="Media" style={{ maxWidth: 260, borderRadius: 14, border: `1px solid ${t.border}`, objectFit: "cover" }} />
-                  </div>
-                )}
-                {m.text && <MsgBubble msg={m} t={t} onReact={handleReact} isMe={m.out} />}
-              </div>
-            </div>
+            <OrbitMsgBubble
+              key={mKey}
+              msg={m}
+              t={ot}
+              avatarAnimal={rowAvatarType}
+              avatarState={rowAvatarState}
+              onReact={handleReact}
+            />
           );
         })}
 
-        {/* Typing indicator */}
+        {/* Typing indicator — new OrbitTypingIndicator */}
         {isTypingActive && (
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <Typing t={t} />
-          </div>
+          <OrbitTypingIndicator
+            t={ot}
+            peerAnimal={peerAnimal}
+            peerAvatarState={peerAvatar.state}
+            typingUsers={isNexus
+              ? nexusTypingUsers?.filter(u => u.userId !== authUser?._id?.toString()).map(u => u.username)
+              : [selectedUser?.username || "user"]}
+          />
         )}
 
         <div ref={endRef} />
       </div>
 
-      {/* ── INPUT AREA ── */}
-      <div className="nxi-shell" style={{ borderTop: `1px solid ${t.border}`, background: t.inputBar, position: "relative", zIndex: 10, flexShrink: 0 }}>
+      {/* ── NEW AeroInput ── */}
+      <div style={{ position: "relative", zIndex: 100 }}>
+        {/* Media/Emoji panel */}
+        {mediaPanel && (
+          <div style={{ position: "absolute", bottom: "100%", left: 0, right: 0, zIndex: 101, marginBottom: 10 }}>
+            <MediaPanel
+              t={t} mode={mediaPanel}
+              onClose={() => setMediaPanel(null)}
+              onSelectEmoji={e => { setInput(v => v + e); inputRef.current?.focus(); setMediaPanel(null); }}
+            />
+          </div>
+        )}
+
+        {/* Recording bar overlay */}
+        {recording && (
+          <div style={{
+            position: "absolute", bottom: "100%", left: 20, right: 20, zIndex: 101, marginBottom: 10,
+            padding: "10px 20px", background: ot["--bg2"], border: `1px solid ${ot["--border"]}`,
+            borderRadius: ot["--radius"], display: "flex", alignItems: "center", gap: 14,
+            boxShadow: ot["--shadow"], animation: "fadeUp .3s ease"
+          }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff3131", animation: "recPulse 1s ease-in-out infinite", flexShrink: 0 }} />
+            <Wave color={ot["--acc"]} active bars={36} h={32} />
+            <span style={{ color: ot["--text"], fontSize: 14, fontFamily: ot.font, minWidth: 40, fontVariantNumeric: "tabular-nums" }}>{fmt(recSec)}</span>
+            <span style={{ color: ot["--text2"], fontSize: 12, fontFamily: ot.font, marginLeft: "auto" }}>Recording...</span>
+          </div>
+        )}
+
+        <AeroInput
+          t={ot}
+          value={input}
+          onChange={setInput}
+          onSend={() => { sendMsg(input); setInput(""); }}
+          onTyping={() => { emitTyping(true); myAvatar.onTyping(); clearTimeout(typingTimerRef.current); typingTimerRef.current = setTimeout(() => emitTyping(false), 2000); }}
+          onMediaToggle={(mode) => setMediaPanel(m => m === mode ? null : mode)}
+          onVoiceToggle={() => setRecording(!recording)}
+          isRecording={recording}
+          selfAnimal={myAnimal}
+          selfAvatarState={myAvatar.state}
+          disabled={false}
+        />
+      </div>
+
+      {/* ── LEGACY INPUT AREA (hidden) ── */}
+      <div className="nxi-shell" style={{ display: "none" }}>
         <style>{`
           .orb-input::placeholder { color: ${t.txt2}; opacity: 0.5; font-style: italic; }
           .orb-input-wrapper { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
           .orb-input-wrapper:focus-within { border-color: ${t.acc} !important; box-shadow: 0 8px 32px ${t.glow} !important; transform: translateY(-1px); }
         `}</style>
 
-        {/* Media/Emoji panel */}
-        {mediaPanel && (
-          <MediaPanel
-            t={t} mode={mediaPanel}
-            onClose={() => setMediaPanel(null)}
-            onSelectEmoji={e => { setInput(v => v + e); inputRef.current?.focus(); setMediaPanel(null); }}
-          />
-        )}
 
-        {/* Recording bar */}
-        {recording && (
-          <div style={{ padding: "10px 20px", background: t.msgIn, borderTop: `1px solid ${t.border}`, display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff3131", animation: "recPulse 1s ease-in-out infinite", flexShrink: 0 }} />
-            <Wave color={t.wave} active bars={36} h={32} />
-            <span style={{ color: t.txt, fontSize: 14, fontFamily: t.font, minWidth: 40, fontVariantNumeric: "tabular-nums" }}>{fmt(recSec)}</span>
-            <span style={{ color: t.txt2, fontSize: 12, fontFamily: t.font, marginLeft: "auto" }}>Tap mic to send</span>
-          </div>
-        )}
-
-        {/* Toolbar row */}
-        <div style={{ display: "flex", alignItems: "center", padding: "12px 20px 4px", gap: 2 }}>
-          <TBtn t={t} d={I.emoji}   label="Emoji"    active={mediaPanel === "emoji"}   onClick={() => setMediaPanel(mediaPanel === "emoji"   ? null : "emoji")} />
-          <TBtn t={t} d={I.sticker} label="Stickers" active={mediaPanel === "sticker"} onClick={() => setMediaPanel(mediaPanel === "sticker" ? null : "sticker")} />
-          <TBtn t={t} d={I.gif}     label="GIF"      active={mediaPanel === "gif"}     onClick={() => setMediaPanel(mediaPanel === "gif"     ? null : "gif")} />
-          <TBtn t={t} d={I.img}     label="Image"    onClick={() => addToast("Image upload coming soon")} />
-          <TBtn t={t} d={I.attach}  label="File"     onClick={() => addToast("File sharing coming soon")} />
-          <div style={{ flex: 1 }} />
-          {/* Self pixel avatar — animates while you type */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, opacity: 0.85 }}>
-            <PixelAvatarBadge
-              type={myAnimal}
-              state={myAvatar.state}
-              size={28}
-              showDot={false}
-              style={{ borderRadius: 6 }}
-            />
-          </div>
-          <span style={{ color: t.txt3, fontSize: 10, fontFamily: t.font, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 700, opacity: 0.6 }}>
-            🔒 E2EE
-          </span>
-        </div>
 
         {/* Input row */}
         <div style={{ display: "flex", alignItems: "flex-end", padding: "8px 20px 24px", gap: 12 }}>
