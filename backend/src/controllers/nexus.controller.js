@@ -447,7 +447,10 @@ export const getMyNexuses = async (req, res) => {
 
     messages = messages.reverse();
 
-    res.status(200).json(messages);
+    // Sanitize IDs to match the format of socket-emitted nexus messages (obfuscated).
+    // Without this, loaded messages have real MongoDB IDs but incoming socket messages
+    // have obfuscated IDs — causing isNexusMatch() in addNexusMessage to fail.
+    res.status(200).json(sanitizeForOrbit(messages));
   } catch (error) {
     console.error("Error in getNexusMessages:", error.message);
     res.status(500).json({ message: "Internal server error" });

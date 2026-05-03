@@ -161,8 +161,8 @@ export const useChatStore = create((set, get) => ({
 
       const res = await axiosInstance.post(`/message/send/${userId}`, payload);
 
-      // Manually trigger addMessage with the server response to resolve pending state immediately
-      addMessage(res.data);
+      // Await so the optimistic message is correctly resolved to "sent" before any other state update
+      await addMessage(res.data);
       return res.data;
     } catch (error) {
       // Network drop exactly mid-flight

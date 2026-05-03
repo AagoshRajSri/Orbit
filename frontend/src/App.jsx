@@ -150,14 +150,22 @@ const DynamicRouteHandler = (props) => {
           setSelectedNexus(target);
         }
       }
-    } 
+    }
     // If we have a userId in the URL, ensure it's selected in the store
-    else if (uid && users.length > 0) {
+    else if (uid) {
       const currentId = normalizeId(selectedUser);
       if (currentId !== uid) {
+        // Try to find the full user object in the loaded users array
         const target = users.find(u => normalizeId(u._id || u.id) === uid);
         if (target) {
+          // Full user object found — set normally
           setSelectedUser(target);
+        } else {
+          // Users not loaded yet (getUsers() still in-flight) — set a stub so that
+          // selectedConversationId is populated immediately. Incoming socket messages
+          // will then pass the belongsToCurrentChat check instead of being silently dropped.
+          // This effect re-runs once users load (users array changes), upgrading to full object.
+          setSelectedUser({ _id: uid, id: uid });
         }
       }
     }
@@ -313,9 +321,12 @@ const AppContent = () => {
         messageBufferRef.current = [];
         const chatStore = useChatStore.getState();
         for (const i of msgs) {
+          // Always ack FIRST so the backend's emitWithAck resolves immediately.
+          // Without this, a local processing error causes the server to treat the
+          // user as offline and queue the message in Redis — only visible after refresh.
+          if (typeof i.ack === "function") i.ack();
           try {
             await chatStore.addMessage(i.msg);
-            if (typeof i.ack === "function") i.ack();
           } catch (err) {
             console.error("Error processing message buffer:", err);
           }
@@ -328,9 +339,10 @@ const AppContent = () => {
         nexusMessageBufferRef.current = [];
         const nexusStore = useNexusStore.getState();
         for (const i of msgs) {
+          // Same: ack first, process second
+          if (typeof i.ack === "function") i.ack();
           try {
-            await nexusStore.addNexusMessage(i.msg);
-            if (typeof i.ack === "function") i.ack();
+            nexusStore.addNexusMessage(i.msg);
           } catch (err) {
             console.error("Error processing nexus message buffer:", err);
           }

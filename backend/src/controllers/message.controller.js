@@ -101,7 +101,11 @@ export const getMessage = async (req, res) => {
 
     messages = messages.reverse();
 
-    res.status(200).json(messages);
+    // Sanitize IDs so the format is consistent with socket-emitted messages.
+    // Without this, loaded messages have real MongoDB IDs but socket messages have
+    // obfuscated IDs, causing isMatch() in addMessage to fail and preventing
+    // real-time deduplication from working correctly.
+    res.status(200).json(sanitizeForOrbit(messages));
   } catch (error) {
     console.error("error in getMessages controller: ", error.message);
     res.status(500).json({
@@ -110,6 +114,7 @@ export const getMessage = async (req, res) => {
     });
   }
 };
+
 
 export const sendMessage = async (req, res) => {
   try {
