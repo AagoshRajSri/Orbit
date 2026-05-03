@@ -1216,7 +1216,7 @@ const VampireSidebar = memo(({
                                             ) : (
                                               (() => {
                                                 const ANIMALS = ['dog', 'cat', 'bunny'];
-                                                const animal = ANIMALS[parseInt(n._id.slice(-4) || '0', 16) % ANIMALS.length];
+                                                const animal = ANIMALS[parseInt((n._id || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
                                                 return (
                                                   <PixelAvatarBadge 
                                                     type={animal} 

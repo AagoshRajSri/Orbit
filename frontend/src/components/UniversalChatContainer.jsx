@@ -25,13 +25,35 @@ const THEME_BRIDGE = {
   "light":            "premium",
 };
 
-// Throttle utility (no lodash dependency)
 function throttle(fn, wait) {
   let last = 0;
   return (...args) => {
     const now = Date.now();
     if (now - last >= wait) { last = now; fn(...args); }
   };
+}
+// Safe date formatter
+function formatDate(date) {
+  if (!date) return "—";
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "—";
+    return d.toISOString().slice(0, 10);
+  } catch (e) {
+    return "—";
+  }
+}
+
+// Safe time formatter
+function formatTime(date) {
+  if (!date) return "00:00";
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "00:00";
+    return d.toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit", hour12: false });
+  } catch (e) {
+    return "00:00";
+  }
 }
 
 // ─── Global animation CSS injected once ──────────────────────────────────────
@@ -143,8 +165,8 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
     ? (selectedNexus?.id || selectedNexus?._id || "").toString()
     : (selectedUser?.id || selectedUser?._id || "").toString();
   const ANIMALS = ['dog', 'cat', 'bunny'];
-  const peerAnimal = ANIMALS[parseInt(entityId.slice(-4) || '0', 16) % ANIMALS.length];
-  const myAnimal   = ANIMALS[parseInt((authUser?._id || authUser?.id || '1').toString().slice(-4), 16) % ANIMALS.length];
+  const peerAnimal = ANIMALS[parseInt((entityId || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
+  const myAnimal   = ANIMALS[parseInt((authUser?._id || authUser?.id || "1").toString().slice(-4) || "0", 16) % ANIMALS.length];
 
   // ── Avatar state machines ──────────────────────────────────────────────────
   const peerAvatar = useAvatarState('idle', { sleepAfter: 120_000 });
@@ -223,14 +245,14 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
           status: "online",
           muted: false,
           banned: false,
-          joined: m.createdAt?.slice(0, 10) || "—",
+          joined: formatDate(m.createdAt),
         })),
         media: [],
         links: [],
         tags: [activeNexus.joinCode ? `#${activeNexus.joinCode}` : "#nexus"],
         color: t.acc,
         inviteLink: `nexus.app/join/${activeNexus.joinCode || activeNexus.id || activeNexus._id}`,
-        createdAt: activeNexus.createdAt?.slice(0, 10) || "—",
+        createdAt: formatDate(activeNexus.createdAt),
         messageCount: nexusMessages.length,
         voiceActive: false,
       });
@@ -376,7 +398,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         image:     m.image || null,
         uid:       sId,
         out:       isMe,
-        time:      new Date(m.createdAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit", hour12: false }),
+        time:      formatTime(m.createdAt),
         reactions: localReactions[m.id || m._id] || {},
         status:    m.status || "sent",
         isSystem:  m.isSystem,

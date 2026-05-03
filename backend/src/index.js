@@ -93,17 +93,22 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       
-      // Normalize origin by removing trailing slash for comparison
       const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
-      const isAllowed = allowedOrigins.some(allowed => {
+      
+      // Allow exact matches from allowedOrigins
+      const isExplicitlyAllowed = allowedOrigins.some(allowed => {
         const normalizedAllowed = allowed.endsWith('/') ? allowed.slice(0, -1) : allowed;
         return normalizedAllowed === normalizedOrigin;
       });
 
-      if (isAllowed) {
+      // Allow any orbit-related vercel.app or render.com subdomains in production
+      const isOrbitSubdomain = normalizedOrigin.includes("orbitnexus.vercel.app") || 
+                             normalizedOrigin.includes("orbit-ajgs.onrender.com");
+
+      if (isExplicitlyAllowed || isOrbitSubdomain) {
         callback(null, true);
       } else {
-        console.warn(`[CORS] Blocked request from: ${origin}`);
+        console.warn(`[CORS] Blocked request from unauthorized origin: ${origin}`);
         callback(new Error("Not allowed by CORS"));
       }
     },
@@ -178,11 +183,16 @@ const io = new Server(httpServer, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+      
       const isAllowed = allowedOrigins.some(allowed => {
         const normalizedAllowed = allowed.endsWith('/') ? allowed.slice(0, -1) : allowed;
         return normalizedAllowed === normalizedOrigin;
       });
-      if (isAllowed) {
+
+      const isOrbitSubdomain = normalizedOrigin.includes("orbitnexus.vercel.app") || 
+                             normalizedOrigin.includes("orbit-ajgs.onrender.com");
+
+      if (isAllowed || isOrbitSubdomain) {
         callback(null, true);
       } else {
         console.warn(`[Socket.IO CORS] Blocked origin: ${origin}`);

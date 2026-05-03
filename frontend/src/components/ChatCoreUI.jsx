@@ -853,7 +853,7 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
                 const ANIMALS = ['dog', 'cat', 'bunny'];
                 // InfoPanel uses 'group.id' or falls back to '1' if missing.
                 const entityId = (group.id || group._id || group.name || '0').toString();
-                const animal = ANIMALS[parseInt(entityId.slice(-4) || '0', 16) % ANIMALS.length] || ANIMALS[0];
+                const animal = ANIMALS[parseInt((entityId || "").toString().slice(-4) || '0', 16) % ANIMALS.length] || ANIMALS[0];
                 return (
                   <PixelAvatarBadge
                     type={animal}

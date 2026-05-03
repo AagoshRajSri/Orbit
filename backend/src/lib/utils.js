@@ -54,7 +54,9 @@ export const generateToken = async (userId, req, res) => {
       { expiresIn: "15m" },
     );
 
-    const isProduction = process.env.NODE_ENV === "production" || req.hostname !== "localhost";
+    // Determine if we should use secure/cross-site cookies
+    const isProxySecure = req.header("x-forwarded-proto") === "https" || req.secure;
+    const isProduction = process.env.NODE_ENV === "production" || isProxySecure;
 
     res.cookie("jwt", accessToken, {
       maxAge: 15 * 60 * 1000,

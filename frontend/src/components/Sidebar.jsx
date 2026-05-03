@@ -302,7 +302,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                   {(() => {
                     const uId = (user.id || user._id)?.toString() || "";
                     const ANIMALS = ['dog', 'cat', 'bunny'];
-                    const animal = ANIMALS[parseInt(uId.slice(-4) || '0', 16) % ANIMALS.length];
+                    const animal = ANIMALS[parseInt((uId || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
                     return (
                       <PixelAvatarBadge
                         type={animal}
@@ -478,7 +478,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                     >
                       {(() => {
                         const ANIMALS = ['dog', 'cat', 'bunny'];
-                        const animal = ANIMALS[parseInt(nexusId.slice(-4) || '0', 16) % ANIMALS.length];
+                        const animal = ANIMALS[parseInt((nexusId || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
                         return (
                           <PixelAvatarBadge
                             type={animal}

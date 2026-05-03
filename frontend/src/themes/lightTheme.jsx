@@ -548,7 +548,7 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
                                             ) : (
                                               (() => {
                                                 const ANIMALS = ['dog', 'cat', 'bunny'];
-                                                const animal = ANIMALS[parseInt(nexus._id.slice(-4) || '0', 16) % ANIMALS.length];
+                                                const animal = ANIMALS[parseInt((nexus._id || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
                                                 return (
                                                   <PixelAvatarBadge 
                                                     type={animal} 
@@ -707,7 +707,7 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
                     ) : (
                       (() => {
                         const ANIMALS = ['dog', 'cat', 'bunny'];
-                        const animal = ANIMALS[parseInt(u._id.slice(-4) || '0', 16) % ANIMALS.length];
+                        const animal = ANIMALS[parseInt((u._id || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
                         return (
                           <PixelAvatarBadge 
                             type={animal} 
