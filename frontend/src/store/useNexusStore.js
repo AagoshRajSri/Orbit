@@ -262,7 +262,17 @@ export const useNexusStore = create((set, get) => ({
   },
 
   getNexusMessages: async (nexusId) => {
-    set({ isMessagesLoading: true, nexusMessages: [], hasMoreNexusMessages: true });
+    const currentMessages = get().nexusMessages;
+    const currentId = get().selectedNexusId;
+
+    // Only wipe if we're switching to a new Nexus
+    const shouldWipe = nexusId !== currentId || currentMessages.length === 0;
+
+    if (shouldWipe) {
+      set({ isMessagesLoading: true, nexusMessages: [], hasMoreNexusMessages: true });
+    } else {
+      set({ isMessagesLoading: true });
+    }
     try {
       const res = await axiosInstance.get(`/nexus/${nexusId}/messages`);
       set({ 
@@ -326,6 +336,8 @@ export const useNexusStore = create((set, get) => ({
         `/nexus/${nexusId}/send`,
         { ...messageData, idempotencyKey }
       );
+      // Resolve pending state immediately with server data
+      addNexusMessage(res.data);
       return res.data;
     } catch (error) {
       if (error.code === 'ERR_NETWORK' || !error.response) {
@@ -426,6 +438,23 @@ export const useNexusStore = create((set, get) => ({
     }
   },
 
+  markNexusSeen: (nexusId) => {
+    const { socket } = useAuthStore.getState();
+    if (!socket || !nexusId) return;
+
+    const { nexusMessages } = get();
+    // Use the latest non-system message
+    const lastMsg = [...nexusMessages].reverse().find(m => !m.isSystem);
+
+    if (lastMsg) {
+      socket.emit("seen", {
+        messageId: lastMsg._id,
+        conversationId: nexusId,
+        conversationType: "nexus"
+      });
+    }
+  },
+
   addNexus: (nexus) => {
     set((state) => {
       const exists = state.nexuses.some((n) => n._id?.toString() === nexus._id?.toString());
@@ -434,58 +463,62 @@ export const useNexusStore = create((set, get) => ({
     });
   },
   addNexusMessage: (message) => {
-    const { selectedNexus, nexusMessages, nexusUnread } = get();
-    const msgNexusId = message.nexusId?.toString?.() ?? message.nexusId;
-    const selNexusId = selectedNexus?._id?.toString?.() ?? selectedNexus?._id;
-
-    if (selectedNexus && msgNexusId === selNexusId) {
+    set((state) => {
+      const { selectedNexusId, nexusMessages, nexusUnread } = state;
+      
       const normalizeId = (id) => {
         if (!id) return null;
         if (typeof id === 'object' && id._id) return id._id.toString();
         return id.toString();
       };
 
-      const messageId = normalizeId(message._id);
-      const idempotencyKey = message.idempotencyKey;
-      
-      let newMessages = [...nexusMessages];
+      const msgNexusId = normalizeId(message.nexusId);
+      const selNexusId = normalizeId(selectedNexusId);
 
-      const existsIndex = newMessages.findIndex((m) => {
-         const mId = normalizeId(m._id);
-         if (mId && messageId && mId === messageId) return true;
-         if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
-         return false;
-      });
+      // We use selectedNexusId for comparison as it's more stable during route transitions
+      if (selNexusId && msgNexusId === selNexusId) {
+        const messageId = normalizeId(message._id);
+        const idempotencyKey = message.idempotencyKey;
+        
+        let newMessages = [...nexusMessages];
 
-      if (existsIndex === -1) {
-          newMessages.push(message);
+        const existsIndex = newMessages.findIndex((m) => {
+           const mId = normalizeId(m._id);
+           if (mId && messageId && mId === messageId) return true;
+           if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
+           return false;
+        });
+
+        if (existsIndex === -1) {
+            newMessages.push(message);
+        } else {
+            // Merge server data with optimistic UI state
+            newMessages[existsIndex] = { 
+              ...newMessages[existsIndex], 
+              ...message, 
+              status: "sent" 
+            };
+        }
+
+        // Sort messages chronologically
+        newMessages.sort((a, b) => {
+           const timeA = new Date(a.createdAt || Date.now()).getTime();
+           const timeB = new Date(b.createdAt || Date.now()).getTime();
+           return timeA - timeB;
+        });
+        
+        return { nexusMessages: newMessages };
       } else {
-          // Merge server data with optimistic UI state
-          newMessages[existsIndex] = { 
-            ...newMessages[existsIndex], 
-            ...message, 
-            status: "sent" 
-          };
+        // Increment unread count if we're not currently looking at this Nexus
+        const currentCount = nexusUnread[msgNexusId] || 0;
+        return {
+          nexusUnread: {
+            ...nexusUnread,
+            [msgNexusId]: currentCount + 1,
+          },
+        };
       }
-
-      // Improved sorting: newest at bottom, handle missing timestamps gracefully
-      newMessages.sort((a, b) => {
-         const timeA = new Date(a.createdAt || Date.now()).getTime();
-         const timeB = new Date(b.createdAt || Date.now()).getTime();
-         return timeA - timeB;
-      });
-      
-      set({ nexusMessages: newMessages });
-    } else {
-      // Increment unread count if not selected
-      const currentCount = nexusUnread[msgNexusId] || 0;
-      set({
-        nexusUnread: {
-          ...nexusUnread,
-          [msgNexusId]: currentCount + 1,
-        },
-      });
-    }
+    });
   },
 
   updateNexusMessage: (nexusId, messageId, updates) => {

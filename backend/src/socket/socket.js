@@ -295,19 +295,36 @@ export const initializeSocketIO = (io) => {
     socket.on("seen", async (payload) => {
       try {
         const parsed = seenSchema.safeParse(payload);
-        if (!parsed.success) return;
+        if (!parsed.success) {
+          console.warn(`[Socket Seen] Invalid payload from ${socket.userId}:`, parsed.error.issues);
+          return;
+        }
         const { messageId, conversationId, conversationType } = parsed.data;
+        const realConversationId = getRealId(conversationId);
 
         const Message = (await import("../models/message.model.js")).default;
         await Message.findByIdAndUpdate(messageId, { seenAt: new Date() });
 
         if (conversationType === "direct") {
-          io.to(conversationId).emit("messageSeen", { messageId, seenBy: socket.userId, seenAt: new Date().toISOString() });
+          io.to(realConversationId.toString()).emit("messageSeen", { 
+            messageId, 
+            seenBy: socket.userId, 
+            seenAt: new Date().toISOString() 
+          });
         } else {
-          socket.to(conversationId).emit("nexusMessageSeen", { messageId, nexusId: conversationId, seenBy: socket.userId, username: socket.user?.username, seenAt: new Date().toISOString() });
+          // Nexus room targeting - already joined via joinUserNexuses or joinNexusRoom
+          io.to(realConversationId.toString()).emit("nexusMessageSeen", { 
+            messageId, 
+            nexusId: conversationId, 
+            seenBy: socket.userId, 
+            username: socket.user?.username, 
+            seenAt: new Date().toISOString() 
+          });
         }
+        
+        console.info(`[Socket Seen] Message ${messageId} marked seen in ${conversationType} ${conversationId}`);
       } catch (e) {
-        console.error("Seen error:", e);
+        console.error("[Socket Seen] Error:", e.message);
       }
     });
 

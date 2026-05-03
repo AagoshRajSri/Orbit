@@ -234,11 +234,12 @@ export const removeNexusMember = async (req, res) => {
       .populate("creator", "username profilePic")
       .populate("members", "username profilePic");
 
+    const realNexusId = nexus._id.toString();
     const io = getIO();
     const safeUsername = sanitizeUsername(req.user.username);
     const systemMsg = new Message({
       senderId: userId,
-      nexusId,
+      nexusId: realNexusId,
       text: `${safeUsername} removed a member from the Nexus`,
       isSystem: true,
     });
@@ -253,10 +254,10 @@ export const removeNexusMember = async (req, res) => {
         profilePic: req.user.profilePic,
       },
     };
-    io.to(nexusId.toString()).emit("newNexusMessage", populated);
+    io.to(realNexusId).emit("newNexusMessage", populated);
 
-    io.to(nexusId.toString()).emit("memberRemovedFromNexus", {
-      nexusId,
+    io.to(realNexusId).emit("memberRemovedFromNexus", {
+      nexusId: nexusId, // Keep obfuscated ID for client matching
       userId: memberId,
       username: removedUsername,
     });
@@ -531,9 +532,9 @@ export const sendNexusMessage = async (req, res) => {
       updatedAt: newMessage.updatedAt.toISOString(),
     };
 
-    // Emit to all nexus members
+    // Emit to all nexus members using the REAL room ID
     const io = getIO();
-    io.to(nexusId).emit("newNexusMessage", populatedMessage);
+    io.to(realNexusId.toString()).emit("newNexusMessage", populatedMessage);
 
     res.status(201).json(populatedMessage);
   } catch (error) {
@@ -566,9 +567,10 @@ export const leaveNexus = async (req, res) => {
     );
     await nexus.save();
 
+    const realNexusIdStr = nexus._id.toString();
     const systemMsg = new Message({
       senderId: userId,
-      nexusId,
+      nexusId: realNexusIdStr,
       text: `${sanitizeUsername(req.user.username)} left the Nexus`,
       isSystem: true,
     });
@@ -584,9 +586,9 @@ export const leaveNexus = async (req, res) => {
     };
 
     const io = getIO();
-    io.to(nexusId.toString()).emit("newNexusMessage", populated);
-    io.to(nexusId.toString()).emit("userLeftNexus", {
-      nexusId,
+    io.to(realNexusIdStr).emit("newNexusMessage", populated);
+    io.to(realNexusIdStr).emit("userLeftNexus", {
+      nexusId: nexusId, // Keep obfuscated ID for client
       userId,
       username: req.user.username,
     });

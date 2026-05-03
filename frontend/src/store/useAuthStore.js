@@ -198,6 +198,7 @@ export const useAuthStore = create(
           console.warn("Server logout failed, forcing local session clear.");
         } finally {
           set({ authUser: null, sessionId: null, socketToken: null });
+          get().refreshSocketToken(); // This will effectively disconnect and clear the socket singleton
         }
       },
 

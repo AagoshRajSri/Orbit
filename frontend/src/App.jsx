@@ -128,16 +128,24 @@ const DynamicRouteHandler = (props) => {
 
   useEffect(() => {
     if (nexusId && nexuses.length > 0) {
-      if (selectedNexus?._id !== nexusId) {
-        const target = nexuses.find(n => n._id === nexusId);
+      const normalizeId = (id) => id?.toString?.() ?? id;
+      const nid = normalizeId(nexusId);
+      const selNid = normalizeId(selectedNexus?._id);
+
+      if (selNid !== nid) {
+        const target = nexuses.find(n => normalizeId(n._id) === nid);
         if (target) {
           setSelectedNexus(target);
           setSelectedUser(null);
         }
       }
     } else if (userId && users.length > 0) {
-      if (selectedUser?._id !== userId) {
-        const target = users.find(u => u._id === userId);
+      const normalizeId = (id) => id?.toString?.() ?? id;
+      const uid = normalizeId(userId);
+      const selUid = normalizeId(selectedUser?._id);
+
+      if (selUid !== uid) {
+        const target = users.find(u => normalizeId(u._id) === uid);
         if (target) {
           setSelectedUser(target);
           setSelectedNexus(null);
@@ -187,11 +195,15 @@ const AppContent = () => {
   const addMessage = useChatStore((state) => state.addMessage);
   const getUsers = useChatStore((state) => state.getUsers);
   const setUserTyping = useChatStore((state) => state.setUserTyping);
+  const messages = useChatStore((state) => state.messages);
+  const markSeen = useChatStore((state) => state.markSeen);
   const selectedConversationId = useChatStore((state) => state.selectedConversationId);
   const selectedConversationType = useChatStore((state) => state.selectedConversationType);
   const getNexuses = useNexusStore((state) => state.getNexuses);
   const setNexusTyping = useNexusStore((state) => state.setNexusTyping);
   const addNexus = useNexusStore((state) => state.addNexus);
+  const nexusMessages = useNexusStore((state) => state.nexusMessages);
+  const markNexusSeen = useNexusStore((state) => state.markNexusSeen);
   const selectedNexusId = useNexusStore((state) => state.selectedNexusId);
   const postAuthLoaderStartedAtRef = useRef(null);
   const postAuthDataReadyRef = useRef(false);
@@ -279,13 +291,20 @@ const AppContent = () => {
 
       const syncConversationData = () => {
         const chatState = useChatStore.getState();
+        const nexusState = useNexusStore.getState();
+
+        // Only fetch if list is empty. This prevents the "wipe-on-reconnect" flicker 
+        // while ensuring we recover data if a connection was dead for a long time.
         if (chatState.selectedConversationId && chatState.selectedConversationType === "direct") {
-          chatState.getMessages(chatState.selectedConversationId, "direct");
+          if (chatState.messages.length === 0) {
+            chatState.getMessages(chatState.selectedConversationId, "direct");
+          }
         }
 
-        const nexusState = useNexusStore.getState();
         if (nexusState.selectedNexusId) {
-          nexusState.getNexusMessages(nexusState.selectedNexusId);
+          if (nexusState.nexusMessages.length === 0) {
+            nexusState.getNexusMessages(nexusState.selectedNexusId);
+          }
         }
       };
 
@@ -555,6 +574,22 @@ const AppContent = () => {
     document.addEventListener("click", handleGlobalClick, { capture: true });
     return () => document.removeEventListener("click", handleGlobalClick, { capture: true });
   }, []);
+
+  // Auto-mark as seen for Direct Chats
+  useEffect(() => {
+    if (!authUser) return;
+    if (selectedConversationId && selectedConversationType === "direct") {
+      markSeen(selectedConversationId);
+    }
+  }, [selectedConversationId, selectedConversationType, messages.length, markSeen, authUser]);
+
+  // Auto-mark as seen for Nexuses
+  useEffect(() => {
+    if (!authUser) return;
+    if (selectedNexusId) {
+      markNexusSeen(selectedNexusId);
+    }
+  }, [selectedNexusId, nexusMessages.length, markNexusSeen, authUser]);
 
 
   return (

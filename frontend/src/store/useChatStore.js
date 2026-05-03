@@ -38,7 +38,17 @@ export const useChatStore = create((set, get) => ({
   },
 
   getMessages: async (userId) => {
-    set({ isMessagesLoading: true, messages: [], hasMoreMessages: true });
+    const currentMessages = get().messages;
+    const currentId = get().selectedConversationId;
+
+    // Only wipe if we're switching to a new user
+    const shouldWipe = userId !== currentId || currentMessages.length === 0;
+
+    if (shouldWipe) {
+      set({ isMessagesLoading: true, messages: [], hasMoreMessages: true });
+    } else {
+      set({ isMessagesLoading: true });
+    }
     try {
       const res = await axiosInstance.get(`/message/${userId}`);
       set({ 
@@ -107,8 +117,8 @@ export const useChatStore = create((set, get) => ({
         idempotencyKey 
       });
 
-      // Status update is inherently handled by Socket.IO resolving the identical idempotencyKey
-      // or we can manually flip state. We'll rely on the backend response.
+      // Manually trigger addMessage with the server response to resolve pending state immediately
+      addMessage(res.data);
       return res.data;
     } catch (error) {
       // Network drop exactly mid-flight
@@ -234,7 +244,7 @@ export const useChatStore = create((set, get) => ({
         currentSelectedId === senderId || currentSelectedId === receiverId;
       
       let newMessages = [...state.messages];
-      let users = [...state.users];
+      const users = [...state.users];
       
       if (belongsToCurrentChat) {
           const messageId = normalizeId(message._id);
@@ -264,17 +274,15 @@ export const useChatStore = create((set, get) => ({
             const timeB = new Date(b.createdAt || Date.now()).getTime();
             return timeA - timeB;
           });
-          
-          set({ messages: newMessages });
       }
 
       // Update the user list (for last message preview / unread dot)
-      users = users.map((user) => {
+      const updatedUsers = users.map((user) => {
           const uId = normalizeId(user._id);
           if (uId === senderId) {
               return {
                  ...user,
-                 lastMessage: "New message",
+                 lastMessage: message.text || "Shared an image",
                  unreadCount: !belongsToCurrentChat ? (user.unreadCount || 0) + 1 : 0
               };
           }
@@ -284,7 +292,7 @@ export const useChatStore = create((set, get) => ({
           return user;
       });
 
-      return { messages: newMessages, users };
+      return { messages: newMessages, users: updatedUsers };
     });
   },
 
@@ -372,4 +380,24 @@ export const useChatStore = create((set, get) => ({
     selectedConversationId: user?._id || null,
     selectedConversationType: user ? "direct" : null
   }),
+
+  markSeen: (conversationId) => {
+    const { socket } = useAuthStore.getState();
+    if (!socket || !conversationId) return;
+
+    // Find latest message from the other user to mark as seen
+    const { messages } = get();
+    const lastMsgFromOther = [...messages].reverse().find(m => 
+      m.senderId?._id?.toString() === conversationId.toString() || 
+      m.senderId?.toString() === conversationId.toString()
+    );
+
+    if (lastMsgFromOther) {
+      socket.emit("seen", {
+        messageId: lastMsgFromOther._id,
+        conversationId,
+        conversationType: "direct"
+      });
+    }
+  }
 }));
