@@ -11,17 +11,16 @@ const decryptMessagesList = async (messages) => {
   const authUserId = authUser?._id?.toString();
 
   return await Promise.all(messages.map(async (m) => {
+    const sIdStr  = (m.senderId?._id || m.senderId?.id || m.senderId)?.toString();
+    const isSender = sIdStr === authUserId;
+    
     if (m.encryptedContent) {
-      // Use robust ID matching for sender
-      const mSenderId = (m.senderId?._id || m.senderId || "").toString();
-      const isSender = mSenderId === authUserId;
-      
       const decrypted = await decryptMessage(m, e2eeKeys.privateKey, isSender);
       if (decrypted) {
-        return { ...m, text: decrypted.text, image: decrypted.image };
+        return { ...m, text: decrypted.text, image: decrypted.image, isMe: isSender };
       }
     }
-    return m;
+    return { ...m, isMe: isSender };
   }));
 };
 
@@ -320,6 +319,10 @@ export const useChatStore = create((set, get) => ({
         isMatchObj(currentSelectedId, decryptedMsg.senderId) ||
         isMatchObj(currentSelectedId, decryptedMsg.receiverId)
       );
+
+      if (!belongsToCurrentChat) {
+        console.log(`[ChatStore] Message ignored: current selection ${currentSelectedId} does not match sender ${normalizeId(decryptedMsg.senderId)} or receiver ${normalizeId(decryptedMsg.receiverId)}`);
+      }
 
       let newMessages = [...state.messages];
       const users = [...state.users];

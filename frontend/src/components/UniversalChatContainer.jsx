@@ -388,15 +388,15 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
   const formattedMsgs = useMemo(() => {
     return (rawMsgs || []).map(m => {
-      const meId = authUser?._id?.toString();
-      const sId  = (m.senderId?._id || m.senderId)?.toString();
-      const isMe = sId === meId;
+      const meIdStr = authUser?._id?.toString();
+      const sIdStr  = (m.senderId?._id || m.senderId?.id || m.senderId)?.toString();
+      const isMe = sIdStr === meIdStr;
       return {
         id:        m.id || m._id,
         from:      isMe ? "You" : (m.senderId?.username || m.senderId?.fullName || "Member"),
         text:      m.text || null,
         image:     m.image || null,
-        uid:       sId,
+        uid:       sIdStr,
         out:       isMe,
         time:      formatTime(m.createdAt),
         reactions: localReactions[m.id || m._id] || {},

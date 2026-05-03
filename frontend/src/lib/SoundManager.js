@@ -27,11 +27,18 @@ class SoundManager {
 
     // Interaction unlocker to bypass browser autoplay restrictions
     this._unlockAudio = () => {
+      // Create and play a tiny silent buffer to unlock the audio engine
+      Object.values(this.sounds).forEach(audio => {
+        audio.play().then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }).catch(() => {});
+      });
       document.removeEventListener('click', this._unlockAudio);
       document.removeEventListener('keydown', this._unlockAudio);
     };
-    document.addEventListener('click', this._unlockAudio);
-    document.addEventListener('keydown', this._unlockAudio);
+    document.addEventListener('click', this._unlockAudio, { once: true });
+    document.addEventListener('keydown', this._unlockAudio, { once: true });
   }
 
   /**

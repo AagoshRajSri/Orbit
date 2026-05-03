@@ -402,16 +402,21 @@ const AppContent = () => {
       },
       newMessage: (message, ack) => {
         const currentAuthUser = useAuthStore.getState().authUser;
-        const senderIdStr = typeof message.senderId === "object" ? message.senderId._id : message.senderId;
-        if (currentAuthUser && senderIdStr !== currentAuthUser._id) {
+        // Robust ID check: if sender is NOT the current user, play sound
+        const senderId = message.senderId?._id || message.senderId?.id || message.senderId;
+        const myId = currentAuthUser?._id || currentAuthUser?.id;
+
+        if (myId && senderId?.toString() !== myId.toString()) {
           soundManager.play("incomingmsg");
         }
         enqueueMessage(messageBufferRef, { msg: message, ack });
       },
       newNexusMessage: (message, ack) => {
         const currentAuthUser = useAuthStore.getState().authUser;
-        const senderIdStr = typeof message.senderId === "object" ? message.senderId._id : message.senderId;
-        if (currentAuthUser && senderIdStr !== currentAuthUser._id) {
+        const senderId = message.senderId?._id || message.senderId?.id || message.senderId;
+        const myId = currentAuthUser?._id || currentAuthUser?.id;
+
+        if (myId && senderId?.toString() !== myId.toString()) {
           soundManager.play("notification");
         }
         enqueueMessage(nexusMessageBufferRef, { msg: message, ack });
