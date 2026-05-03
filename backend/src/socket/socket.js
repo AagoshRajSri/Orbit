@@ -155,9 +155,9 @@ export const initializeSocketIO = (io) => {
         while (queuedMessageStr) {
           try {
             const msg = JSON.parse(queuedMessageStr);
-            socket.emit("newMessage", msg);
-            // Note: In production, consider implementing ack-based delivery
-            // to re-queue messages that fail to deliver
+            const event = msg._event || "newMessage";
+            delete msg._event;
+            socket.emit(event, msg);
           } catch (e) {
             console.error("Failed to parse queued message", e);
             // Re-queue the message if parsing fails
@@ -366,17 +366,14 @@ export const initializeSocketIO = (io) => {
       }
     });
 
+    // Immediate join to personal room
     socket.join(socket.userId);
 
-    const joinUserNexuses = async () => {
-      try {
-        const nexuses = await Nexus.find({ members: socket.userId });
-        nexuses.forEach((n) => socket.join(n._id.toString()));
-      } catch (e) {
-        console.error("Nexus join error:", e);
-      }
-    };
-    joinUserNexuses();
+    // Join all nexus rooms for this user immediately upon connection
+    const nexuses = await Nexus.find({ members: socket.userId }).lean();
+    for (const n of nexuses) {
+      socket.join(n._id.toString());
+    }
 
     socket.on("joinNexusRoom", async (nexusId) => {
       try {
@@ -443,6 +440,77 @@ export const initializeSocketIO = (io) => {
       }
     });
   });
+};
+
+export const emitToUser = async (userId, event, data) => {
+  if (!ioInstance) return;
+  const userIdStr = userId.toString();
+  
+  let delivered = false;
+  try {
+    // Attempt real-time delivery with acknowledgment timeout (30s)
+    // 30s accounts for polling transport latency on Render free-tier
+    const responses = await ioInstance.to(userIdStr).timeout(30000).emitWithAck(event, data);
+    if (responses && responses.length > 0) {
+      delivered = true;
+    }
+  } catch (e) {
+    // No one acknowledged within the timeout
+    console.debug(`[Socket] Delivery to ${userIdStr} timed out or failed, falling back to queue.`);
+  }
+
+  // If no real-time delivery was acknowledged, and Redis is available, queue it
+  if (!delivered && isRedisAvailable) {
+    try {
+      await redisClient.lpush(`offline_queue:${userIdStr}`, JSON.stringify({ ...data, _event: event }));
+      console.debug(`[Socket] Message queued for offline user: ${userIdStr}`);
+    } catch (e) {
+      console.error("Reliable emit queuing error:", e);
+    }
+  }
+};
+
+// Cache for Nexus memberships to avoid DB hit on every message
+// Key: nexusId, Value: { members: string[], expires: number }
+const nexusMembersCache = new Map();
+const NEXUS_CACHE_TTL = 30000; // 30 seconds
+
+export const emitToNexus = async (nexusId, event, data) => {
+  if (!ioInstance) return;
+  const nexusIdStr = nexusId.toString();
+  
+  // For critical events like "newNexusMessage", use reliable per-user delivery
+  // This ensures everyone gets it even if they're in a polling cycle or offline
+  if (event === "newNexusMessage") {
+    try {
+      let members = null;
+      const cached = nexusMembersCache.get(nexusIdStr);
+      
+      if (cached && cached.expires > Date.now()) {
+        members = cached.members;
+      } else {
+        const nexus = await Nexus.findById(nexusIdStr).select("members").lean();
+        if (nexus && nexus.members) {
+          members = nexus.members.map(m => m.toString());
+          nexusMembersCache.set(nexusIdStr, {
+            members,
+            expires: Date.now() + NEXUS_CACHE_TTL
+          });
+        }
+      }
+
+      if (members) {
+        const promises = members.map(memberId => emitToUser(memberId, event, data));
+        await Promise.allSettled(promises);
+        return;
+      }
+    } catch (e) {
+      console.error("[Socket] Reliable Nexus emit failed:", e.message);
+    }
+  }
+
+  // Fallback for non-critical events (typing indicators, etc)
+  ioInstance.to(nexusIdStr).emit(event, data);
 };
 
 export const getIO = () => {

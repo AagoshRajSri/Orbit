@@ -26,6 +26,7 @@ import { issueNonce, consumeNonce } from "../lib/nonceStore.js";
 import securityService from "../services/security.service.js";
 import AppConfig from "../models/config.model.js";
 import { systemEmitter } from "../lib/systemEmitter.js";
+import { sanitizeForOrbit } from "../lib/obfuscation.js";
 
 const passwordSchema = z
   .string()
@@ -139,7 +140,7 @@ export const signup = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      data: {
+      data: sanitizeForOrbit({
         _id: newUser._id,
         username: newUser.username,
         email: newUser.email,
@@ -149,7 +150,7 @@ export const signup = async (req, res) => {
         isEmailVerified: newUser.isEmailVerified,
         authToken: tokens.accessToken,
         sessionId: tokens.sessionId
-      },
+      }),
       message: "User registered successfully",
     });
   } catch (error) {
@@ -229,7 +230,7 @@ export const login = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: {
+      data: sanitizeForOrbit({
         _id: user._id,
         username: user.username,
         email: user.email,
@@ -239,7 +240,7 @@ export const login = async (req, res) => {
         isEmailVerified: user.isEmailVerified,
         authToken: tokens.accessToken,
         sessionId: tokens.sessionId
-      },
+      }),
       message: "Login successful",
     });
 
@@ -524,12 +525,12 @@ export const checkAuth = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: {
+      data: sanitizeForOrbit({
         ...userObj,
         hasConstellation: !!constellationHash,
         sessionId: req.sessionId,
         socketToken: req.cookies?.jwt || req.headers["x-auth-token"] || req.headers.authorization?.split(" ")[1],
-      },
+      }),
     });
   } catch (error) {
     console.error("Error in checkAuth controller:", {
@@ -887,7 +888,7 @@ export const constellationSignup = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      data: {
+      data: sanitizeForOrbit({
         _id: savedUser._id,
         username: savedUser.username,
         email: savedUser.email,
@@ -896,7 +897,7 @@ export const constellationSignup = async (req, res) => {
         updatedAt: savedUser.updatedAt,
         authToken: tokens.accessToken,
         sessionId: tokens.sessionId,
-      },
+      }),
       message: "Constellation identity sealed ✦",
     });
   } catch (error) {
@@ -1117,7 +1118,7 @@ export const constellationLogin = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: {
+      data: sanitizeForOrbit({
         _id: user._id,
         username: user.username,
         email: user.email,
@@ -1128,7 +1129,7 @@ export const constellationLogin = async (req, res) => {
         sessionId: tokens.sessionId,
         hasConstellation: true,
         ...(behaviorWarning && { behaviorWarning: true }),
-      },
+      }),
       message: "Constellation identity verified.",
     });
   } catch (error) {

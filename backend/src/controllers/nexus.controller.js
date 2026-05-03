@@ -1,6 +1,6 @@
 import Nexus from "../models/nexus.model.js";
 import Message from "../models/message.model.js";
-import { getIO } from "../socket/socket.js";
+import { getIO, emitToNexus } from "../socket/socket.js";
 import { getRealId, sanitizeForOrbit } from "../lib/obfuscation.js";
 import cloudinary from "../lib/cloudinary.js";
 import { systemEmitter } from "../lib/systemEmitter.js";
@@ -534,8 +534,8 @@ export const sendNexusMessage = async (req, res) => {
 
     // Emit to all nexus members using the REAL room ID
     try {
-      const io = getIO();
-      io.to(realNexusId.toString()).emit("newNexusMessage", populatedMessage);
+      const sanitizedMessage = sanitizeForOrbit(populatedMessage);
+      emitToNexus(realNexusId, "newNexusMessage", sanitizedMessage);
     } catch (socketError) {
       console.warn("Nexus socket emission failed:", socketError.message);
     }

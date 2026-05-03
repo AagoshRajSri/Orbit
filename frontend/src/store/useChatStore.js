@@ -295,6 +295,7 @@ export const useChatStore = create((set, get) => ({
       const normalizeId = (obj) => {
         if (!obj) return null;
         if (typeof obj === 'string') return obj;
+        // Always prefer the real _id for internal state matching if available
         return (obj._id || obj.id || obj).toString();
       };
       
@@ -305,9 +306,22 @@ export const useChatStore = create((set, get) => ({
       const senderId = normalizeId(decryptedMsg.senderId);
       const receiverId = normalizeId(decryptedMsg.receiverId);
       
-      // The message belongs to current chat if we are talking to the sender OR the receiver
-      const belongsToCurrentChat = 
-        currentSelectedId === senderId || currentSelectedId === receiverId;
+      // Robust matching helper to handle real vs obfuscated IDs
+      const isMatch = (idA, idB) => {
+        if (!idA || !idB) return false;
+        const a = idA.toString();
+        const b = idB.toString();
+        if (a === b) return true;
+        
+        // Try to match via users list if one is obfuscated and other is real
+        // state.users contains objects with both _id and id
+        return state.users.some(u => 
+          (u._id?.toString() === a || u.id?.toString() === a) &&
+          (u._id?.toString() === b || u.id?.toString() === b)
+        );
+      };
+
+      const belongsToCurrentChat = currentSelectedId && (isMatch(currentSelectedId, senderId) || isMatch(currentSelectedId, receiverId));
       
       let newMessages = [...state.messages];
       const users = [...state.users];
@@ -330,7 +344,8 @@ export const useChatStore = create((set, get) => ({
               const existingMsg = newMessages[existsIndex];
               newMessages[existsIndex] = {
                 ...decryptedMsg,
-                _id: existingMsg._id || decryptedMsg._id,
+                // Prioritize real _id from server, fallback to existing if server didn't provide one
+                _id: decryptedMsg._id || existingMsg._id,
                 status: "sent"
               };
           }
@@ -442,11 +457,26 @@ export const useChatStore = create((set, get) => ({
 
   setContactList: (contactList) => set({ contactList }),
 
-  setSelectedUser: (user) => set({ 
-    selectedUser: user,
-    selectedConversationId: user?._id || null,
-    selectedConversationType: user ? "direct" : null
-  }),
+  setSelectedUser: (user) => {
+    if (!user) {
+      set({ selectedUser: null, selectedConversationId: null, selectedConversationType: null });
+      return;
+    }
+    
+    // Resolve the real _id from the existing users list if possible
+    // This handles cases where 'user' might be an ID string (real or obfuscated) or an object
+    const users = get().users;
+    const targetId = (user._id || user.id || user).toString();
+    const resolvedUser = users.find(u => u._id === targetId || u.id === targetId);
+    
+    const realId = resolvedUser?._id || user._id || (targetId.startsWith("orb_") ? null : targetId);
+    
+    set({ 
+      selectedUser: resolvedUser || (typeof user === 'object' ? user : null),
+      selectedConversationId: realId ? realId.toString() : targetId,
+      selectedConversationType: "direct"
+    });
+  },
 
   markSeen: (conversationId) => {
     const { socket } = useAuthStore.getState();

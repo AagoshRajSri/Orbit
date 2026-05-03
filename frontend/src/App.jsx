@@ -35,7 +35,7 @@ import { useChatStore } from "./store/useChatStore";
 import { useNexusStore } from "./store/useNexusStore";
 import { useDevicePerformance } from "./hooks/useDevicePerformance";
 import { useSpotifyStore } from "./store/useSpotifyStore";
-import { getSocket, disconnectSocket } from "./lib/socket";
+import { getSocket, disconnectSocket, updateSocketToken } from "./lib/socket";
 import ChatLoader from "./components/ChatLoader";
 import OrbitLoader from "./components/OrbitLoader";
 import PostAuthLoader from "./components/PostAuthLoader";
@@ -130,11 +130,11 @@ const DynamicRouteHandler = (props) => {
   const location = useLocation();
 
   useEffect(() => {
-    // Robust ID normalization for both raw and obfuscated IDs
-    const normalizeId = (id) => {
-      if (!id) return null;
-      if (typeof id === 'object') return (id._id || id.id || "").toString();
-      return id.toString();
+    // Standardized normalization: prefer real _id for internal state matching
+    const normalizeId = (obj) => {
+      if (!obj) return null;
+      if (typeof obj === 'string') return obj;
+      return (obj._id || obj.id || obj).toString();
     };
 
     const nid = normalizeId(nexusId);
@@ -295,107 +295,114 @@ const AppContent = () => {
   }, [authUser, isAuthPage, navigate]);
   */
 
-  useEffect(() => {
-    if (authUser) {
-      const socket = getSocket();
-      
-      if (!socket) {
-        return;
+  // Ref-based buffers and locks to prevent race conditions
+  const messageBufferRef = useRef([]);
+  const nexusMessageBufferRef = useRef([]);
+  const flusherTimeoutRef = useRef(null);
+  const isFlushingRef = useRef(false);
+
+  const flushBuffers = useCallback(async () => {
+    if (isFlushingRef.current) return;
+    isFlushingRef.current = true;
+    flusherTimeoutRef.current = null;
+
+    try {
+      // Process direct messages sequentially to maintain order
+      if (messageBufferRef.current.length > 0) {
+        const msgs = [...messageBufferRef.current];
+        messageBufferRef.current = [];
+        const chatStore = useChatStore.getState();
+        for (const i of msgs) {
+          try {
+            await chatStore.addMessage(i.msg);
+            if (typeof i.ack === "function") i.ack();
+          } catch (err) {
+            console.error("Error processing message buffer:", err);
+          }
+        }
       }
 
-      const syncConversationData = () => {
-        const chatState = useChatStore.getState();
-        const nexusState = useNexusStore.getState();
-
-        // Only fetch if list is empty. This prevents the "wipe-on-reconnect" flicker 
-        // while ensuring we recover data if a connection was dead for a long time.
-        if (chatState.selectedConversationId && chatState.selectedConversationType === "direct") {
-          if (chatState.messages.length === 0) {
-            chatState.getMessages(chatState.selectedConversationId, "direct");
+      // Process nexus messages sequentially to maintain order
+      if (nexusMessageBufferRef.current.length > 0) {
+        const msgs = [...nexusMessageBufferRef.current];
+        nexusMessageBufferRef.current = [];
+        const nexusStore = useNexusStore.getState();
+        for (const i of msgs) {
+          try {
+            await nexusStore.addNexusMessage(i.msg);
+            if (typeof i.ack === "function") i.ack();
+          } catch (err) {
+            console.error("Error processing nexus message buffer:", err);
           }
         }
+      }
+    } finally {
+      isFlushingRef.current = false;
+      // If new messages arrived while we were flushing, schedule another flush
+      if (messageBufferRef.current.length > 0 || nexusMessageBufferRef.current.length > 0) {
+        flusherTimeoutRef.current = setTimeout(flushBuffers, 50);
+      }
+    }
+  }, []);
 
-        if (nexusState.selectedNexusId) {
-          if (nexusState.nexusMessages.length === 0) {
-            nexusState.getNexusMessages(nexusState.selectedNexusId);
-          }
-        }
-      };
+  const enqueueMessage = useCallback((bufferRef, item) => {
+    bufferRef.current.push(item);
+    if (!flusherTimeoutRef.current && !isFlushingRef.current) {
+      flusherTimeoutRef.current = setTimeout(flushBuffers, 50);
+    }
+  }, [flushBuffers]);
 
-      let messageBuffer = [];
-      let nexusMessageBuffer = [];
-      let flusherTimeout = null;
+  const syncConversationData = useCallback(() => {
+    const authUser = useAuthStore.getState().authUser;
+    if (!authUser) return;
 
-      const flushBuffers = async () => {
-        // Clear timeout early so new items can schedule another flush while this one is processing
-        flusherTimeout = null;
+    const chatState = useChatStore.getState();
+    const nexusState = useNexusStore.getState();
 
-        // Process direct messages sequentially to maintain order
-        if (messageBuffer.length > 0) {
-          const msgs = messageBuffer.splice(0, messageBuffer.length);
-          const chatStore = useChatStore.getState();
-          for (const i of msgs) {
-            try {
-              await chatStore.addMessage(i.msg);
-              if (i.ack) i.ack();
-            } catch (err) {
-              console.error("Error processing message buffer:", err);
-            }
-          }
-        }
-        // Process nexus messages sequentially to maintain order
-        if (nexusMessageBuffer.length > 0) {
-          const msgs = nexusMessageBuffer.splice(0, nexusMessageBuffer.length);
-          const nexusStore = useNexusStore.getState();
-          for (const i of msgs) {
-            try {
-              await nexusStore.addNexusMessage(i.msg);
-              if (i.ack) i.ack();
-            } catch (err) {
-              console.error("Error processing nexus message buffer:", err);
-            }
-          }
-        }
-      };
+    // Sync active conversation messages if they haven't been loaded yet
+    if (chatState.selectedConversationId && chatState.selectedConversationType === "direct") {
+      if (chatState.messages.length === 0) {
+        chatState.getMessages(chatState.selectedConversationId, "direct");
+      }
+    }
 
-      const enqueueMessage = (buffer, item) => {
-        buffer.push(item);
-        if (!flusherTimeout) {
-          flusherTimeout = setTimeout(flushBuffers, 50);
-        }
-      };
+    if (nexusState.selectedNexusId) {
+      if (nexusState.nexusMessages.length === 0) {
+        nexusState.getNexusMessages(nexusState.selectedNexusId);
+      }
+    }
+  }, []);
 
-      socket.on("connect", () => {
+  // Primary Socket Lifecycle - Mount Once
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handlers = {
+      connect: () => {
+        console.log("[Socket] Connected - Triggering sync");
         syncConversationData();
-      });
-
-      socket.on("getOnlineUsers", (users) => {
+      },
+      getOnlineUsers: (users) => {
         setOnlineUsers(users);
-      });
-
-      socket.on("newMessage", (message, ack) => {
+      },
+      newMessage: (message, ack) => {
+        const currentAuthUser = useAuthStore.getState().authUser;
         const senderIdStr = typeof message.senderId === "object" ? message.senderId._id : message.senderId;
-        if (authUser && senderIdStr !== authUser._id) {
+        if (currentAuthUser && senderIdStr !== currentAuthUser._id) {
           soundManager.play("incomingmsg");
         }
-        console.log('[Socket] newMessage received details:', { 
-          messageId: message._id, 
-          senderId: senderIdStr, 
-          receiverId: message.receiverId,
-          currentChatStore: useChatStore.getState().selectedConversationId 
-        });
-        enqueueMessage(messageBuffer, { msg: message, ack });
-      });
-
-      socket.on("newNexusMessage", (message, ack) => {
+        enqueueMessage(messageBufferRef, { msg: message, ack });
+      },
+      newNexusMessage: (message, ack) => {
+        const currentAuthUser = useAuthStore.getState().authUser;
         const senderIdStr = typeof message.senderId === "object" ? message.senderId._id : message.senderId;
-        if (authUser && senderIdStr !== authUser._id) {
+        if (currentAuthUser && senderIdStr !== currentAuthUser._id) {
           soundManager.play("notification");
         }
-        enqueueMessage(nexusMessageBuffer, { msg: message, ack });
-      });
-
-      socket.on("admin_notification", (data) => {
+        enqueueMessage(nexusMessageBufferRef, { msg: message, ack });
+      },
+      admin_notification: (data) => {
         toast((t) => (
           <div className="flex flex-col gap-1">
             <span className="font-bold text-sm flex items-center gap-2">
@@ -415,92 +422,88 @@ const AppContent = () => {
           }
         });
         soundManager.play("notification");
-      });
-
-      socket.on("nexusJoined", (nexus) => {
+      },
+      nexusJoined: (nexus) => {
         addNexus(nexus);
         socket.emit("joinNexusRoom", nexus._id);
-      });
-      
-      socket.on("userTyping", ({ from, isTyping }) => {
+      },
+      userTyping: ({ from, isTyping }) => {
         setUserTyping(from, isTyping);
-      });
-
-      socket.on("nexusTyping", ({ nexusId, userId, username, isTyping }) => {
+      },
+      nexusTyping: ({ nexusId, userId, username, isTyping }) => {
         setNexusTyping(userId, username, isTyping);
-      });
-
-      socket.on("userJoinedNexus", ({ nexusId, user, username }) => {
+      },
+      userJoinedNexus: ({ nexusId, user, username }) => {
         useNexusStore.getState().addNexusMember(nexusId, user);
         toast.info(`${username} joined the Nexus`);
-      });
-
-      socket.on("userLeftNexus", ({ nexusId, userId, username }) => {
+      },
+      userLeftNexus: ({ nexusId, userId, username }) => {
         useNexusStore.getState().removeNexusMemberSocket(nexusId, userId);
         toast.info(`${username} left the Nexus`);
-      });
-
-      socket.on("memberRemovedFromNexus", ({ nexusId, userId, username }) => {
+      },
+      memberRemovedFromNexus: ({ nexusId, userId, username }) => {
         useNexusStore.getState().removeNexusMemberSocket(nexusId, userId);
         toast.warning(`${username} was removed from the Nexus`);
-      });
-
-      socket.on("messageUpdated", (message) => {
+      },
+      messageUpdated: (message) => {
         useChatStore.getState().updateMessage(message._id, message);
-      });
-
-      socket.on("messageDeleted", ({ messageId }) => {
+      },
+      messageDeleted: ({ messageId }) => {
         useChatStore.getState().deleteMessage(messageId);
-      });
-
-      socket.on("nexusMessageUpdated", (data) => {
+      },
+      nexusMessageUpdated: (data) => {
         const { nexusId, messageId, updates } = data;
         useNexusStore.getState().updateNexusMessage(nexusId, messageId, updates);
-      });
-
-      socket.on("nexusMessageDeleted", (data) => {
+      },
+      nexusMessageDeleted: (data) => {
         const { nexusId, messageId } = data;
         useNexusStore.getState().deleteNexusMessage(nexusId, messageId);
-      });
-
-      socket.on("messageSeen", ({ messageId, seenAt }) => {
+      },
+      messageSeen: ({ messageId, seenAt }) => {
         useChatStore.getState().markMessageSeen(messageId, seenAt);
-      });
-
-      socket.on("nexusMessageSeen", ({ messageId, nexusId, seenAt }) => {
+      },
+      nexusMessageSeen: ({ messageId, nexusId, seenAt }) => {
         useNexusStore.getState().markNexusMessageSeen(nexusId, messageId, seenAt);
-      });
-
-      socket.on("disconnect", () => {
-        console.log("Socket disconnected");
+      },
+      disconnect: (reason) => {
+        console.log("[Socket] Disconnected:", reason);
         useChatStore.getState().clearUserTyping();
         useNexusStore.getState().clearNexusTyping();
-      });
+      }
+    };
 
-      return () => {
-        if (flusherTimeout) clearTimeout(flusherTimeout);
-        socket.off("connect");
-        socket.off("getOnlineUsers");
-        socket.off("newMessage");
-        socket.off("newNexusMessage");
-        socket.off("nexusJoined");
-        socket.off("userTyping");
-        socket.off("nexusTyping");
-        socket.off("userJoinedNexus");
-        socket.off("userLeftNexus");
-        socket.off("memberRemovedFromNexus");
-        socket.off("messageUpdated");
-        socket.off("messageDeleted");
-        socket.off("nexusMessageUpdated");
-        socket.off("nexusMessageDeleted");
-        socket.off("messageSeen");
-        socket.off("nexusMessageSeen");
-        socket.off("disconnect");
-      };
-    } else {
-      disconnectSocket();
+    // Attach all handlers
+    Object.keys(handlers).forEach(event => {
+      socket.on(event, handlers[event]);
+    });
+
+    // Initial manual trigger for sync if already connected
+    if (socket.connected) {
+      syncConversationData();
     }
-  }, [authUser, socketToken, setOnlineUsers, addNexus, setUserTyping, setNexusTyping]);
+
+    return () => {
+      console.log("[Socket] Cleanup: Removing listeners");
+      if (flusherTimeoutRef.current) clearTimeout(flusherTimeoutRef.current);
+      Object.keys(handlers).forEach(event => {
+        socket.off(event, handlers[event]);
+      });
+    };
+  }, []); // Mount Once
+
+  // Handle Token Updates
+  useEffect(() => {
+    if (socketToken) {
+      updateSocketToken(socketToken);
+    }
+  }, [socketToken]);
+
+  // Post-Auth Sync
+  useEffect(() => {
+    if (authUser) {
+      syncConversationData();
+    }
+  }, [authUser, syncConversationData]);
 
   useEffect(() => {
     if (!authUser && window.__orbitMusicEngine__) {

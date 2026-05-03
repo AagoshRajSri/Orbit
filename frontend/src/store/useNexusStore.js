@@ -431,21 +431,31 @@ export const useNexusStore = create((set, get) => ({
   },
 
   setSelectedNexus: (nexus) => {
-    if (nexus) {
-      const nid = nexus._id?.toString();
-      // Ensure socket joins this nexus room for real-time messages
-      if (nexus._id) {
-        getSocket().emit("joinNexusRoom", nexus._id);
-      }
-      set((state) => ({
-        selectedNexus: nexus,
-        selectedNexusId: nid,
-        nexusActionView: null,
-        nexusUnread: { ...state.nexusUnread, [nid]: 0 },
-      }));
-    } else {
+    if (!nexus) {
       set({ selectedNexus: null, selectedNexusId: null, nexusActionView: null });
+      return;
     }
+
+    // Resolve the real _id from the existing nexuses list if possible
+    const nexuses = get().nexuses;
+    const targetId = (nexus._id || nexus.id || nexus).toString();
+    const resolvedNexus = nexuses.find(n => n._id === targetId || n.id === targetId);
+    
+    const realId = resolvedNexus?._id || nexus._id || (targetId.startsWith("orb_") ? null : targetId);
+    const nid = realId ? realId.toString() : targetId;
+
+    // Ensure socket joins this nexus room for real-time messages
+    const socketId = resolvedNexus?._id || nexus._id || targetId;
+    if (socketId) {
+      getSocket().emit("joinNexusRoom", socketId);
+    }
+
+    set((state) => ({
+      selectedNexus: resolvedNexus || (typeof nexus === 'object' ? nexus : null),
+      selectedNexusId: nid,
+      nexusActionView: null,
+      nexusUnread: { ...state.nexusUnread, [nid]: 0 },
+    }));
   },
 
   markNexusSeen: (nexusId) => {
@@ -479,14 +489,30 @@ export const useNexusStore = create((set, get) => ({
       const normalizeId = (obj) => {
         if (!obj) return null;
         if (typeof obj === 'string') return obj;
+        // Always prefer the real _id for internal state matching if available
         return (obj._id || obj.id || obj).toString();
       };
 
       const msgNexusId = normalizeId(message.nexusId);
       const selNexusId = normalizeId(selectedNexusId);
 
-      // We use selectedNexusId for comparison as it's more stable during route transitions
-      if (selNexusId && msgNexusId === selNexusId) {
+      // Robust matching helper for Nexus IDs
+      const isNexusMatch = (idA, idB) => {
+        if (!idA || !idB) return false;
+        const a = idA.toString();
+        const b = idB.toString();
+        if (a === b) return true;
+        
+        const nexuses = get().nexuses;
+        return nexuses.some(n => 
+          (n._id?.toString() === a || n.id?.toString() === a) &&
+          (n._id?.toString() === b || n.id?.toString() === b)
+        );
+      };
+
+      const belongsToCurrentNexus = selNexusId && isNexusMatch(msgNexusId, selNexusId);
+
+      if (belongsToCurrentNexus) {
         const messageId = normalizeId(message._id);
         const idempotencyKey = message.idempotencyKey;
         

@@ -74,7 +74,9 @@ export const sanitizeForOrbit = (obj) => {
   }
   
   if (obj !== null && typeof obj === 'object') {
-    const newObj = { ...obj };
+    // If it's a Mongoose document, convert to object first
+    const newObj = obj.toObject ? obj.toObject() : { ...obj };
+    
     if (newObj._id) {
        const idStr = newObj._id.toString();
        newObj.id = idStr.startsWith("orb_") ? idStr : obfuscateId(idStr);
@@ -83,10 +85,13 @@ export const sanitizeForOrbit = (obj) => {
        newObj.id = idStr.startsWith("orb_") ? idStr : obfuscateId(idStr);
     }
     
-    // Obfuscate related fields if they look like IDs
+    // Obfuscate related fields and recurse into nested objects
     for (const key in newObj) {
-      if (key.endsWith('Id') && typeof newObj[key] === 'string' && newObj[key].length > 20 && !newObj[key].startsWith("orb_")) {
-        newObj[key] = obfuscateId(newObj[key]);
+      const val = newObj[key];
+      if (key.endsWith('Id') && typeof val === 'string' && val.length > 20 && !val.startsWith("orb_")) {
+        newObj[key] = obfuscateId(val);
+      } else if (val !== null && typeof val === 'object' && key !== '_id' && key !== 'id') {
+        newObj[key] = sanitizeForOrbit(val);
       }
     }
     

@@ -1,7 +1,7 @@
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
-import { getIO } from "../socket/socket.js";
+import { getIO, emitToUser } from "../socket/socket.js";
 import { getRealId, sanitizeForOrbit } from "../lib/obfuscation.js";
 
 import { systemEmitter } from "../lib/systemEmitter.js";
@@ -140,9 +140,9 @@ export const sendMessage = async (req, res) => {
       if (existing) {
         // Re-emit for reliability: ensure receiver gets it even if first emit failed
         try {
-          const io = getIO();
-          io.to(senderId.toString()).emit("newMessage", existing);
-          io.to(realReceiverId.toString()).emit("newMessage", existing);
+          const sanitizedExisting = sanitizeForOrbit(existing);
+          await emitToUser(senderId, "newMessage", sanitizedExisting);
+          await emitToUser(realReceiverId, "newMessage", sanitizedExisting);
         } catch (e) {
           console.warn("Socket.IO replay emission failed:", e.message);
         }
@@ -211,11 +211,11 @@ export const sendMessage = async (req, res) => {
 
     // Emit socket event for real-time messaging
     try {
-      const io = getIO();
-      // Emit to sender using their real ID (which is their room name)
-      io.to(senderId.toString()).emit("newMessage", populatedMessage);
+      const sanitizedMessage = sanitizeForOrbit(populatedMessage);
+      // Emit to sender using their real ID
+      await emitToUser(senderId, "newMessage", sanitizedMessage);
       // Emit to receiver using their real ID
-      io.to(realReceiverId.toString()).emit("newMessage", populatedMessage);
+      await emitToUser(realReceiverId, "newMessage", sanitizedMessage);
     } catch (socketError) {
       console.warn("Socket.IO emission failed:", socketError.message);
     }
