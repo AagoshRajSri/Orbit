@@ -8,6 +8,8 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
 import { getSocket } from "../lib/socket";
 import { soundManager } from "../lib/SoundManager";
+import { PixelAvatarBadge } from "./PixelAvatar/PixelAvatarBadge.jsx";
+import { useAvatarState } from "./PixelAvatar/useAvatarState.js";
 
 // ─── Theme bridge: Orbit theme IDs → NexusChatDesktop theme tokens ───────────
 const THEME_BRIDGE = {
@@ -123,6 +125,18 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const getMessages       = useChatStore(s => s.getMessages);
 
   const isNexus = type === "nexus";
+
+  // ── Pixel Avatar: deterministic animal from entity id ─────────────────────
+  const entityId = isNexus
+    ? (selectedNexus?.id || selectedNexus?._id || "").toString()
+    : (selectedUser?.id || selectedUser?._id || "").toString();
+  const ANIMALS = ['dog', 'cat', 'bunny'];
+  const peerAnimal = ANIMALS[parseInt(entityId.slice(-4) || '0', 16) % ANIMALS.length];
+  const myAnimal   = ANIMALS[parseInt((authUser?._id || authUser?.id || '1').toString().slice(-4), 16) % ANIMALS.length];
+
+  // ── Avatar state machines ──────────────────────────────────────────────────
+  const peerAvatar = useAvatarState('idle', { sleepAfter: 120_000 });
+  const myAvatar   = useAvatarState('idle', { sleepAfter: 60_000 });
   // Robust entity lookup: if selectedNexus object is missing but we have an ID, try to find it in the nexuses list.
   const activeNexus = useMemo(() => {
     if (!isNexus) return null;
@@ -175,8 +189,8 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
   // ── Load messages when entity changes ──
   useEffect(() => {
-    if (isNexus && activeNexus?._id) {
-      getNexusMessages(activeNexus._id);
+    if (isNexus && (activeNexus?.id || activeNexus?._id)) {
+      getNexusMessages(activeNexus.id || activeNexus._id);
       // Build local group state for InfoPanel from live nexus data
       setLocalNexusGroup({
         name: activeNexus.name,
@@ -202,21 +216,50 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         links: [],
         tags: [activeNexus.joinCode ? `#${activeNexus.joinCode}` : "#nexus"],
         color: t.acc,
-        inviteLink: `nexus.app/join/${activeNexus.joinCode || activeNexus._id}`,
+        inviteLink: `nexus.app/join/${activeNexus.joinCode || activeNexus.id || activeNexus._id}`,
         createdAt: activeNexus.createdAt?.slice(0, 10) || "—",
         messageCount: nexusMessages.length,
         voiceActive: false,
       });
       setPinnedVisible(true);
-    } else if (!isNexus && selectedUser?._id) {
-      getMessages(selectedUser._id);
+    } else if (!isNexus && (selectedUser?.id || selectedUser?._id)) {
+      getMessages(selectedUser.id || selectedUser._id);
     }
-  }, [isNexus, activeNexus?._id, selectedUser?._id, getNexusMessages, getMessages, t.acc]);
+  }, [isNexus, activeNexus?.id, activeNexus?._id, selectedUser?.id, selectedUser?._id, getNexusMessages, getMessages, t.acc]);
 
   // ── Auto scroll ──
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [nexusMessages, messages, nexusTypingUsers, selectedUser?.isTyping]);
+
+  // ── Wire peer avatar to incoming messages ─────────────────────────────────
+  useEffect(() => {
+    const rawMsgs = isNexus ? nexusMessages : messages;
+    if (rawMsgs.length > 0) {
+      const lastMsg = rawMsgs[rawMsgs.length - 1];
+      const normalizeId = (id) => {
+        if (!id) return null;
+        if (typeof id === 'object') return (id._id || id.id || "").toString();
+        return id.toString();
+      };
+      const senderId = normalizeId(lastMsg.senderId);
+      const myId = normalizeId(authUser);
+      const isMe = senderId === myId;
+      
+      if (!isMe) peerAvatar.onMessageReceived();
+      else myAvatar.onMessageSent();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nexusMessages?.length, messages?.length]);
+
+  // ── Wire peer avatar to typing events ─────────────────────────────────────
+  useEffect(() => {
+    const isTypingActive = isNexus
+      ? (nexusTypingUsers?.filter(u => u.userId !== (authUser?._id || authUser?.id)?.toString()).length > 0)
+      : !!selectedUser?.isTyping;
+    if (isTypingActive) peerAvatar.onPeerTyping();
+    else peerAvatar.onPeerIdle();
+  }, [nexusTypingUsers, selectedUser?.isTyping, isNexus, authUser]);
 
   // ── Recording timer ──
   useEffect(() => {
@@ -254,21 +297,22 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const emitTyping = useMemo(() => throttle((isTyping) => {
     const socket = getSocket();
     if (!socket) return;
-    if (isNexus && selectedNexus?._id) {
+    if (isNexus && (selectedNexus?.id || selectedNexus?._id)) {
       socket.emit("nexusTyping", {
-        nexusId: selectedNexus._id,
+        nexusId: selectedNexus.id || selectedNexus._id,
         isTyping,
         username: authUser?.username,
         userId: authUser?._id,
       });
-    } else if (!isNexus && selectedUser?._id) {
-      socket.emit("userTyping", { to: selectedUser._id, isTyping });
+    } else if (!isNexus && (selectedUser?.id || selectedUser?._id)) {
+      socket.emit("userTyping", { to: selectedUser.id || selectedUser._id, isTyping });
     }
   }, 500), [isNexus, selectedNexus?._id, selectedUser?._id, authUser]);
 
   const handleInputChange = (e) => {
     setInput(e.target.value);
     emitTyping(true);
+    myAvatar.onTyping();
     clearTimeout(typingTimerRef.current);
     typingTimerRef.current = setTimeout(() => emitTyping(false), 2000);
   };
@@ -278,20 +322,21 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
     if (!text.trim()) return;
     emitTyping(false);
     clearTimeout(typingTimerRef.current);
+    myAvatar.onMessageSent();
     try {
       if (isNexus) {
-        if (!selectedNexus?._id) return;
-        await sendNexusMessage(selectedNexus._id, { text });
+        if (!(selectedNexus?.id || selectedNexus?._id)) return;
+        await sendNexusMessage(selectedNexus.id || selectedNexus._id, { text });
       } else {
-        if (!selectedUser?._id) return;
-        await sendMessage(selectedUser._id, text, null);
+        if (!(selectedUser?.id || selectedUser?._id)) return;
+        await sendMessage(selectedUser.id || selectedUser._id, text, null);
       }
       setInput("");
       setMediaPanel(null);
     } catch {
       addToast("Failed to send message");
     }
-  }, [isNexus, selectedNexus, selectedUser, sendNexusMessage, sendMessage, emitTyping, addToast]);
+  }, [isNexus, selectedNexus, selectedUser, sendNexusMessage, sendMessage, emitTyping, addToast, myAvatar]);
 
   // ── Reaction handler (local optimistic) ──
   const [localReactions, setLocalReactions] = useState({});
@@ -312,14 +357,14 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
       const sId  = (m.senderId?._id || m.senderId)?.toString();
       const isMe = sId === meId;
       return {
-        id:        m._id,
+        id:        m.id || m._id,
         from:      isMe ? "You" : (m.senderId?.username || m.senderId?.fullName || "Member"),
         text:      m.text || null,
         image:     m.image || null,
         uid:       sId,
         out:       isMe,
         time:      new Date(m.createdAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit", hour12: false }),
-        reactions: localReactions[m._id] || {},
+        reactions: localReactions[m.id || m._id] || {},
         status:    m.status || "sent",
         isSystem:  m.isSystem,
       };
@@ -356,9 +401,9 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   // ── InfoPanel group updater ──
   const handleInfoUpdate = async (field, val) => {
     setLocalNexusGroup(g => ({ ...g, [field]: val }));
-    if (isNexus && selectedNexus?._id) {
+    if (isNexus && (selectedNexus?.id || selectedNexus?._id)) {
       try {
-        await useNexusStore.getState().updateNexus(selectedNexus._id, { [field]: val });
+        await useNexusStore.getState().updateNexus(selectedNexus.id || selectedNexus._id, { [field]: val });
         addToast(`${field} updated`);
       } catch {
         addToast("Update failed");
@@ -367,9 +412,9 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   };
 
   const handleLeaveNexus = async () => {
-    if (!isNexus || !selectedNexus?._id) return;
+    if (!isNexus || !(selectedNexus?.id || selectedNexus?._id)) return;
     try {
-      await useNexusStore.getState().leaveNexus(selectedNexus._id);
+      await useNexusStore.getState().leaveNexus(selectedNexus.id || selectedNexus._id);
       addToast("Left Nexus successfully");
       navigate("/");
     } catch {
@@ -378,9 +423,9 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   };
 
   const handleDeleteNexus = async () => {
-    if (!isNexus || !selectedNexus?._id) return;
+    if (!isNexus || !(selectedNexus?.id || selectedNexus?._id)) return;
     try {
-      await deleteNexus(selectedNexus._id);
+      await deleteNexus(selectedNexus.id || selectedNexus._id);
       addToast("Nexus deleted permanently");
       navigate("/");
     } catch {
@@ -435,30 +480,19 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         </button>
 
 
-        {/* Avatar */}
+        {/* Avatar — replaced with animated PixelAvatarBadge */}
         <div
           style={{ position: "relative", cursor: "pointer" }}
-
           onClick={() => setShowInfo(x => !x)}
         >
-          <div style={{
-            width: 44, height: 44, borderRadius: "50%", background: t.avatar,
-            border: `2.5px solid ${t.acc}`, display: "flex", alignItems: "center",
-            justifyContent: "center", color: t.avTxt, fontSize: 18, fontFamily: t.font,
-            boxShadow: `0 0 20px ${t.glow}`, transition: "box-shadow .2s",
-            fontWeight: 700, letterSpacing: ".02em",
-          }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = `0 0 36px ${t.glow}`}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = `0 0 20px ${t.glow}`}
-          >
-            {isNexus ? t.decoratorBig : entityName.charAt(0).toUpperCase()}
-          </div>
-          {/* Status dot */}
-          <div style={{
-            position: "absolute", bottom: 1, right: 1, width: 12, height: 12,
-            borderRadius: "50%", background: t.status, border: `2.5px solid ${t.bg}`,
-            boxShadow: `0 0 8px ${t.status}`,
-          }} />
+          <PixelAvatarBadge
+            type={peerAnimal}
+            state={peerAvatar.state}
+            size={44}
+            showDot={!isNexus}
+            online={true}
+            style={{ borderRadius: "50%", overflow: "hidden", boxShadow: `0 0 20px ${t.glow}` }}
+          />
         </div>
 
         {/* Name + sub */}
@@ -554,14 +588,15 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
         {/* Messages */}
         {!isLoading && filtered.map(m => {
-          if (m.text === "__voice__") return <VoiceBubble key={m.id} t={t} out={m.out} />;
-          if (m.text === "__img__")   return <ImgBubble   key={m.id} t={t} out={m.out} />;
-          if (m.text === "__file__")  return <FileBubble  key={m.id} t={t} out={m.out} />;
+          const mKey = m._id || m.id || m.idempotencyKey;
+          if (m.text === "__voice__") return <VoiceBubble key={mKey} t={t} out={m.out} />;
+          if (m.text === "__img__")   return <ImgBubble   key={mKey} t={t} out={m.out} />;
+          if (m.text === "__file__")  return <FileBubble  key={mKey} t={t} out={m.out} />;
 
           // Real image message
           if (m.image && !m.text) {
             return (
-              <div key={m.id} style={{ display: "flex", justifyContent: m.out ? "flex-end" : "flex-start", marginBottom: 14, animation: "fadeUp .28s ease", position: "relative", zIndex: 1 }}>
+              <div key={mKey} style={{ display: "flex", justifyContent: m.out ? "flex-end" : "flex-start", marginBottom: 14, animation: "fadeUp .28s ease", position: "relative", zIndex: 1 }}>
                 <div style={{ background: m.out ? t.msgOut : t.msgIn, border: `1px solid ${m.out ? t.msgOutBrd : t.border}`, borderRadius: 18, [`borderBottom${m.out ? "Right" : "Left"}Radius`]: 3, padding: 4, overflow: "hidden", maxWidth: 280 }}>
                   <img src={m.image} alt="Shared media" style={{ width: 272, height: "auto", borderRadius: 14, objectFit: "cover", display: "block" }} />
                   <div style={{ padding: "4px 8px", fontSize: 11, color: t.txt2, fontFamily: t.font }}>{m.time}</div>
@@ -572,7 +607,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
           if (m.isSystem) {
             return (
-              <div key={m.id} style={{ display: "flex", justifyContent: "center", margin: "16px 0", position: "relative", zIndex: 1, width: "100%" }}>
+              <div key={mKey} style={{ display: "flex", justifyContent: "center", margin: "16px 0", position: "relative", zIndex: 1, width: "100%" }}>
                 <div style={{
                   padding: "6px 16px",
                   background: `linear-gradient(135deg, ${t.msgIn}, transparent)`,
@@ -593,15 +628,31 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
             );
           }
 
-          // Text + optional image
+          // Text + optional image — with per-row pixel avatar (Pattern C)
+          const isLatest = mKey === (filtered[filtered.length - 1]?._id || filtered[filtered.length - 1]?.id);
+          const rowAvatarType = m.out ? myAnimal : peerAnimal;
+          const rowAvatarState = isLatest ? (m.out ? myAvatar.state : peerAvatar.state) : 'idle';
+
           return (
-            <div key={m.id} style={{ position: "relative", zIndex: 1 }}>
-              {m.image && (
-                <div style={{ display: "flex", justifyContent: m.out ? "flex-end" : "flex-start", marginBottom: 4 }}>
-                  <img src={m.image} alt="Media" style={{ maxWidth: 260, borderRadius: 14, border: `1px solid ${t.border}`, objectFit: "cover" }} />
-                </div>
-              )}
-              {m.text && <MsgBubble msg={m} t={t} onReact={handleReact} isMe={m.out} />}
+            <div key={mKey} style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "flex-end", gap: 8, flexDirection: m.out ? "row-reverse" : "row", marginBottom: 4 }}>
+              {/* Per-message pixel avatar */}
+              <div style={{ flexShrink: 0 }}>
+                <PixelAvatarBadge
+                  type={rowAvatarType}
+                  state={rowAvatarState}
+                  size={28}
+                  showDot={false}
+                  style={{ borderRadius: 6, opacity: isLatest ? 1 : 0.55 }}
+                />
+              </div>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: m.out ? "flex-end" : "flex-start" }}>
+                {m.image && (
+                  <div style={{ marginBottom: 4 }}>
+                    <img src={m.image} alt="Media" style={{ maxWidth: 260, borderRadius: 14, border: `1px solid ${t.border}`, objectFit: "cover" }} />
+                  </div>
+                )}
+                {m.text && <MsgBubble msg={m} t={t} onReact={handleReact} isMe={m.out} />}
+              </div>
             </div>
           );
         })}
@@ -651,8 +702,18 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
           <TBtn t={t} d={I.img}     label="Image"    onClick={() => addToast("Image upload coming soon")} />
           <TBtn t={t} d={I.attach}  label="File"     onClick={() => addToast("File sharing coming soon")} />
           <div style={{ flex: 1 }} />
+          {/* Self pixel avatar — animates while you type */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, opacity: 0.85 }}>
+            <PixelAvatarBadge
+              type={myAnimal}
+              state={myAvatar.state}
+              size={28}
+              showDot={false}
+              style={{ borderRadius: 6 }}
+            />
+          </div>
           <span style={{ color: t.txt3, fontSize: 10, fontFamily: t.font, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 700, opacity: 0.6 }}>
-            🔒 E2EE Encrypted
+            🔒 E2EE
           </span>
         </div>
 

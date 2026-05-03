@@ -3,7 +3,27 @@ import toast from "../lib/toast";
 import { axiosInstance } from "../lib/axios.jsx";
 import { useAuthStore } from "./useAuthStore";
 
+const decryptMessagesList = async (messages) => {
+  const { e2eeKeys, authUser } = useAuthStore.getState();
+  if (!e2eeKeys || !messages || !messages.length) return messages;
+  
+  const { decryptMessage } = await import("../lib/e2ee.js");
+  const authUserId = authUser?._id?.toString();
 
+  return await Promise.all(messages.map(async (m) => {
+    if (m.encryptedContent) {
+      // Use robust ID matching for sender
+      const mSenderId = (m.senderId?._id || m.senderId || "").toString();
+      const isSender = mSenderId === authUserId;
+      
+      const decrypted = await decryptMessage(m, e2eeKeys.privateKey, isSender);
+      if (decrypted) {
+        return { ...m, text: decrypted.text, image: decrypted.image };
+      }
+    }
+    return m;
+  }));
+};
 
 export const useChatStore = create((set, get) => ({
   messages: [],
@@ -51,8 +71,9 @@ export const useChatStore = create((set, get) => ({
     }
     try {
       const res = await axiosInstance.get(`/message/${userId}`);
+      const decrypted = await decryptMessagesList(res.data);
       set({ 
-        messages: res.data, 
+        messages: decrypted, 
         hasMoreMessages: res.data.length === 50 
       });
     } catch (error) {
@@ -70,9 +91,10 @@ export const useChatStore = create((set, get) => ({
     try {
       const cursor = messages[0].createdAt;
       const res = await axiosInstance.get(`/message/${userId}?cursor=${cursor}`);
+      const decrypted = await decryptMessagesList(res.data);
       
       set((state) => ({ 
-        messages: [...res.data, ...state.messages],
+        messages: [...decrypted, ...state.messages],
         hasMoreMessages: res.data.length === 50
       }));
     } catch (error) {
@@ -111,11 +133,29 @@ export const useChatStore = create((set, get) => ({
       // Show immediately in UI with pending state
       addMessage(optimisticMessage);
 
-      const res = await axiosInstance.post(`/message/send/${userId}`, { 
-        text, 
-        image, 
-        idempotencyKey 
-      });
+      let payload = { text, image, idempotencyKey };
+
+      const e2eeKeys = useAuthStore.getState().e2eeKeys;
+      const targetUser = get().users.find(u => u._id === userId || u.id === userId);
+
+      if (e2eeKeys && targetUser && targetUser.publicKey) {
+        try {
+          const { encryptMessage } = await import("../lib/e2ee.js");
+          const encrypted = await encryptMessage(
+            { text, image },
+            e2eeKeys.publicKey,
+            targetUser.publicKey
+          );
+          payload = {
+            idempotencyKey,
+            ...encrypted
+          };
+        } catch (encErr) {
+          console.error("Encryption failed, falling back to plaintext", encErr);
+        }
+      }
+
+      const res = await axiosInstance.post(`/message/send/${userId}`, payload);
 
       // Manually trigger addMessage with the server response to resolve pending state immediately
       addMessage(res.data);
@@ -224,20 +264,22 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  addMessage: (message) => {
+  addMessage: async (message) => {
+    const [decryptedMsg] = await decryptMessagesList([message]);
+    
     set((state) => {
-      const normalizeId = (id) => {
-        if (!id) return null;
-        if (typeof id === 'object' && id._id) return id._id.toString();
-        return id.toString();
+      const normalizeId = (obj) => {
+        if (!obj) return null;
+        if (typeof obj === 'string') return obj;
+        return (obj._id || obj.id || obj).toString();
       };
       
       const currentSelectedId = state.selectedConversationId 
         ? normalizeId(state.selectedConversationId) 
-        : (state.selectedUser?._id ? normalizeId(state.selectedUser._id) : null);
+        : (state.selectedUser ? normalizeId(state.selectedUser) : null);
         
-      const senderId = normalizeId(message.senderId);
-      const receiverId = normalizeId(message.receiverId);
+      const senderId = normalizeId(decryptedMsg.senderId);
+      const receiverId = normalizeId(decryptedMsg.receiverId);
       
       // The message belongs to current chat if we are talking to the sender OR the receiver
       const belongsToCurrentChat = 
@@ -247,23 +289,23 @@ export const useChatStore = create((set, get) => ({
       const users = [...state.users];
       
       if (belongsToCurrentChat) {
-          const messageId = normalizeId(message._id);
-          const idempotencyKey = message.idempotencyKey;
+          const messageId = normalizeId(decryptedMsg);
+          const idempotencyKey = decryptedMsg.idempotencyKey;
           
           const existsIndex = newMessages.findIndex((m) => {
-             const mId = normalizeId(m._id);
+             const mId = normalizeId(m);
              if (mId && messageId && mId === messageId) return true;
              if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
              return false;
           });
           
           if (existsIndex === -1) {
-              newMessages.push(message);
+              newMessages.push(decryptedMsg);
           } else {
               // Preserve the local 'out' flag and other UI states
               newMessages[existsIndex] = { 
                 ...newMessages[existsIndex], 
-                ...message, 
+                ...decryptedMsg, 
                 status: "sent" 
               };
           }

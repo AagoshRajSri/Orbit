@@ -466,10 +466,10 @@ export const useNexusStore = create((set, get) => ({
     set((state) => {
       const { selectedNexusId, nexusMessages, nexusUnread } = state;
       
-      const normalizeId = (id) => {
-        if (!id) return null;
-        if (typeof id === 'object' && id._id) return id._id.toString();
-        return id.toString();
+      const normalizeId = (obj) => {
+        if (!obj) return null;
+        if (typeof obj === 'string') return obj;
+        return (obj._id || obj.id || obj).toString();
       };
 
       const msgNexusId = normalizeId(message.nexusId);

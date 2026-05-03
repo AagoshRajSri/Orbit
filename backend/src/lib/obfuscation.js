@@ -11,13 +11,22 @@ const ALGORITHM = "aes-256-ctr";
 const key = crypto.createHash("sha256").update(SECRET).digest();
 
 /**
- * Obfuscates a database ID into a stateless, decryptable handle.
+ * Obfuscates a database ID into a stateless, deterministic handle.
+ * We use a HMAC of the ID to derive a stable IV, ensuring the same ID 
+ * always results in the same obfuscated string.
  */
 export const obfuscateId = (id) => {
   if (!id) return null;
-  const iv = crypto.randomBytes(16);
+  const idStr = id.toString();
+  
+  // Create a deterministic IV from the ID and Secret
+  const iv = crypto.createHmac("sha256", SECRET)
+    .update(idStr)
+    .digest()
+    .slice(0, 16);
+
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-  const encrypted = Buffer.concat([cipher.update(id.toString()), cipher.final()]);
+  const encrypted = Buffer.concat([cipher.update(idStr), cipher.final()]);
   
   // Format: orb_ [IV in hex] [Encrypted in hex]
   return `orb_${iv.toString("hex")}${encrypted.toString("hex")}`;
@@ -68,7 +77,7 @@ export const sanitizeForOrbit = (obj) => {
     const newObj = { ...obj };
     if (newObj._id) {
        newObj.id = obfuscateId(newObj._id.toString());
-       delete newObj._id;
+       // Preserve _id for backwards compatibility with legacy UI components
     } else if (newObj.id) {
        newObj.id = obfuscateId(newObj.id.toString());
     }

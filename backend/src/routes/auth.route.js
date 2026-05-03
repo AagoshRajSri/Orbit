@@ -19,6 +19,7 @@ import {
   constellationChallenge,
   constellationSignup,
   constellationLogin,
+  updatePublicKey,
 } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 import { validateRequestBody } from "../middleware/validation.middleware.js";
@@ -44,6 +45,7 @@ router.post("/resend-verification", loginLimiter, resendVerificationEmail);
 
 // Profile & Contacts
 router.put("/update-profile", protectRoute, updateProfile);
+router.put("/update-public-key", protectRoute, updatePublicKey);
 router.delete("/delete-account", protectRoute, deleteAccount);
 router.get("/check", protectRoute, checkAuth);
 router.get("/contacts", protectRoute, getContacts);

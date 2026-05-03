@@ -1,7 +1,7 @@
 import Nexus from "../models/nexus.model.js";
 import Message from "../models/message.model.js";
 import { getIO } from "../socket/socket.js";
-import { getRealId } from "../lib/obfuscation.js";
+import { getRealId, sanitizeForOrbit } from "../lib/obfuscation.js";
 import cloudinary from "../lib/cloudinary.js";
 import { systemEmitter } from "../lib/systemEmitter.js";
 import { z } from "zod";
@@ -182,7 +182,7 @@ export const createNexus = async (req, res) => {
 
     systemEmitter.broadcast('nexus_created', { nexusId: populatedNexus._id, name: populatedNexus.name, creatorId });
 
-    res.status(201).json(populatedNexus);
+    res.status(201).json(sanitizeForOrbit(populatedNexus.toObject()));
   } catch (error) {
     console.error("Error in createNexus:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -409,7 +409,7 @@ export const getMyNexuses = async (req, res) => {
       .populate("members", "username profilePic")
       .sort({ updatedAt: -1 });
 
-    res.status(200).json(nexuses);
+    res.status(200).json(sanitizeForOrbit(nexuses.map(n => n.toObject())));
   } catch (error) {
     console.error("Error in getMyNexuses:", error.message);
     res.status(500).json({ message: "Internal server error" });
@@ -533,10 +533,10 @@ export const sendNexusMessage = async (req, res) => {
     };
 
     // Emit to all nexus members using the REAL room ID
-    const io = getIO();
-    io.to(realNexusId.toString()).emit("newNexusMessage", populatedMessage);
+    const sanitizedMessage = sanitizeForOrbit(populatedMessage);
+    io.to(realNexusId.toString()).emit("newNexusMessage", sanitizedMessage);
 
-    res.status(201).json(populatedMessage);
+    res.status(201).json(sanitizeForOrbit(populatedMessage));
   } catch (error) {
     console.error("Error in sendNexusMessage:", error.message);
     res.status(500).json({ message: "Internal server error" });

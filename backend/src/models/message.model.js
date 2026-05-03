@@ -21,10 +21,22 @@ const messageSchema = new mongoose.Schema(
       index: true,
     },
     text: {
-      type: String,
+      type: String, // Kept for legacy/fallback, but will be encrypted client-side
     },
     image: {
       type: String,
+    },
+    encryptedContent: {
+      type: String, // Base64 encoded AES-GCM encrypted payload
+    },
+    encryptedKeyForReceiver: {
+      type: String, // Base64 AES key encrypted with receiver's RSA pub key
+    },
+    encryptedKeyForSender: {
+      type: String, // Base64 AES key encrypted with sender's RSA pub key
+    },
+    iv: {
+      type: String, // Base64 initialization vector
     },
     isSystem: {
       type: Boolean,

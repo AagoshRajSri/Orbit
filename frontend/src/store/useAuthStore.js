@@ -16,6 +16,20 @@ export const useAuthStore = create(
       sessionId: null,
       socketToken: null,
       appConfig: null,
+      e2eeKeys: null, // { publicKey, privateKey } base64
+
+      initE2EE: async () => {
+        try {
+          const { generateKeyPair } = await import("../lib/e2ee.js");
+          const keys = await generateKeyPair();
+          set({ e2eeKeys: keys });
+          // Upload public key to backend
+          await axiosInstance.put("/auth/update-public-key", { publicKey: keys.publicKey });
+          return keys;
+        } catch (error) {
+          console.error("Failed to init E2EE keys", error);
+        }
+      },
 
       checkAuth: async () => {
         const startToken = get().socketToken;
@@ -37,6 +51,10 @@ export const useAuthStore = create(
             import("../lib/socket.js").then(({ updateSocketToken }) => {
               if (updateSocketToken) updateSocketToken(serverSocketToken);
             }).catch(console.error);
+          }
+
+          if (!get().e2eeKeys) {
+            get().initE2EE();
           }
         } catch (error) {
           console.error("[checkAuth] Server error status:", error.response?.status);
@@ -73,6 +91,7 @@ export const useAuthStore = create(
           const { authToken, sessionId } = res.data.data;
            set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
           get().refreshSocketToken();
+          get().initE2EE(); // Force new keys on signup
           toast.success("Account created successfully!");
           return { success: true, email: data.email };
         } catch (error) {
@@ -97,6 +116,7 @@ export const useAuthStore = create(
             sessionId 
           });
           get().refreshSocketToken();
+          if (!get().e2eeKeys) get().initE2EE();
           toast.success("Logged in successfully");
           return { success: true };
         } catch (error) {

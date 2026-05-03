@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 8 },
     profilePic: { type: String, default: "" },
     bio: { type: String, default: "", maxlength: 500 },
+    publicKey: { type: String, default: "" }, // For E2E encryption
     isLocked: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     contacts: [

@@ -2,7 +2,7 @@ import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getIO } from "../socket/socket.js";
-import { getRealId } from "../lib/obfuscation.js";
+import { getRealId, sanitizeForOrbit } from "../lib/obfuscation.js";
 
 import { systemEmitter } from "../lib/systemEmitter.js";
 import { z } from "zod";
@@ -10,11 +10,15 @@ import { z } from "zod";
 const messageSchema = z
   .object({
     text: z.string().max(2000).optional(),
-    image: z.string().max(5000).optional(), // Allow URLs and base64
+    image: z.string().max(5000000).optional(), // Base64 can be very large
     idempotencyKey: z.string().optional(),
+    encryptedContent: z.string().optional(),
+    encryptedKeyForReceiver: z.string().optional(),
+    encryptedKeyForSender: z.string().optional(),
+    iv: z.string().optional(),
   })
-  .refine((data) => data.text || data.image, {
-    message: "Message must contain either text or an image",
+  .refine((data) => data.text || data.image || data.encryptedContent, {
+    message: "Message must contain text, image, or encrypted content",
   });
 
 export const getUsersForSidebar = async (req, res) => {
@@ -50,7 +54,7 @@ export const getUsersForSidebar = async (req, res) => {
       : null;
 
     res.status(200).json({
-      data: results,
+      data: sanitizeForOrbit(results.map(u => u.toObject())),
       pagination: {
         hasMore,
         nextCursor,
@@ -121,7 +125,7 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    const { text, image, idempotencyKey } = parsed.data;
+    const { text, image, idempotencyKey, encryptedContent, encryptedKeyForReceiver, encryptedKeyForSender, iv } = parsed.data;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
     const realReceiverId = getRealId(receiverId);
@@ -180,6 +184,10 @@ export const sendMessage = async (req, res) => {
       text,
       image: imageUrl,
       idempotencyKey,
+      encryptedContent,
+      encryptedKeyForReceiver,
+      encryptedKeyForSender,
+      iv,
     });
 
     await newMessage.save();
@@ -202,17 +210,18 @@ export const sendMessage = async (req, res) => {
     // Emit socket event for real-time messaging
     try {
       const io = getIO();
+      const sanitizedMessage = sanitizeForOrbit(populatedMessage);
       // Emit to sender using their real ID (which is their room name)
-      io.to(senderId.toString()).emit("newMessage", populatedMessage);
+      io.to(senderId.toString()).emit("newMessage", sanitizedMessage);
       // Emit to receiver using their real ID
-      io.to(realReceiverId.toString()).emit("newMessage", populatedMessage);
+      io.to(realReceiverId.toString()).emit("newMessage", sanitizedMessage);
     } catch (socketError) {
       console.warn("Socket.IO emission failed:", socketError.message);
     }
 
     systemEmitter.broadcast('message_sent', { messageId: populatedMessage._id, senderId });
 
-    res.status(201).json(populatedMessage);
+    res.status(201).json(sanitizeForOrbit(populatedMessage));
   } catch (error) {
     console.error("error in sendMessage controller: ", error.message);
     res.status(500).json({

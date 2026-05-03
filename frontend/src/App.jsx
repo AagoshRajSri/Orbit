@@ -59,6 +59,7 @@ import GlobalAnnouncementBanner from "./components/GlobalAnnouncementBanner";
 
 import OrbitChatApp from "./components/OrbitChatApp";
 import { useAnimationContext } from "./components/AnimLayer";
+import { AvatarProvider } from "./context/AvatarContext.jsx";
 
 // Initialized exactly once at module load time (before any renders)
 let _appSettingsInitialized = false;
@@ -69,7 +70,7 @@ function ensureAppSettings() {
   soundManager.initializeSettingsIntegration(useSettingsStore);
 }
 
-const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPastel, HomePage }) => {
+const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPastel, HomePage, children }) => {
   const [ThemeComponent, setThemeComponent] = useState(null);
   
   useEffect(() => {
@@ -94,11 +95,11 @@ const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPas
           const mod = await import("./themes/pastelTheme");
           setThemeComponent(() => mod.default);
         } else {
-          setThemeComponent(() => HomePage);
+          // If no theme, render children directly or fallback to HomePage
+          setThemeComponent(() => ({ children }) => children || <HomePage />);
         }
       } catch (err) {
         console.error("Theme load failed:", err);
-        // If it's a fetch error, it's likely a redeploy. Reload to get new assets.
         if (err.name === "TypeError" || err.message?.includes("fetch")) {
           window.location.reload();
         }
@@ -115,7 +116,7 @@ const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPas
     );
   }
 
-  return <ThemeComponent />;
+  return <ThemeComponent children={children} />;
 };
 
 /**
@@ -125,37 +126,47 @@ const DynamicRouteHandler = (props) => {
   const { nexusId, userId } = useParams();
   const { nexuses, setSelectedNexus, selectedNexus } = useNexusStore();
   const { users, setSelectedUser, selectedUser } = useChatStore();
+  const location = useLocation();
 
   useEffect(() => {
-    if (nexusId && nexuses.length > 0) {
-      const normalizeId = (id) => id?.toString?.() ?? id;
-      const nid = normalizeId(nexusId);
-      const selNid = normalizeId(selectedNexus?._id);
+    // Robust ID normalization for both raw and obfuscated IDs
+    const normalizeId = (id) => {
+      if (!id) return null;
+      if (typeof id === 'object') return (id._id || id.id || "").toString();
+      return id.toString();
+    };
 
-      if (selNid !== nid) {
-        const target = nexuses.find(n => normalizeId(n._id) === nid);
+    const nid = normalizeId(nexusId);
+    const uid = normalizeId(userId);
+
+    // If we have a nexusId in the URL, ensure it's selected in the store
+    if (nid && nexuses.length > 0) {
+      const currentId = normalizeId(selectedNexus);
+      if (currentId !== nid) {
+        const target = nexuses.find(n => normalizeId(n._id || n.id) === nid);
         if (target) {
+          console.log(`[Router] Syncing nexus state: ${nid}`);
           setSelectedNexus(target);
-          setSelectedUser(null);
         }
       }
-    } else if (userId && users.length > 0) {
-      const normalizeId = (id) => id?.toString?.() ?? id;
-      const uid = normalizeId(userId);
-      const selUid = normalizeId(selectedUser?._id);
-
-      if (selUid !== uid) {
-        const target = users.find(u => normalizeId(u._id) === uid);
+    } 
+    // If we have a userId in the URL, ensure it's selected in the store
+    else if (uid && users.length > 0) {
+      const currentId = normalizeId(selectedUser);
+      if (currentId !== uid) {
+        const target = users.find(u => normalizeId(u._id || u.id) === uid);
         if (target) {
+          console.log(`[Router] Syncing user state: ${uid}`);
           setSelectedUser(target);
-          setSelectedNexus(null);
         }
       }
-    } else if (!nexusId && !userId) {
+    }
+    // Only clear if we are explicitly at the root and not in a special action view
+    else if (!nid && !uid && location.pathname === "/") {
       if (selectedNexus) setSelectedNexus(null);
       if (selectedUser) setSelectedUser(null);
     }
-  }, [nexusId, userId, nexuses, users, selectedNexus, selectedUser, setSelectedNexus, setSelectedUser]);
+  }, [nexusId, userId, nexuses, users, selectedNexus, selectedUser, setSelectedNexus, setSelectedUser, location.pathname]);
 
   return <DynamicThemeLoader {...props} />;
 };
@@ -775,7 +786,9 @@ const App = () => {
   return (
     <ErrorBoundary>
       <IdentityProvider>
-        <AppContent />
+        <AvatarProvider options={{ sleepAfter: 60_000, typingDebounce: 1500 }}>
+          <AppContent />
+        </AvatarProvider>
       </IdentityProvider>
     </ErrorBoundary>
   );

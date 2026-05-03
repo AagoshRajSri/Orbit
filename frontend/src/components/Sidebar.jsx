@@ -13,7 +13,7 @@ import {
   Music,
   Flower,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSoundManager } from "../hooks/useSoundManager";
 import NexusActions from "./NexusActions";
 import toast from "../lib/toast";
@@ -86,6 +86,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   const { theme } = useThemeStore();
   const isPastel = theme === "pastel-dream";
   const isLight = theme === "light";
+  const navigate = useNavigate();
 
   // Sync tab when drawer re-opens with a different initial tab
   useEffect(() => {
@@ -117,12 +118,14 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   const handleUserSelect = (user) => {
     setSelectedUser(user);
     setSelectedNexus(null);
+    navigate(`/chat/${user._id || user.id}`);
     onMobileSelect?.(); // close drawer on mobile
   };
 
   const handleNexusSelect = (nexus) => {
     setSelectedNexus(nexus);
     setSelectedUser(null);
+    navigate(`/nexus/${nexus._id || nexus.id}`);
     onMobileSelect?.(); // close drawer on mobile
   };
 
@@ -270,13 +273,13 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                key={user._id}
+                key={user.id || user._id}
                 onClick={() => handleUserSelect(user)}
                 role="button"
                 tabIndex={0}
                 className={`
                     w-full p-2.5 flex items-center gap-3 rounded-xl border transition-colors duration-300 group relative
-                    ${selectedUser?._id === user._id
+                    ${(selectedUser?.id || selectedUser?._id) === (user.id || user._id)
                     ? isPastel
                       ? "bg-white/80 border-[#ffaad0]/50 shadow-[0_4px_20px_rgba(255,150,200,0.15)]"
                       : isLight
@@ -293,7 +296,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
               >
                 <div className="relative shrink-0">
                   <div
-                    className={`absolute inset-0 rounded-xl blur-lg transition-opacity duration-300 ${onlineSet.has(user._id?.toString()) ? "bg-emerald-500/20 opacity-100" : "opacity-0"}`}
+                    className={`absolute inset-0 rounded-xl blur-lg transition-opacity duration-300 ${onlineSet.has((user.id || user._id)?.toString()) ? "bg-emerald-500/20 opacity-100" : "opacity-0"}`}
                   />
                   <img
                     src={user.profilePic || "/avatar.png"}
@@ -384,7 +387,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                       <button
                         onClick={() => {
                           renameContact(
-                            user._id.toString(),
+                            (user.id || user._id).toString(),
                             aliasInputValue.trim() || user.username,
                           );
                           setAliasEditingUserId(null);
@@ -407,9 +410,9 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
 
           {activeTab === "nexus" &&
             nexuses.map((nexus) => {
-              const nexusId = nexus._id?.toString();
+              const nexusId = (nexus.id || nexus._id)?.toString();
               const unread = nexusUnread[nexusId] || 0;
-              const isSelected = selectedNexus?._id === nexus._id;
+              const isSelected = (selectedNexus?.id || selectedNexus?._id) === (nexus.id || nexus._id);
               const hasUnread = unread > 0 && !isSelected;
 
               return (
@@ -418,7 +421,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  key={nexus._id}
+                  key={nexus.id || nexus._id}
                   onClick={() => handleNexusSelect(nexus)}
                   role="button"
                   tabIndex={0}
