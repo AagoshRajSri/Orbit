@@ -17,7 +17,7 @@
 // =============================================================================
 
 import React, { useState, useCallback, useRef, memo } from 'react';
-import { PixelAvatar } from './PixelAvatar/PixelAvatar.jsx';
+import { PixelAvatar } from '../avatar/PixelAvatar/PixelAvatar.jsx';
 
 const ChatInput = memo(function ChatInput({
   avatarHook,

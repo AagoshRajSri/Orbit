@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import MessageStatusRing from "./MessageStatusRing";
-import { PixelAvatarBadge } from "./PixelAvatar/PixelAvatarBadge.jsx";
+import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FONTS (add to index.html):
