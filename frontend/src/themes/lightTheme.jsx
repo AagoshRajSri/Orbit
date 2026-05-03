@@ -15,6 +15,7 @@ import { useSettingsStore } from "../store/useSettingsStore";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { THEMES, THEME_LABELS } from "../constants";
 import NexusActionOverlay from "../components/NexusActionOverlay";
+import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
 const LUXURY_COLORS = {
   canvas: "#F8F5EF",
   surface: "#FFFFFF",
@@ -541,11 +542,25 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
-                    <img 
-                      src={nexus.avatar || "/nexus-avatar.png"} 
-                      alt={nexus.name} 
-                      style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover', border: `1px solid ${LUXURY_COLORS.borderSubtle}` }} 
-                    />
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                                            {nexus.avatar ? (
+                                              <img src={nexus.avatar} alt={nexus.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
+                                            ) : (
+                                              (() => {
+                                                const ANIMALS = ['dog', 'cat', 'bunny'];
+                                                const animal = ANIMALS[parseInt(nexus._id.slice(-4) || '0', 16) % ANIMALS.length];
+                                                return (
+                                                  <PixelAvatarBadge 
+                                                    type={animal} 
+                                                    state="idle" 
+                                                    size={40} 
+                                                    showDot={false} 
+                                                    style={{ imageRendering: "pixelated" }} 
+                                                  />
+                                                );
+                                              })()
+                                            )}
+                    </div>
                     <div style={{ flex: 1, minWidth: 0, paddingRight: 30 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: LUXURY_COLORS.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {nexus.name}
@@ -686,8 +701,24 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
                     borderColor: selectedUser?._id === u._id ? LUXURY_COLORS.goldMedium : LUXURY_COLORS.borderSubtle
                   }}
                 >
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: LUXURY_COLORS.surfaceHover, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : u.username?.[0]?.toUpperCase()}
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: "transparent", display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {u.profilePic ? (
+                      <img src={u.profilePic} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      (() => {
+                        const ANIMALS = ['dog', 'cat', 'bunny'];
+                        const animal = ANIMALS[parseInt(u._id.slice(-4) || '0', 16) % ANIMALS.length];
+                        return (
+                          <PixelAvatarBadge 
+                            type={animal} 
+                            state="idle" 
+                            size={40} 
+                            showDot={false} 
+                            style={{ imageRendering: "pixelated" }} 
+                          />
+                        );
+                      })()
+                    )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: LUXURY_COLORS.textPrimary }}>{u.username}</div>

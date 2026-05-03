@@ -273,6 +273,12 @@ export const useNexusStore = create((set, get) => ({
     } else {
       set({ isMessagesLoading: true });
     }
+    
+    // Ensure socket joins this nexus room for real-time messages when history is fetched
+    if (nexusId) {
+      getSocket().emit("joinNexusRoom", nexusId);
+    }
+    
     try {
       const res = await axiosInstance.get(`/nexus/${nexusId}/messages`);
       set({ 
@@ -427,6 +433,10 @@ export const useNexusStore = create((set, get) => ({
   setSelectedNexus: (nexus) => {
     if (nexus) {
       const nid = nexus._id?.toString();
+      // Ensure socket joins this nexus room for real-time messages
+      if (nexus._id) {
+        getSocket().emit("joinNexusRoom", nexus._id);
+      }
       set((state) => ({
         selectedNexus: nexus,
         selectedNexusId: nid,
@@ -492,11 +502,12 @@ export const useNexusStore = create((set, get) => ({
         if (existsIndex === -1) {
             newMessages.push(message);
         } else {
-            // Merge server data with optimistic UI state
-            newMessages[existsIndex] = { 
-              ...newMessages[existsIndex], 
-              ...message, 
-              status: "sent" 
+            // Preserve real _id from server response and merge other fields
+            const existingMsg = newMessages[existsIndex];
+            newMessages[existsIndex] = {
+              ...message,
+              _id: existingMsg._id || message._id,
+              status: "sent"
             };
         }
 

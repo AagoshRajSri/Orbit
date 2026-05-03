@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import MessageStatusRing from "./MessageStatusRing";
+import { PixelAvatarBadge } from "./PixelAvatar/PixelAvatarBadge.jsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FONTS (add to index.html):
@@ -776,7 +777,7 @@ function MemberRow({t,m,onRoleChange,onMute,onBan,onKick,canEdit}) {
 // ══════════════════════════════════════════════════════════════════════════════
 //  GROUP INFO PANEL (right panel)
 // ══════════════════════════════════════════════════════════════════════════════
-function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete}) {
+function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,fullArea}) {
   const [tab,setTab]=useState("overview");
   const [inviteCopied,setInviteCopied]=useState(false);
   const [confirmDelete,setConfirmDelete]=useState(false);
@@ -821,7 +822,7 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete}
   const dangerRed="#ef4444";
 
   return (
-    <div style={{width:340,borderLeft:"1px solid "+t.border,background:t.panel,display:"flex",flexDirection:"column",height:"100%",animation:"slideInRight .3s ease",flexShrink:0,position:"relative",overflow:"hidden"}}>
+    <div style={{width:fullArea ? "100%" : 340,borderLeft:fullArea ? "none" : "1px solid "+t.border,background:t.panel,display:"flex",flexDirection:"column",height:"100%",animation:"fadeIn .3s ease",flexShrink:0,position:"relative",overflow:"hidden"}}>
       <ParticleCanvas t={t} style={{opacity:.18}}/>
 
       {/* HEADER */}
@@ -845,10 +846,29 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete}
         {/* Avatar */}
         <div style={{textAlign:"center",padding:"4px 0 10px"}}>
           <div style={{position:"relative",display:"inline-block",marginBottom:10}}>
-            <div style={{width:76,height:76,borderRadius:"50%",background:"linear-gradient(135deg,"+t.avatar+","+t.msgIn+")",border:"3px solid "+t.acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:34,boxShadow:"0 0 28px "+t.glow,cursor:"pointer",transition:"box-shadow .2s"}}
+            <div style={{width:76,height:76,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:34,boxShadow:"0 0 28px "+t.glow,cursor:"pointer",transition:"box-shadow .2s", overflow:"hidden"}}
               onMouseEnter={e=>e.currentTarget.style.boxShadow="0 0 48px "+t.glow}
               onMouseLeave={e=>e.currentTarget.style.boxShadow="0 0 28px "+t.glow}>
-              {group.icon}
+              {(() => {
+                const ANIMALS = ['dog', 'cat', 'bunny'];
+                // InfoPanel uses 'group.id' or falls back to '1' if missing.
+                const entityId = (group.id || group._id || group.name || '0').toString();
+                const animal = ANIMALS[parseInt(entityId.slice(-4) || '0', 16) % ANIMALS.length] || ANIMALS[0];
+                return (
+                  <PixelAvatarBadge
+                    type={animal}
+                    state="idle"
+                    size={70}
+                    showDot={false}
+                    style={{
+                      imageRendering: "pixelated",
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                    }}
+                  />
+                );
+              })()}
             </div>
             <div style={{position:"absolute",inset:-4,borderRadius:"50%",border:"1px solid "+t.acc+"30",pointerEvents:"none"}}/>
           </div>
@@ -1400,8 +1420,8 @@ function ChatArea({t,group,setGroup,themeId}) {
 
       {/* ── INFO PANEL ── */}
       {showInfo&&(
-        <div style={{position:"absolute",top:0,right:0,bottom:0,zIndex:30,display:"flex"}}>
-          <InfoPanel t={t} group={group} setGroup={setGroup} onClose={()=>setShowInfo(false)} addToast={addToast}/>
+        <div style={{position:"absolute",top:0,right:0,bottom:0,left:0,zIndex:30,display:"flex"}}>
+          <InfoPanel t={t} group={group} setGroup={setGroup} onClose={()=>setShowInfo(false)} addToast={addToast} fullArea={true}/>
         </div>
       )}
 

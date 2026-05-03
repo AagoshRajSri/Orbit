@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu } from "lucide-react";
-import { THEMES, Ico, I, Toast, CallOverlay, Btn3D, TBtn, VoiceBubble, ImgBubble, FileBubble, InfoPanel, ParticleCanvas, Wave, MediaPanel } from "./ChatCoreUI";
+import { THEMES, Ico, I, Toast, CallOverlay, VoiceBubble, ImgBubble, FileBubble, InfoPanel, Wave, MediaPanel } from "./ChatCoreUI";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
@@ -59,15 +58,16 @@ const ANIM_CSS = `
 `;
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
-function MsgSkeleton({ t }) {
+function MsgSkeleton({ ot }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {[false, true, false, true, false].map((out, i) => (
         <div key={i} style={{ display: "flex", justifyContent: out ? "flex-end" : "flex-start" }}>
           <div style={{
-            width: `${140 + (i * 37) % 120}px`, height: 44, borderRadius: 18,
-            background: out ? t.msgOut : t.msgIn,
-            border: `1px solid ${out ? t.msgOutBrd : t.border}`,
+            width: `${140 + (i * 37) % 120}px`, height: 44, 
+            borderRadius: ot["--radius"],
+            background: out ? ot["--send-bg"] : ot["--recv-bg"],
+            border: `1px solid ${ot["--border"]}`,
             opacity: 0.5, animation: "fadeIn 1s ease infinite alternate",
           }} />
         </div>
@@ -77,21 +77,21 @@ function MsgSkeleton({ t }) {
 }
 
 // ─── Empty state (no selection) ───────────────────────────────────────────────
-function NoSelection({ t }) {
+function NoSelection({ ot }) {
   return (
     <div style={{
       flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
       justifyContent: "center", gap: 20, position: "relative", overflow: "hidden",
+      background: ot["--bg"],
     }}>
-      <ParticleCanvas t={t} style={{ opacity: 0.3 }} />
       <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-        <div style={{ fontSize: 64, marginBottom: 16, filter: `drop-shadow(0 0 24px ${t.acc})` }}>
-          {t.decoratorBig}
+        <div style={{ fontSize: 64, marginBottom: 16, filter: `drop-shadow(0 0 24px ${ot["--acc"]})` }}>
+          {ot.decorator}
         </div>
-        <div style={{ color: t.txt, fontSize: 22, fontWeight: 800, fontFamily: t.font, letterSpacing: ".06em", marginBottom: 8 }}>
+        <div style={{ color: ot["--text"], fontSize: 22, fontWeight: 800, fontFamily: ot.font, letterSpacing: ".06em", marginBottom: 8 }}>
           Select a conversation
         </div>
-        <div style={{ color: t.txt2, fontSize: 14, fontFamily: t.font, lineHeight: 1.6, maxWidth: 280 }}>
+        <div style={{ color: ot["--text2"], fontSize: 14, fontFamily: ot.font, lineHeight: 1.6, maxWidth: 280, opacity: 0.8 }}>
           Choose a chat or Nexus from the sidebar to begin your encrypted session.
         </div>
       </div>
@@ -205,6 +205,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
       getNexusMessages(activeNexus.id || activeNexus._id);
       // Build local group state for InfoPanel from live nexus data
       setLocalNexusGroup({
+        id: activeNexus.id || activeNexus._id,
         name: activeNexus.name,
         description: activeNexus.description || "",
         icon: "🌐",
@@ -403,10 +404,9 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   // CSS vars for selection / accent
   const cssVars = { "--sel": t.selection, "--acc": t.acc };
 
-  // ── Render: no entity selected ──
   if (!entity) return (
-    <div style={{ flex: 1, display: "flex", height: "100%", background: t.bg, ...cssVars }}>
-      <NoSelection t={t} />
+    <div style={{ flex: 1, display: "flex", height: "100%", background: ot["--bg"], ...cssVars }}>
+      <NoSelection ot={ot} />
     </div>
   );
 
@@ -447,7 +447,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
   return (
     <div
-      style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", position: "relative", overflow: "hidden", background: ot["--bg"], ...cssVars }}
+      style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", minHeight: 0, width: "100%", position: "relative", overflow: "hidden", background: ot["--bg"], ...cssVars }}
     >
       {/* ── Cyber scanlines overlay ── */}
       {ot.scanlines && (
@@ -455,40 +455,23 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
           background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,157,0.012) 2px,rgba(0,255,157,0.012) 4px)" }} />
       )}
 
-      {/* ── NEW TelemeteryCapsule header ── */}
-      <div style={{ position: "relative" }}>
-        <TelemeteryCapsule
-          t={ot}
-          entityName={entityName}
-          entitySub={entitySub}
-          isNexus={isNexus}
-          isOnline={!isNexus ? true : true}
-          peerAnimal={peerAnimal}
-          peerAvatarState={peerAvatar.state}
-          onInfoToggle={() => setShowInfo(x => !x)}
-          onMobileMenuToggle={onOpenSidebar ? () => onOpenSidebar(isNexus ? "nexus" : "contacts") : null}
-        />
-        {/* Back button overlay */}
-        <button
-          onClick={() => { if (onMobileBack) onMobileBack(); else { if (isNexus) setSelectedNexus(null); else setSelectedUser(null); navigate("/"); } }}
-          style={{
-            position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
-            background: ot["--glass2"], border: `1px solid ${ot["--border"]}`,
-            color: ot["--text2"], cursor: "pointer", width: 32, height: 32,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            borderRadius: "50%", transition: "all .2s", zIndex: 5,
-          }}
-          title="Back"
-        >
-          <Ico d={I.back} size={16} stroke="currentColor" />
-        </button>
-        {/* Search + call buttons */}
-        <div style={{ position: "absolute", right: 130, top: "50%", transform: "translateY(-50%)", display: "flex", gap: 4, zIndex: 5 }}>
-          <TBtn t={t} d={I.search} label="Search" active={searchOpen} onClick={() => { setSearchOpen(x => !x); setSearchQ(""); }} />
-          <TBtn t={t} d={I.phone} label="Voice call" onClick={() => setCallType("voice")} sz={19} />
-          <TBtn t={t} d={I.video} label="Video call" onClick={() => setCallType("video")} sz={19} />
-        </div>
-      </div>
+      {/* ── NEW TelemeteryCapsule header — fully self-contained ── */}
+      <TelemeteryCapsule
+        t={ot}
+        entityName={entityName}
+        entitySub={entitySub}
+        isNexus={isNexus}
+        isOnline={true}
+        joinCode={isNexus ? (activeNexus?.joinCode || null) : null}
+        peerAnimal={peerAnimal}
+        peerAvatarState={peerAvatar.state}
+        onBack={() => { if (onMobileBack) onMobileBack(); else { if (isNexus) setSelectedNexus(null); else setSelectedUser(null); navigate("/"); } }}
+        onSearch={() => { setSearchOpen(x => !x); setSearchQ(""); }}
+        onCall={() => setCallType("voice")}
+        onInfoToggle={() => setShowInfo(x => !x)}
+        onMobileMenuToggle={onOpenSidebar ? () => onOpenSidebar(isNexus ? "nexus" : "contacts") : null}
+        searchActive={searchOpen}
+      />
 
       {/* ── SEARCH BAR ── */}
       {searchOpen && (
@@ -530,12 +513,29 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         </div>
       )}
 
-      {/* ── MESSAGE AREA ── */}
+      {/* ── FULL-AREA INFO PANEL ── replaces message+input when open ── */}
+      {showInfo && isNexus && localNexusGroup && (
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", animation: "fadeIn .2s ease" }}>
+          <InfoPanel
+            t={t}
+            group={localNexusGroup}
+            setGroup={setLocalNexusGroup}
+            onClose={() => setShowInfo(false)}
+            addToast={addToast}
+            onUpdate={handleInfoUpdate}
+            onLeave={handleLeaveNexus}
+            onDelete={handleDeleteNexus}
+            fullArea
+          />
+        </div>
+      )}
+
+      {/* ── MESSAGE AREA ── hidden when info panel is open ── */}
       <div style={{
         flex: 1, overflowY: "auto", padding: "20px 20px 10px",
         background: ot["--bg"],
         scrollbarWidth: "thin", scrollbarColor: `${ot["--border"]} transparent`,
-        position: "relative", display: "flex", flexDirection: "column", gap: 10,
+        position: "relative", display: showInfo && isNexus ? "none" : "flex", flexDirection: "column", gap: 10,
       }}>
 
         {/* Date divider */}
@@ -548,7 +548,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         </div>
 
         {/* Loading state */}
-        {isLoading && <MsgSkeleton t={t} />}
+        {isLoading && <MsgSkeleton ot={ot} />}
 
         {/* Empty state */}
         {!isLoading && filtered.length === 0 && !searchQ && (
@@ -634,8 +634,8 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         <div ref={endRef} />
       </div>
 
-      {/* ── NEW AeroInput ── */}
-      <div style={{ position: "relative", zIndex: 100 }}>
+      {/* ── NEW AeroInput — hidden when info panel is open ── */}
+      {!(showInfo && isNexus) && <div style={{ position: "relative", zIndex: 100 }}>
         {/* Media/Emoji panel */}
         {mediaPanel && (
           <div style={{ position: "absolute", bottom: "100%", left: 0, right: 0, zIndex: 101, marginBottom: 10 }}>
@@ -675,108 +675,11 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
           selfAvatarState={myAvatar.state}
           disabled={false}
         />
-      </div>
-
-      {/* ── LEGACY INPUT AREA (hidden) ── */}
-      <div className="nxi-shell" style={{ display: "none" }}>
-        <style>{`
-          .orb-input::placeholder { color: ${t.txt2}; opacity: 0.5; font-style: italic; }
-          .orb-input-wrapper { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-          .orb-input-wrapper:focus-within { border-color: ${t.acc} !important; box-shadow: 0 8px 32px ${t.glow} !important; transform: translateY(-1px); }
-        `}</style>
+      </div>}
 
 
 
-        {/* Input row */}
-        <div style={{ display: "flex", alignItems: "flex-end", padding: "8px 20px 24px", gap: 12 }}>
-          {/* Text field wrapper */}
-          <div
-            className="orb-input-wrapper"
-            style={{ 
-              flex: 1, display: "flex", alignItems: "center", 
-              background: t.input, border: `2px solid ${t.inputBrd}`, 
-              borderRadius: 30, padding: "4px 12px 4px 24px", gap: 12, 
-              boxShadow: `0 4px 15px ${t.glow2}`,
-              minHeight: 56
-            }}
-          >
-            <input
-              ref={inputRef}
-              className="orb-input"
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMsg(input); } }}
-              disabled={recording}
-              placeholder={recording ? "🎙️ Recording…" : `Message ${entityName}…`}
-              style={{ 
-                flex: 1, background: "transparent", border: "none", outline: "none", 
-                color: t.txt, fontSize: 16, fontFamily: t.font, 
-                padding: "14px 0", lineHeight: 1.5, letterSpacing: ".01em" 
-              }}
-              spellCheck="false"
-            />
-            {input.length > 0 && (
-              <span style={{ 
-                color: t.acc, fontSize: 11, fontFamily: t.font, fontWeight: 800,
-                background: `${t.acc}18`, padding: "5px 12px", borderRadius: 20,
-                flexShrink: 0, transition: "opacity .2s", letterSpacing: ".05em"
-              }}>
-                {input.length}
-              </span>
-            )}
-          </div>
-
-          {/* Action Buttons Container */}
-          <div style={{ display: "flex", gap: 10, paddingBottom: 4 }}>
-            {/* Mic button */}
-            <Btn3D
-              onClick={recording ? () => { addToast("Voice message sent"); setRecording(false); } : () => setRecording(true)}
-              style={{ 
-                width: 52, height: 52, borderRadius: 26, 
-                border: recording ? "none" : `2px solid ${t.border}`, 
-                background: recording ? "#ff3b30" : t.msgIn, 
-                color: recording ? "#fff" : t.toolC, 
-                flexShrink: 0, 
-                boxShadow: recording ? "0 8px 32px rgba(255,59,48,0.4)" : `0 4px 15px ${t.glow2}` 
-              }}
-              title={recording ? "Send voice message" : "Record voice message"}
-            >
-              <Ico d={recording ? I.mic2 : I.mic} size={22} stroke="currentColor" />
-            </Btn3D>
-
-            {/* Send button — appears when text is non-empty */}
-            {input.trim() && (
-              <Btn3D
-                onClick={() => sendMsg(input)}
-                style={{ 
-                  width: 52, height: 52, borderRadius: 26, border: "none", 
-                  background: t.send, color: t.sendTxt, flexShrink: 0, 
-                  boxShadow: `0 8px 32px ${t.glow}`, animation: "popIn .3s cubic-bezier(0.34, 1.56, 0.64, 1)" 
-                }}
-                title="Send message"
-              >
-                <Ico d={I.send} size={22} stroke={t.sendTxt} style={{ transform: "translate(1px, -1px)" }} />
-              </Btn3D>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── INFO PANEL (slide-in) ── */}
-      {showInfo && isNexus && localNexusGroup && (
-        <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, zIndex: 50, display: "flex", animation: "slideInRight .25s ease" }}>
-          <InfoPanel
-            t={t}
-            group={localNexusGroup}
-            setGroup={setLocalNexusGroup}
-            onClose={() => setShowInfo(false)}
-            addToast={addToast}
-            onUpdate={handleInfoUpdate}
-            onLeave={handleLeaveNexus}
-            onDelete={handleDeleteNexus}
-          />
-        </div>
-      )}
+      {/* Info panel is now rendered above as full-area, not as absolute overlay */}
 
       {/* ── CALL OVERLAY ── */}
       {callType && <CallOverlay t={t} type={callType} onEnd={() => setCallType(null)} />}

@@ -8,6 +8,7 @@ import { THEMES, THEME_LABELS } from "../constants";
 import { gsap } from "gsap";
 import { useNexusStore } from "../store/useNexusStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
+import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { spotifyService } from "../services/spotifyService";
 import { API_URL } from "../config";
@@ -1029,8 +1030,24 @@ const Sidebar = memo(({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nex
                     onMouseLeave={e => { e.currentTarget.style.borderColor = (selectedNexus?._id === n._id || selectedNexusId === n._id) ? "#00f5d4" : "rgba(255,255,255,0.08)"; e.currentTarget.style.transform = "translateX(0)"; }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 6, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                        {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "⬡"}
+                      <div style={{ width: 36, height: 36, borderRadius: 6, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                        {n.avatar ? (
+                          <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          (() => {
+                            const ANIMALS = ['dog', 'cat', 'bunny'];
+                            const animal = ANIMALS[parseInt(n._id.slice(-4) || '0', 16) % ANIMALS.length];
+                            return (
+                              <PixelAvatarBadge 
+                                type={animal} 
+                                state="idle" 
+                                size={36} 
+                                showDot={false} 
+                                style={{ imageRendering: "pixelated" }} 
+                              />
+                            );
+                          })()
+                        )}
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 900, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>{n.name.toUpperCase()}</div>
@@ -1136,8 +1153,24 @@ const Sidebar = memo(({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nex
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "#00f5d4"; e.currentTarget.style.background = "rgba(0,245,212,0.08)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = (selectedUser?._id === u._id || selectedUserId === u._id) ? "#00f5d4" : "rgba(255,255,255,0.08)"; e.currentTarget.style.background = (selectedUser?._id === u._id || selectedUserId === u._id) ? "rgba(0,245,212,0.15)" : "rgba(255,255,255,0.03)"; }}
               >
-                <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", overflow: "hidden", flexShrink: 0 }}>
-                  {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#00f5d4", fontFamily: "'Orbitron',monospace" }}>{u.username?.[0]?.toUpperCase()}</div>}
+                <div style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {u.profilePic ? (
+                    <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    (() => {
+                      const ANIMALS = ['dog', 'cat', 'bunny'];
+                      const animal = ANIMALS[parseInt(u._id.slice(-4) || '0', 16) % ANIMALS.length];
+                      return (
+                        <PixelAvatarBadge 
+                          type={animal} 
+                          state="idle" 
+                          size={34} 
+                          showDot={false} 
+                          style={{ imageRendering: "pixelated" }} 
+                        />
+                      );
+                    })()
+                  )}
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "'Rajdhani',monospace", letterSpacing: "0.05em" }}>{u.username}</div>
               </div>

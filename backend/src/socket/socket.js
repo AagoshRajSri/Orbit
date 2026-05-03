@@ -370,7 +370,6 @@ export const initializeSocketIO = (io) => {
 
     const joinUserNexuses = async () => {
       try {
-        const Nexus = (await import("../models/nexus.model.js")).default;
         const nexuses = await Nexus.find({ members: socket.userId });
         nexuses.forEach((n) => socket.join(n._id.toString()));
       } catch (e) {
@@ -381,10 +380,10 @@ export const initializeSocketIO = (io) => {
 
     socket.on("joinNexusRoom", async (nexusId) => {
       try {
-        const Nexus = (await import("../models/nexus.model.js")).default;
-        const nexus = await Nexus.findById(nexusId);
+        const realNexusId = getRealId(nexusId);
+        const nexus = await Nexus.findById(realNexusId);
         if (nexus && nexus.members.some(m => m.toString() === socket.userId)) {
-          socket.join(nexusId);
+          socket.join(realNexusId.toString());
         } else {
           console.warn(`[Socket Security] User ${socket.userId} tried to join Nexus room ${nexusId} without membership.`);
         }
@@ -392,7 +391,20 @@ export const initializeSocketIO = (io) => {
         console.error("joinNexusRoom error:", e);
       }
     });
-    socket.on("leaveNexusRoom", (nexusId) => socket.leave(nexusId));
+
+    socket.on("leaveNexusRoom", async (nexusId) => {
+      try {
+        const realNexusId = getRealId(nexusId);
+        const nexus = await Nexus.findById(realNexusId);
+        if (nexus && nexus.members.some(m => m.toString() === socket.userId)) {
+          socket.leave(realNexusId.toString());
+        } else {
+          console.warn(`[Socket Security] User ${socket.userId} tried to leave Nexus room ${nexusId} without membership.`);
+        }
+      } catch (e) {
+        console.error("leaveNexusRoom error:", e);
+      }
+    });
 
     socket.on("disconnect", async (reason) => {
       console.log(`User disconnected: ${socket.userId} | ${reason}`);

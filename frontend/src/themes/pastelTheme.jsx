@@ -13,6 +13,7 @@ import AnimationSettingsPanel from "../components/AnimationSettingsPanel";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { spotifyService } from "../services/spotifyService";
 import { API_URL } from "../config";
+import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
 
 /* ── floating glitter/hearts/butterflies scattered everywhere ── */
 const FLOATIES = [
@@ -865,8 +866,24 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
                 onMouseLeave={(e) => { e.currentTarget.style.background = nexusColors[n._id] || "rgba(255,255,255,0.45)"; e.currentTarget.style.transform = "translateX(0)"; }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#fff", border: "1.5px solid #ffb8d8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0, overflow: "hidden" }}>
-                    {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "◈"}
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    {n.avatar ? (
+                      <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      (() => {
+                        const ANIMALS = ['dog', 'cat', 'bunny'];
+                        const animal = ANIMALS[parseInt(n._id.slice(-4) || '0', 16) % ANIMALS.length];
+                        return (
+                          <PixelAvatarBadge 
+                            type={animal} 
+                            state="idle" 
+                            size={28} 
+                            showDot={false} 
+                            style={{ imageRendering: "pixelated" }} 
+                          />
+                        );
+                      })()
+                    )}
                   </div>
                   <div style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, fontWeight: 700, color: "#e880b8" }}>{n.name}</div>
                   {nexusUnread[n._id] > 0 && (

@@ -324,10 +324,12 @@ const AppContent = () => {
       let flusherTimeout = null;
 
       const flushBuffers = async () => {
+        // Clear timeout early so new items can schedule another flush while this one is processing
+        flusherTimeout = null;
+
         // Process direct messages sequentially to maintain order
         if (messageBuffer.length > 0) {
-          const msgs = [...messageBuffer];
-          messageBuffer = [];
+          const msgs = messageBuffer.splice(0, messageBuffer.length);
           const chatStore = useChatStore.getState();
           for (const i of msgs) {
             try {
@@ -340,8 +342,7 @@ const AppContent = () => {
         }
         // Process nexus messages sequentially to maintain order
         if (nexusMessageBuffer.length > 0) {
-          const msgs = [...nexusMessageBuffer];
-          nexusMessageBuffer = [];
+          const msgs = nexusMessageBuffer.splice(0, nexusMessageBuffer.length);
           const nexusStore = useNexusStore.getState();
           for (const i of msgs) {
             try {
@@ -352,7 +353,6 @@ const AppContent = () => {
             }
           }
         }
-        flusherTimeout = null;
       };
 
       const enqueueMessage = (buffer, item) => {

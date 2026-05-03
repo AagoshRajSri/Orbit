@@ -19,6 +19,7 @@ import NexusActions from "./NexusActions";
 import toast from "../lib/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useThemeStore } from "../store/useThemeStore";
+import { PixelAvatarBadge } from "./PixelAvatar/PixelAvatarBadge.jsx";
 
 const AddContactAction = memo(({ users, contactList, addContact }) => {
   const [username, setUsername] = useState("");
@@ -298,11 +299,25 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                   <div
                     className={`absolute inset-0 rounded-xl blur-lg transition-opacity duration-300 ${onlineSet.has((user.id || user._id)?.toString()) ? "bg-emerald-500/20 opacity-100" : "opacity-0"}`}
                   />
-                  <img
-                    src={user.profilePic || "/avatar.png"}
-                    alt={user.username}
-                    className="size-9 object-cover rounded-lg border border-[var(--chat-border)] relative z-10"
-                  />
+                  {(() => {
+                    const uId = (user.id || user._id)?.toString() || "";
+                    const ANIMALS = ['dog', 'cat', 'bunny'];
+                    const animal = ANIMALS[parseInt(uId.slice(-4) || '0', 16) % ANIMALS.length];
+                    return (
+                      <PixelAvatarBadge
+                        type={animal}
+                        state="idle"
+                        size={36}
+                        showDot={false}
+                        style={{
+                          imageRendering: "pixelated",
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: "8px"
+                        }}
+                      />
+                    );
+                  })()}
                   {onlineSet.has(user._id?.toString()) && (
                     <motion.span
                       animate={{ scale: [1, 1.2, 1] }}
@@ -456,34 +471,28 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                     />
 
                     <div
-                      className="size-10 rounded-lg border flex items-center justify-center font-black transition-transform relative z-10"
-                      style={isPastel ? {
-                        background: "rgba(255,160,210,0.1)",
-                        borderColor: "rgba(255,160,210,0.3)",
-                        color: "#d060a8",
-                        boxShadow: "0 0 15px rgba(255,150,200,0.1)",
-                      } : isLight ? {
-                        background: "rgba(176,141,87,0.08)",
-                        borderColor: "rgba(176,141,87,0.25)",
-                        color: "#b08d57",
-                        boxShadow: "0 0 15px rgba(176,141,87,0.08)",
-                      } : {
-                        background: "rgba(var(--p), 0.1)",
-                        borderColor: "rgba(var(--p), 0.2)",
-                        color: "var(--chat-primary)",
-                        boxShadow: "0 0 15px rgba(var(--p),0.1)",
+                      className="size-10 rounded-lg flex items-center justify-center font-black transition-transform relative z-10 overflow-hidden"
+                      style={{
+                        background: "transparent",
                       }}
                     >
-                      {nexus.avatar ? (
-                        <img
-                          src={nexus.avatar}
-                          className="size-full rounded-lg object-cover"
-                        />
-                      ) : (
-                        <span className="text-lg font-josefin">
-                          {nexus.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
+                      {(() => {
+                        const ANIMALS = ['dog', 'cat', 'bunny'];
+                        const animal = ANIMALS[parseInt(nexusId.slice(-4) || '0', 16) % ANIMALS.length];
+                        return (
+                          <PixelAvatarBadge
+                            type={animal}
+                            state="idle"
+                            size={40}
+                            showDot={false}
+                            style={{
+                              imageRendering: "pixelated",
+                              width: "100%",
+                              height: "100%",
+                            }}
+                          />
+                        );
+                      })()}
                     </div>
 
                     {/* Unread count badge */}

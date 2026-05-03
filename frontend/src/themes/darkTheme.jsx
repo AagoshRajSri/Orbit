@@ -15,6 +15,7 @@ import batLogo from "../bat.svg";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
+import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
 
 // ── Vampire-Orbit UI ──────────────────────────────────────────────
 // Fonts loaded via @import inside the style tag below
@@ -1209,8 +1210,24 @@ const VampireSidebar = memo(({
                                     }}
                                 >
                                     <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
-                                        <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(139,0,0,0.3)", border: "1.5px solid rgba(220,20,60,0.6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, overflow: "hidden" }}>
-                                            {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} /> : "⬡"}
+                                        <div style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                                            {n.avatar ? (
+                                              <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+                                            ) : (
+                                              (() => {
+                                                const ANIMALS = ['dog', 'cat', 'bunny'];
+                                                const animal = ANIMALS[parseInt(n._id.slice(-4) || '0', 16) % ANIMALS.length];
+                                                return (
+                                                  <PixelAvatarBadge 
+                                                    type={animal} 
+                                                    state="idle" 
+                                                    size={34} 
+                                                    showDot={false} 
+                                                    style={{ imageRendering: "pixelated" }} 
+                                                  />
+                                                );
+                                              })()
+                                            )}
                                         </div>
                                         <div style={{ minWidth: 0, flex: 1 }}>
                                             <div style={{ fontSize: 13, fontWeight: 600, color: isSel ? "#fff" : "#F0E6D3", fontFamily: "'Cinzel',serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.name}</div>

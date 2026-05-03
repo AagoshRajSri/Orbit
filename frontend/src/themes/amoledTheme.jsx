@@ -12,6 +12,7 @@ import { useChatStore } from "../store/useChatStore";
 import { useSettingsStore } from "../store/useSettingsStore";
 import NexusActionOverlay from "../components/NexusActionOverlay";
 import { Music } from "lucide-react";
+import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
 import RocketAnimation from "../components/RocketAnimation";
 import OrbitLogo from "../components/OrbitLogo";
 
@@ -106,13 +107,13 @@ const CSS = `
 /* ── AMOLED Void Chat Theme ── */
 .amoled-chat-env .nxc-shell {
   background: #000000 !important;
-  border: 1px solid rgba(198,160,110,0.3) !important;
+  border: none !important;
   box-shadow: 0 0 100px rgba(0,0,0,1) !important;
   background-image: radial-gradient(circle at 50% 0%, rgba(198,160,110,0.08) 0%, transparent 500px) !important;
 }
 .amoled-chat-env .nexus-chat-header { 
   background: #000000 !important; 
-  border-bottom: 2px solid rgba(198,160,110,0.3) !important;
+  border-bottom: none !important;
 }
 .amoled-chat-env .nexus-chat-header * { color: #C6A06E !important; font-family: 'Rajdhani', sans-serif !important; }
 .amoled-chat-env .nexus-chat-header .nxc-name { font-family: 'Orbitron', sans-serif !important; letter-spacing: 2px !important; font-weight: 900 !important; text-shadow: 0 0 10px rgba(198,160,110,0.3); }
@@ -142,7 +143,7 @@ const CSS = `
 
 .amoled-chat-env .nxi-shell { 
   background: #000000 !important; 
-  border-top: 2px solid rgba(198,160,110,0.4) !important;
+  border-top: none !important;
   padding: 20px !important;
 }
 .amoled-chat-env .nxi-textarea-wrapper {
@@ -531,8 +532,24 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(198,160,110,.1)"; e.currentTarget.style.boxShadow = "none"; }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
-                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(198,160,110,0.1)", border: "1px solid rgba(198,160,110,0.3)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                      {n.avatar ? <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "◈"}
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                      {n.avatar ? (
+                        <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        (() => {
+                          const ANIMALS = ['dog', 'cat', 'bunny'];
+                          const animal = ANIMALS[parseInt(n._id.slice(-4) || '0', 16) % ANIMALS.length];
+                          return (
+                            <PixelAvatarBadge 
+                              type={animal} 
+                              state="idle" 
+                              size={24} 
+                              showDot={false} 
+                              style={{ imageRendering: "pixelated" }} 
+                            />
+                          );
+                        })()
+                      )}
                     </div>
                     <div style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.name}</div>
                     {nexusUnread[n._id] > 0 && (
@@ -629,8 +646,24 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
                   onMouseEnter={e => e.currentTarget.style.background = "rgba(78,205,196,.08)"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                 >
-                  <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg,rgba(78,205,196,0.1),transparent)", border: "1.5px solid rgba(78,205,196,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, overflow: "hidden" }}>
-                    {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ color: "#4ECDC4" }}>{u.username?.[0]?.toUpperCase()}</div>}
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, overflow: "hidden" }}>
+                    {u.profilePic ? (
+                      <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      (() => {
+                        const ANIMALS = ['dog', 'cat', 'bunny'];
+                        const animal = ANIMALS[parseInt(u._id.slice(-4) || '0', 16) % ANIMALS.length];
+                        return (
+                          <PixelAvatarBadge 
+                            type={animal} 
+                            state="idle" 
+                            size={38} 
+                            showDot={false} 
+                            style={{ imageRendering: "pixelated" }} 
+                          />
+                        );
+                      })()
+                    )}
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div className="oa-orbitron" style={{ fontSize: 12, color: "#C6A06E", letterSpacing: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</div>

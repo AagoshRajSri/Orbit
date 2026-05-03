@@ -66,7 +66,7 @@ export default function AeroInput({
       background: t["--glass"],
       backdropFilter: `blur(${t["--blur"]})`,
       WebkitBackdropFilter: `blur(${t["--blur"]})`,
-      borderTop: `1px solid ${isCyber ? t["--acc"] : t["--border"]}`,
+      borderTop: "none",
       flexShrink: 0, zIndex: 10,
     }}>
       <div style={{
