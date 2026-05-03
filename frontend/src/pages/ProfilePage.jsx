@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import OrbitalPageWrapper from "../components/OrbitalPageWrapper";
+import OrbitalPageWrapper from "../components/layout/OrbitalPageWrapper";
 import {
   Camera,
   Mail,

@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { THEMES, THEME_LABELS } from "../constants";
-import UniversalChatContainer from "../components/UniversalChatContainer";
+import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { useNavigate } from "react-router-dom";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { useAuthStore } from "../store/useAuthStore";
-import NexusActionOverlay from "../components/NexusActionOverlay";
+import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
 import { useSoundManager } from "../hooks/useSoundManager";
-import AnimLayer from "../components/AnimLayer";
-import AnimationSettingsPanel from "../components/AnimationSettingsPanel";
+import AnimLayer from "../components/effects/AnimLayer";
+import AnimationSettingsPanel from "../components/effects/AnimationSettingsPanel";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { spotifyService } from "../services/spotifyService";
 import { API_URL } from "../config";
-import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
+import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge.jsx";
 
 /* ── floating glitter/hearts/butterflies scattered everywhere ── */
 const FLOATIES = [

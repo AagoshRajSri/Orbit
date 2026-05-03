@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import OrbitalPageWrapper from "../components/OrbitalPageWrapper";
+import OrbitalPageWrapper from "../components/layout/OrbitalPageWrapper";
 import {
   Bell,
   Menu,
@@ -16,7 +16,7 @@ import {
   Music,
   Activity,
 } from "lucide-react";
-import AnimationSettingsPanel from "../components/AnimationSettingsPanel";
+import AnimationSettingsPanel from "../components/effects/AnimationSettingsPanel";
 import { useSoundManager } from "../hooks/useSoundManager";
 
 import { THEMES, THEME_LABELS } from "../constants";
@@ -33,7 +33,7 @@ import { PastelSettings } from "../themes/pastelTheme";
 import { useNavigate } from "react-router-dom";
 import AnimalEasterEggs, {
   FlyingBirdTrigger,
-} from "../components/welcome/AnimalEasterEggs";
+} from "../components/common/welcome/AnimalEasterEggs";
 
 const STORAGE_KEYS = {
   displayName: "orbit_displayName_v1",

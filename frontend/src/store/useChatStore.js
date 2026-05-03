@@ -2,6 +2,7 @@ import { create } from "zustand";
 import toast from "../lib/toast";
 import { axiosInstance } from "../lib/axios.jsx";
 import { useAuthStore } from "./useAuthStore";
+import { normalizeId, isMatchObj } from "../lib/idUtils";
 
 const decryptMessagesList = async (messages) => {
   const { e2eeKeys, authUser } = useAuthStore.getState();
@@ -291,33 +292,12 @@ export const useChatStore = create((set, get) => ({
     const [decryptedMsg] = await decryptMessagesList([message]);
     
     set((state) => {
-      // Utility: extract a plain string ID from a string or object
-      const normalizeId = (obj) => {
-        if (!obj) return null;
-        if (typeof obj === 'string') return obj;
-        return (obj._id || obj.id || '').toString() || null;
-      };
-
-      // Utility: check if a string ID (targetId) matches the _id or id of a user object
-      const isMatchObj = (targetId, userObj) => {
-        if (!targetId || !userObj) return false;
-        const tId = targetId.toString();
-        if (typeof userObj === 'string') return userObj === tId;
-        if (userObj._id?.toString() === tId) return true;
-        if (userObj.id?.toString() === tId) return true;
-        // Fallback: resolve through users list when formats differ
-        return state.users.some(u =>
-          (u._id?.toString() === tId || u.id?.toString() === tId) &&
-          (u._id?.toString() === normalizeId(userObj) || u.id?.toString() === normalizeId(userObj))
-        );
-      };
-
       const currentSelectedId = state.selectedConversationId
         || normalizeId(state.selectedUser);
 
       const belongsToCurrentChat = !!currentSelectedId && (
-        isMatchObj(currentSelectedId, decryptedMsg.senderId) ||
-        isMatchObj(currentSelectedId, decryptedMsg.receiverId)
+        isMatchObj(currentSelectedId, decryptedMsg.senderId, state.users) ||
+        isMatchObj(currentSelectedId, decryptedMsg.receiverId, state.users)
       );
 
       if (!belongsToCurrentChat) {
@@ -331,7 +311,7 @@ export const useChatStore = create((set, get) => ({
         const messageId = normalizeId(decryptedMsg);
         const idempotencyKey = decryptedMsg.idempotencyKey;
 
-        const existsIndex = newMessages.findIndex((m) => {
+        const existsIndex = newMessages.findLastIndex((m) => {
           const mId = normalizeId(m);
           if (mId && messageId && mId === messageId) return true;
           if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
@@ -356,7 +336,7 @@ export const useChatStore = create((set, get) => ({
 
       // Update sidebar preview / unread badge
       const updatedUsers = users.map((user) => {
-        if (isMatchObj(user._id || user.id, decryptedMsg.senderId)) {
+        if (isMatchObj(user._id || user.id, decryptedMsg.senderId, state.users)) {
           return {
             ...user,
             lastMessage: message.text || "Shared an image",

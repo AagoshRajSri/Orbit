@@ -1,4 +1,4 @@
-import Navbar from "./components/Navbar";
+import Navbar from "./components/layout/Navbar";
 import { Routes, Route, Navigate, useLocation, useParams, useNavigate } from "react-router-dom";
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import toast from "./lib/toast";
@@ -11,12 +11,12 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SpotifyPage = lazy(() => import("./pages/SpotifyPage"));
 const TetherApproval = lazy(() => import("./pages/TetherApproval"));
-const StarWeaveLoginPage = lazy(() => import("./pages/StarWeaveLoginPage"));
-const StarWeaveSignupPage = lazy(() => import("./pages/StarWeaveSignupPage"));
+const StarWeaveLoginPage = lazy(() => import("./starweave/pages/StarWeaveLoginPage"));
+const StarWeaveSignupPage = lazy(() => import("./starweave/pages/StarWeaveSignupPage"));
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 
-import FaceLock from "./components/FaceLock";
-import AmbientPresence from "./components/AmbientPresence";
+import FaceLock from "./components/auth/FaceLock";
+import AmbientPresence from "./components/avatar/AmbientPresence";
 import OrbitAuth from "./pages/OrbitAuth";
 
 // Admin Imports
@@ -36,30 +36,31 @@ import { useNexusStore } from "./store/useNexusStore";
 import { useDevicePerformance } from "./hooks/useDevicePerformance";
 import { useSpotifyStore } from "./store/useSpotifyStore";
 import { getSocket, disconnectSocket, updateSocketToken } from "./lib/socket";
-import ChatLoader from "./components/ChatLoader";
-import OrbitLoader from "./components/OrbitLoader";
-import PostAuthLoader from "./components/PostAuthLoader";
-import AuthShell from "./components/AuthShell";
-import { NotificationContainer } from "./components/NotificationContainer";
-import MobileSidebarDrawer from "./components/MobileSidebarDrawer";
+import ChatLoader from "./components/chat/ChatLoader";
+import OrbitLoader from "./components/common/OrbitLoader";
+import PostAuthLoader from "./components/auth/PostAuthLoader";
+import AuthShell from "./components/auth/AuthShell";
+import { NotificationContainer } from "./components/common/NotificationContainer";
+import MobileSidebarDrawer from "./components/layout/MobileSidebarDrawer";
 import {
   ErrorBoundary,
   ConnectionStatus,
   useConnectivity,
-} from "./components/ResponsiveLayout";
+} from "./components/layout/ResponsiveLayout";
 import { performanceDetector } from "./lib/performanceDetection";
-import { IdentityProvider } from "./contexts/IdentityContext";
+import { IdentityProvider } from "./context/IdentityContext";
 import { useSettingsStore } from "./store/useSettingsStore";
 import { useThemeStore } from "./store/useThemeStore";
 import { THEMES, THEME_LABELS } from "./constants/index";
-import NexusActionOverlay from "./components/NexusActionOverlay";
+import NexusActionOverlay from "./components/nexus/NexusActionOverlay";
 import { soundManager } from "./lib/SoundManager";
-import ThemePortal from "./components/ThemePortal";
-import GlobalMiniPlayer from "./components/GlobalMiniPlayer";
-import GlobalAnnouncementBanner from "./components/GlobalAnnouncementBanner";
+import ThemePortal from "./components/common/ThemePortal";
+import GlobalMiniPlayer from "./components/layout/GlobalMiniPlayer";
+import GlobalAnnouncementBanner from "./components/layout/GlobalAnnouncementBanner";
+import { normalizeId } from "./lib/idUtils";
 
-import OrbitChatApp from "./components/OrbitChatApp";
-import { useAnimationContext } from "./components/AnimLayer";
+import OrbitChatApp from "./components/layout/OrbitChatApp";
+import { useAnimationContext } from "./components/effects/AnimLayer";
 import { AvatarProvider } from "./context/AvatarContext.jsx";
 
 // Initialized exactly once at module load time (before any renders)
@@ -130,12 +131,6 @@ const DynamicRouteHandler = (props) => {
   const location = useLocation();
 
   useEffect(() => {
-    // Standardized normalization: prefer real _id for internal state matching
-    const normalizeId = (obj) => {
-      if (!obj) return null;
-      if (typeof obj === 'string') return obj;
-      return (obj._id || obj.id || obj).toString();
-    };
 
     const nid = normalizeId(nexusId);
     const uid = normalizeId(userId);
@@ -230,6 +225,20 @@ const AppContent = () => {
   const postAuthDataReadyRef = useRef(false);
   const postAuthAnimationReadyRef = useRef(false);
   const postAuthFinishTimerRef = useRef(null);
+  const markSeenTimeoutRef = useRef(null);
+  const markNexusSeenTimeoutRef = useRef(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   useEffect(() => {
     ensureAppSettings();
@@ -609,19 +618,25 @@ const AppContent = () => {
     return () => document.removeEventListener("click", handleGlobalClick, { capture: true });
   }, []);
 
-  // Auto-mark as seen for Direct Chats
+  // Auto-mark as seen for Direct Chats (Debounced)
   useEffect(() => {
     if (!authUser) return;
     if (selectedConversationId && selectedConversationType === "direct") {
-      markSeen(selectedConversationId);
+      if (markSeenTimeoutRef.current) clearTimeout(markSeenTimeoutRef.current);
+      markSeenTimeoutRef.current = setTimeout(() => {
+        markSeen(selectedConversationId);
+      }, 500);
     }
   }, [selectedConversationId, selectedConversationType, messages.length, markSeen, authUser]);
 
-  // Auto-mark as seen for Nexuses
+  // Auto-mark as seen for Nexuses (Debounced)
   useEffect(() => {
     if (!authUser) return;
     if (selectedNexusId) {
-      markNexusSeen(selectedNexusId);
+      if (markNexusSeenTimeoutRef.current) clearTimeout(markNexusSeenTimeoutRef.current);
+      markNexusSeenTimeoutRef.current = setTimeout(() => {
+        markNexusSeen(selectedNexusId);
+      }, 500);
     }
   }, [selectedNexusId, nexusMessages.length, markNexusSeen, authUser]);
 
@@ -795,6 +810,19 @@ const AppContent = () => {
             )}
           </main>
           <GlobalMiniPlayer />
+          <AnimatePresence>
+            {isOffline && (
+              <motion.div
+                initial={{ opacity: 0, y: -50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-error text-error-content px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 font-bold text-sm"
+              >
+                <div className="size-2 bg-white rounded-full animate-pulse" />
+                Connection lost. Orbit is offline.
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </div>

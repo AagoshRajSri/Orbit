@@ -57,3 +57,12 @@ export const botProtectionLimiter = rateLimit({
   legacyHeaders,
   message: { success: false, error: { code: "RATE_LIMIT", message: "Suspiciously high request rate detected." } },
 });
+
+// 6. Message Limiter - 60 messages per minute
+export const messageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders,
+  legacyHeaders,
+  message: { success: false, error: { code: "RATE_LIMIT", message: "Sending messages too fast. Please slow down." } },
+});

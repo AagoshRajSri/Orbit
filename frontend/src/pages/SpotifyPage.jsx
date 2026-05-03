@@ -9,9 +9,9 @@ import { Music, LogOut, ChevronLeft, Loader } from "lucide-react";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { useThemeStore } from "../store/useThemeStore";
 import { spotifyService } from "../services/spotifyService";
-import SpotifyPlayer from "../components/SpotifyPlayer";
-import SpotifySessionManager from "../components/SpotifySessionManager";
-import OrbitalPageWrapper from "../components/OrbitalPageWrapper";
+import SpotifyPlayer from "../components/spotify/SpotifyPlayer";
+import SpotifySessionManager from "../components/spotify/SpotifySessionManager";
+import OrbitalPageWrapper from "../components/layout/OrbitalPageWrapper";
 
 // ── Per-theme chrome config ──────────────────────────────────────────────────
 const CHROME = {

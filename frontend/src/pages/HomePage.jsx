@@ -3,13 +3,13 @@ import { useChatStore } from "../store/useChatStore";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore as useChat } from "../store/useChatStore";
 
-import Sidebar from "../components/Sidebar";
-import NoChatSelected from "../components/NoChatSelected";
-import MobileBottomNav from "../components/MobileBottomNav";
-import MobileSidebarDrawer from "../components/MobileSidebarDrawer";
-import UniversalChatContainer from "../components/UniversalChatContainer";
+import Sidebar from "../components/layout/Sidebar";
+import NoChatSelected from "../components/common/NoChatSelected";
+import MobileBottomNav from "../components/layout/MobileBottomNav";
+import MobileSidebarDrawer from "../components/layout/MobileSidebarDrawer";
+import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 
-import OrbitalPageWrapper from "../components/OrbitalPageWrapper";
+import OrbitalPageWrapper from "../components/layout/OrbitalPageWrapper";
 
 const HomePage = () => {
   const selectedConversationId = useChatStore((s) => s.selectedConversationId);

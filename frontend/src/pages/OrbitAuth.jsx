@@ -34,7 +34,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
-import OrbitAuthCanvas, { ICON_DEFS } from "../components/OrbitAuthCanvas";
+import OrbitAuthCanvas, { ICON_DEFS } from "../components/auth/OrbitAuthCanvas";
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 function defFor(id) {

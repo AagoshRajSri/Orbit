@@ -18,7 +18,7 @@
  *   VITE_CONSTELLATION_API_URL  (defaults to /api/auth in dev, triggering mock mode)
  */
 
-import { axiosInstance } from '../../lib/axios';
+import { axiosInstance } from '../../lib/axios.jsx';
 
 // DEV is the canonical Vite boolean — reliably true in dev, false in prod builds
 const IS_MOCK  = !import.meta.env.VITE_CONSTELLATION_API_URL && import.meta.env.DEV;

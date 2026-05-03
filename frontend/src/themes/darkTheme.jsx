@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, Fragment, useMemo, memo } from "react";
 import toast from "react-hot-toast";
-import UniversalChatContainer from "../components/UniversalChatContainer";
+import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { createPortal } from "react-dom";
 import { useThemeStore } from "../store/useThemeStore";
 import { useSettingsStore } from "../store/useSettingsStore";
@@ -11,11 +11,11 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { spotifyService } from "../services/spotifyService";
 import { API_URL } from "../config";
-import batLogo from "../bat.svg";
+import batLogo from "../assets/bat.svg";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
-import NexusActionOverlay from "../components/NexusActionOverlay";
-import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
+import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
+import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge.jsx";
 
 // ── Vampire-Orbit UI ──────────────────────────────────────────────
 // Fonts loaded via @import inside the style tag below

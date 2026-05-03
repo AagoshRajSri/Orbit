@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, useMemo, useRef } from "react";
-import UniversalChatContainer from "../components/UniversalChatContainer";
+import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import toast from "../lib/toast";
@@ -10,11 +10,11 @@ import { API_URL } from "../config";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import { useSettingsStore } from "../store/useSettingsStore";
-import NexusActionOverlay from "../components/NexusActionOverlay";
+import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
 import { Music } from "lucide-react";
-import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
-import RocketAnimation from "../components/RocketAnimation";
-import OrbitLogo from "../components/OrbitLogo";
+import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge.jsx";
+import RocketAnimation from "../components/effects/RocketAnimation";
+import OrbitLogo from "../components/common/OrbitLogo";
 
 
 /* ─────────────────────────────── KEYFRAMES ─────────────────────────────── */

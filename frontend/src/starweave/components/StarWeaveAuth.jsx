@@ -20,7 +20,7 @@ import { createParticlePool }      from '../pools/particlePool';
 import { createTrailPool }         from '../pools/trailPool';
 import { createShockwavePool }     from '../pools/shockwavePool';
 import { CameraPrompt, AuthResult } from './UIComponents';
-import HoverBackButton from '../../components/HoverBackButton';
+import HoverBackButton from '../../components/common/HoverBackButton';
 
 // Layer z-indices / styles
 const LAYER_STYLE = {

@@ -3,6 +3,7 @@ import toast from "../lib/toast";
 import { axiosInstance } from "../lib/axios.jsx";
 import { getSocket } from "../lib/socket";
 import { useAuthStore } from "./useAuthStore";
+import { normalizeId } from "../lib/idUtils";
 
 export const useNexusStore = create((set, get) => ({
   nexuses: [],
@@ -486,13 +487,6 @@ export const useNexusStore = create((set, get) => ({
     set((state) => {
       const { selectedNexusId, nexusMessages, nexusUnread } = state;
 
-      // Utility: extract a plain string ID from a string or object
-      const normalizeId = (obj) => {
-        if (!obj) return null;
-        if (typeof obj === 'string') return obj;
-        return (obj._id || obj.id || '').toString() || null;
-      };
-
       const msgNexusId = message.nexusId;
       const selNexusId = selectedNexusId;
 
@@ -518,7 +512,7 @@ export const useNexusStore = create((set, get) => ({
 
         let newMessages = [...nexusMessages];
 
-        const existsIndex = newMessages.findIndex((m) => {
+        const existsIndex = newMessages.findLastIndex((m) => {
           const mId = normalizeId(m._id);
           if (mId && messageId && mId === messageId) return true;
           if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;

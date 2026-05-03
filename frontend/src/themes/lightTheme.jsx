@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, memo } from "react";
-import UniversalChatContainer from "../components/UniversalChatContainer";
+import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Globe, Settings, User, LogOut, Music, Bell, Shield, Layers, 
@@ -14,8 +14,8 @@ import { useChatStore } from "../store/useChatStore";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { THEMES, THEME_LABELS } from "../constants";
-import NexusActionOverlay from "../components/NexusActionOverlay";
-import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
+import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
+import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge.jsx";
 const LUXURY_COLORS = {
   canvas: "#F8F5EF",
   surface: "#FFFFFF",

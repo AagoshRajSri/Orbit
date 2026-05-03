@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../store/useAuthStore";
 import { useLocation, useNavigate, Navigate } from "react-router-dom";
-import { CyberAuthStyles } from "../components/CyberAuth";
+import { CyberAuthStyles } from "../components/auth/CyberAuth";
 
 const COOLDOWN = 60;
 

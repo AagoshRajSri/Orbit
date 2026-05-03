@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Sparkles, Star } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSoundManager } from "../hooks/useSoundManager";
-import { CyberAuthStyles, GlitchText, MorphInput } from "../components/CyberAuth";
+import { CyberAuthStyles, GlitchText, MorphInput } from "../components/auth/CyberAuth";
 import toast from "react-hot-toast";
 
 const SignUpPage = () => {

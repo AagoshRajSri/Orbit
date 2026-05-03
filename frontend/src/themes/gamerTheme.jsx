@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo, memo } from "react";
-import UniversalChatContainer from "../components/UniversalChatContainer";
+import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
@@ -7,8 +7,8 @@ import { useSpotifyStore } from "../store/useSpotifyStore";
 import { THEMES, THEME_LABELS } from "../constants";
 import { gsap } from "gsap";
 import { useNexusStore } from "../store/useNexusStore";
-import NexusActionOverlay from "../components/NexusActionOverlay";
-import { PixelAvatarBadge } from "../components/PixelAvatar/PixelAvatarBadge.jsx";
+import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
+import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { spotifyService } from "../services/spotifyService";
 import { API_URL } from "../config";

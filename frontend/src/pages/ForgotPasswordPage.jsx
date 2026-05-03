@@ -4,7 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { useSoundManager } from "../hooks/useSoundManager";
-import { CyberAuthStyles, MorphInput } from "../components/CyberAuth";
+import { CyberAuthStyles, MorphInput } from "../components/auth/CyberAuth";
 
 const STEPS = ["email", "otp", "reset"];
 

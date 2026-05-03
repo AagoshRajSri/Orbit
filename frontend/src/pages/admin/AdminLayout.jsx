@@ -7,7 +7,7 @@ import {
   Globe, Zap, Activity
 } from "lucide-react";
 import AdminCommandPalette from "./AdminCommandPalette.jsx";
-import OrbitLogo from "../../components/OrbitLogo";
+import OrbitLogo from "../../components/common/OrbitLogo";
 import "./admin.css";
 
 const NAV_GROUPS = [
