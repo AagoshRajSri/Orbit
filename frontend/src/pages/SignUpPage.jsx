@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Sparkles, Star, UserPlus, Send, Mail, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Send, UserPlus } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSoundManager } from "../hooks/useSoundManager";
 import toast from "react-hot-toast";
@@ -9,155 +9,132 @@ const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Departure+Mono&display=swap');
 
   :root {
-    --neon-cyan: #00e5ff;
-    --neon-purple: #7c3aed;
-    --neon-green: #06ffa5;
-    --bg-deep: #050810;
-    --glass: rgba(255, 255, 255, 0.03);
-    --border-glow: rgba(0, 229, 255, 0.15);
+    --cyan: #00e5ff;
+    --purple: #7c3aed;
+    --bg: #050810;
   }
 
-  /* Force parent layout to respect no-scroll */
   html, body { overflow: hidden !important; height: 100%; margin: 0; }
-
-  .su-wrapper {
+  
+  .auth-root {
     position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
     font-family: 'Departure Mono', monospace;
     color: #fff;
-    display: flex; align-items: center; justify-content: center;
     overflow: hidden !important;
-    background: transparent;
-    z-index: 50;
   }
 
-  .su-grid-bg {
-    position: absolute; inset: 0;
-    background-image: 
-      linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
-    background-size: 35px 35px;
-    mask-image: radial-gradient(circle at center, black, transparent 80%);
-    animation: grid-drift 25s linear infinite;
-    pointer-events: none;
+  .auth-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(0, 229, 255, 0.08), transparent 70%);
   }
-  @keyframes grid-drift {
-    from { transform: translateY(0); }
-    to { transform: translateY(35px); }
+  .auth-orb {
+    position: absolute; width: 500px; height: 500px;
+    border-radius: 50%; filter: blur(120px);
+    opacity: 0.15; mix-blend-mode: screen;
+    animation: auth-float 25s infinite alternate ease-in-out;
   }
-
-  .su-overlay {
-    position: absolute; inset: 0; pointer-events: none;
-    background: repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,0.05) 1px, rgba(0,0,0,0.05) 2px);
-    opacity: 0.4;
+  @keyframes auth-float {
+    from { transform: translate(-15%, -10%) scale(1); }
+    to { transform: translate(15%, 15%) scale(1.05); }
   }
 
-  .su-card {
-    position: relative;
-    width: 390px;
-    padding: 32px 36px;
-    background: rgba(5, 8, 16, 0.85);
-    backdrop-filter: blur(25px);
-    border: 1px solid rgba(124, 58, 237, 0.2);
-    border-radius: 4px;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(124, 58, 237, 0.05);
-    animation: su-appear 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  @keyframes su-appear {
-    from { opacity: 0; transform: translateY(20px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  /* Cyber Corners */
-  .su-card::before, .su-card::after, .su-card-inner::before, .su-card-inner::after {
-    content: ''; position: absolute; width: 12px; height: 12px;
-    border: 2px solid var(--neon-purple); pointer-events: none;
-  }
-  .su-card::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
-  .su-card::after { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
-  .su-card-inner::before { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
-  .su-card-inner::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
-
-  .su-header { text-align: center; margin-bottom: 24px; }
-  .su-logo-box {
-    width: 44px; height: 44px; margin: 0 auto 12px;
-    display: flex; align-items: center; justify-content: center;
-    border: 1px solid var(--neon-purple);
-    background: rgba(124, 58, 237, 0.05);
-  }
-  .su-logo-box svg { filter: drop-shadow(0 0 5px var(--neon-purple)); }
-
-  .su-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: 26px; font-style: italic; color: #fff;
-    margin: 0; line-height: 1;
-  }
-  .su-sub {
-    font-size: 8px; color: var(--neon-purple);
-    letter-spacing: 0.25em; opacity: 0.7; margin-top: 6px;
-  }
-
-  .su-group { position: relative; margin-bottom: 16px; }
-  .su-label-tag {
-    position: absolute; top: -7px; left: 10px;
-    background: #050810; padding: 0 5px;
-    font-size: 7px; color: var(--neon-purple);
-    letter-spacing: 0.1em; z-index: 5;
-  }
-  .su-input {
-    width: 100%; height: 44px;
-    background: rgba(255, 255, 255, 0.015);
+  .auth-card {
+    position: relative; z-index: 10;
+    width: 380px;
+    padding: 40px 36px;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 0 14px 0 38px;
-    color: #fff; font-size: 12.5px;
-    font-family: 'Departure Mono', monospace;
-    outline: none; transition: all 0.3s;
+    border-radius: 32px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    text-align: center;
+  }
+
+  .auth-header { margin-bottom: 28px; }
+  .auth-icon-wrap {
+    width: 50px; height: 50px; margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(124, 58, 237, 0.05);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: 16px;
+    color: var(--purple);
+  }
+  .auth-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 30px; font-style: italic; font-weight: 400;
+    margin: 0; letter-spacing: -0.02em; line-height: 1;
+  }
+  .auth-sub {
+    font-size: 8px; letter-spacing: 0.25em;
+    color: rgba(255, 255, 255, 0.3); margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  .auth-form { display: flex; flex-direction: column; gap: 12px; }
+  .auth-input-group { position: relative; }
+  
+  .auth-input {
+    width: 100%; height: 48px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 0 16px 0 44px;
+    color: #fff; font-family: 'Departure Mono', monospace;
+    font-size: 12.5px; outline: none; transition: all 0.25s;
     box-sizing: border-box;
   }
-  .su-input:focus {
-    border-color: var(--neon-purple);
+  .auth-input:focus {
+    border-color: var(--purple);
     background: rgba(124, 58, 237, 0.03);
-    box-shadow: 0 0 12px rgba(124, 58, 237, 0.1);
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.05);
   }
-  .su-input-icon {
-    position: absolute; left: 12px; top: 50%;
-    transform: translateY(-50%); color: rgba(255,255,255,0.15);
-    transition: color 0.3s;
+
+  .auth-input:-webkit-autofill,
+  .auth-input:-webkit-autofill:hover, 
+  .auth-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff;
+    -webkit-box-shadow: 0 0 0px 1000px #0a0c14 inset;
+    transition: background-color 5000s ease-in-out 0s;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
-  .su-group:focus-within .su-input-icon { color: var(--neon-purple); }
 
-  .su-hint { font-size: 7px; color: rgba(255,255,255,0.2); margin-top: 4px; display: block; letter-spacing: 0.05em; }
-
-  /* Strength Bar */
-  .su-strength { display: flex; gap: 3px; margin-top: 6px; height: 2px; }
-  .su-strength-seg { flex: 1; background: rgba(255,255,255,0.05); transition: background 0.4s; }
-
-  .su-submit {
-    width: 100%; height: 46px;
-    background: var(--neon-purple);
-    color: #fff; font-weight: bold;
-    font-family: 'Departure Mono', monospace;
-    border: none; cursor: pointer;
-    letter-spacing: 0.15em; font-size: 12px;
-    transition: all 0.3s; position: relative;
-    overflow: hidden; margin-top: 8px;
+  .auth-input-icon {
+    position: absolute; left: 16px; top: 50%;
+    transform: translateY(-50%); color: rgba(255, 255, 255, 0.2);
+    transition: color 0.25s; pointer-events: none;
   }
-  .su-submit:hover:not(:disabled) {
+  .auth-input-group:focus-within .auth-input-icon { color: var(--purple); }
+
+  .auth-eye {
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%); background: none; border: none;
+    color: rgba(255, 255, 255, 0.2); cursor: pointer;
+    padding: 4px; display: flex; align-items: center;
+  }
+
+  .auth-strength { display: flex; gap: 3px; margin-top: 6px; height: 2px; padding: 0 4px; }
+  .auth-strength-seg { flex: 1; background: rgba(255, 255, 255, 0.05); transition: background 0.4s; border-radius: 2px; }
+
+  .auth-submit {
+    width: 100%; height: 50px; margin-top: 10px;
     background: #fff; color: #000;
-    box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+    border: none; border-radius: 14px;
+    font-family: 'Departure Mono', monospace;
+    font-size: 13px; font-weight: bold;
+    letter-spacing: 0.12em; cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .su-submit-glitch {
-    position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: su-glitch-sweep 4s infinite;
+  .auth-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   }
-  @keyframes su-glitch-sweep {
-    0% { left: -100%; }
-    40%, 100% { left: 100%; }
-  }
+  .auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .su-footer { text-align: center; margin-top: 20px; font-size: 9px; }
-  .su-link { color: var(--neon-purple); text-decoration: none; font-weight: bold; }
-  .su-link:hover { text-decoration: underline; }
+  .auth-footer { margin-top: 24px; font-size: 10px; color: rgba(255, 255, 255, 0.2); }
+  .auth-link { color: var(--purple); text-decoration: none; font-weight: bold; }
+  .auth-link:hover { text-decoration: underline; }
 `;
 
 const SignUpPage = () => {
@@ -167,20 +144,14 @@ const SignUpPage = () => {
   const { play } = useSoundManager();
   const navigate = useNavigate();
 
-  const validateForm = () => {
-    if (!formData.username.trim()) return toast.error("IDENT_REQUIRED");
-    if (!formData.email.trim()) return toast.error("EMAIL_REQUIRED");
-    if (!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("INVALID_EMAIL");
-    if (!formData.telegramId) return toast.error("TELEGRAM_ID_REQUIRED");
-    if (!formData.password) return toast.error("KEY_REQUIRED");
-    if (formData.password.length < 8) return toast.error("KEY_TOO_SHORT");
-    return true;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     play("click");
-    if (validateForm() !== true) return;
+    if (!formData.username.trim()) return toast.error("Username required");
+    if (!formData.email.trim()) return toast.error("Email required");
+    if (!formData.telegramId) return toast.error("Telegram ID required");
+    if (formData.password.length < 8) return toast.error("Min 8 characters");
+    
     const result = await signup(formData);
     if (result?.success) navigate("/");
   };
@@ -198,104 +169,86 @@ const SignUpPage = () => {
   const strengthColor = ["", "#ef4444", "#fbbf24", "#22c55e", "#00e5ff"][pwStrength] || "";
 
   return (
-    <div className="su-wrapper">
+    <div className="auth-root">
       <style>{styles}</style>
-      <div className="su-grid-bg" />
-      <div className="su-overlay" />
+      <div className="auth-bg">
+        <div className="auth-orb" style={{ background: 'var(--purple)', top: '15%', right: '15%' }} />
+        <div className="auth-orb" style={{ background: 'var(--cyan)', bottom: '15%', left: '15%' }} />
+      </div>
 
-      <div className="su-card">
-        <div className="su-card-inner">
-          <div className="su-header">
-            <div className="su-logo-box">
-              <UserPlus size={22} color="var(--neon-purple)" />
-            </div>
-            <h1 className="su-title">Create Identity</h1>
-            <p className="su-sub">INIT_NODE_SEQUENCE_V4</p>
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="auth-icon-wrap">
+            <UserPlus size={24} />
+          </div>
+          <h1 className="auth-title">Create Node</h1>
+          <p className="auth-sub">INITIALIZE_IDENTITY</p>
+        </div>
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-input-group">
+            <User className="auth-input-icon" size={16} />
+            <input
+              className="auth-input"
+              type="text"
+              placeholder="Username"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value.replace(/\s+/g, "").toLowerCase() })}
+            />
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="su-group">
-              <span className="su-label-tag">NODE_ID</span>
-              <div className="su-input-wrap">
-                <span className="su-input-icon"><User size={14} /></span>
-                <input
-                  className="su-input"
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value.replace(/\s+/g, "").toLowerCase() })}
-                  placeholder="alias_01"
-                />
-              </div>
-            </div>
+          <div className="auth-input-group">
+            <Mail className="auth-input-icon" size={16} />
+            <input
+              className="auth-input"
+              type="email"
+              placeholder="Email address"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
 
-            <div className="su-group">
-              <span className="su-label-tag">COMMS_CHANNEL</span>
-              <div className="su-input-wrap">
-                <span className="su-input-icon"><Mail size={14} /></span>
-                <input
-                  className="su-input"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="protocol@orbit.network"
-                />
-              </div>
-            </div>
+          <div className="auth-input-group">
+            <Send className="auth-input-icon" size={16} />
+            <input
+              className="auth-input"
+              type="text"
+              placeholder="Telegram ID"
+              value={formData.telegramId}
+              onChange={(e) => setFormData({ ...formData, telegramId: e.target.value.replace(/\D/g, "") })}
+            />
+          </div>
 
-            <div className="su-group">
-              <span className="su-label-tag">TELEGRAM_REF</span>
-              <div className="su-input-wrap">
-                <span className="su-input-icon"><Send size={14} /></span>
-                <input
-                  className="su-input"
-                  type="text"
-                  value={formData.telegramId}
-                  onChange={(e) => setFormData({ ...formData, telegramId: e.target.value.replace(/\D/g, "") })}
-                  placeholder="89234120"
-                />
-              </div>
-              <span className="su-hint">Verify ID via @userinfobot</span>
-            </div>
-
-            <div className="su-group" style={{ marginBottom: '12px' }}>
-              <span className="su-label-tag">SECURITY_PHRASE</span>
-              <div className="su-input-wrap">
-                <span className="su-input-icon">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </span>
-                <input
-                  className="su-input"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer' }}
-                  onClick={() => { play("click"); setShowPassword(!showPassword); }}
-                >
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
-              <div className="su-strength">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="su-strength-seg" style={{ background: i <= pwStrength ? strengthColor : undefined }} />
-                ))}
-              </div>
-            </div>
-
-            <button type="submit" className="su-submit" disabled={isSigningUp}>
-              {isSigningUp ? "INITIALIZING..." : "CONSTRUCT_IDENTITY //"}
-              <div className="su-submit-glitch" />
+          <div className="auth-input-group">
+            <Lock className="auth-input-icon" size={16} />
+            <input
+              className="auth-input"
+              type={showPassword ? "text" : "password"}
+              placeholder="Security password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+            <button
+              type="button"
+              className="auth-eye"
+              onClick={() => { play("click"); setShowPassword(!showPassword); }}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
-          </form>
-
-          <div className="su-footer">
-            <p style={{ color: 'rgba(255,255,255,0.3)', margin: 0 }}>
-              ALREADY_SEALED? <Link to="/login" className="su-link">AUTHENTICATE →</Link>
-            </p>
+            <div className="auth-strength">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="auth-strength-seg" style={{ background: i <= pwStrength ? strengthColor : undefined }} />
+              ))}
+            </div>
           </div>
+
+          <button type="submit" className="auth-submit" disabled={isSigningUp}>
+            {isSigningUp ? "CREATING..." : "INITIALIZE NODE //"}
+          </button>
+        </form>
+
+        <div className="auth-footer">
+          EXISTING_NODE? <Link to="/login" className="auth-link">AUTHENTICATE →</Link>
         </div>
       </div>
     </div>
