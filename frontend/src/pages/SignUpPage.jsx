@@ -5,238 +5,250 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useSoundManager } from "../hooks/useSoundManager";
 import toast from "react-hot-toast";
 
-/* ─────────────────────────────────────────────────────── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
 
-.orbit-auth-root {
-  position: fixed; inset: 0;
-  background: #050915;
-  display: flex; align-items: center; justify-content: center;
+.su-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #06091a;
   font-family: 'JetBrains Mono', monospace;
+  position: relative;
   overflow: hidden;
 }
 
-.orbit-orb {
-  position: absolute; border-radius: 50%;
-  filter: blur(120px); pointer-events: none;
-  animation: orbFloat ease-in-out infinite alternate;
+.su-glow-a {
+  position: absolute;
+  width: 700px; height: 700px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, transparent 70%);
+  top: -200px; right: -200px; pointer-events: none;
+  animation: suPulse 9s ease-in-out infinite alternate;
 }
-@keyframes orbFloat {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(var(--tx, 20px), var(--ty, -20px)) scale(var(--ts, 1.08)); }
+.su-glow-b {
+  position: absolute;
+  width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 70%);
+  bottom: -150px; left: -150px; pointer-events: none;
+  animation: suPulse 11s ease-in-out infinite alternate-reverse;
+}
+@keyframes suPulse {
+  from { transform: scale(1) translate(0, 0); }
+  to   { transform: scale(1.12) translate(-20px, 25px); }
+}
+
+.su-scanlines {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px, transparent 2px,
+    rgba(255,255,255,0.01) 2px, rgba(255,255,255,0.01) 4px
+  );
 }
 
 /* Card */
-.orbit-card {
+.su-card {
   position: relative; z-index: 10;
-  width: 400px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 28px;
-  padding: 40px 40px 36px;
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
+  width: 420px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 44px 40px 40px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.02) inset,
-    0 32px 80px rgba(0,0,0,0.5);
+    0 0 0 1px rgba(255,255,255,0.03) inset,
+    0 24px 64px rgba(0,0,0,0.6);
+  animation: suCardIn 0.55s cubic-bezier(0.16,1,0.3,1) both;
 }
-.orbit-card::before {
+@keyframes suCardIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.su-card::before {
   content: '';
-  position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(56,189,248,0.8), rgba(139,92,246,0.8), transparent);
-  border-radius: 9999px; filter: blur(0.5px);
+  position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56,189,248,0.9), rgba(124,58,237,0.9), transparent);
+  border-radius: 9999px;
 }
 
 /* Brand */
-.orbit-brand {
-  display: flex; flex-direction: column; align-items: center; margin-bottom: 30px;
+.su-brand { text-align: center; margin-bottom: 28px; }
+.su-orbit-mark {
+  width: 56px; height: 56px; margin: 0 auto 18px;
+  position: relative; display: flex; align-items: center; justify-content: center;
 }
-.orbit-logo {
-  width: 52px; height: 52px; margin-bottom: 18px;
-  display: flex; align-items: center; justify-content: center; position: relative;
-}
-.orbit-logo-ring {
+.su-orbit-ring {
   position: absolute; inset: 0; border-radius: 50%;
-  border: 1px solid rgba(56,189,248,0.35);
-  animation: spinRing 10s linear infinite;
+  border: 1px solid rgba(56,189,248,0.4);
+  animation: suSpin 10s linear infinite;
 }
-.orbit-logo-ring::after {
+.su-orbit-ring::before {
   content: '';
-  position: absolute; top: -3px; left: 50%; transform: translateX(-50%);
-  width: 6px; height: 6px; border-radius: 50%;
+  position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+  width: 8px; height: 8px; border-radius: 50%;
   background: #38bdf8;
-  box-shadow: 0 0 12px #38bdf8, 0 0 24px #38bdf8;
+  box-shadow: 0 0 10px 2px rgba(56,189,248,0.8);
 }
-@keyframes spinRing { to { transform: rotate(360deg); } }
-.orbit-logo-inner {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, rgba(56,189,248,0.25), rgba(139,92,246,0.1));
-  border: 1px solid rgba(56,189,248,0.3);
+@keyframes suSpin { to { transform: rotate(360deg); } }
+.su-orbit-core {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(56,189,248,0.25), rgba(124,58,237,0.1));
+  border: 1px solid rgba(56,189,248,0.25);
   display: flex; align-items: center; justify-content: center;
 }
-
-.orbit-heading {
+.su-h1 {
   font-family: 'Instrument Serif', serif;
-  font-size: 28px; font-style: italic; font-weight: 400;
-  color: #f8fafc; margin: 0 0 6px; letter-spacing: -0.02em;
+  font-size: 30px; font-style: italic; font-weight: 400;
+  color: #f0f4ff; margin: 0 0 8px;
+  letter-spacing: -0.02em; line-height: 1;
 }
-.orbit-tagline {
+.su-sub {
   font-size: 9px; letter-spacing: 0.22em;
-  color: rgba(255,255,255,0.25); text-transform: uppercase;
+  color: rgba(255,255,255,0.22); text-transform: uppercase;
 }
 
 /* Fields */
-.orbit-field { position: relative; margin-bottom: 12px; }
-.orbit-label {
-  display: block; font-size: 9px; letter-spacing: 0.1em;
-  color: rgba(255,255,255,0.3); margin-bottom: 6px; text-transform: uppercase;
+.su-field { margin-bottom: 13px; }
+.su-flabel {
+  display: block; font-size: 9px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(255,255,255,0.28); margin-bottom: 7px;
 }
-.orbit-input-wrap { position: relative; }
-.orbit-input {
-  width: 100%; height: 50px; box-sizing: border-box;
+.su-finput-wrap { position: relative; }
+.su-finput {
+  width: 100%; height: 48px; box-sizing: border-box;
   background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 13px;
   padding: 0 16px 0 44px;
-  color: #f8fafc; font-family: 'JetBrains Mono', monospace; font-size: 13px;
-  outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  color: #f0f4ff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
-.orbit-input::placeholder { color: rgba(255,255,255,0.18); }
-.orbit-input:focus {
+.su-finput::placeholder { color: rgba(255,255,255,0.15); }
+.su-finput:focus {
   border-color: rgba(56,189,248,0.5);
   background: rgba(56,189,248,0.03);
-  box-shadow: 0 0 0 3px rgba(56,189,248,0.07);
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.08);
 }
-.orbit-input:-webkit-autofill,
-.orbit-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #0b0d18 inset;
-  -webkit-text-fill-color: #f8fafc;
+.su-finput:-webkit-autofill,
+.su-finput:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #090c1c inset;
+  -webkit-text-fill-color: #f0f4ff;
 }
-.orbit-input-ico {
+.su-ficon {
   position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-  color: rgba(255,255,255,0.2); transition: color 0.2s;
+  color: rgba(255,255,255,0.18); transition: color 0.2s;
   display: flex; align-items: center; pointer-events: none;
 }
-.orbit-field:focus-within .orbit-input-ico { color: rgba(56,189,248,0.7); }
-.orbit-eye-btn {
+.su-field:focus-within .su-ficon { color: rgba(56,189,248,0.7); }
+.su-feye {
   position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-  background: none; border: none; color: rgba(255,255,255,0.2);
-  cursor: pointer; display: flex; align-items: center; padding: 4px; transition: color 0.2s;
+  background: none; border: none; padding: 6px; cursor: pointer;
+  color: rgba(255,255,255,0.18); display: flex; align-items: center;
+  transition: color 0.2s;
 }
-.orbit-eye-btn:hover { color: rgba(255,255,255,0.5); }
+.su-feye:hover { color: rgba(255,255,255,0.5); }
 
-.orbit-hint {
+.su-hint {
   font-size: 9px; color: rgba(56,189,248,0.4);
-  margin-top: 5px; display: block; letter-spacing: 0.05em;
+  margin-top: 5px; display: block; letter-spacing: 0.04em;
 }
 
-/* Strength bar */
-.orbit-strength { display: flex; gap: 4px; margin-top: 8px; }
-.orbit-strength-seg {
-  flex: 1; height: 2px; border-radius: 9999px;
+/* Strength */
+.su-strength { display: flex; gap: 4px; margin-top: 8px; }
+.su-strength-seg {
+  flex: 1; height: 2px; border-radius: 99px;
   background: rgba(255,255,255,0.07); transition: background 0.35s;
 }
-.orbit-strength-label {
-  font-size: 9px; letter-spacing: 0.12em; margin-top: 5px; transition: color 0.35s;
+.su-strength-txt {
+  font-size: 9px; letter-spacing: 0.12em;
+  margin-top: 5px; transition: color 0.35s;
 }
 
 /* Submit */
-.orbit-submit {
-  width: 100%; height: 52px; margin-top: 12px;
-  background: linear-gradient(135deg, #0ea5e9, #7c3aed);
-  border: none; border-radius: 14px;
+.su-submit {
+  width: 100%; height: 52px; margin-top: 10px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #7c3aed 100%);
+  border: none; border-radius: 13px;
   color: #fff; font-family: 'JetBrains Mono', monospace;
-  font-size: 12px; font-weight: 500; letter-spacing: 0.12em;
+  font-size: 12.5px; font-weight: 500; letter-spacing: 0.1em;
   cursor: pointer; position: relative; overflow: hidden;
   transition: transform 0.15s, box-shadow 0.2s;
 }
-.orbit-submit:hover:not(:disabled) {
+.su-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 8px 32px rgba(14,165,233,0.3), 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 32px rgba(14,165,233,0.3), 0 4px 12px rgba(0,0,0,0.4);
 }
-.orbit-submit:active:not(:disabled) { transform: translateY(0); }
-.orbit-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-.orbit-submit-shine {
-  position: absolute; inset: 0;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: shine 3.5s ease infinite;
+.su-submit:active:not(:disabled) { transform: translateY(0); }
+.su-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+.su-submit-shine {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.13) 50%, transparent 65%);
+  animation: suShine 4s ease-in-out infinite;
 }
-@keyframes shine { 0%,100% { transform: translateX(-100%); } 40% { transform: translateX(120%); } }
+@keyframes suShine { 0%, 100% { transform: translateX(-120%); } 45% { transform: translateX(130%); } }
 
-/* Divider */
-.orbit-divider {
-  display: flex; align-items: center; gap: 10px; margin: 20px 0 16px;
-}
-.orbit-divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
-.orbit-divider span { font-size: 9px; color: rgba(255,255,255,0.15); letter-spacing: 0.1em; }
+.su-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0 16px; }
+.su-dline { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+.su-dtxt { font-size: 9px; color: rgba(255,255,255,0.14); letter-spacing: 0.12em; }
 
-.orbit-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-.orbit-alt-btn {
+.su-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.su-alt-btn {
   height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px;
-  border-radius: 12px; font-family: 'JetBrains Mono', monospace;
-  font-size: 8px; letter-spacing: 0.1em;
-  border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02);
-  color: rgba(255,255,255,0.15); cursor: not-allowed;
+  border-radius: 11px; border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  font-size: 8.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.15);
+  cursor: not-allowed;
 }
 
-.orbit-footer { text-align: center; font-size: 10px; color: rgba(255,255,255,0.2); }
-.orbit-footer a { color: rgba(56,189,248,0.8); text-decoration: none; }
-.orbit-footer a:hover { text-decoration: underline; }
+.su-footer { text-align: center; font-size: 10.5px; color: rgba(255,255,255,0.2); }
+.su-footer a { color: rgba(56,189,248,0.8); text-decoration: none; }
+.su-footer a:hover { text-decoration: underline; }
 
-.orbit-spinner {
-  display: inline-block; width: 13px; height: 13px; margin-right: 8px;
-  border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff;
-  border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle;
+.su-spinner {
+  display: inline-block; vertical-align: middle;
+  width: 13px; height: 13px; margin-right: 8px;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-top-color: #fff; border-radius: 50%;
+  animation: suSpin 0.65s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 `;
 
-const validateForm = (f) => {
-  if (!f.username.trim()) { toast.error("Username is required"); return false; }
-  if (f.username.includes(" ")) { toast.error("No spaces in username"); return false; }
-  if (!f.email.trim()) { toast.error("Email is required"); return false; }
-  if (!/\S+@\S+\.\S+/.test(f.email)) { toast.error("Invalid email format"); return false; }
-  if (!f.telegramId) { toast.error("Telegram ID required — get it from @userinfobot"); return false; }
-  if (!/^\d+$/.test(f.telegramId)) { toast.error("Telegram ID must be numeric"); return false; }
-  if (!f.password) { toast.error("Password required"); return false; }
-  if (f.password.length < 8) { toast.error("Minimum 8 characters"); return false; }
-  if (!/[A-Z]/.test(f.password)) { toast.error("Need at least one uppercase letter"); return false; }
-  if (!/[0-9]/.test(f.password)) { toast.error("Need at least one number"); return false; }
-  if (!/[^A-Za-z0-9]/.test(f.password)) { toast.error("Need at least one special character"); return false; }
-  return true;
-};
+const STRENGTH_LABEL = ["", "Weak", "Fair", "Good", "Strong", "Lethal"];
+const STRENGTH_COLOR = ["", "#ef4444", "#f97316", "#eab308", "#22c55e", "#38bdf8"];
 
 const pwScore = (p) => {
   if (!p) return 0;
   let s = 0;
-  if (p.length >= 8)       s++;
-  if (p.length >= 12)      s++;
-  if (/[A-Z]/.test(p))     s++;
-  if (/[0-9]/.test(p))     s++;
+  if (p.length >= 8) s++;
+  if (p.length >= 12) s++;
+  if (/[A-Z]/.test(p)) s++;
+  if (/[0-9]/.test(p)) s++;
   if (/[^A-Za-z0-9]/.test(p)) s++;
   return s;
 };
-const STRENGTH = ["", "Weak", "Fair", "Good", "Strong", "Lethal"];
-const STRENGTH_COLOR = ["", "#ef4444", "#f97316", "#eab308", "#22c55e", "#38bdf8"];
 
-const UserIcon = () => (
+const IcoUser = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
     <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
   </svg>
 );
-const MailIcon = () => (
+const IcoMail = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
     <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
   </svg>
 );
-const SendIcon = () => (
+const IcoSend = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
   </svg>
 );
-const LockIcon = () => (
+const IcoLock = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
     <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
   </svg>
@@ -249,12 +261,21 @@ export default function SignUpPage() {
   const { play } = useSoundManager();
   const navigate = useNavigate();
 
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const validate = () => {
+    if (!form.username.trim()) return toast.error("Username required");
+    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) return toast.error("Valid email required");
+    if (!form.telegramId || !/^\d+$/.test(form.telegramId)) return toast.error("Numeric Telegram ID required");
+    if (form.password.length < 8) return toast.error("Min 8 characters");
+    if (!/[A-Z]/.test(form.password)) return toast.error("Need one uppercase letter");
+    if (!/[0-9]/.test(form.password)) return toast.error("Need one number");
+    if (!/[^A-Za-z0-9]/.test(form.password)) return toast.error("Need one special character");
+    return true;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     play?.("click");
-    if (!validateForm(form)) return;
+    if (validate() !== true) return;
     const result = await signup(form);
     if (result?.success) navigate("/");
   };
@@ -263,127 +284,109 @@ export default function SignUpPage() {
   const color = STRENGTH_COLOR[score];
 
   return (
-    <div className="orbit-auth-root">
+    <div className="su-page">
       <style>{CSS}</style>
+      <div className="su-glow-a" />
+      <div className="su-glow-b" />
+      <div className="su-scanlines" />
 
-      {/* Orbs */}
-      <div className="orbit-orb" style={{ width: 550, height: 550, top: "-25%", right: "-15%", background: "rgba(56,189,248,0.16)", "--tx": "-20px", "--ty": "20px", "--ts": "1.06", animationDuration: "20s" }} />
-      <div className="orbit-orb" style={{ width: 450, height: 450, bottom: "-20%", left: "-15%", background: "rgba(124,58,237,0.14)", "--tx": "25px", "--ty": "-15px", "--ts": "1.1", animationDuration: "24s" }} />
-      <div className="orbit-orb" style={{ width: 280, height: 280, top: "50%", left: "50%", background: "rgba(6,255,165,0.05)", "--tx": "15px", "--ty": "-25px", "--ts": "0.95", animationDuration: "28s" }} />
-
-      <div className="orbit-card">
-        {/* Logo */}
-        <div className="orbit-brand">
-          <div className="orbit-logo">
-            <div className="orbit-logo-ring" />
-            <div className="orbit-logo-inner">
+      <div className="su-card">
+        <div className="su-brand">
+          <div className="su-orbit-mark">
+            <div className="su-orbit-ring" />
+            <div className="su-orbit-core">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
-                  stroke="rgba(56,189,248,0.9)" strokeWidth="2" strokeLinecap="round"/>
+                  stroke="rgba(56,189,248,0.85)" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </div>
           </div>
-          <h1 className="orbit-heading">Initialize node</h1>
-          <p className="orbit-tagline">Create your Orbit identity</p>
+          <h1 className="su-h1">Create your node</h1>
+          <p className="su-sub">Initialize your Orbit identity</p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Username */}
-          <div className="orbit-field">
-            <label className="orbit-label">Username</label>
-            <div className="orbit-input-wrap">
-              <span className="orbit-input-ico"><UserIcon /></span>
-              <input
-                className="orbit-input"
-                type="text"
-                placeholder="your_alias"
+          <div className="su-field">
+            <label className="su-flabel">Username</label>
+            <div className="su-finput-wrap">
+              <span className="su-ficon"><IcoUser /></span>
+              <input className="su-finput" type="text" placeholder="your_alias"
                 value={form.username}
-                onChange={e => setForm(f => ({ ...f, username: e.target.value.replace(/\s+/g, "").toLowerCase() }))}
-              />
+                onChange={e => setForm(f => ({ ...f, username: e.target.value.replace(/\s+/g, "").toLowerCase() }))} />
             </div>
           </div>
 
-          {/* Email */}
-          <div className="orbit-field">
-            <label className="orbit-label">Email</label>
-            <div className="orbit-input-wrap">
-              <span className="orbit-input-ico"><MailIcon /></span>
-              <input
-                className="orbit-input"
-                type="email"
-                placeholder="you@orbit.network"
+          <div className="su-field">
+            <label className="su-flabel">Email</label>
+            <div className="su-finput-wrap">
+              <span className="su-ficon"><IcoMail /></span>
+              <input className="su-finput" type="email" placeholder="you@orbit.network"
                 value={form.email}
-                onChange={set("email")}
-                autoComplete="email"
-              />
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                autoComplete="email" />
             </div>
           </div>
 
-          {/* Telegram */}
-          <div className="orbit-field">
-            <label className="orbit-label">Telegram ID</label>
-            <div className="orbit-input-wrap">
-              <span className="orbit-input-ico"><SendIcon /></span>
-              <input
-                className="orbit-input"
-                type="text"
-                placeholder="123456789"
+          <div className="su-field">
+            <label className="su-flabel">Telegram ID</label>
+            <div className="su-finput-wrap">
+              <span className="su-ficon"><IcoSend /></span>
+              <input className="su-finput" type="text" placeholder="123456789"
                 value={form.telegramId}
-                onChange={e => setForm(f => ({ ...f, telegramId: e.target.value.replace(/\D/g, "") }))}
-              />
+                onChange={e => setForm(f => ({ ...f, telegramId: e.target.value.replace(/\D/g, "") }))} />
             </div>
-            <span className="orbit-hint">Message @userinfobot on Telegram to get your ID</span>
+            <span className="su-hint">↳ Get your ID from @userinfobot on Telegram</span>
           </div>
 
-          {/* Password */}
-          <div className="orbit-field">
-            <label className="orbit-label">Password</label>
-            <div className="orbit-input-wrap">
-              <span className="orbit-input-ico"><LockIcon /></span>
-              <input
-                className="orbit-input"
+          <div className="su-field">
+            <label className="su-flabel">Password</label>
+            <div className="su-finput-wrap">
+              <span className="su-ficon"><IcoLock /></span>
+              <input className="su-finput"
                 type={showPw ? "text" : "password"}
                 placeholder="••••••••••"
                 value={form.password}
-                onChange={set("password")}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 style={{ paddingRight: 44 }}
-                autoComplete="new-password"
-              />
-              <button type="button" className="orbit-eye-btn" onClick={() => { play?.("click"); setShowPw(p => !p); }}>
+                autoComplete="new-password" />
+              <button type="button" className="su-feye"
+                onClick={() => { play?.("click"); setShowPw(p => !p); }}>
                 {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
             {form.password && (
               <>
-                <div className="orbit-strength">
+                <div className="su-strength">
                   {[1,2,3,4,5].map(i => (
-                    <div key={i} className="orbit-strength-seg"
+                    <div key={i} className="su-strength-seg"
                       style={{ background: i <= score ? color : undefined }} />
                   ))}
                 </div>
-                <p className="orbit-strength-label" style={{ color }}>{STRENGTH[score]}</p>
+                <p className="su-strength-txt" style={{ color }}>{STRENGTH_LABEL[score]}</p>
               </>
             )}
           </div>
 
-          <button type="submit" className="orbit-submit" disabled={isSigningUp}>
-            <div className="orbit-submit-shine" />
-            {isSigningUp ? <><span className="orbit-spinner" />Creating...</> : "Create Orbit Account"}
+          <button type="submit" className="su-submit" disabled={isSigningUp}>
+            <div className="su-submit-shine" />
+            {isSigningUp
+              ? <><span className="su-spinner" />Creating...</>
+              : "Create Orbit Account"}
           </button>
         </form>
 
-        <div className="orbit-divider">
-          <div className="orbit-divider-line" />
-          <span>or</span>
-          <div className="orbit-divider-line" />
+        <div className="su-divider">
+          <div className="su-dline" />
+          <span className="su-dtxt">OR</span>
+          <div className="su-dline" />
         </div>
 
-        <div className="orbit-alt">
-          <div className="orbit-alt-btn">✦ Constellation</div>
-          <div className="orbit-alt-btn">✧ Starweave</div>
+        <div className="su-alt">
+          <div className="su-alt-btn">✦ Constellation</div>
+          <div className="su-alt-btn">✧ Starweave</div>
         </div>
 
-        <div className="orbit-footer">
+        <div className="su-footer">
           Already have an account?&nbsp;<Link to="/login">Sign in →</Link>
         </div>
       </div>
