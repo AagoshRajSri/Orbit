@@ -446,20 +446,20 @@ export const emitToUser = async (userId, event, data) => {
   if (!ioInstance) return;
   const userIdStr = userId.toString();
   
+  // 1. Emit IMMEDIATELY (non-blocking)
+  // This pushes the packet into the polling buffer without waiting for any checks.
+  ioInstance.to(userIdStr).emit(event, data);
+
   let delivered = false;
   try {
-    // Render free-tier polling transport crashes with emitWithAck to rooms.
-    // Instead, we check if the user has active sockets, emit normally, and fallback to queue if not.
+    // 2. In parallel, check if the user is actually connected to decide on queuing
     const sockets = await ioInstance.in(userIdStr).fetchSockets();
-    
     if (sockets && sockets.length > 0) {
-      ioInstance.to(userIdStr).emit(event, data);
       delivered = true;
-    } else {
-      console.debug(`[Socket] User ${userIdStr} is offline, falling back to queue.`);
     }
   } catch (e) {
-    console.debug(`[Socket] Delivery check to ${userIdStr} failed, falling back to queue.`);
+    // If the check fails, we assume non-delivery to be safe (will be deduplicated on client anyway)
+    console.debug(`[Socket] Snappy delivery check failed for ${userIdStr}`);
   }
 
   // If no real-time delivery was acknowledged, and Redis is available, queue it

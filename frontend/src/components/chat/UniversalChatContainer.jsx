@@ -14,6 +14,7 @@ import { OrbitMsgBubble } from "./MsgBubble.jsx";
 import { OrbitTypingIndicator } from "./OrbitTypingIndicator.jsx";
 import AeroInput from "./AeroInput.jsx";
 import { resolveTheme } from "./OrbitChatTheme.js";
+import { normalizeId } from "../../lib/idUtils";
 
 // ─── Theme bridge: Orbit theme IDs → NexusChatDesktop theme tokens ───────────
 const THEME_BRIDGE = {
@@ -291,26 +292,32 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
     // Threshold: if within 150px of bottom, auto-scroll to new messages
     const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
     
-    // Always scroll if it's our own message (out: true)
+    // Always scroll if it's our own message
     const rawMsgs = isNexus ? nexusMessages : messages;
     const lastMsg = rawMsgs[rawMsgs.length - 1];
-    const isMe = lastMsg?.out || lastMsg?.senderId === authUser?._id;
+    const senderId = normalizeId(lastMsg?.senderId);
+    const myId = normalizeId(authUser);
+    const isMe = lastMsg?.out || (senderId && myId && senderId === myId);
 
     if (isNearBottom || isMe) {
-      endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      endRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
     }
   }, [nexusMessages, messages, nexusTypingUsers, selectedUser?.isTyping, authUser?._id, isNexus]);
+
+  // ── Force scroll to bottom on chat switch ──
+  useEffect(() => {
+    // Small delay to allow DOM to render messages before scrolling
+    const timer = setTimeout(() => {
+      endRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isNexus, activeNexus?.id, activeNexus?._id, selectedUser?.id, selectedUser?._id]);
 
   // ── Wire peer avatar to incoming messages ─────────────────────────────────
   useEffect(() => {
     const rawMsgs = isNexus ? nexusMessages : messages;
     if (rawMsgs.length > 0) {
       const lastMsg = rawMsgs[rawMsgs.length - 1];
-      const normalizeId = (id) => {
-        if (!id) return null;
-        if (typeof id === 'object') return (id._id || id.id || "").toString();
-        return id.toString();
-      };
       const senderId = normalizeId(lastMsg.senderId);
       const myId = normalizeId(authUser);
       const isMe = senderId === myId;
