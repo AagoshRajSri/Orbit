@@ -20,18 +20,18 @@ const styles = `
 
   .su-root {
     font-family: 'Departure Mono', monospace;
-    height: 100vh;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow: hidden !important;
     position: relative;
     width: 100%;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
   .su-root::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
 
   /* ── Orb background ── */
@@ -60,12 +60,12 @@ const styles = `
   .su-card {
     position: relative;
     z-index: 10;
-    width: 420px;
-    max-height: 95vh;
-    padding: 32px 40px 32px;
+    width: 380px;
+    max-height: 90vh;
+    padding: 28px 32px 24px;
     background: rgba(5,8,16,0.7);
     border: 1px solid var(--border);
-    border-radius: 28px;
+    border-radius: 24px;
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
     overflow-y: auto;
@@ -73,7 +73,7 @@ const styles = `
     -ms-overflow-style: none;
     box-shadow: 0 0 80px rgba(0,229,255,0.04), 0 0 200px rgba(124,58,237,0.05);
   }
-  .su-card::-webkit-scrollbar { display: none; }
+  .su-card::-webkit-scrollbar { display: none !important; }
 
   /* ── Logo mark ── */
   .su-logo {
@@ -115,7 +115,7 @@ const styles = `
   /* ── Heading ── */
   .su-title {
     font-family: 'Instrument Serif', serif;
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 400;
     font-style: italic;
     color: #fff;
@@ -125,11 +125,11 @@ const styles = `
     line-height: 1;
   }
   .su-sub {
-    font-size: 9px;
+    font-size: 8px;
     letter-spacing: 0.22em;
     color: rgba(255,255,255,0.2);
     text-align: center;
-    margin: 0 0 24px;
+    margin: 0 0 20px;
   }
 
   /* ── Floating label inputs ── */

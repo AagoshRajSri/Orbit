@@ -19,18 +19,18 @@ const styles = `
 
   .lg-root {
     font-family: 'Departure Mono', monospace;
-    height: 100vh;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow: hidden !important;
     position: relative;
     width: 100%;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
   .lg-root::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
 
   /* ── Ambient orbs ── */
@@ -66,23 +66,23 @@ const styles = `
   /* ── Card ── */
   .lg-card {
     position: relative; z-index: 10;
-    width: 400px;
-    max-height: 95vh;
-    padding: 40px 40px 32px;
+    width: 360px;
+    max-height: 90vh;
+    padding: 36px 32px 28px;
     background: rgba(5,8,16,0.72);
     border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 28px;
+    border-radius: 24px;
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
     overflow-y: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
     box-shadow:
-      0 0 100px rgba(0,229,255,0.04),
-      0 0 240px rgba(124,58,237,0.05),
+      0 0 80px rgba(0,229,255,0.03),
+      0 0 180px rgba(124,58,237,0.04),
       inset 0 1px 0 rgba(255,255,255,0.05);
   }
-  .lg-card::-webkit-scrollbar { display: none; }
+  .lg-card::-webkit-scrollbar { display: none !important; }
 
   /* ── Logo ── */
   .lg-logo {
@@ -144,15 +144,15 @@ const styles = `
   /* ── Heading ── */
   .lg-title {
     font-family: 'Instrument Serif', serif;
-    font-size: 30px; font-weight: 400; font-style: italic;
+    font-size: 26px; font-weight: 400; font-style: italic;
     color: #fff; text-align: center;
-    margin: 0 0 5px;
+    margin: 0 0 4px;
     letter-spacing: -0.015em; line-height: 1;
   }
   .lg-sub {
-    font-size: 8px; letter-spacing: 0.24em;
+    font-size: 7.5px; letter-spacing: 0.24em;
     color: rgba(255,255,255,0.16); text-align: center;
-    margin: 0 0 28px;
+    margin: 0 0 24px;
   }
 
   /* ── Input fields ── */
