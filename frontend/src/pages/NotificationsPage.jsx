@@ -6,8 +6,8 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useBreakpoint, isMobileOrTablet } from "../../lib/useBreakpoint";
-import { BottomNav } from "../../components/layout/BottomNav";
+import { useBreakpoint, isMobileOrTablet } from "../lib/useBreakpoint";
+import { BottomNav } from "../components/layout/BottomNav";
 
 const CSS = `
   .notif-root {

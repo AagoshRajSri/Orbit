@@ -12,11 +12,11 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useBreakpoint, isMobileOrTablet } from "../../lib/useBreakpoint";
-import { useAuthStore } from "../../store/useAuthStore";
-import { useNexusStore } from "../../store/useNexusStore";
-import { useChatStore } from "../../store/useChatStore";
-import { BottomNav } from "../../components/layout/BottomNav";
+import { useBreakpoint, isMobileOrTablet } from "../lib/useBreakpoint";
+import { useAuthStore } from "../store/useAuthStore";
+import { useNexusStore } from "../store/useNexusStore";
+import { useChatStore } from "../store/useChatStore";
+import { BottomNav } from "../components/layout/BottomNav";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap');
