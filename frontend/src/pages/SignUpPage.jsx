@@ -1,11 +1,418 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2, Sparkles, Star } from "lucide-react";
+import { Eye, EyeOff, Sparkles, Star } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSoundManager } from "../hooks/useSoundManager";
-import { CyberAuthStyles, GlitchText, MorphInput } from "../components/auth/CyberAuth";
 import toast from "react-hot-toast";
 
+/* ─── Injected global styles ─────────────────────────────────────────── */
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Departure+Mono&display=swap');
+
+  :root {
+    --ink: #050810;
+    --glow-a: #00e5ff;
+    --glow-b: #7c3aed;
+    --glow-c: #06ffa5;
+    --surface: rgba(255,255,255,0.03);
+    --border: rgba(255,255,255,0.07);
+  }
+
+  .su-root {
+    font-family: 'Departure Mono', monospace;
+    background: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+  }
+
+  /* ── Orb background ── */
+  .su-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .su-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    mix-blend-mode: screen;
+    animation: drift linear infinite;
+    opacity: 0.35;
+  }
+  @keyframes drift {
+    0%   { transform: translate(0, 0) scale(1); }
+    33%  { transform: translate(40px, -60px) scale(1.1); }
+    66%  { transform: translate(-30px, 30px) scale(0.9); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  /* ── Card ── */
+  .su-card {
+    position: relative;
+    z-index: 10;
+    width: 420px;
+    padding: 48px 40px 40px;
+    background: rgba(5,8,16,0.7);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    box-shadow: 0 0 80px rgba(0,229,255,0.04), 0 0 200px rgba(124,58,237,0.05);
+  }
+
+  /* ── Logo mark ── */
+  .su-logo {
+    width: 52px; height: 52px;
+    margin: 0 auto 24px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .su-logo-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(0,229,255,0.2);
+    animation: spin-slow 12s linear infinite;
+  }
+  .su-logo-ring::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: 50%;
+    width: 4px; height: 4px;
+    background: var(--glow-a);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 8px var(--glow-a), 0 0 16px var(--glow-a);
+  }
+  .su-logo-inner {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(0,229,255,0.15), rgba(124,58,237,0.08));
+    border: 1px solid rgba(0,229,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+  /* ── Heading ── */
+  .su-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    font-weight: 400;
+    font-style: italic;
+    color: #fff;
+    text-align: center;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .su-sub {
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    color: rgba(255,255,255,0.2);
+    text-align: center;
+    margin: 0 0 36px;
+  }
+
+  /* ── Floating label inputs ── */
+  .su-field {
+    position: relative;
+    margin-bottom: 14px;
+  }
+  .su-field-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .su-icon {
+    position: absolute;
+    left: 14px;
+    color: rgba(255,255,255,0.2);
+    transition: color 0.3s;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+  }
+  .su-input {
+    width: 100%;
+    height: 52px;
+    padding: 18px 14px 6px 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: #fff;
+    font-family: 'Departure Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+    box-sizing: border-box;
+  }
+  .su-input:focus {
+    border-color: rgba(0,229,255,0.35);
+    background: rgba(0,229,255,0.03);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.06), inset 0 0 20px rgba(0,229,255,0.02);
+  }
+  .su-input:focus + .su-label,
+  .su-input.has-val + .su-label {
+    transform: translateY(-10px);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: rgba(0,229,255,0.5);
+  }
+  .su-label {
+    position: absolute;
+    left: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Departure Mono', monospace;
+    font-size: 12px;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.08em;
+    pointer-events: none;
+    transition: all 0.2s ease;
+  }
+  .su-field:focus-within .su-icon {
+    color: rgba(0,229,255,0.5);
+  }
+  .su-eye {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+  .su-eye:hover { color: rgba(255,255,255,0.5); }
+
+  .su-hint {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: rgba(124,58,237,0.45);
+    margin: 5px 0 0 12px;
+  }
+
+  /* ── Strength bar ── */
+  .su-strength-track {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    height: 2px;
+  }
+  .su-strength-seg {
+    flex: 1;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.07);
+    transition: background 0.4s;
+  }
+  .su-strength-label {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    margin-top: 5px;
+    transition: color 0.4s;
+  }
+
+  /* ── Submit ── */
+  .su-submit {
+    width: 100%;
+    height: 52px;
+    margin-top: 8px;
+    background: rgba(0,229,255,0.06);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 14px;
+    color: var(--glow-a);
+    font-family: 'Departure Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s, border-color 0.3s, transform 0.15s;
+  }
+  .su-submit:hover:not(:disabled) {
+    background: rgba(0,229,255,0.1);
+    border-color: rgba(0,229,255,0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0,229,255,0.1);
+  }
+  .su-submit:active:not(:disabled) { transform: translateY(0); }
+  .su-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .su-submit::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,229,255,0.08) 50%, transparent 100%);
+    transform: translateX(-100%);
+    animation: shimmer 2.5s ease infinite;
+  }
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    60%  { transform: translateX(100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* ── Divider ── */
+  .su-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .su-divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+  }
+  .su-divider-text {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.12);
+  }
+
+  /* ── Alt auth buttons ── */
+  .su-alt-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .su-alt-btn {
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border-radius: 12px;
+    font-family: 'Departure Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.02);
+    color: rgba(255,255,255,0.18);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  /* ── Footer ── */
+  .su-footer {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .su-footer-line {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.18);
+  }
+  .su-footer-link {
+    color: var(--glow-a);
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+  .su-footer-link:hover { opacity: 0.7; }
+  .su-admin-link {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.08);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .su-admin-link:hover { color: rgba(255,255,255,0.25); }
+
+  /* ── Spinner ── */
+  .su-spinner {
+    width: 16px; height: 16px;
+    border: 1.5px solid rgba(0,229,255,0.2);
+    border-top-color: var(--glow-a);
+    border-radius: 50%;
+    animation: spin-fast 0.7s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin-fast { to { transform: rotate(360deg); } }
+
+  /* ── Scan line overlay ── */
+  .su-scanlines {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+  }
+`;
+
+/* ─── Floating orb config ────────────────────────────────────────────── */
+const ORBS = [
+  { w: 500, h: 500, top: "-20%", left: "-15%", bg: "rgba(0,229,255,0.12)", dur: "18s" },
+  { w: 400, h: 400, top: "60%",  left: "70%",  bg: "rgba(124,58,237,0.15)", dur: "22s", delay: "-7s" },
+  { w: 300, h: 300, top: "40%",  left: "5%",   bg: "rgba(6,255,165,0.08)",  dur: "26s", delay: "-14s" },
+  { w: 250, h: 250, top: "5%",   left: "75%",  bg: "rgba(0,229,255,0.07)",  dur: "20s", delay: "-3s" },
+];
+
+/* ─── Field component ────────────────────────────────────────────────── */
+const Field = ({ label, type = "text", icon, value, onChange, onFocus, onBlur, focused, children }) => (
+  <div className="su-field">
+    <div className="su-field-inner">
+      <span className="su-icon">{icon}</span>
+      <input
+        className={`su-input${value ? " has-val" : ""}`}
+        type={type}
+        value={value}
+        onChange={onChange}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        autoComplete="off"
+        spellCheck={false}
+      />
+      <label className="su-label">{label}</label>
+      {children}
+    </div>
+  </div>
+);
+
+/* ─── Icons ──────────────────────────────────────────────────────────── */
+const IconUser = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+  </svg>
+);
+const IconMail = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 6 10-6"/>
+  </svg>
+);
+const IconSend = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+  </svg>
+);
+const IconLock = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+  </svg>
+);
+
+/* ─── Main component ─────────────────────────────────────────────────── */
 const SignUpPage = () => {
   const [formData, setFormData] = useState({ username: "", email: "", password: "", telegramId: "" });
   const [focused, setFocused] = useState(null);
@@ -14,31 +421,13 @@ const SignUpPage = () => {
   const { play } = useSoundManager();
   const navigate = useNavigate();
 
-  // Redirect verified users to home, or unverified users to the verification screen
-  /*
-  useEffect(() => {
-    if (authUser?.isEmailVerified) {
-      navigate("/");
-    } else if (authUser && !authUser.isEmailVerified) {
-      navigate("/verify-email", { state: { email: authUser.email } });
-    }
-  }, [authUser, navigate]);
-  */
-
   const validateForm = () => {
     if (!formData.username.trim()) return toast.error("Username is required");
     if (formData.username.includes(" ")) return toast.error("No spaces in username");
     if (!formData.email.trim()) return toast.error("Email is required");
     if (!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("Invalid email address");
-    
-    // Telegram ID is now REQUIRED
-    if (!formData.telegramId) {
-      return toast.error("Telegram ID is required (Get it from @userinfobot)");
-    }
-    if (!/^\d+$/.test(formData.telegramId)) {
-      return toast.error("Telegram ID must be numeric");
-    }
-
+    if (!formData.telegramId) return toast.error("Telegram ID is required (Get it from @userinfobot)");
+    if (!/^\d+$/.test(formData.telegramId)) return toast.error("Telegram ID must be numeric");
     if (!formData.password) return toast.error("Password is required");
     if (formData.password.length < 8) return toast.error("Password must be at least 8 characters");
     if (!/[A-Z]/.test(formData.password)) return toast.error("Password must contain an uppercase letter");
@@ -53,12 +442,9 @@ const SignUpPage = () => {
     play("click");
     if (validateForm() !== true) return;
     const result = await signup(formData);
-    if (result?.success) {
-      navigate("/");
-    }
+    if (result?.success) navigate("/");
   };
 
-  // Password strength
   const pwStrength = (() => {
     const p = formData.password;
     if (!p) return 0;
@@ -71,254 +457,156 @@ const SignUpPage = () => {
     return s;
   })();
   const strengthLabel = ["", "WEAK", "FAIR", "GOOD", "STRONG", "LETHAL"][pwStrength] || "";
-  const strengthColor = ["", "#ef4444", "#f97316", "#eab308", "#22c55e", "#a855f7"][pwStrength] || "";
+  const strengthColor = ["", "#ef4444", "#f97316", "#eab308", "#22c55e", "#00e5ff"][pwStrength] || "";
 
   return (
-    <>
-      <CyberAuthStyles />
+    <div className="su-root">
+      <style>{styles}</style>
 
-      {/* ── Header ─────────────────────────────── */}
-      <div className="text-center flex flex-col items-center gap-2 mb-1">
-        <div className="relative flex items-center justify-center" style={{ width: "48px", height: "48px" }}>
-          <div className="beating-loader absolute" />
-          <div style={{
-            width: "34px", height: "34px",
-            background: "linear-gradient(135deg, rgba(124,58,237,0.3), rgba(79,70,229,0.3))",
-            border: "1px solid rgba(139,92,246,0.5)",
-            borderRadius: "50%",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            position: "relative", zIndex: 1
-          }}>
+      {/* Ambient orbs */}
+      <div className="su-canvas">
+        {ORBS.map((o, i) => (
+          <div
+            key={i}
+            className="su-orb"
+            style={{
+              width: o.w, height: o.h,
+              top: o.top, left: o.left,
+              background: o.bg,
+              animationDuration: o.dur,
+              animationDelay: o.delay || "0s",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Scan lines */}
+      <div className="su-scanlines" />
+
+      {/* Card */}
+      <div className="su-card">
+
+        {/* Logo */}
+        <div className="su-logo">
+          <div className="su-logo-ring" />
+          <div className="su-logo-inner">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L12 6M12 18L12 22M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07M2 12H6M18 12H22M4.93 19.07L7.76 16.24M16.24 7.76L19.07 4.93" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
+                stroke="rgba(0,229,255,0.7)" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
         </div>
 
-        <h1 style={{
-          fontFamily: "'Syne', sans-serif",
-          fontSize: "22px",
-          fontWeight: "800",
-          color: "white",
-          letterSpacing: "-0.02em",
-          lineHeight: 1.1,
-        }}>
-          <GlitchText text="INITIALIZE IDENTITY" />
-        </h1>
-        <p style={{
-          fontFamily: "'Space Mono', monospace",
-          fontSize: "9px",
-          letterSpacing: "0.2em",
-          color: "rgba(255,255,255,0.25)",
-        }}>
-          REGISTER_NEW_NODE
-        </p>
-      </div>
+        {/* Heading */}
+        <h1 className="su-title">Initialize identity</h1>
+        <p className="su-sub">REGISTER_NEW_NODE</p>
 
-      {/* ── Form ────────────────────────────────── */}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        {/* Username */}
-        <MorphInput
-          label="Username"
-          type="text"
-          icon={
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          }
-          value={formData.username}
-          onChange={(e) => setFormData({ ...formData, username: e.target.value.replace(/\s+/g, "").toLowerCase() })}
-          focused={focused === "username"}
-          onFocus={() => setFocused("username")}
-          onBlur={() => setFocused(null)}
-        />
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
-        {/* Email */}
-        <MorphInput
-          label="Email Address"
-          type="email"
-          icon={
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M2 8l10 6 10-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          }
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          focused={focused === "email"}
-          onFocus={() => setFocused("email")}
-          onBlur={() => setFocused(null)}
-        />
-
-        {/* Telegram ID */}
-        <div className="relative">
-          <MorphInput
-            label="Telegram ID"
-            type="text"
-            icon={
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            }
-            value={formData.telegramId}
-            onChange={(e) => setFormData({ ...formData, telegramId: e.target.value.replace(/\D/g, "") })}
-            focused={focused === "telegramId"}
-            onFocus={() => setFocused("telegramId")}
+          <Field label="Username" icon={<IconUser />}
+            value={formData.username}
+            onChange={e => setFormData({ ...formData, username: e.target.value.replace(/\s+/g, "").toLowerCase() })}
+            focused={focused === "username"}
+            onFocus={() => setFocused("username")}
             onBlur={() => setFocused(null)}
           />
-          <p style={{
-            fontSize: "8px",
-            color: "rgba(167,139,250,0.5)",
-            fontFamily: "'Space Mono', monospace",
-            marginTop: "4px",
-            paddingLeft: "10px"
-          }}>
-            Required for verification. Message our bot to start.
-          </p>
-        </div>
 
-        {/* Password */}
-        <div>
-          <MorphInput
-            label="Password"
-            type={showPassword ? "text" : "password"}
-            icon={
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <rect x="5" y="10" width="14" height="11" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            }
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            focused={focused === "password"}
-            onFocus={() => setFocused("password")}
+          <Field label="Email Address" type="email" icon={<IconMail />}
+            value={formData.email}
+            onChange={e => setFormData({ ...formData, email: e.target.value })}
+            focused={focused === "email"}
+            onFocus={() => setFocused("email")}
             onBlur={() => setFocused(null)}
-          >
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={() => { play("click"); setShowPassword(!showPassword); }}
-              className="shrink-0 transition-colors duration-200"
-              style={{ color: showPassword ? "#a78bfa" : "rgba(255,255,255,0.25)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </MorphInput>
+          />
 
-          {/* Password strength bar */}
-          {formData.password && (
-            <div className="mt-2 px-1">
-              <div className="flex gap-1 h-0.5">
-                {[1,2,3,4,5].map((i) => (
-                  <div
-                    key={i}
-                    className="flex-1 rounded-full transition-all duration-300"
-                    style={{ background: i <= pwStrength ? strengthColor : "rgba(255,255,255,0.08)" }}
-                  />
-                ))}
-              </div>
-              <p className="text-[9px] mt-1 transition-colors" style={{
-                fontFamily: "'Space Mono', monospace",
-                letterSpacing: "0.15em",
-                color: strengthColor
-              }}>
-                {strengthLabel}
-              </p>
+          {/* Telegram */}
+          <div className="su-field">
+            <div className="su-field-inner">
+              <span className="su-icon"><IconSend /></span>
+              <input
+                className={`su-input${formData.telegramId ? " has-val" : ""}`}
+                type="text"
+                value={formData.telegramId}
+                onChange={e => setFormData({ ...formData, telegramId: e.target.value.replace(/\D/g, "") })}
+                onFocus={() => setFocused("telegramId")}
+                onBlur={() => setFocused(null)}
+                autoComplete="off"
+              />
+              <label className="su-label">Telegram ID</label>
             </div>
-          )}
+            <p className="su-hint">Required · message @userinfobot to retrieve</p>
+          </div>
+
+          {/* Password */}
+          <div className="su-field">
+            <div className="su-field-inner">
+              <span className="su-icon"><IconLock /></span>
+              <input
+                className={`su-input${formData.password ? " has-val" : ""}`}
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                onFocus={() => setFocused("password")}
+                onBlur={() => setFocused(null)}
+                style={{ paddingRight: "44px" }}
+                autoComplete="new-password"
+              />
+              <label className="su-label">Password</label>
+              <button type="button" tabIndex={-1} className="su-eye"
+                onClick={() => { play("click"); setShowPassword(!showPassword); }}>
+                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
+            {formData.password && (
+              <div style={{ padding: "0 4px" }}>
+                <div className="su-strength-track">
+                  {[1,2,3,4,5].map(i => (
+                    <div key={i} className="su-strength-seg"
+                      style={{ background: i <= pwStrength ? strengthColor : undefined }} />
+                  ))}
+                </div>
+                <p className="su-strength-label" style={{ color: strengthColor }}>{strengthLabel}</p>
+              </div>
+            )}
+          </div>
+
+          <button type="submit" className="su-submit" disabled={isSigningUp}>
+            {isSigningUp
+              ? <><span className="su-spinner" />INITIALIZING...</>
+              : "REGISTER NODE //"}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="su-divider">
+          <div className="su-divider-line" />
+          <span className="su-divider-text">OR</span>
+          <div className="su-divider-line" />
         </div>
 
-        {/* Submit */}
-        <button type="submit" className="cyber-submit-btn mt-1" disabled={isSigningUp}>
-          {isSigningUp ? (
-            <span className="flex items-center justify-center gap-3">
-              <div className="beating-loader" />
-              INITIALIZING...
-            </span>
-          ) : (
-            <span className="relative z-10">REGISTER_NODE //</span>
-          )}
-        </button>
-      </form>
+        {/* Alt auth */}
+        <div className="su-alt-row">
+          <div className="su-alt-btn">
+            <Sparkles size={11} />
+            CONSTELLATION (SOON)
+          </div>
+          <div className="su-alt-btn">
+            <Star size={11} />
+            STARWEAVE (SOON)
+          </div>
+        </div>
 
-      {/* ── Divider ──────────────────────────────── */}
-      <div className="flex items-center gap-3">
-        <div style={{ flex: 1, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }} />
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: "rgba(255,255,255,0.15)" }}>OR</span>
-        <div style={{ flex: 1, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }} />
+        {/* Footer */}
+        <div className="su-footer">
+          <p className="su-footer-line">
+            EXISTING_NODE?{" "}
+            <Link to="/login" className="su-footer-link">AUTHENTICATE →</Link>
+          </p>
+          <Link to="/admin/login" className="su-admin-link">// ACCESS_ADMIN_TERMINAL</Link>
+        </div>
       </div>
-
-      {/* ── Constellation Auth ─────────────────── */}
-      <div
-        className="w-full flex items-center justify-center gap-2"
-        style={{
-          padding: "12px",
-          borderRadius: "12px",
-          border: "1px solid rgba(139,92,246,0.1)",
-          background: "rgba(139,92,246,0.03)",
-          fontFamily: "'Space Mono', monospace",
-          fontSize: "10px",
-          letterSpacing: "0.15em",
-          color: "rgba(167,139,250,0.4)",
-          textDecoration: "none",
-          cursor: "not-allowed",
-          opacity: 0.6
-        }}
-      >
-        <Sparkles className="w-3.5 h-3.5" />
-        TRY CONSTELLATION (SOON)
-      </div>
-
-      {/* ── StarWeave Auth ─────────────────── */}
-      <div
-        className="w-full flex items-center justify-center gap-2"
-        style={{
-          padding: "12px",
-          borderRadius: "12px",
-          border: "1px solid rgba(192,100,255,0.1)",
-          background: "rgba(192,100,255,0.03)",
-          fontFamily: "'Space Mono', monospace",
-          fontSize: "10px",
-          letterSpacing: "0.15em",
-          color: "rgba(192,100,255,0.4)",
-          textDecoration: "none",
-          cursor: "not-allowed",
-          opacity: 0.6
-        }}
-      >
-        <Star className="w-3.5 h-3.5" />
-        TRY STARWEAVE (SOON)
-      </div>
-
-      {/* ── Footer ────────────────────────────────── */}
-      <div className="text-center flex flex-col gap-2">
-        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: "rgba(255,255,255,0.2)" }}>
-          EXISTING_NODE?{" "}
-          <Link to="/login" style={{ color: "#a78bfa", textDecoration: "none" }}>
-            AUTHENTICATE →
-          </Link>
-        </p>
-        
-        <Link 
-          to="/admin/login" 
-          style={{ 
-            fontFamily: "'Space Mono', monospace", 
-            fontSize: "8px", 
-            letterSpacing: "0.1em", 
-            color: "rgba(255,255,255,0.1)", 
-            textDecoration: "none",
-            marginTop: "8px",
-            transition: "color 0.2s"
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
-          onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.1)"}
-        >
-          // ACCESS_ADMIN_TERMINAL
-        </Link>
-      </div>
-    </>
+    </div>
   );
 };
 
