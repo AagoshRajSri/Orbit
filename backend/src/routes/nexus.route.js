@@ -11,6 +11,7 @@ import {
   removeNexusMember,
   leaveNexus,
   checkMembership,
+  deleteNexus,
 } from "../controllers/nexus.controller.js";
 
 import { protectRoute } from "../middleware/auth.middleware.js";
@@ -45,5 +46,6 @@ router.post("/:nexusId/send", nexusSendLimiter, sendNexusMessage);
 router.patch("/:nexusId/leave", nexusWriteLimiter, leaveNexus);
 router.patch("/:nexusId/remove-member", nexusWriteLimiter, removeNexusMember);
 router.patch("/:nexusId", nexusWriteLimiter, updateNexus);
+router.delete("/:nexusId", nexusWriteLimiter, deleteNexus);
 
 export default router;

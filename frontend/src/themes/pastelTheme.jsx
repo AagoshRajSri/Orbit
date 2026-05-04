@@ -771,6 +771,7 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
 
   const sortedNexuses = useMemo(() => {
     const hiddenIds = (hiddenNexuses || []).map(h => h._id);
+    if (!Array.isArray(nexuses)) return [];
     return [...nexuses]
       .filter(n => !hiddenIds.includes(n._id))
       .sort((a, b) => {

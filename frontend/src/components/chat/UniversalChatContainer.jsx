@@ -259,7 +259,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         disappearingMessages: 0,
         pinnedMsg: activeNexus.pinnedMessage || "No pinned message",
         roles: ["Owner", "Admin", "Moderator", "Member"],
-        members: (activeNexus.members || []).map((m, idx) => ({
+        members: (Array.isArray(activeNexus.members) ? activeNexus.members : []).map((m, idx) => ({
           id: m._id || idx,
           name: m.username || m.email || "Member",
           role: activeNexus.adminIds?.includes(m._id) ? "Admin" : "Member",
@@ -687,7 +687,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
             peerAnimal={peerAnimal}
             peerAvatarState={peerAvatar.state}
             typingUsers={isNexus
-              ? nexusTypingUsers?.filter(u => u.userId !== authUser?._id?.toString()).map(u => u.username)
+              ? (Array.isArray(nexusTypingUsers) ? nexusTypingUsers : []).filter(u => u.userId !== authUser?._id?.toString()).map(u => u.username)
               : [selectedUser?.username || "user"]}
           />
         )}

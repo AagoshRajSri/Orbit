@@ -23,11 +23,28 @@ export const useNexusStore = create((set, get) => ({
     set({ isNexusesLoading: true });
     try {
       const res = await axiosInstance.get("/nexus/my");
-      set({ nexuses: res.data });
+      // Ensure we always store an array
+      const nexuses = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      set({ nexuses });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load Orbits");
     } finally {
       set({ isNexusesLoading: false });
+    }
+  },
+
+  deleteNexus: async (nexusId) => {
+    try {
+      await axiosInstance.delete(`/nexus/${nexusId}`);
+      set((state) => ({
+        nexuses: state.nexuses.filter((n) => n._id?.toString() !== nexusId?.toString()),
+        selectedNexus: state.selectedNexus?._id?.toString() === nexusId?.toString() ? null : state.selectedNexus,
+        selectedNexusId: state.selectedNexusId === nexusId?.toString() ? null : state.selectedNexusId,
+      }));
+      toast.success("Nexus deleted permanently");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete Nexus");
+      throw error;
     }
   },
 
