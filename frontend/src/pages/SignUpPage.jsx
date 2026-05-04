@@ -20,14 +20,18 @@ const styles = `
 
   .su-root {
     font-family: 'Departure Mono', monospace;
-    background: var(--ink);
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     position: relative;
     width: 100%;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .su-root::-webkit-scrollbar {
+    display: none;
   }
 
   /* ── Orb background ── */
@@ -57,14 +61,19 @@ const styles = `
     position: relative;
     z-index: 10;
     width: 420px;
-    padding: 48px 40px 40px;
+    max-height: 95vh;
+    padding: 32px 40px 32px;
     background: rgba(5,8,16,0.7);
     border: 1px solid var(--border);
     border-radius: 28px;
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     box-shadow: 0 0 80px rgba(0,229,255,0.04), 0 0 200px rgba(124,58,237,0.05);
   }
+  .su-card::-webkit-scrollbar { display: none; }
 
   /* ── Logo mark ── */
   .su-logo {
@@ -120,7 +129,7 @@ const styles = `
     letter-spacing: 0.22em;
     color: rgba(255,255,255,0.2);
     text-align: center;
-    margin: 0 0 36px;
+    margin: 0 0 24px;
   }
 
   /* ── Floating label inputs ── */

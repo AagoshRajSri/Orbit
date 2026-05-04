@@ -19,14 +19,18 @@ const styles = `
 
   .lg-root {
     font-family: 'Departure Mono', monospace;
-    background: var(--ink);
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     position: relative;
     width: 100%;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .lg-root::-webkit-scrollbar {
+    display: none;
   }
 
   /* ── Ambient orbs ── */
@@ -63,17 +67,22 @@ const styles = `
   .lg-card {
     position: relative; z-index: 10;
     width: 400px;
-    padding: 52px 40px 40px;
+    max-height: 95vh;
+    padding: 40px 40px 32px;
     background: rgba(5,8,16,0.72);
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 28px;
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     box-shadow:
       0 0 100px rgba(0,229,255,0.04),
       0 0 240px rgba(124,58,237,0.05),
       inset 0 1px 0 rgba(255,255,255,0.05);
   }
+  .lg-card::-webkit-scrollbar { display: none; }
 
   /* ── Logo ── */
   .lg-logo {
@@ -143,7 +152,7 @@ const styles = `
   .lg-sub {
     font-size: 8px; letter-spacing: 0.24em;
     color: rgba(255,255,255,0.16); text-align: center;
-    margin: 0 0 38px;
+    margin: 0 0 28px;
   }
 
   /* ── Input fields ── */
