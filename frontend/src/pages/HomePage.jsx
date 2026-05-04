@@ -1,20 +1,25 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useNexusStore } from "../store/useNexusStore";
-import { useChatStore as useChat } from "../store/useChatStore";
+import { useBreakpoint, isMobileOrTablet } from "../lib/useBreakpoint";
 
 import Sidebar from "../components/layout/Sidebar";
 import NoChatSelected from "../components/common/NoChatSelected";
-import MobileBottomNav from "../components/layout/MobileBottomNav";
-import MobileSidebarDrawer from "../components/layout/MobileSidebarDrawer";
+import { BottomNav, OrbitDrawer } from "../components/layout/BottomNav";
 import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 
 import OrbitalPageWrapper from "../components/layout/OrbitalPageWrapper";
+import { useNavigate } from "react-router-dom";
 
-const HomePage = () => {
+export default function HomePage() {
+  const navigate = useNavigate();
+  const bp = useBreakpoint();
+  const isCompact = isMobileOrTablet(bp);
+
   const selectedConversationId = useChatStore((s) => s.selectedConversationId);
   const selectedConversationType = useChatStore((s) => s.selectedConversationType);
   const selectedNexusId = useNexusStore((s) => s.selectedNexusId);
+  
   const setSelectedUser = useChatStore((s) => s.setSelectedUser);
   const setSelectedNexus = useNexusStore((s) => s.setSelectedNexus);
 
@@ -24,95 +29,82 @@ const HomePage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState("nexus");
 
-  const [isLgUp, setIsLgUp] = useState(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return false;
-    return window.matchMedia("(min-width: 768px)").matches;
-  });
-
-  useEffect(() => {
-    const mql = window.matchMedia?.("(min-width: 768px)");
-    if (!mql) return;
-    const onChange = () => setIsLgUp(mql.matches);
-    onChange();
-    if (mql.addEventListener) mql.addEventListener("change", onChange);
-    else mql.addListener(onChange);
-    return () => {
-      if (mql.removeEventListener) mql.removeEventListener("change", onChange);
-      else mql.removeListener(onChange);
-    };
-  }, []);
-
-  // Open sidebar drawer for a specific tab (called from bottom nav)
-  const handleOpenSidebar = useCallback((tab = "nexus") => {
-    setDrawerTab(tab);
-    setDrawerOpen(true);
-  }, []);
-
-  // Back from mobile chat → clear selection
-  const handleMobileBack = useCallback(() => {
+  const handleMobileBack = () => {
     setSelectedUser(null);
     setSelectedNexus(null);
-  }, [setSelectedUser, setSelectedNexus]);
+    navigate("/chat");
+  };
+
+  const handleOpenSidebar = (tab = "nexus") => {
+    setDrawerTab(tab);
+    setDrawerOpen(true);
+  };
 
   return (
     <OrbitalPageWrapper>
-      <div className="h-full min-h-0 min-w-0 overflow-hidden relative flex flex-col">
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', width: '100vw', overflow: 'hidden', background: 'var(--bg, #050508)' }}>
+        
+        {/* DESKTOP LAYOUT (Not compact) */}
+        {!isCompact && (
+          <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+            {/* Permanent Sidebar */}
+            <div style={{ width: '280px', flexShrink: 0, borderRight: '1px solid var(--border)', background: 'var(--surface)' }}>
+              <Sidebar />
+            </div>
 
-        {/* ── DESKTOP/TABLET layout (md+) — always visible ── */}
-        {(!hasActiveChat || isLgUp) && (
-          <div className="flex-1 flex items-stretch min-h-0 min-w-0 px-2 lg:px-4 py-4 overflow-hidden">
-            <div className="orbital-glass-lg w-full h-full min-h-0 min-w-0 shadow-xl flex flex-col">
-              <div className="flex-1 flex min-h-0">
-                {/* Sidebar — always shown on desktop */}
-                <Sidebar />
+            {/* Chat Area */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--chat-bg)' }}>
+              {selectedConversationId && selectedConversationType === "direct" ? (
+                <UniversalChatContainer type="dm" />
+              ) : selectedNexusId ? (
+                <UniversalChatContainer type="nexus" />
+              ) : (
+                <NoChatSelected />
+              )}
+            </div>
+          </div>
+        )}
 
-                {/* Chat panel or empty state */}
-                {selectedConversationId && selectedConversationType === "direct" && (
-                  <div className="hidden md:flex flex-1 min-h-0 min-w-0 flex-col">
-                    <UniversalChatContainer type="dm" />
-                  </div>
-                )}
-                {selectedNexusId && (
-                  <div className="hidden md:flex flex-1 min-h-0 min-w-0 flex-col">
-                    <UniversalChatContainer type="nexus" />
-                  </div>
-                )}
-                {!selectedConversationId && !selectedNexusId && <NoChatSelected />}
+        {/* MOBILE/TABLET LAYOUT (Compact) */}
+        {isCompact && (
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+            {/* If a chat is active, show the chat full screen */}
+            {hasActiveChat ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--chat-bg)' }}>
+                {selectedConversationType === "direct" && selectedConversationId ? (
+                  <UniversalChatContainer type="dm" onMobileBack={handleMobileBack} onOpenSidebar={handleOpenSidebar} />
+                ) : selectedNexusId ? (
+                  <UniversalChatContainer type="nexus" onMobileBack={handleMobileBack} onOpenSidebar={handleOpenSidebar} />
+                ) : null}
               </div>
-            </div>
+            ) : (
+              /* If no chat is active, show the sidebar full screen (or as the main view) */
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: '80px', background: 'var(--surface)' }}>
+                <Sidebar mobileInitialTab={drawerTab} />
+              </div>
+            )}
+
+            {/* Drawer for when inside a chat and user clicks hamburger */}
+            <OrbitDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} side="left">
+              <Sidebar mobileInitialTab={drawerTab} onMobileSelect={() => setDrawerOpen(false)} />
+            </OrbitDrawer>
+
+            {/* Bottom Nav (only visible when not in a chat on mobile) */}
+            {!hasActiveChat && (
+              <BottomNav 
+                active="chat" 
+                onNavigate={(tab) => {
+                  if (tab === "home") navigate("/dreamland");
+                  else if (tab === "settings") navigate("/settings");
+                  else if (tab === "notifications") navigate("/notifications");
+                  else if (tab === "nexus") { setDrawerTab("nexus"); }
+                  else if (tab === "chat") { setDrawerTab("messages"); }
+                }} 
+              />
+            )}
           </div>
-        )}
-
-        {/* ── MOBILE full-screen chat overlay (< md) ── */}
-        {hasActiveChat && !isLgUp && (
-          <div className="mobile-chat-fullscreen bg-base-300 animate-slide-up">
-            <div className="h-full w-full orbital-glass-lg flex flex-col overflow-hidden">
-              {selectedConversationType === "direct" && selectedConversationId && (
-                <UniversalChatContainer type="dm" onMobileBack={handleMobileBack} onOpenSidebar={handleOpenSidebar} />
-              )}
-              {selectedNexusId && (
-                <UniversalChatContainer type="nexus" onMobileBack={handleMobileBack} onOpenSidebar={handleOpenSidebar} />
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── MOBILE: Sidebar Drawer ── */}
-        {!isLgUp && (
-          <MobileSidebarDrawer
-            isOpen={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            initialTab={drawerTab}
-          />
-        )}
-
-        {/* ── MOBILE: Bottom Navigation ── */}
-        {!hasActiveChat && !isLgUp && (
-          <MobileBottomNav onOpenSidebar={handleOpenSidebar} />
         )}
       </div>
     </OrbitalPageWrapper>
   );
-};
-
-export default HomePage;
+}

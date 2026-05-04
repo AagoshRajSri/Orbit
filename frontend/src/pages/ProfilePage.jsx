@@ -1,56 +1,159 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import OrbitalPageWrapper from "../components/layout/OrbitalPageWrapper";
-import {
-  Camera,
-  Mail,
-  User,
-  Edit,
-  Save,
-  Trash2,
-  RotateCcw,
-  Compass,
-  Flower,
-} from "lucide-react";
+import { useBreakpoint, isMobileOrTablet } from "../lib/useBreakpoint";
+import { BottomNav } from "../components/layout/BottomNav";
 import toast from "../lib/toast";
-import { useSoundManager } from "../hooks/useSoundManager";
-import { useThemeStore } from "../store/useThemeStore";
-import { AmoledProfile } from "../themes/amoledTheme";
-import { GamerProfile } from "../themes/gamerTheme";
-import { VampireProfile } from "../themes/darkTheme";
-import { CyberpunkProfile } from "../themes/darkCyberpunkTheme";
-import { LightProfile } from "../themes/lightTheme";
-import { PastelProfile } from "../themes/pastelTheme";
-const ProfilePage = () => {
-  const navigate = useNavigate();
-  const { authUser, isUpdatingProfile, updateProfile, deleteAccount } =
-    useAuthStore();
-  const { play } = useSoundManager();
-  const { theme } = useThemeStore();
-  const isLight = theme === "light";
 
+const CSS = `
+  .profile-root {
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+  .profile-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 24px;
+    height: 60px;
+    background: var(--topbar-bg, rgba(5,5,8,0.95));
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    flex-shrink: 0;
+  }
+  .profile-back {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font); font-size: 11px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text2); padding: 7px 12px; border-radius: 6px;
+    border: 1px solid var(--border); cursor: pointer;
+    transition: all 0.2s;
+  }
+  .profile-back:hover { color: var(--acc); border-color: var(--acc); }
+  .profile-title {
+    font-family: var(--font); font-size: 16px;
+    font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    flex: 1; text-align: center; margin-right: 60px; /* offset back btn */
+  }
+
+  .profile-body {
+    flex: 1;
+    padding: 40px 24px 100px;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+    animation: orbit-fade-up .3s ease both;
+  }
+
+  /* AVATAR EDIT */
+  .profile-avatar-sec {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    margin-bottom: 40px;
+  }
+  .profile-avatar-wrap {
+    width: 120px; height: 120px; border-radius: 50%;
+    background: var(--surface2); border: 2px solid var(--border);
+    position: relative; cursor: pointer; overflow: hidden;
+    transition: all 0.3s;
+  }
+  .profile-avatar-wrap:hover { border-color: var(--acc); box-shadow: var(--shadow-acc); }
+  .profile-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-avatar-placeholder {
+    width: 100%; height: 100%; display: flex; align-items: center;
+    justify-content: center; font-size: 32px; color: var(--text3);
+  }
+  .profile-avatar-edit-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.2s; font-size: 24px; color: white;
+  }
+  .profile-avatar-wrap:hover .profile-avatar-edit-overlay { opacity: 1; }
+
+  /* FORM */
+  .profile-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .profile-field { display: flex; flex-direction: column; gap: 8px; }
+  .profile-label {
+    font-family: var(--font); font-size: 11px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--text2);
+  }
+  .profile-input, .profile-textarea {
+    background: var(--input-bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+    color: var(--text); font-family: var(--font-body); font-size: 15px;
+    transition: all 0.2s; outline: none; width: 100%;
+  }
+  .profile-input:focus, .profile-textarea:focus { border-color: var(--acc); box-shadow: 0 0 10px var(--acc-glow); }
+  .profile-textarea { min-height: 100px; resize: vertical; }
+
+  /* ACTIONS */
+  .profile-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 16px; border-top: 1px solid var(--border-soft); margin-top: 8px;
+  }
+  .profile-btn-danger {
+    background: transparent; border: 1px solid var(--border); color: #ef4444;
+    font-family: var(--font); font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; padding: 10px 16px; border-radius: var(--radius);
+    transition: all 0.2s;
+  }
+  .profile-btn-danger:hover { background: rgba(239,68,68,0.1); border-color: #ef4444; }
+  
+  .profile-btn-save {
+    background: var(--acc2); border: 1px solid var(--acc); color: white;
+    font-family: var(--font); font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; padding: 12px 24px; border-radius: var(--radius);
+    transition: all 0.2s; box-shadow: var(--shadow-acc);
+  }
+  .profile-btn-save:hover:not(:disabled) { background: var(--acc); transform: translateY(-2px); }
+  .profile-btn-save:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+  @media (max-width: 480px) {
+    .profile-topbar { padding: 0 14px; }
+    .profile-body { padding: 24px 16px 100px; }
+    .profile-form { padding: 20px; }
+    .profile-actions { flex-direction: column; gap: 16px; }
+    .profile-btn-save, .profile-btn-danger { width: 100%; }
+  }
+`;
+
+export default function ProfilePage() {
+  const navigate = useNavigate();
+  const bp = useBreakpoint();
+  const mobile = isMobileOrTablet(bp);
+  
+  const { authUser, isUpdatingProfile, updateProfile, deleteAccount } = useAuthStore();
   const [profileDraft, setProfileDraft] = useState({
-    username: "",
-    email: "",
-    bio: "",
-    profilePic: "",
-    telegramId: "",
+    username: "", email: "", bio: "", profilePic: "", telegramId: "",
   });
   const [selectedImg, setSelectedImg] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (!authUser) return;
-    setProfileDraft({
-      username: authUser.username || "",
-      email: authUser.email || "",
-      bio: authUser.bio || "",
-      profilePic: authUser.profilePic || "",
-      telegramId: authUser.telegramId || "",
-    });
+    if (authUser) {
+      setProfileDraft({
+        username: authUser.username || "",
+        email: authUser.email || "",
+        bio: authUser.bio || "",
+        profilePic: authUser.profilePic || "",
+        telegramId: authUser.telegramId || "",
+      });
+    }
   }, [authUser]);
 
   const hasChanges = useMemo(() => {
@@ -64,16 +167,14 @@ const ProfilePage = () => {
     );
   }, [profileDraft, authUser, selectedImg]);
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
-      const base64Image = reader.result;
-      setSelectedImg(base64Image);
-      setProfileDraft((prev) => ({ ...prev, profilePic: base64Image }));
+      setSelectedImg(reader.result);
+      setProfileDraft(p => ({ ...p, profilePic: reader.result }));
     };
   };
 
@@ -83,7 +184,6 @@ const ProfilePage = () => {
       toast.error("Username and email are required.");
       return;
     }
-
     try {
       const payload = {
         username: profileDraft.username.trim(),
@@ -94,416 +194,108 @@ const ProfilePage = () => {
       if (selectedImg) payload.profilePic = selectedImg;
 
       await updateProfile(payload);
-      setIsEditing(false);
       setSelectedImg(null);
-      toast.success("Profile updated successfully.");
+      toast.success("Identity updated successfully.");
     } catch (error) {
-      toast.error("Profile update failed.");
+      toast.error("Update failed.");
     }
   };
 
   const handleDelete = async () => {
+    if (!window.confirm("Are you sure? This will delete your identity from the Orbit permanently.")) return;
     setIsDeleting(true);
     try {
       await deleteAccount();
-      setTimeout(() => {
-        toast.success(
-          "You have a 30-second grace period to contact support to recover your account.",
-        );
-      }, 200);
+      toast.success("Identity deleted.");
       navigate("/signup");
-    } catch (error) {
-      toast.error("Could not delete account at this time.");
+    } catch (err) {
+      toast.error("Could not delete identity.");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  if (!authUser) {
-    return (
-      <OrbitalPageWrapper>
-        <div className="p-6 text-base-content/70">Loading profile...</div>
-      </OrbitalPageWrapper>
-    );
-  }
-
-  if (theme === "amoled-dark") {
-    return <AmoledProfile />;
-  }
-
-  if (theme === "gamer-high-energy") {
-    return <GamerProfile />;
-  }
-
-  if (theme === "dark") {
-    return <VampireProfile />;
-  }
-
-  if (theme === "light") {
-    return <LightProfile />;
-  }
-
-  if (theme === "neon-cyberpunk") {
-    return <CyberpunkProfile />;
-  }
-
-  if (theme === "pastel-dream") {
-    return <PastelProfile />;
-  }
-
+  if (!authUser) return <div className="profile-root"><div className="profile-body">Loading...</div></div>;
 
   return (
-    <OrbitalPageWrapper>
-      {theme === "pastel-dream" && (
-        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-          <div className="absolute top-[8%] left-[10%] text-5xl animate-bounce opacity-40">🎀</div>
-          <div className="absolute top-[25%] right-[15%] text-4xl animate-pulse opacity-30">🌸</div>
-          <div className="absolute bottom-[20%] left-[5%] text-5xl animate-bounce opacity-40">✨</div>
-          <div className="absolute bottom-[10%] right-[10%] text-4xl animate-pulse opacity-30">💖</div>
-          <div className="absolute top-[40%] left-[2%] text-3xl opacity-20">✿</div>
-        </div>
-      )}
-      <div className="h-full min-h-0 overflow-y-auto py-8 relative z-10">
-        <div className="max-w-3xl mx-auto px-4">
-          <button
-            onClick={() => {
-              play("click");
-              navigate("/");
-            }}
-            className={`
-              flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all duration-300 mb-8 w-fit
-              ${theme === "pastel-dream"
-                ? "bg-white/70 border border-pink-100 text-[#d060a8] shadow-lg shadow-pink-100/50 hover:bg-white hover:scale-105 active:scale-95"
-                : isLight
-                ? "bg-white/80 border border-[#b08d57]/30 text-[#8c7055] shadow-md shadow-[rgba(176,141,87,0.1)] hover:bg-white hover:border-[#b08d57]/50 hover:scale-105 active:scale-95 tracking-widest"
-                : "bg-base-300/40 backdrop-blur-md border border-base-content/10 text-base-content/70 hover:bg-base-300/60 hover:text-base-content"
-              }
-            `}
-          >
-            {theme === "pastel-dream" ? (
-              <Flower className="size-4 text-pink-400" />
-            ) : (
-              <Compass className={`size-4 ${theme === "pastel-dream" ? "text-pink-400" : "text-primary"}`} />
-            )}
-            <span>{theme === "pastel-dream" ? "Back to Dreamland" : "Back to Orbit"}</span>
-          </button>
-          <div className="orbital-section space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h1 className={`text-4xl font-black ${
-                  theme === "pastel-dream"
-                    ? "bg-gradient-to-r from-[#f472b6] via-[#c084fc] to-[#818cf8] bg-clip-text text-transparent drop-shadow-sm"
-                    : isLight
-                    ? "text-[#5c4a2a] uppercase tracking-widest"
-                    : "text-base-content"
-                }`}
-                  style={
-                    theme === "pastel-dream" ? { fontFamily: "'Pacifico', cursive" }
-                    : isLight ? { fontFamily: "'Georgia', serif", letterSpacing: "0.12em" }
-                    : {}
-                  }
-                >
-                  {theme === "pastel-dream" ? "Your Profile" : isLight ? "Profile" : "Profile"} {theme === "pastel-dream" && "🎀"}
-                </h1>
-                <p className={`mt-2 ${
-                  theme === "pastel-dream"
-                    ? "text-pink-400 font-bold uppercase tracking-widest text-xs"
-                    : isLight
-                    ? "text-[#b08d57] font-bold uppercase tracking-widest text-xs"
-                    : "orbital-subtitle"
-                }`}>
-                  {theme === "pastel-dream" ? "Your magical identity ✨" : isLight ? "Your distinguished identity" : "Manage your account and Orbit identity"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className="orbital-btn-secondary gap-2 text-sm py-2"
-                  type="button"
-                  onClick={() => {
-                    setIsEditing((prev) => !prev);
-                    if (!isEditing) toast.success("Inline editing enabled");
-                  }}
-                >
-                  <Edit className="w-4 h-4" />
-                  {isEditing ? "View" : "Edit"}
-                </button>
-                <button
-                  className="orbital-btn-ghost gap-2 text-sm py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </div>
-            </div>
-
-            <form
-              onSubmit={handleSave}
-              className={`grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 p-8 rounded-[2.5rem] border backdrop-blur-md ${
-                theme === "pastel-dream"
-                  ? "bg-gradient-to-br from-white/90 via-pink-50/70 to-purple-50/60 border-pink-200/60 shadow-2xl shadow-pink-100/60"
-                  : isLight
-                  ? "bg-gradient-to-br from-white/95 via-[#faf7f0]/80 to-[#f0ebd8]/60 border-[#b08d57]/20 shadow-2xl shadow-[rgba(176,141,87,0.1)]"
-                  : "bg-transparent border-transparent"
-              }`}
-            >
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative group">
-                  <div className={`absolute -inset-1 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${
-                    theme === "pastel-dream"
-                      ? "bg-gradient-to-br from-[#f472b6] to-[#c084fc] animate-pulse"
-                      : isLight
-                      ? "bg-gradient-to-br from-[#b08d57] to-[#8c7055]"
-                      : "bg-primary"
-                  }`} />
-                  <img
-                    src={profileDraft.profilePic || "/avatar.png"}
-                    alt="Profile"
-                    className={`size-32 rounded-3xl object-cover relative z-10 border-4 ${
-                      theme === "pastel-dream"
-                        ? "border-white shadow-xl shadow-pink-200/60 rotate-3 group-hover:rotate-0 transition-transform duration-500"
-                        : isLight
-                        ? "border-[#f0ebd8] shadow-xl shadow-[rgba(176,141,87,0.2)] group-hover:scale-105 transition-transform duration-500"
-                        : "border-primary/50"
-                    }`}
-                  />
-                  <label
-                    htmlFor="avatar-upload"
-                    className={`absolute bottom-0 right-0 rounded-full p-3 transition-all text-primary-content cursor-pointer shadow-lg ${
-                      isUpdatingProfile ? "pointer-events-none opacity-60" : ""
-                    } ${
-                      theme === "pastel-dream"
-                        ? "bg-gradient-to-br from-[#f472b6] to-[#c084fc] shadow-pink-300/50 hover:brightness-110"
-                        : isLight
-                        ? "bg-gradient-to-br from-[#b08d57] to-[#8c7055] shadow-[rgba(176,141,87,0.4)] hover:brightness-110"
-                        : "bg-primary hover:brightness-110 shadow-primary/50"
-                    }`}
-                  >
-                    <Camera className="w-4 h-4" />
-                    <input
-                      type="file"
-                      id="avatar-upload"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                      disabled={isUpdatingProfile}
-                    />
-                  </label>
-                </div>
-                <p className="orbital-subtitle">Upload a profile picture</p>
-              </div>
-
-              <div className="space-y-4">
-                  <label className="block space-y-2">
-                    <span className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest ${
-                      theme === "pastel-dream" ? "text-pink-500"
-                      : isLight ? "text-[#b08d57]"
-                      : "orbital-label"}`}>
-                      <User className="size-3.5" />
-                      Persona Name
-                    </span>
-                    <input
-                      type="text"
-                      value={profileDraft.username}
-                      onChange={(e) =>
-                        setProfileDraft((prev) => ({
-                          ...prev,
-                          username: e.target.value,
-                        }))
-                      }
-                      className={`w-full px-4 py-3 rounded-2xl border outline-none transition-all ${
-                        theme === "pastel-dream" ? "bg-pink-50/50 border-pink-100 text-[#d060a8] focus:bg-white focus:border-pink-300 placeholder-pink-200"
-                        : isLight ? "bg-[#faf7f0]/80 border-[#b08d57]/20 text-[#5c4a2a] focus:bg-white focus:border-[#b08d57]/50 placeholder-[#c9b99a]"
-                        : "orbital-input"}`}
-                      disabled={!isEditing}
-                      placeholder={isLight ? "e.g. Distinguished Name" : "e.g. Dreamy Cat"}
-                      aria-label="Full Name"
-                    />
-                  </label>
-
-                <label className="block">
-                  <span className="orbital-label flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Email
-                  </span>
-                  <input
-                    type="email"
-                    value={profileDraft.email}
-                    onChange={(e) =>
-                      setProfileDraft((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    className="orbital-input"
-                    disabled={!isEditing}
-                    aria-label="Email"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="orbital-label flex items-center gap-2">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13"></line>
-                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                    Telegram ID
-                  </span>
-                  <input
-                    type="text"
-                    value={profileDraft.telegramId}
-                    onChange={(e) =>
-                      setProfileDraft((prev) => ({
-                        ...prev,
-                        telegramId: e.target.value.replace(/\D/g, ""),
-                      }))
-                    }
-                    className="orbital-input"
-                    disabled={!isEditing}
-                    placeholder="Get yours from @userinfobot"
-                    aria-label="Telegram ID"
-                  />
-                </label>
-
-                  <label className="block space-y-2">
-                    <span className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest ${
-                      theme === "pastel-dream" ? "text-purple-500"
-                      : isLight ? "text-[#8c7055]"
-                      : "orbital-label"}`}>
-                      Bio
-                    </span>
-                    <textarea
-                      value={profileDraft.bio}
-                      onChange={(e) =>
-                        setProfileDraft((prev) => ({
-                          ...prev,
-                          bio: e.target.value,
-                        }))
-                      }
-                      className={`w-full px-4 py-3 rounded-2xl border outline-none transition-all ${
-                        theme === "pastel-dream" ? "bg-purple-50/30 border-purple-100 text-[#8e44ad] focus:bg-white focus:border-purple-300 placeholder-purple-200"
-                        : isLight ? "bg-[#faf7f0]/80 border-[#b08d57]/20 text-[#5c4a2a] focus:bg-white focus:border-[#b08d57]/50 placeholder-[#c9b99a]"
-                        : "orbital-textarea"}`}
-                      rows={4}
-                      disabled={!isEditing}
-                      placeholder={isLight ? "Share your distinguished story..." : "Tell us about your magical adventures..."}
-                      aria-label="Bio"
-                    />
-                  </label>
-
-                {isEditing && (
-                  <div className="flex items-center gap-3 pt-4">
-                    <button
-                      type="submit"
-                      className="orbital-btn-primary text-sm py-2"
-                      disabled={!hasChanges || isUpdatingProfile}
-                    >
-                      <Save className="w-4 h-4" />
-                      Save Changes
-                    </button>
-                    <button
-                      type="button"
-                      className="orbital-btn-ghost text-sm py-2"
-                      onClick={() => {
-                        setProfileDraft({
-                          username: authUser.username || "",
-                          email: authUser.email || "",
-                          bio: authUser.bio || "",
-                          profilePic: authUser.profilePic || "",
-                          telegramId: authUser.telegramId || "",
-                        });
-                        setSelectedImg(null);
-                        setIsEditing(false);
-                      }}
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      Cancel
-                    </button>
-                  </div>
-                )}
-
-                {!isEditing && (
-                  <div className="orbital-subtitle pt-2">
-                    Turn on edit mode to make profile updates.
-                  </div>
-                )}
-              </div>
-            </form>
-
-            <div className={`p-4 rounded-lg border-l-2 ${
-              theme === "pastel-dream"
-                ? "bg-gradient-to-r from-pink-50/80 to-purple-50/50 border-pink-300/60 border rounded-2xl shadow-md shadow-pink-100/40"
-                : isLight
-                ? "bg-gradient-to-r from-white/90 to-[#f0ebd8]/60 border-[#b08d57]/30 border rounded-2xl shadow-md shadow-[rgba(176,141,87,0.08)]"
-                : "orbital-glass-sm border-primary/50"
-            }`}>
-              <h2 className={`font-semibold mb-3 ${
-                theme === "pastel-dream" ? "text-[#c060a8]" : isLight ? "text-[#5c4a2a]" : "text-base-content"
-              }`}>
-                {theme === "pastel-dream" ? "✦ Account Details" : "Account Details"}
-              </h2>
-              <div className="grid grid-cols-2 gap-3 text-sm text-base-content/70">
-                <div>
-                  <strong className={theme === "pastel-dream" ? "text-[#d060a8]" : "text-base-content/90"}>Member Since:</strong>
-                  <div className="mt-1">
-                    {authUser.createdAt?.split("T")[0] || "N/A"}
-                  </div>
-                </div>
-                <div>
-                  <strong className={theme === "pastel-dream" ? "text-[#9333ea]" : "text-base-content/90"}>Status:</strong>
-                  <div className="mt-1">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${
-                      theme === "pastel-dream"
-                        ? "bg-gradient-to-r from-pink-100 to-purple-100 border border-pink-200/60"
-                        : "bg-success/10"
-                    }`}>
-                      <div className={`w-2 h-2 rounded-full animate-pulse ${
-                        theme === "pastel-dream" ? "bg-pink-400" : "bg-success"
-                      }`} />
-                      <span className={theme === "pastel-dream" ? "text-[#d060a8] font-semibold" : "text-success"}>Active ✨</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+    <>
+      <style>{CSS}</style>
+      <div className="profile-root">
+        <div className="profile-topbar">
+          <button className="profile-back" onClick={() => navigate("/dreamland")}>◀ Hub</button>
+          <div className="profile-title">Identity</div>
         </div>
 
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-base-300/60 backdrop-blur-sm p-4">
-            <div className="orbital-glass-card p-6 w-full max-w-md border-error/30">
-              <h3 className="text-xl font-bold text-error">
-                Delete Account?
-              </h3>
-              <p className="text-sm text-base-content/70 mt-3">
-                This action is irreversible. Your profile data will be removed,
-                and you will be signed out. A soft recovery window of 30s is
-                suggested in underlying API.
-              </p>
-              <div className="mt-6 flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="orbital-btn-ghost py-2"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-lg bg-error hover:brightness-110 text-error-content font-semibold transition-all"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Deleting..." : "Delete"}
-                </button>
-              </div>
-            </div>
+        <div className="profile-body">
+          <div className="profile-avatar-sec">
+            <label className="profile-avatar-wrap">
+              {profileDraft.profilePic ? (
+                <img src={profileDraft.profilePic} alt="Avatar" className="profile-avatar-img" />
+              ) : (
+                <div className="profile-avatar-placeholder">◈</div>
+              )}
+              <div className="profile-avatar-edit-overlay">📷</div>
+              <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+            </label>
+            <div className="profile-label">Vessel Appearance</div>
           </div>
+
+          <form className="profile-form" onSubmit={handleSave}>
+            <div className="profile-field">
+              <label className="profile-label">Alias</label>
+              <input
+                className="profile-input"
+                value={profileDraft.username}
+                onChange={e => setProfileDraft(p => ({ ...p, username: e.target.value }))}
+                placeholder="Your designation"
+              />
+            </div>
+            
+            <div className="profile-field">
+              <label className="profile-label">Comm Link (Email)</label>
+              <input
+                className="profile-input"
+                value={profileDraft.email}
+                onChange={e => setProfileDraft(p => ({ ...p, email: e.target.value }))}
+                type="email"
+              />
+            </div>
+
+            <div className="profile-field">
+              <label className="profile-label">Encrypted Bio</label>
+              <textarea
+                className="profile-textarea"
+                value={profileDraft.bio}
+                onChange={e => setProfileDraft(p => ({ ...p, bio: e.target.value }))}
+                placeholder="Leave a mark in the void..."
+              />
+            </div>
+
+            <div className="profile-field">
+              <label className="profile-label">Telegram ID (Optional)</label>
+              <input
+                className="profile-input"
+                value={profileDraft.telegramId}
+                onChange={e => setProfileDraft(p => ({ ...p, telegramId: e.target.value }))}
+                placeholder="For external notifications"
+              />
+            </div>
+
+            <div className="profile-actions">
+              <button type="button" className="profile-btn-danger" onClick={handleDelete} disabled={isDeleting}>
+                {isDeleting ? "Erasing..." : "Purge Identity"}
+              </button>
+              <button type="submit" className="profile-btn-save" disabled={!hasChanges || isUpdatingProfile}>
+                {isUpdatingProfile ? "Syncing..." : "Sync Changes"}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {mobile && (
+          <BottomNav active="settings" onNavigate={tab => navigate(tab === "home" ? "/dreamland" : \`/\${tab}\`)} />
         )}
       </div>
-    </OrbitalPageWrapper>
+    </>
   );
-};
-
-export default ProfilePage;
+}

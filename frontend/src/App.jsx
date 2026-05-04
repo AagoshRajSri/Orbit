@@ -13,6 +13,10 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SpotifyPage = lazy(() => import("./pages/SpotifyPage"));
 const TetherApproval = lazy(() => import("./pages/TetherApproval"));
+const DreamlandPage = lazy(() => import("./pages/DreamlandPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const UserSearchPage = lazy(() => import("./pages/UserSearchPage"));
+
 const StarWeaveLoginPage = lazy(() => import("./starweave/pages/StarWeaveLoginPage"));
 const StarWeaveSignupPage = lazy(() => import("./starweave/pages/StarWeaveSignupPage"));
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
@@ -60,8 +64,9 @@ import ThemePortal from "./components/common/ThemePortal";
 import GlobalMiniPlayer from "./components/layout/GlobalMiniPlayer";
 import GlobalAnnouncementBanner from "./components/layout/GlobalAnnouncementBanner";
 import { normalizeId } from "./lib/idUtils";
-
 import OrbitChatApp from "./components/layout/OrbitChatApp";
+import { OrbitTokens, OrbitGlobalReset } from "./lib/OrbitTokens";
+import { useBreakpoint, isMobileOrTablet } from "./lib/useBreakpoint";
 import { useAnimationContext } from "./components/effects/AnimLayer";
 import { AvatarProvider } from "./context/AvatarContext.jsx";
 
@@ -191,6 +196,9 @@ const AppContent = () => {
   ].some(path => location.pathname === path || location.pathname === path + "/");
 
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const bp = useBreakpoint();
+  const newLayoutPages = ["/", "/chat", "/nexus", "/dreamland", "/notifications", "/search", "/settings", "/profile", "/spotify"];
+  const isNewLayoutPage = newLayoutPages.some(p => location.pathname === p || (p !== "/" && location.pathname.startsWith(p + "/")));
 
   const { isOnline } = useConnectivity();
   const authUser = useAuthStore((state) => state.authUser);
@@ -640,10 +648,10 @@ const AppContent = () => {
       }, 500);
     }
   }, [selectedNexusId, nexusMessages.length, markNexusSeen, authUser]);
-
-
   return (
     <div className={`relative h-screen bg-base-300 text-[var(--chat-text)] overflow-hidden flex flex-col ${isOrbitMode ? 'orbit-active' : ''}`}>
+      <OrbitGlobalReset />
+      <OrbitTokens theme={theme} />
       <GlobalAnnouncementBanner />
       <ThemePortal />
       {!isOnline && <ConnectionStatus />}
@@ -652,7 +660,8 @@ const AppContent = () => {
         <OrbitLoader />
       ) : (
         <>
-          {!isAuthPage && !isAdminRoute && !isFullscreenTheme && !isOrbitMode && (
+          {/* Hide global navbar on mobile for new foundation pages that have their own topbars */}
+          {!isAuthPage && !isAdminRoute && !isFullscreenTheme && !isOrbitMode && (!isMobileOrTablet(bp) || !isNewLayoutPage) && (
             <Navbar onHamburger={() => { setMobileDrawerTab("nexus"); setMobileDrawerOpen(true); }} />
           )}
           {/* Mobile sidebar drawer — accessible from Navbar hamburger */}
@@ -776,6 +785,19 @@ const AppContent = () => {
                     }
                   />
                   <Route path="/tether/approve" element={<TetherApproval />} />
+                  <Route
+                    path="/dreamland"
+                    element={authUser ? <DreamlandPage /> : <Navigate to="/login" />}
+                  />
+                  <Route
+                    path="/notifications"
+                    element={authUser ? <NotificationsPage /> : <Navigate to="/login" />}
+                  />
+                  <Route
+                    path="/search"
+                    element={authUser ? <UserSearchPage /> : <Navigate to="/login" />}
+                  />
+
                   <Route path="/login/starweave"  element={<StarWeaveLoginPage />} />
                   <Route path="/signup/starweave" element={<StarWeaveSignupPage />} />
                   <Route path="/verify-email" element={<VerifyEmailPage />} />
