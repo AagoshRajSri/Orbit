@@ -387,7 +387,7 @@ export default function SettingsPage() {
         </div>
 
         {mobile && (
-          <BottomNav active="settings" onNavigate={tab => navigate(tab === "home" ? "/dreamland" : \`/\${tab}\`)} />
+          <BottomNav active="settings" onNavigate={tab => navigate(tab === "home" ? "/dreamland" : `/${tab}`)} />
         )}
       </div>
     </>

@@ -247,7 +247,7 @@ export default function SpotifyPage() {
               )}
               <div className="spotify-user-info">
                 <img
-                  src={spotifyProfile?.profileImage || \`https://ui-avatars.com/api/?name=\${spotifyProfile?.displayName || "U"}&background=1DB954&color=fff\`}
+                  src={spotifyProfile?.profileImage || `https://ui-avatars.com/api/?name=${spotifyProfile?.displayName || "U"}&background=1DB954&color=fff`}
                   alt="Avatar"
                   className="spotify-user-avatar"
                 />
@@ -290,7 +290,7 @@ export default function SpotifyPage() {
         </div>
 
         {isMobileSize && (
-          <BottomNav active="spotify" onNavigate={tab => navigate(tab === "home" ? "/dreamland" : \`/\${tab}\`)} />
+          <BottomNav active="spotify" onNavigate={tab => navigate(tab === "home" ? "/dreamland" : `/${tab}`)} />
         )}
       </div>
     </>
