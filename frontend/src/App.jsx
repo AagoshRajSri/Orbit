@@ -144,7 +144,6 @@ const DynamicRouteHandler = (props) => {
       if (currentId !== nid && selectedNexus?.id !== nid) {
         const target = nexuses.find(n => n._id?.toString() === nid || n.id?.toString() === nid);
         if (target) {
-          console.log(`[Router] Syncing nexus state: ${nid}`);
           setSelectedNexus(target);
         }
       }

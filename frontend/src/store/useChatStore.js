@@ -299,7 +299,7 @@ export const useChatStore = create((set, get) => ({
         isMatchObj(currentSelectedId, decryptedMsg.senderId, state.users) ||
         isMatchObj(currentSelectedId, decryptedMsg.receiverId, state.users)
       );
-
+      
       if (!belongsToCurrentChat) {
         console.log(`[ChatStore] Message ignored: current selection ${currentSelectedId} does not match sender ${normalizeId(decryptedMsg.senderId)} or receiver ${normalizeId(decryptedMsg.receiverId)}`);
       }

@@ -448,15 +448,18 @@ export const emitToUser = async (userId, event, data) => {
   
   let delivered = false;
   try {
-    // Attempt real-time delivery with acknowledgment timeout (30s)
-    // 30s accounts for polling transport latency on Render free-tier
-    const responses = await ioInstance.to(userIdStr).timeout(30000).emitWithAck(event, data);
-    if (responses && responses.length > 0) {
+    // Render free-tier polling transport crashes with emitWithAck to rooms.
+    // Instead, we check if the user has active sockets, emit normally, and fallback to queue if not.
+    const sockets = await ioInstance.in(userIdStr).fetchSockets();
+    
+    if (sockets && sockets.length > 0) {
+      ioInstance.to(userIdStr).emit(event, data);
       delivered = true;
+    } else {
+      console.debug(`[Socket] User ${userIdStr} is offline, falling back to queue.`);
     }
   } catch (e) {
-    // No one acknowledged within the timeout
-    console.debug(`[Socket] Delivery to ${userIdStr} timed out or failed, falling back to queue.`);
+    console.debug(`[Socket] Delivery check to ${userIdStr} failed, falling back to queue.`);
   }
 
   // If no real-time delivery was acknowledged, and Redis is available, queue it
