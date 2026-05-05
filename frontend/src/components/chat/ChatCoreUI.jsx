@@ -283,6 +283,24 @@ const GLOBAL_CSS = `
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { border-radius:6px; }
 ::selection { background: var(--sel,rgba(255,255,255,0.2)); }
+
+@media (max-width: 768px) {
+  .ip-desktop-only { display: none !important; }
+  .ip-mobile-only { display: flex !important; }
+  .ip-mobile-block { display: block !important; }
+  .ip-mobile-grid { display: grid !important; }
+  .ip-wrapper { width: 100% !important; background: transparent !important; border-left: none !important; }
+  .ip-mobile-bg { background: #F8F5EF !important; }
+  .ip-mobile-topbar { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .ip-mobile-circle-btn { width: 40px; height: 40px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: none; cursor: pointer; color: #1C1C1C; }
+  .ip-mobile-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: #1C1C1C; font-style: italic; }
+  .ip-mobile-banner { margin: 0 16px; background: white; border-radius: 24px; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+  .ip-mobile-grid-actions { margin: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .ip-mobile-action-card { background: white; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); cursor: pointer; }
+  .ip-mobile-action-icon { width: 40px; height: 40px; border-radius: 12px; background: #FAF7F2; display: flex; align-items: center; justify-content: center; color: #C9A87C; }
+  .ip-mobile-roster { margin: 0 16px 16px; background: white; border-radius: 20px; padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+  .ip-mobile-invite-btn { margin: 0 16px 24px; background: #C9A87C; color: white; border-radius: 24px; padding: 16px; display: flex; justify-content: center; align-items: center; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; border: none; font-size: 15px; box-shadow: 0 4px 15px rgba(201,168,124,0.3); }
+}
 `;
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -822,13 +840,65 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
   const dangerRed="#ef4444";
 
   return (
-    <div style={{width:fullArea ? "100%" : 340,borderLeft:fullArea ? "none" : "1px solid "+t.border,background:t.panel,display:"flex",flexDirection:"column",height:"100%",animation:"fadeIn .3s ease",flexShrink:0,position:"relative",overflow:"hidden"}}>
+    <div className="ip-wrapper ip-mobile-bg" style={{width:fullArea ? "100%" : 340,borderLeft:fullArea ? "none" : "1px solid "+t.border,background:t.panel,display:"flex",flexDirection:fullArea ? "row" : "column",height:"100%",animation:"fadeIn .3s ease",flexShrink:0,position:"relative",overflow:"hidden"}}>
       <ParticleCanvas t={t} style={{opacity:.18}}/>
 
-      {/* HEADER */}
-      <div style={{padding:"16px 16px 12px",borderBottom:"1px solid "+t.border,background:t.headerGrad,position:"relative",zIndex:1,flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-          <button onClick={onClose}
+      {/* ── MOBILE ONLY UI ── */}
+      <div className="ip-mobile-block" style={{ display: 'none', position: 'relative', zIndex: 1, width: '100%' }}>
+        <div className="ip-mobile-topbar">
+          <button className="ip-mobile-circle-btn" onClick={onClose}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1C1C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <div className="ip-mobile-title">Orbit</div>
+          <button className="ip-mobile-circle-btn" onClick={()=>setTab("settings")}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1C1C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </button>
+        </div>
+
+        <div className="ip-mobile-banner">
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#FAF7F2', border: '1px solid #EAE4D8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, marginBottom: 16 }}>
+            {t.decorator}
+          </div>
+          <div style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 700, color: '#1C1C1C', marginBottom: 4 }}>{group.name}</div>
+          <div style={{ fontFamily: 'Inter', fontSize: 13, color: '#8A8480', fontWeight: 500 }}>Nexus Thread - May 5</div>
+        </div>
+
+        <div className="ip-mobile-grid-actions">
+          <div className="ip-mobile-action-card">
+            <div className="ip-mobile-action-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+            <div style={{ color: '#1C1C1C', fontFamily: 'Inter', fontWeight: 600, fontSize: 14 }}>Encryption</div>
+          </div>
+          <div className="ip-mobile-action-card" onClick={()=>setTab("members")}>
+            <div className="ip-mobile-action-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+            <div style={{ color: '#1C1C1C', fontFamily: 'Inter', fontWeight: 600, fontSize: 14 }}>{group.members.length} Members</div>
+          </div>
+          <div className="ip-mobile-action-card">
+            <div className="ip-mobile-action-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16"></path></svg></div>
+            <div style={{ color: '#1C1C1C', fontFamily: 'Inter', fontWeight: 600, fontSize: 14 }}>Signal</div>
+          </div>
+          <div className="ip-mobile-action-card">
+            <div className="ip-mobile-action-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+            <div style={{ color: '#1C1C1C', fontFamily: 'Inter', fontWeight: 600, fontSize: 14 }}>Search</div>
+          </div>
+        </div>
+
+        <div className="ip-mobile-roster">
+          <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: '#1C1C1C' }}>Roster</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A8480" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <button className="ip-mobile-invite-btn" onClick={copyInvite}>
+          Invite Node
+        </button>
+      </div>
+
+      {/* ── DESKTOP UI ── */}
+      <div className="ip-desktop-only" style={{padding:"24px 20px 20px",borderBottom:fullArea ? "none" : "1px solid "+t.border,borderRight:fullArea ? "1px solid "+t.border : "none",background:t.headerGrad,position:"relative",zIndex:1,flexShrink:0,width:fullArea ? 380 : 340,height:fullArea ? "100%" : "auto",overflowY:fullArea ? "auto" : "visible", display: "flex", flexDirection: "column"}}>
+        <div style={{ maxWidth: 500, margin: "0 auto", width: "100%" }}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+            <button onClick={onClose}
             style={{background:t.msgIn,border:"1px solid "+t.border,color:t.txt2,cursor:"pointer",padding:"6px 8px",borderRadius:9,display:"flex",transition:"border-color .15s"}}
             onMouseEnter={e=>e.currentTarget.style.borderColor=t.acc}
             onMouseLeave={e=>e.currentTarget.style.borderColor=t.border}>
@@ -844,11 +914,11 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
         </div>
 
         {/* Avatar */}
-        <div style={{textAlign:"center",padding:"4px 0 10px"}}>
-          <div style={{position:"relative",display:"inline-block",marginBottom:10}}>
-            <div style={{width:76,height:76,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:34,boxShadow:"0 0 28px "+t.glow,cursor:"pointer",transition:"box-shadow .2s", overflow:"hidden"}}
-              onMouseEnter={e=>e.currentTarget.style.boxShadow="0 0 48px "+t.glow}
-              onMouseLeave={e=>e.currentTarget.style.boxShadow="0 0 28px "+t.glow}>
+        <div style={{textAlign:"center",padding:"20px 0 30px"}}>
+          <div style={{position:"relative",display:"inline-block",marginBottom:20}}>
+            <div style={{width:fullArea ? 130 : 90,height:fullArea ? 130 : 90,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44,boxShadow:"0 12px 48px "+t.glow,cursor:"pointer",transition:"all .3s ease", overflow:"hidden", border: `2px solid ${t.acc}30`}}
+              onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 20px 60px "+t.glow; e.currentTarget.style.transform="scale(1.05)"}}
+              onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 12px 48px "+t.glow; e.currentTarget.style.transform="scale(1)"}}>
               {(() => {
                 const ANIMALS = ['dog', 'cat', 'bunny'];
                 // InfoPanel uses 'group.id' or falls back to '1' if missing.
@@ -858,7 +928,7 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
                   <PixelAvatarBadge
                     type={animal}
                     state="idle"
-                    size={70}
+                    size={fullArea ? 120 : 80}
                     showDot={false}
                     style={{
                       imageRendering: "pixelated",
@@ -872,9 +942,9 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
             </div>
             <div style={{position:"absolute",inset:-4,borderRadius:"50%",border:"1px solid "+t.acc+"30",pointerEvents:"none"}}/>
           </div>
-          <div style={{color:t.txt,fontSize:17,fontWeight:800,fontFamily:t.font,letterSpacing:".05em",marginBottom:3}}>{group.name}</div>
-          <div style={{color:t.txt2,fontSize:11,fontFamily:t.font,marginBottom:9}}>
-            {group.members.length} members · {(group.messageCount||0).toLocaleString()} messages
+          <div style={{color:t.txt,fontSize:fullArea ? 24 : 18,fontWeight:900,fontFamily:t.font,letterSpacing:".02em",marginBottom:6, textShadow: `0 2px 10px ${t.bg}`}}>{group.name}</div>
+          <div style={{color:t.txt2,fontSize:13,fontFamily:t.font,marginBottom:20, opacity: 0.8, fontWeight: 500}}>
+            {group.members.length} members <span style={{margin: "0 6px", opacity: 0.4}}>•</span> {(group.messageCount||0).toLocaleString()} messages
           </div>
           <div style={{display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap"}}>
             {(group.tags||[]).map(tag=>(
@@ -884,34 +954,36 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
         </div>
 
         {/* Tab bar */}
-        <div style={{display:"flex",gap:2,background:t.msgIn,borderRadius:12,padding:3,border:"1px solid "+t.border}}>
+        <div style={{display:"flex",gap:4,background:t.msgIn,borderRadius:16,padding:4,border:"1px solid "+t.border, boxShadow: "inset 0 2px 10px rgba(0,0,0,0.1)"}}>
           {TABS.map(tb=>{
             const isActive=tab===tb.id;
             const isDanger=tb.id==="danger";
             return (
               <button key={tb.id} onClick={()=>setTab(tb.id)}
-                style={{flex:1,padding:"6px 4px",borderRadius:9,border:"none",
+                style={{flex:1,padding:"10px 4px",borderRadius:12,border:"none",
                   background:isActive?(isDanger?dangerRed:t.acc):"transparent",
                   color:isActive?(isDanger?"#fff":t.sendTxt):isDanger?dangerRed:t.txt2,
-                  cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,
-                  transition:"all .15s",fontSize:8,fontFamily:t.font,fontWeight:700,
-                  letterSpacing:".04em",textTransform:"uppercase",opacity:isActive?1:0.65}}>
-                <Ico d={tb.icon} size={12} stroke="currentColor"/>
+                  cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,
+                  transition:"all .2s cubic-bezier(0.4, 0, 0.2, 1)",fontSize:10,fontFamily:t.font,fontWeight:700,
+                  letterSpacing:".04em",textTransform:"uppercase",opacity:isActive?1:0.7}}>
+                <Ico d={tb.icon} size={14} stroke="currentColor"/>
                 {tb.label}
               </button>
             );
           })}
         </div>
+        </div>
       </div>
 
-      {/* CONTENT */}
-      <div style={{flex:1,overflowY:"auto",padding:"14px 0",position:"relative",zIndex:1,scrollbarWidth:"thin",scrollbarColor:t.scrollbar+" transparent"}}>
+      {/* CONTENT (DESKTOP) */}
+      <div className="ip-desktop-only" style={{flex:1,overflowY:"auto",padding:"30px 0",position:"relative",zIndex:1,scrollbarWidth:"thin",scrollbarColor:t.scrollbar+" transparent",display:"flex",flexDirection:"column",height:fullArea ? "100%" : "auto", background: t.bg}}>
+        <div style={{ maxWidth: 800, margin: "0 auto", width: "100%", padding: "0 40px" }}>
 
         {/* ── OVERVIEW ── */}
         {tab==="overview"&&(
           <div style={{padding:"0 14px",animation:"fadeUp .2s ease"}}>
             {/* Quick actions */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+            <div style={{display:"grid",gridTemplateColumns: fullArea ? "repeat(4, 1fr)" : "1fr 1fr",gap:16,marginBottom:32}}>
               {[
                 {label:"Mute",   icon:I.bell,   action:()=>addToast("Notifications muted")},
                 {label:"Search", icon:I.search, action:()=>addToast("Search in chat")},
@@ -919,33 +991,41 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
                 {label:"Invite", icon:I.link,   action:copyInvite},
               ].map(({label,icon,action})=>(
                 <Btn3D key={label} onClick={action} title={label}
-                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"12px 8px",background:t.msgIn,border:"1px solid "+t.border,borderRadius:12,cursor:"pointer",transition:"border-color .15s,box-shadow .15s"}}>
-                  <div style={{width:32,height:32,borderRadius:10,background:themeAccentBg,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <Ico d={icon} size={15} stroke={t.acc}/>
+                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10,padding:"20px 12px",background:t.msgIn,border:"1px solid "+t.border,borderRadius:20,cursor:"pointer",transition:"all .3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 4px 15px rgba(0,0,0,0.05)`}}
+                  onMouseEnter={e => {e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.borderColor=t.acc; e.currentTarget.style.boxShadow=`0 10px 25px ${t.acc}20`}}
+                  onMouseLeave={e => {e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=t.border; e.currentTarget.style.boxShadow=`0 4px 15px rgba(0,0,0,0.05)`}}>
+                  <div style={{width:48,height:48,borderRadius:14,background:themeAccentBg,display:"flex",alignItems:"center",justifyContent:"center", boxShadow: `inset 0 2px 8px ${t.acc}20`}}>
+                    <Ico d={icon} size={20} stroke={t.acc}/>
                   </div>
-                  <span style={{color:t.txt2,fontSize:10,fontFamily:t.font,fontWeight:700,letterSpacing:".04em",textTransform:"uppercase"}}>{label}</span>
+                  <span style={{color:t.txt,fontSize:11,fontFamily:t.font,fontWeight:800,letterSpacing:".1em",textTransform:"uppercase"}}>{label}</span>
                 </Btn3D>
               ))}
             </div>
-            <PanelSection t={t} title="Group Name" icon={I.hash} defaultOpen>
-              <EditField t={t} value={group.name||""} onChange={v=>updateField("name",v)} placeholder="Enter group name…"/>
-            </PanelSection>
-            <PanelSection t={t} title="Description" icon={I.tag} defaultOpen>
-              <EditField t={t} value={group.description||""} onChange={v=>updateField("description",v)} multiline placeholder="Describe your nexus…"/>
-            </PanelSection>
-            <PanelSection t={t} title="Pinned Message" icon={I.pin}>
-              <EditField t={t} value={group.pinnedMsg||""} onChange={v=>updateField("pinnedMsg",v)} multiline placeholder="Pin something important…"/>
-            </PanelSection>
-            <PanelSection t={t} title="Invite Link" icon={I.link}>
-              <div style={{display:"flex",gap:6,alignItems:"center",padding:"8px 12px",background:t.msgIn,border:"1px solid "+t.border,borderRadius:10}}>
-                <span style={{flex:1,color:t.acc,fontSize:11,fontFamily:t.font,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{group.inviteLink}</span>
-                <Btn3D style={{padding:"4px 10px",borderRadius:7,background:inviteCopied?t.acc:"transparent",color:inviteCopied?t.sendTxt:t.txt2,border:"1px solid "+t.border,fontSize:11,fontFamily:t.font,whiteSpace:"nowrap"}} onClick={copyInvite}>
-                  {inviteCopied?"✓ Copied":"Copy"}
-                </Btn3D>
+            <div style={{ display: "grid", gridTemplateColumns: fullArea ? "1fr 1fr" : "1fr", gap: 20 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <PanelSection t={t} title="Group Name" icon={I.hash} defaultOpen>
+                  <EditField t={t} value={group.name||""} onChange={v=>updateField("name",v)} placeholder="Enter group name…"/>
+                </PanelSection>
+                <PanelSection t={t} title="Description" icon={I.tag} defaultOpen>
+                  <EditField t={t} value={group.description||""} onChange={v=>updateField("description",v)} multiline placeholder="Describe your nexus…"/>
+                </PanelSection>
               </div>
-            </PanelSection>
-            <PanelSection t={t} title="Stats" icon={I.clock}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <PanelSection t={t} title="Pinned Message" icon={I.pin} defaultOpen>
+                  <EditField t={t} value={group.pinnedMsg||""} onChange={v=>updateField("pinnedMsg",v)} multiline placeholder="Pin something important…"/>
+                </PanelSection>
+                <PanelSection t={t} title="Invite Link" icon={I.link} defaultOpen>
+                  <div style={{display:"flex",gap:6,alignItems:"center",padding:"12px 16px",background:t.msgIn,border:"1px solid "+t.border,borderRadius:14}}>
+                    <span style={{flex:1,color:t.acc,fontSize:12,fontFamily:t.font,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap", fontWeight: 600}}>{group.inviteLink}</span>
+                    <Btn3D style={{padding:"6px 12px",borderRadius:10,background:inviteCopied?t.acc:"transparent",color:inviteCopied?t.sendTxt:t.txt2,border:"1px solid "+t.border,fontSize:11,fontFamily:t.font,whiteSpace:"nowrap", fontWeight: 700}} onClick={copyInvite}>
+                      {inviteCopied?"✓ Copied":"Copy"}
+                    </Btn3D>
+                  </div>
+                </PanelSection>
+              </div>
+            </div>
+            <PanelSection t={t} title="Stats" icon={I.clock} defaultOpen>
+              <div style={{display:"grid",gridTemplateColumns: fullArea ? "repeat(4, 1fr)" : "1fr 1fr",gap:16}}>
                 {[
                   ["Messages",(group.messageCount||0).toLocaleString()],
                   ["Members",group.members?.length||0],
@@ -1129,6 +1209,7 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
           </div>
         )}
 
+        </div>
       </div>
     </div>
   );

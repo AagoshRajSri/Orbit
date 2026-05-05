@@ -8,6 +8,25 @@ import MessageStatusRing from "./MessageStatusRing.jsx";
 
 const REACT_SET = ["❤️","👍","😂","🔥","✨","🎯","🔐","💫","😮","🥺"];
 
+const MSG_STYLE = `
+@media (max-width: 768px) {
+  .msg-mobile-time-inside { display: none !important; }
+  .msg-mobile-time-outside { display: flex !important; }
+}
+@media (min-width: 769px) {
+  .msg-mobile-time-outside { display: none !important; }
+}
+`;
+let _injectedMsg = false;
+function injectMsgStyle() {
+  if (_injectedMsg) return;
+  _injectedMsg = true;
+  const s = document.createElement("style");
+  s.textContent = MSG_STYLE;
+  document.head.appendChild(s);
+}
+
+
 function getBubbleStyle(t, mine) {
   const isCyber  = t.id === "cyberpunk" || t.id === "gamer";
   const isPastel = t.id === "pastel";
@@ -16,7 +35,7 @@ function getBubbleStyle(t, mine) {
     borderRadius: t["--radius"],
     fontSize: isCyber ? 12 : 13.5,
     lineHeight: isCyber ? 1.6 : 1.55,
-    color: t["--text"],
+    color: mine ? (t["--sent-text"] || t["--text"]) : t["--text"],
     wordBreak: "break-word",
     position: "relative",
     maxWidth: 480,
@@ -99,7 +118,7 @@ function ReactionStrip({ reactions, onReact, t }) {
   );
 }
 
-function QuickReactBar({ t, onReact, mine }) {
+function QuickReactBar({ t, onReact, onPin, mine }) {
   return (
     <div style={{
       position: "absolute", top: -38,
@@ -125,6 +144,16 @@ function QuickReactBar({ t, onReact, mine }) {
           {e}
         </span>
       ))}
+      <div style={{ width: 1, height: 16, background: t["--border"], margin: "0 2px" }} />
+      <span
+        onClick={onPin}
+        title="Pin Message"
+        style={{ cursor: "pointer", fontSize: 13, transition: "transform 0.15s", display: "inline-block", filter: "grayscale(100%)", opacity: 0.7 }}
+        onMouseEnter={el => { el.currentTarget.style.transform = "scale(1.2)"; el.currentTarget.style.filter = "none"; el.currentTarget.style.opacity = 1; }}
+        onMouseLeave={el => { el.currentTarget.style.transform = "scale(1)"; el.currentTarget.style.filter = "grayscale(100%)"; el.currentTarget.style.opacity = 0.7; }}
+      >
+        📌
+      </span>
     </div>
   );
 }
@@ -135,11 +164,15 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
   avatarAnimal,   // 'dog'|'cat'|'bunny'
   avatarState,    // useAvatarState .state
   onReact,        // (msgId, emoji) => void
+  onPin,          // (msg) => void
 }) {
   const [hov, setHov] = useState(false);
   const mine = !!msg.out;
   const isCyber  = t.id === "cyberpunk" || t.id === "gamer";
   const isPastel = t.id === "pastel";
+
+  // Inject styles on mount
+  useState(() => { injectMsgStyle(); });
 
   const handleReact = useCallback((emoji) => {
     onReact?.(msg.id, emoji);
@@ -162,6 +195,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
 
   return (
     <div
+      id={`msg-${msg.id || msg._id}`}
       style={{
         display: "flex", alignItems: "flex-end",
         gap: 8, flexDirection: mine ? "row-reverse" : "row",
@@ -190,11 +224,33 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
       }}>
         {/* Sender name for received */}
         {!mine && (
-          <div style={{
-            fontSize: 11, color: t["--text2"], marginLeft: 14,
+          <>
+            <div className="msg-mobile-time-outside" style={{
+              fontSize: 11, color: t["--text2"], marginLeft: 14,
+              fontFamily: t.font, fontWeight: 600, letterSpacing: "0.04em",
+              display: "flex", alignItems: "center", gap: 4
+            }}>
+              <span>{msg.from}</span>
+              <span style={{ fontSize: 14, opacity: 0.5 }}>•</span>
+              <span>{msg.time}</span>
+            </div>
+            <div className="msg-mobile-time-inside" style={{
+              fontSize: 11, color: t["--text2"], marginLeft: 14,
+              fontFamily: t.font, fontWeight: 600, letterSpacing: "0.04em",
+            }}>
+              {msg.from}
+            </div>
+          </>
+        )}
+
+        {/* Sender time for sent (mobile only) */}
+        {mine && (
+          <div className="msg-mobile-time-outside" style={{
+            fontSize: 11, color: t["--text2"], marginRight: 14,
             fontFamily: t.font, fontWeight: 600, letterSpacing: "0.04em",
+            alignSelf: "flex-end"
           }}>
-            {msg.from}
+            {msg.time}
           </div>
         )}
 
@@ -204,7 +260,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
         >
-          {hov && <QuickReactBar t={t} onReact={handleReact} mine={mine} />}
+          {hov && <QuickReactBar t={t} onReact={handleReact} onPin={() => onPin?.(msg)} mine={mine} />}
 
           <div
             style={{
@@ -242,7 +298,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
             )}
 
             {/* Time + status */}
-            <div style={{
+            <div className="msg-mobile-time-inside" style={{
               display: "flex", justifyContent: "flex-end", alignItems: "center",
               gap: 5, marginTop: 2, opacity: 0.65,
             }}>

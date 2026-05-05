@@ -226,6 +226,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const [searchQ, setSearchQ]           = useState("");
   const [toast, setToast]               = useState(null);
   const [pinnedVisible, setPinnedVisible] = useState(true);
+  const [pinnedMsgData, setPinnedMsgData] = useState(null);
   const [localNexusGroup, setLocalNexusGroup] = useState(null); // for InfoPanel edits
 
   const endRef   = useRef(null);
@@ -289,28 +290,22 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
     const container = endRef.current?.parentElement;
     if (!container) return;
     
-    // Threshold: if within 150px of bottom, auto-scroll to new messages
-    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
-    
-    // Always scroll if it's our own message
-    const rawMsgs = isNexus ? nexusMessages : messages;
-    const lastMsg = rawMsgs[rawMsgs.length - 1];
-    const senderId = normalizeId(lastMsg?.senderId);
-    const myId = normalizeId(authUser);
-    const isMe = lastMsg?.out || (senderId && myId && senderId === myId);
-
-    if (isNearBottom || isMe) {
-      endRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
-    }
-  }, [nexusMessages, messages, nexusTypingUsers, selectedUser?.isTyping, authUser?._id, isNexus]);
+    // Always scroll to bottom when messages or typing status changes
+    // This ensures we always see the latest content as requested.
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [nexusMessages?.length, messages?.length, nexusTypingUsers, selectedUser?.isTyping, authUser?._id, isNexus]);
 
   // ── Force scroll to bottom on chat switch ──
   useEffect(() => {
-    // Small delay to allow DOM to render messages before scrolling
-    const timer = setTimeout(() => {
+    // Force immediate scroll to bottom when switching chats
+    const forceScroll = () => {
       endRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
-    }, 100);
-    return () => clearTimeout(timer);
+    };
+    forceScroll();
+    // Also try after a short delay for cases where content is still rendering
+    const timer = setTimeout(forceScroll, 50);
+    const timer2 = setTimeout(forceScroll, 250);
+    return () => { clearTimeout(timer); clearTimeout(timer2); };
   }, [isNexus, activeNexus?.id, activeNexus?._id, selectedUser?.id, selectedUser?._id]);
 
   // ── Wire peer avatar to incoming messages ─────────────────────────────────
@@ -558,19 +553,29 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
       {/* ── PINNED BANNER (Nexus description / pinned msg) ── */}
       {pinnedVisible && (
-        <div style={{ background: t.tag, borderBottom: `1px solid ${t.border}`, padding: "7px 20px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <div 
+          style={{ background: t.tag, borderBottom: `1px solid ${t.border}`, padding: "7px 20px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, cursor: pinnedMsgData ? "pointer" : "default" }}
+          onClick={() => {
+            if (pinnedMsgData) {
+              const el = document.getElementById(`msg-${pinnedMsgData.id || pinnedMsgData._id}`);
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+          }}
+        >
           <Ico d={I.pin} size={14} stroke={t.acc} />
           <div style={{ flex: 1, overflow: "hidden" }}>
             <div style={{ color: t.txt2, fontSize: 10, fontFamily: t.font, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 1 }}>
-              {isNexus ? "Pinned" : "Encrypted · End-to-End"}
+              {pinnedMsgData ? "Pinned Message" : (isNexus ? "Pinned" : "Encrypted · End-to-End")}
             </div>
             <div style={{ color: t.txt, fontSize: 12, fontFamily: t.font, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: .9 }}>
-              {isNexus
-                ? (localNexusGroup?.pinnedMsg || selectedNexus?.description || "No pinned message")
-                : "Messages are secured with end-to-end encryption."}
+              {pinnedMsgData 
+                ? pinnedMsgData.text 
+                : (isNexus
+                  ? (localNexusGroup?.pinnedMsg || selectedNexus?.description || "No pinned message")
+                  : "Messages are secured with end-to-end encryption.")}
             </div>
           </div>
-          <button onClick={() => setPinnedVisible(false)} style={{ background: "none", border: "none", color: t.txt2, cursor: "pointer", display: "flex" }}>
+          <button onClick={(e) => { e.stopPropagation(); setPinnedVisible(false); }} style={{ background: "none", border: "none", color: t.txt2, cursor: "pointer", display: "flex", padding: 4 }}>
             <Ico d={I.x} size={14} stroke={t.txt2} />
           </button>
         </div>
@@ -682,6 +687,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
                 avatarAnimal={rowAvatarType}
                 avatarState={rowAvatarState}
                 onReact={handleReact}
+                onPin={(msg) => { setPinnedMsgData(msg); setPinnedVisible(true); addToast("Message pinned to top"); }}
               />
             </MsgErrorBoundary>
           );

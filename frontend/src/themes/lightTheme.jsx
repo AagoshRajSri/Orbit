@@ -4,7 +4,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Globe, Settings, User, LogOut, Music, Bell, Shield, Layers, 
   Coffee, Play, SkipForward, SkipBack, MessageCircle, Maximize2, 
-  Compass, CheckCircle2, ArrowLeft, Gamepad2, Lock
+  Compass, CheckCircle2, ArrowLeft, Gamepad2, Lock,
+  Target, Users, SlidersHorizontal, UserCircle, ChevronRight,
+  Edit, Calendar, BadgeCheck, Palette, Waves, Pin
 } from "lucide-react";
 
 import { spotifyService } from "../services/spotifyService";
@@ -97,14 +99,23 @@ const CSS = `
 .luxury-scroll::-webkit-scrollbar-thumb { background: ${LUXURY_COLORS.goldMedium}; border-radius: 0; opacity: 0.5; }
 .luxury-scroll::-webkit-scrollbar-thumb:hover { background: ${LUXURY_COLORS.goldDark}; }
 
+.menu-item-hover:hover { background: ${LUXURY_COLORS.surfaceHover} !important; transform: translateX(4px); }
+.menu-item-hover-danger:hover { background: #FFF5F5 !important; transform: translateX(4px); }
+
+@keyframes popupFade {
+  from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+
 .luxury-card {
   background: ${LUXURY_COLORS.surface};
   border: 1px solid ${LUXURY_COLORS.borderSubtle};
   border-radius: 20px;
   box-shadow: ${LUXURY_COLORS.shadowSoft};
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
+  /* overflow: hidden; -- Removed to allow menus to float outside */
 }
 
 .luxury-card:hover {
@@ -264,8 +275,8 @@ const CSS = `
   .sidebar-container {
     width: 100% !important;
     border-right: none !important;
-    border-bottom: 1px solid ${LUXURY_COLORS.borderSubtle};
-    flex: none !important;
+    border-bottom: none !important;
+    flex: 1 !important;
   }
   .sidebar-container.chat-active {
     display: none !important;
@@ -276,6 +287,187 @@ const CSS = `
   .luxury-nav span {
     font-size: 18px !important;
   }
+}
+
+/* ══════════ MOBILE LIGHT THEME ══════════ */
+@media (min-width: 769px) {
+  .lm-mobile-only { display: none !important; }
+}
+@media (max-width: 768px) {
+  .lm-desktop-only { display: none !important; }
+  .luxury-nav { display: none !important; }
+  .luxury-root { overflow: unset; }
+}
+
+.lm-mobile-canvas {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: #EDE8DF;
+  font-family: 'Inter', 'Outfit', sans-serif;
+  position: relative;
+}
+
+.lm-mobile-nav {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: #EDE8DF;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.lm-mobile-nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1C1C1C;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.lm-mobile-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 88px;
+  -webkit-overflow-scrolling: touch;
+}
+.lm-mobile-scroll::-webkit-scrollbar { display: none; }
+
+.lm-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  background: #FFFFFF;
+  border-top: 1px solid #EAE4D8;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 4px;
+  z-index: 999;
+}
+
+.lm-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  padding: 6px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6B6560;
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.lm-tab.active { color: #1C1C1C; }
+
+.lm-tab-active-pill {
+  background: #B8924A;
+  border-radius: 14px;
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: #FFFFFF;
+}
+
+.lm-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid #EAE4D8;
+  box-shadow: 0 2px 12px rgba(140,120,90,0.06);
+  overflow: hidden;
+  position: relative;
+}
+
+.lm-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #F0ECE4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lm-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #8A8480;
+  margin-bottom: 10px;
+}
+
+.lm-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #E8E3D8;
+  background: #F8F5EE;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  color: #1C1C1C;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.lm-input:focus { border-color: #C9A87C; background: #FFFFFF; }
+
+.lm-textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #E8E3D8;
+  background: #F8F5EE;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  color: #1C1C1C;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+  line-height: 1.5;
+  transition: border-color 0.2s;
+}
+.lm-textarea:focus { border-color: #C9A87C; background: #FFFFFF; }
+
+.lm-toggle {
+  width: 50px;
+  height: 28px;
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+.lm-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: left 0.3s;
 }
 `;
 
@@ -419,19 +611,79 @@ const LuxuryWrapper = memo(({ children, hiddenNexuses, onReveal, handleLogout })
   return (
     <div className="luxury-root" ref={rootRef}>
       <style>{CSS}</style>
-      <TopNav 
-        handleLogout={onLogout} 
-        hiddenNexuses={hiddenNexuses}
-        onReveal={onReveal}
-      />
+      <div className="lm-desktop-only">
+        <TopNav 
+          handleLogout={onLogout} 
+          hiddenNexuses={hiddenNexuses}
+          onReveal={onReveal}
+        />
+      </div>
       {children}
     </div>
   );
 });
 
-const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, selectedUser, setSelectedUser, setNexusActionView, toggleHide, hiddenNexuses }) => {
+const MobileNav = memo(({ title, showBack, onBack, rightIcon, leftIcon, leftLabel }) => {
+  return (
+    <div className="lm-mobile-nav lm-mobile-only">
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+        {showBack && (
+          <button onClick={onBack} style={{ background: 'none', border: 'none', padding: '8px 0', display: 'flex', alignItems: 'center', gap: 6, color: '#1C1C1C', cursor: 'pointer', fontFamily: 'Inter', fontSize: 14 }}>
+            <ArrowLeft size={20} strokeWidth={1.5} />
+            {leftLabel && <span style={{ fontWeight: 400 }}>{leftLabel}</span>}
+          </button>
+        )}
+        {!showBack && leftIcon && leftIcon}
+      </div>
+      <div className="lm-mobile-nav-center">{title}</div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+        {rightIcon}
+      </div>
+    </div>
+  );
+});
+
+const MobileTabBar = memo(({ activeTab }) => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('orbits');
+  return (
+    <div className="lm-tab-bar lm-mobile-only">
+      <button className={`lm-tab ${activeTab === 'home' || activeTab === 'orbits' ? 'active' : ''}`} onClick={() => navigate('/?tab=home')}>
+        <div className={activeTab === 'home' || activeTab === 'orbits' ? 'lm-tab-active-pill' : ''}>
+          <Compass size={activeTab === 'home' || activeTab === 'orbits' ? 18 : 22} strokeWidth={activeTab === 'home' || activeTab === 'orbits' ? 2.5 : 1.5} />
+          {(activeTab === 'home' || activeTab === 'orbits') && <span>Orbits</span>}
+        </div>
+        {(activeTab !== 'home' && activeTab !== 'orbits') && <span style={{ marginTop: 4 }}>Orbits</span>}
+      </button>
+      <button className={`lm-tab ${activeTab === 'contacts' ? 'active' : ''}`} onClick={() => navigate('/?tab=contacts')}>
+        <div className={activeTab === 'contacts' ? 'lm-tab-active-pill' : ''}>
+          <Users size={activeTab === 'contacts' ? 18 : 22} strokeWidth={activeTab === 'contacts' ? 2.5 : 1.5} />
+          {activeTab === 'contacts' && <span>Contacts</span>}
+        </div>
+        {activeTab !== 'contacts' && <span style={{ marginTop: 4 }}>Contacts</span>}
+      </button>
+      <button className={`lm-tab ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => navigate('/settings')}>
+        <div className={activeTab === 'settings' ? 'lm-tab-active-pill' : ''}>
+          <SlidersHorizontal size={activeTab === 'settings' ? 18 : 22} strokeWidth={activeTab === 'settings' ? 2.5 : 1.5} />
+          {activeTab === 'settings' && <span>Settings</span>}
+        </div>
+        {activeTab !== 'settings' && <span style={{ marginTop: 4 }}>Settings</span>}
+      </button>
+      <button className={`lm-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => navigate('/profile')}>
+        <div className={activeTab === 'profile' ? 'lm-tab-active-pill' : ''}>
+          <UserCircle size={activeTab === 'profile' ? 18 : 22} strokeWidth={activeTab === 'profile' ? 2.5 : 1.5} />
+          {activeTab === 'profile' && <span>Profile</span>}
+        </div>
+        {activeTab !== 'profile' && <span style={{ marginTop: 4 }}>Profile</span>}
+      </button>
+    </div>
+  );
+});
+
+const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, selectedUser, setSelectedUser, setNexusActionView, toggleHide, hiddenNexuses, forcedTab }) => {
+  const navigate = useNavigate();
+  const [internalTab, setInternalTab] = useState('orbits');
+  const tab = forcedTab || internalTab;
+  const setTab = forcedTab ? (t) => navigate(`/?tab=${t}`) : setInternalTab;
 
   const [pinnedNexuses, setPinnedNexuses] = useState(() => {
     return JSON.parse(localStorage.getItem('luxury_pinned_nexuses') || '[]');
@@ -582,86 +834,126 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
                         setActiveMenuId(activeMenuId === nexus._id ? null : nexus._id);
                         setActiveColorPickerId(null);
                       }}
-                      style={{ position: 'absolute', right: 12, top: 24, transform: "translateY(-50%)", cursor: 'pointer', fontSize: 18, zIndex: 5, padding: 4, opacity: 0.8, transition: 'opacity 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                      onMouseLeave={e => e.currentTarget.style.opacity = 0.8}
+                      style={{ 
+                        position: 'absolute', 
+                        right: 8, 
+                        top: 24, 
+                        transform: "translateY(-50%)", 
+                        cursor: 'pointer', 
+                        zIndex: 10, 
+                        padding: 6, 
+                        opacity: activeMenuId === nexus._id ? 1 : 0.3, 
+                        transition: 'all 0.3s ease',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: activeMenuId === nexus._id ? LUXURY_COLORS.surfaceHover : 'transparent'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.opacity = 1;
+                        e.currentTarget.style.background = LUXURY_COLORS.surfaceHover;
+                      }}
+                      onMouseLeave={e => {
+                        if (activeMenuId !== nexus._id) {
+                          e.currentTarget.style.opacity = 0.3;
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      ⚜️
+                      <span style={{ fontSize: 16 }}>⚜️</span>
                     </div>
                   </div>
 
-                  {/* Context Menu Inline Expansion */}
+                  {/* Context Menu - Floating Aesthetic Pop-up */}
                   {activeMenuId === nexus._id && (
                     <div 
                       onClick={(e) => e.stopPropagation()}
+                      className="nexus-popup-menu"
                       style={{
-                        width: '100%', marginTop: 12, paddingTop: 12, borderTop: `1px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 10
+                        position: 'absolute',
+                        top: 40,
+                        right: 0,
+                        width: 220,
+                        background: 'white',
+                        border: `1px solid ${LUXURY_COLORS.borderSubtle}`,
+                        borderRadius: 16,
+                        boxShadow: '0 15px 35px rgba(0,0,0,0.12), 0 5px 15px rgba(0,0,0,0.05)',
+                        padding: 8,
+                        zIndex: 1000,
+                        marginTop: 4,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 4,
+                        animation: 'popupFade .25s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                        transformOrigin: 'top right'
                       }}
                     >
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ padding: '8px 12px', fontSize: 10, fontWeight: 800, color: LUXURY_COLORS.goldDark, letterSpacing: 1.5, opacity: 0.6 }}>MANAGEMENT</div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveColorPickerId(activeColorPickerId === nexus._id ? null : nexus._id);
                           }}
-                          style={{ flex: 1, padding: '8px 12px', background: LUXURY_COLORS.surfaceHover, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color: LUXURY_COLORS.textPrimary, cursor: 'pointer', transition: 'all 0.2s' }}
-                          onMouseEnter={e => e.currentTarget.style.borderColor = LUXURY_COLORS.goldMedium}
-                          onMouseLeave={e => e.currentTarget.style.borderColor = LUXURY_COLORS.borderSubtle}
+                          style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, color: LUXURY_COLORS.textPrimary, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s' }}
+                          className="menu-item-hover"
                         >
-                          Mark 🎨
+                          <Palette size={16} color={LUXURY_COLORS.goldMedium} />
+                          Signature Color
                         </button>
+                        
                         <button 
                           onClick={(e) => togglePin(nexus._id, e)}
-                          style={{ flex: 1, padding: '8px 12px', background: LUXURY_COLORS.surfaceHover, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color: LUXURY_COLORS.textPrimary, cursor: 'pointer', transition: 'all 0.2s' }}
-                          onMouseEnter={e => e.currentTarget.style.borderColor = LUXURY_COLORS.goldMedium}
-                          onMouseLeave={e => e.currentTarget.style.borderColor = LUXURY_COLORS.borderSubtle}
+                          style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, color: LUXURY_COLORS.textPrimary, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s' }}
+                          className="menu-item-hover"
                         >
-                          {pinnedNexuses.includes(nexus._id) ? "Unpin 📌" : "Pin 📌"}
+                          <Pin size={16} color={LUXURY_COLORS.goldMedium} />
+                          {pinnedNexuses.includes(nexus._id) ? "Detach Pin" : "Pin to Top"}
                         </button>
+
+                        <div style={{ height: 1, background: LUXURY_COLORS.borderSubtle, margin: '4px 0' }} />
+
                         <button 
                           onClick={(e) => toggleHide(nexus, e)}
-                          style={{ flex: 1, padding: '8px 12px', background: LUXURY_COLORS.accentPink, border: `1px solid ${LUXURY_COLORS.goldLight}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#7A4242', cursor: 'pointer', transition: 'all 0.2s' }}
+                          style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#D06060', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s' }}
+                          className="menu-item-hover-danger"
                         >
-                          Hide 🌐
+                          <Globe size={16} color="#D06060" />
+                          Hide from Sidebar
                         </button>
                       </div>
 
                       {activeColorPickerId === nexus._id && (
                         <div style={{ 
                           display: 'flex', 
-                          gap: 10, 
+                          flexWrap: 'wrap',
+                          gap: 8, 
                           padding: '12px', 
-                          background: LUXURY_COLORS.surfaceHover, 
-                          borderRadius: 8, 
-                          border: `1px solid ${LUXURY_COLORS.goldLight}`,
-                          overflowX: 'auto',
-                          width: '100%',
-                          scrollbarWidth: 'none'
-                        }} className="luxury-scroll">
+                          background: 'rgba(0,0,0,0.03)', 
+                          borderRadius: 12, 
+                          marginTop: 8,
+                          width: '100%'
+                        }}>
                           {[
-                            "#FFFFFF", // White
-                            "#F5F5F5", // Smoke
-                            "#FFF9E6", "#FFF3E0", "#FFEBE0", "#FFE0E0", "#FFEBEE", // Reds/Oranges
-                            "#FCE4EC", "#F8BBD0", "#F3E5F5", "#EDE7F6", "#E8EAF6", // Pinks/Purples
-                            "#E3F2FD", "#E1F5FE", "#E0F7FA", "#E0F2F1", "#E8F5E9", // Blues/Teals
-                            "#F1F8E9", "#F9FBE7", "#FFFDE7", "#FFF9C4", "#FFF59D", // Greens/Yellows
-                            "#D7CCC8", "#F5F5DC", "#EFEBE9", "#FAFAFA", "#ECEFF1"  // Neutrals
+                            "#FFFFFF", "#F5F5F5", "#FFF9E6", "#FFF3E0", "#FFEBE0", "#FFE0E0", 
+                            "#FCE4EC", "#F3E5F5", "#E3F2FD", "#E0F2F1", "#F1F8E9", "#F5F5DC"
                           ].map(c => (
                             <div 
                               key={c}
                               onClick={(e) => updateColor(nexus._id, c, e)}
                               style={{ 
-                                minWidth: 26, 
-                                height: 26, 
+                                width: 22, 
+                                height: 22, 
                                 borderRadius: '50%', 
                                 background: c, 
                                 border: `1px solid ${LUXURY_COLORS.borderSubtle}`, 
                                 cursor: 'pointer', 
-                                transition: 'transform 0.1s', 
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                flexShrink: 0
+                                transition: 'all 0.2s',
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
                               }}
-                              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
                               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                             />
                           ))}
@@ -758,10 +1050,13 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
 export default function LightTheme({ children }) {
    const { nexusActionView, setNexusActionView, selectedNexus, setSelectedNexus, selectedNexusId, nexuses } = useNexusStore();
    const { selectedUser, setSelectedUser, users } = useChatStore();
-   const { logout } = useAuthStore();
+   const { authUser, logout } = useAuthStore();
    const { spotifyLinked, currentTrack } = useSpotifyStore();
    const nexusSelected = Boolean(selectedNexus || selectedNexusId);
    const navigate = useNavigate();
+   const location = useLocation();
+   const queryParams = new URLSearchParams(location.search);
+   const currentTab = queryParams.get('tab') || 'home';
 
    // ── Hidden Nexus State ──
    const [hiddenNexuses, setHiddenNexuses] = useState(() => {
@@ -800,7 +1095,107 @@ export default function LightTheme({ children }) {
         hiddenNexuses={hiddenNexuses}
         onReveal={onReveal}
      >
-       <div className={`board-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`}>
+       {/* MOBILE DASHBOARD */}
+       <div className="lm-mobile-canvas lm-mobile-only">
+         {(nexusSelected || selectedUser || children || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/')) ? (
+           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: 'white' }}>
+             {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
+           </div>
+         ) : (
+            <>
+              <MobileNav 
+                title="Orbit" 
+                leftIcon={
+                  <div onClick={() => navigate("/profile")} style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "1px solid #EAE4D8", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", cursor: "pointer" }}>
+                    <img src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                }
+                rightIcon={
+                  <div onClick={() => navigate("/settings")} style={{ cursor: "pointer", color: "#1C1C1C", padding: 4 }}>
+                    <Settings size={22} strokeWidth={1.5} />
+                  </div>
+                }
+              />
+              <div className="lm-mobile-scroll" style={{ display: "flex", flexDirection: "column" }}>
+                {currentTab === "home" ? (
+                  <>
+                    <div style={{ marginBottom: 24 }}>
+                      <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#1C1C1C", marginBottom: 4 }}>Welcome to Orbit</h1>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B6560" }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E" }} />
+                        Online
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                      <div className="lm-card" style={{ padding: 24 }} onClick={() => {
+                          if (spotifyLinked) navigate("/spotify");
+                          else spotifyService.initiateLogin().catch(e => console.error(e));
+                        }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                          <div className="lm-icon-box" style={{ background: "#EAF5EC", color: "#10B981" }}>
+                            <Music size={20} />
+                          </div>
+                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#F97316", background: "#FFF3ED", padding: "4px 8px", borderRadius: 12 }}>ACTION REQUIRED</div>
+                        </div>
+                        <div style={{ fontSize: 24, fontFamily: "'Playfair Display', serif", color: "#1C1C1C", marginBottom: 8 }}>Connect Spotify</div>
+                        <div style={{ fontSize: 14, color: "#6B6560", marginBottom: 20, lineHeight: 1.4 }}>Link your account to sync your spatial audio environment.</div>
+                        <button style={{ background: "#10B981", color: "white", padding: "10px 24px", borderRadius: 20, border: "none", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Authorize</button>
+                      </div>
+
+                      <div className="lm-card" style={{ padding: 24, background: "linear-gradient(135deg, #2D2A26, #1C1A18)", color: "white", position: "relative", overflow: "hidden" }} onClick={() => setNexusActionView("join")}>
+                        <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, background: "radial-gradient(circle, rgba(184,146,74,0.15) 0%, rgba(0,0,0,0) 70%)", borderRadius: "50%" }} />
+                        <div style={{ position: "relative", zIndex: 1, marginBottom: 12 }}>
+                          <div style={{ fontSize: 28, fontFamily: "'Playfair Display', serif", color: "white", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>Join Nexus</div>
+                        </div>
+                        <div style={{ position: "relative", zIndex: 1, fontSize: 14, marginBottom: 24, color: "#A39D96", lineHeight: 1.5 }}>Discover global orbits and connect with new nodes in the network.</div>
+                        <button style={{ position: "relative", zIndex: 1, padding: "12px 24px", background: "#C9A87C", color: "#1C1C1C", border: "none", borderRadius: 12, fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Explore Nexus</button>
+                      </div>
+
+                      <div style={{ display: "flex", gap: 16 }}>
+                        <div className="lm-card" style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                          <div className="lm-icon-box" style={{ background: "#EAE5DB", color: "#91795E", marginBottom: 12 }}><Lock size={20} /></div>
+                          <div style={{ fontSize: 13, color: "#6B6560" }}>Orbit Games</div>
+                        </div>
+                        <div className="lm-card" style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                          <div className="lm-icon-box" style={{ background: "#F5DEB3", color: "#B8860B", marginBottom: 12 }}><Bell size={20} /></div>
+                          <div style={{ fontSize: 13, color: "#1C1C1C" }}>Notifications</div>
+                        </div>
+                      </div>
+
+                      <div className="lm-card" style={{ padding: 20, display: "flex", alignItems: "center", gap: 16 }} onClick={() => navigate("/settings")}>
+                        <div className="lm-icon-box" style={{ background: "#EAE5DB", color: "#1C1C1C" }}><Settings size={20} /></div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14, color: "#1C1C1C", marginBottom: 4 }}>Customize Environment</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: "#6B6560" }}>THEMES & LAYOUTS</div>
+                        </div>
+                        <ChevronRight size={20} color="#8A8480" />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#FDFCFB", borderRadius: 24, overflow: "hidden", border: `1px solid ${LUXURY_COLORS.borderSubtle}`, marginBottom: 16 }}>
+                    <LuxurySidebar 
+                      nexuses={nexuses} 
+                      selectedNexus={selectedNexus} 
+                      setSelectedNexus={setSelectedNexus} 
+                      users={users} 
+                      selectedUser={selectedUser} 
+                      setSelectedUser={setSelectedUser} 
+                      setNexusActionView={setNexusActionView} 
+                      toggleHide={toggleHide} 
+                      hiddenNexuses={hiddenNexuses} 
+                      forcedTab={currentTab} 
+                    />
+                  </div>
+                )}
+              </div>
+              <MobileTabBar activeTab={currentTab} />
+             </>
+           )}
+        </div>
+       {/* DESKTOP DASHBOARD */}
+       <div className={`lm-desktop-only board-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`}>
           <LuxurySidebar 
             nexuses={nexuses} 
             selectedNexus={selectedNexus} 
@@ -950,10 +1345,10 @@ export default function LightTheme({ children }) {
               </div>
             </div>
             )}
-          </div>
         </div>
-      </LuxuryWrapper>
-   );
+      </div>
+    </LuxuryWrapper>
+  );
 }
 
 export function LightSpotify() {
@@ -1033,7 +1428,55 @@ export function LightProfile() {
 
   return (
     <LuxuryWrapper>
-      <div className="board-container" style={{ padding: 60, display: 'flex', gap: 60, overflowY: 'auto', position: 'relative' }}>
+      {/* MOBILE PROFILE */}
+      <div className="lm-mobile-canvas lm-mobile-only">
+        <MobileNav 
+          title="Orbit" 
+          showBack={true} 
+          onBack={() => navigate('/')} 
+          leftLabel="Dashboard" 
+          rightIcon={
+            <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', border: '1px solid #EAE4D8', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+              <img src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          }
+        />
+        <div className="lm-mobile-scroll" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
+          <div style={{ position: 'relative', marginBottom: 24 }}>
+            <div style={{ width: 140, height: 140, borderRadius: '50%', background: 'white', border: '8px solid rgba(255,255,255,0.6)', padding: 4, boxShadow: '0 8px 32px rgba(140,120,90,0.1)' }}>
+              <img src={authUser?.profilePic || "/avatar.png"} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            </div>
+            <div style={{ position: 'absolute', bottom: 4, right: 4, width: 36, height: 36, borderRadius: '50%', background: '#C4A478', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 12px rgba(196,164,120,0.4)', border: '2px solid white' }}>
+               <Edit size={16} />
+            </div>
+          </div>
+          
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 700, color: '#1C1C1C', marginBottom: 8, letterSpacing: '-0.5px' }}>{authUser?.username || "Guest"}</h1>
+          <p style={{ fontSize: 15, color: '#6B6560', marginBottom: 32, fontStyle: 'italic' }}>{authUser?.bio || "No biography provided. Awaiting signature."}</p>
+
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="lm-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div className="lm-icon-box"><Calendar size={20} color="#91795E" /></div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: '#1C1C1C', marginBottom: 4 }}>MEMBER SINCE</div>
+                <div style={{ fontSize: 14, color: '#1C1C1C' }}>{new Date(authUser?.createdAt || Date.now()).toLocaleDateString()}</div>
+              </div>
+            </div>
+            <div className="lm-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div className="lm-icon-box" style={{ background: '#FCEBCF' }}><BadgeCheck size={20} color="#1C1C1C" /></div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: '#1C1C1C', marginBottom: 4 }}>STATUS</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#1C1C1C' }}>
+                  Verified Prime <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#C4A478' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <MobileTabBar activeTab="profile" />
+      </div>
+
+      <div className="lm-desktop-only board-container" style={{ padding: 60, display: 'flex', gap: 60, overflowY: 'auto', position: 'relative' }}>
          <button 
            onClick={() => navigate('/')} 
            style={{ position: 'absolute', top: 32, left: 32, padding: '8px 16px', borderRadius: '12px', background: LUXURY_COLORS.surfaceHover, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: LUXURY_COLORS.textSecondary }}
@@ -1093,7 +1536,140 @@ export function LightSettings({
 
   return (
     <LuxuryWrapper>
-      <div className="board-container" style={{ display: 'flex' }}>
+      {/* MOBILE SETTINGS */}
+      <div className="lm-mobile-canvas lm-mobile-only">
+        <MobileNav 
+          title="Orbit" 
+          showBack={true} 
+          onBack={() => navigate('/')} 
+          rightIcon={
+            <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', border: '1px solid #EAE4D8', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+              <img src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          }
+        />
+        <div className="lm-mobile-scroll" style={{ padding: '24px 16px' }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: '#1C1C1C', marginBottom: 24 }}>Preferences</h1>
+          
+          <div className="lm-card" style={{ padding: '8px 16px', marginBottom: 32 }}>
+            {sections.map((s, idx) => (
+              <div 
+                key={s.id} 
+                onClick={() => setActiveSection(s.id)}
+                style={{ 
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                  padding: '16px 0', 
+                  borderBottom: idx < sections.length - 1 ? '1px solid #EAE4D8' : 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ fontSize: 15, fontWeight: activeSection === s.id ? 700 : 500, color: activeSection === s.id ? '#1C1C1C' : '#6B6560' }}>{s.label}</div>
+                <ChevronRight size={18} color={activeSection === s.id ? '#1C1C1C' : '#8A8480'} />
+              </div>
+            ))}
+          </div>
+
+          <div className="lm-card" style={{ padding: 20 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1C1C1C', marginBottom: 20 }}>Configure {sections.find(s => s.id === activeSection)?.label}</h2>
+            
+            {activeSection === "profile" && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div>
+                  <div className="lm-label">DISPLAY ALIAS</div>
+                  <input className="lm-input" value={draftDisplayName} onChange={e => setDraftDisplayName(e.target.value)} placeholder="Your display name" />
+                </div>
+                <div>
+                  <div className="lm-label">BIOGRAPHY</div>
+                  <textarea className="lm-textarea" value={draftBio} onChange={e => setDraftBio(e.target.value)} placeholder="A few words about yourself..." rows={4} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: '#1C1C1C', marginBottom: 4 }}>Broadcast Presence</div>
+                    <div style={{ fontSize: 13, color: '#6B6560' }}>Allow others to see when you are online.</div>
+                  </div>
+                  <div className="lm-toggle" style={{ background: draftShowOnlineStatus ? '#B8924A' : '#E0E0E0' }} onClick={() => setDraftShowOnlineStatus(!draftShowOnlineStatus)}>
+                    <div className="lm-toggle-thumb" style={{ left: draftShowOnlineStatus ? 25 : 3 }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {activeSection === "sound" && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                 <div>
+                   <div className="lm-label">MASTER VOLUME</div>
+                   <input type="range" min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={e => { const v = parseFloat(e.target.value); setDraftSoundSettings(p => ({...p, volume: v})); try { useSettingsStore.getState().updateSetting('sound.volume', v); } catch (_) {} }} style={{ width: '100%', accentColor: '#B8924A' }} />
+                 </div>
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: '#1C1C1C', marginBottom: 4 }}>Haptic Sounds</div>
+                    <div style={{ fontSize: 13, color: '#6B6560' }}>Play acoustic feedback on interaction.</div>
+                  </div>
+                  <div className="lm-toggle" style={{ background: draftSoundSettings.clickSound ? '#B8924A' : '#E0E0E0' }} onClick={() => { const v = !draftSoundSettings.clickSound; setDraftSoundSettings(p => ({...p, clickSound: v})); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) {} }}>
+                    <div className="lm-toggle-thumb" style={{ left: draftSoundSettings.clickSound ? 25 : 3 }} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: '#1C1C1C', marginBottom: 4 }}>Message Alerts</div>
+                    <div style={{ fontSize: 13, color: '#6B6560' }}>Play a chime on receiving transmissions.</div>
+                  </div>
+                  <div className="lm-toggle" style={{ background: draftSoundSettings.messageSound ? '#B8924A' : '#E0E0E0' }} onClick={() => { const v = !draftSoundSettings.messageSound; setDraftSoundSettings(p => ({...p, messageSound: v})); try { useSettingsStore.getState().updateSetting('sound.notificationEnabled', v); } catch (_) {} }}>
+                    <div className="lm-toggle-thumb" style={{ left: draftSoundSettings.messageSound ? 25 : 3 }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "appearance" && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {THEMES.map(t => {
+                   const THEME_PREVIEW = {
+                     "light":              { primary: "#3b82f6", bg: "#ffffff" },
+                     "dark":               { primary: "#ef4444", bg: "#0a0a0a" },
+                     "neon-cyberpunk":     { primary: "#8b5cf6", bg: "#0c0e14" },
+                     "amoled-dark":        { primary: "#E8C990", bg: "#000000" },
+                     "gamer-high-energy":  { primary: "#ff2d78", bg: "#080614" },
+                     "pastel-dream":       { primary: "#e060b0", bg: "#ffd4ee" },
+                   };
+                   const preview = THEME_PREVIEW[t] || { primary: "#CFAE84", bg: "#F7F5F0" };
+                   return (
+                     <div key={t} onClick={() => setDraftTheme(t)} style={{ padding: 12, borderRadius: 12, border: `2px solid ${draftTheme === t ? '#B8924A' : '#EAE4D8'}`, background: 'white', textAlign: 'center', cursor: 'pointer' }}>
+                        <div style={{ width: '100%', height: 40, background: preview.bg, borderRadius: 6, marginBottom: 8, display: 'flex', overflow: 'hidden', border: '1px solid #EAE4D8' }}>
+                           <div style={{ flex: 1, background: preview.primary }} />
+                           <div style={{ flex: 2, background: preview.bg }} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#1C1C1C' }}>{THEME_LABELS[t] || t.toUpperCase()}</span>
+                     </div>
+                   );
+                })}
+              </div>
+            )}
+
+            {activeSection === "notifications" && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#1C1C1C', marginBottom: 4 }}>Enable Alerts</div>
+                  <div style={{ fontSize: 13, color: '#6B6560' }}>Receive desktop notifications for messages.</div>
+                </div>
+                <div className="lm-toggle" style={{ background: draftNotifications.enabled ? '#B8924A' : '#E0E0E0' }} onClick={() => { const v = !draftNotifications.enabled; setDraftNotifications(p => ({...p, enabled: v, desktop: v})); try { useSettingsStore.getState().updateSetting('notifications.enabled', v); } catch (_) {} }}>
+                  <div className="lm-toggle-thumb" style={{ left: draftNotifications.enabled ? 25 : 3 }} />
+                </div>
+              </div>
+            )}
+
+            {isDirty && (
+              <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
+                <button onClick={handleReset} style={{ flex: 1, padding: 14, borderRadius: 12, border: '1px solid #EAE4D8', background: '#F8F5EE', color: '#1C1C1C', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Reset</button>
+                <button onClick={handleSave} style={{ flex: 1, padding: 14, borderRadius: 12, border: 'none', background: '#1C1C1C', color: 'white', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Save Changes</button>
+              </div>
+            )}
+          </div>
+        </div>
+        <MobileTabBar activeTab="settings" />
+      </div>
+
+      <div className="lm-desktop-only board-container" style={{ display: 'flex' }}>
         {/* Settings Sidebar */}
         <div style={{ width: 280, borderRight: `1px solid ${LUXURY_COLORS.borderSubtle}`, padding: '40px', background: '#FAFAFA', display: 'flex', flexDirection: 'column' }}>
            <button 
