@@ -76,6 +76,8 @@
 /* Smooth visual changes when switching themes */
 html,
 body {
+  height: 100%;
+  overflow: hidden;
   font-family:
     "Dosis",
     system-ui,
@@ -94,6 +96,15 @@ body {
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Root element fills the full viewport — no outer scroll ever */
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 
 /* ── MOBILE FOUNDATION ─────────────────────────────────────────── */
 
