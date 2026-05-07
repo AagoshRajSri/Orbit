@@ -99,6 +99,9 @@ const CSS = `
 .luxury-scroll::-webkit-scrollbar-thumb { background: ${LUXURY_COLORS.goldMedium}; border-radius: 0; opacity: 0.5; }
 .luxury-scroll::-webkit-scrollbar-thumb:hover { background: ${LUXURY_COLORS.goldDark}; }
 
+.luxury-scroll-hide::-webkit-scrollbar { display: none; }
+.luxury-scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 .menu-item-hover:hover { background: ${LUXURY_COLORS.surfaceHover} !important; transform: translateX(4px); }
 .menu-item-hover-danger:hover { background: #FFF5F5 !important; transform: translateX(4px); }
 
@@ -1066,6 +1069,8 @@ export default function LightTheme({ children }) {
        } catch { return []; }
    });
 
+   const [showAddMenu, setShowAddMenu] = useState(false);
+
    const toggleHide = (nexus, e) => {
        if (e) e.stopPropagation();
        const id = nexus._id;
@@ -1124,6 +1129,142 @@ export default function LightTheme({ children }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B6560" }}>
                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E" }} />
                         Online
+                      </div>
+                    </div>
+
+                    {/* Keyframes */}
+                    <style>{`
+                      @keyframes lm-neon-pulse {
+                        0%, 100% { box-shadow: 0 0 8px #C9A87C, 0 0 18px rgba(201,168,124,0.65), 0 0 32px rgba(201,168,124,0.3); }
+                        50% { box-shadow: 0 0 14px #C9A87C, 0 0 28px rgba(201,168,124,0.85), 0 0 50px rgba(201,168,124,0.45); }
+                      }
+                      @keyframes lm-add-neon {
+                        0%, 100% { box-shadow: 0 0 5px rgba(201,168,124,0.5); }
+                        50% { box-shadow: 0 0 14px rgba(201,168,124,0.85); }
+                      }
+                      @keyframes lm-popup-slide {
+                        from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+                        to   { opacity: 1; transform: translateY(0)  scale(1); }
+                      }
+                    `}</style>
+
+                    {/* Nexus row + sticky Add button */}
+                    <div style={{ marginBottom: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                      {/* Scrollable nexus bubbles */}
+                      <div className="luxury-scroll-hide" style={{ display: "flex", gap: 20, overflowX: "auto", paddingBottom: 12, flex: 1, WebkitOverflowScrolling: 'touch' }}>
+                        {nexuses?.map((nexus) => {
+                          const isActive = selectedNexus?._id === nexus._id;
+                          const initials = (nexus.name || "?").slice(0, 2).toUpperCase();
+                          const avatarSrc = nexus.avatar || nexus.profilePic || nexus.image;
+                          return (
+                            <div
+                              key={nexus._id}
+                              onClick={() => { setSelectedNexus(nexus); navigate(`/nexus/${nexus._id}`); }}
+                              style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                            >
+                              {/* Neon ring — border + box-shadow */}
+                              <div style={{
+                                width: 68, height: 68, borderRadius: "50%",
+                                border: isActive ? "3px solid #C9A87C" : "2px solid rgba(201,168,124,0.35)",
+                                boxShadow: isActive
+                                  ? "0 0 10px #C9A87C, 0 0 22px rgba(201,168,124,0.7), 0 0 42px rgba(201,168,124,0.35)"
+                                  : "0 0 5px rgba(201,168,124,0.22)",
+                                overflow: "hidden",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                background: isActive ? "#fff" : "#F0EDE8",
+                                animation: isActive ? "lm-neon-pulse 2.2s ease-in-out infinite" : "none",
+                                transition: "all 0.3s ease",
+                                boxSizing: "border-box",
+                              }}>
+                                {avatarSrc ? (
+                                  <img src={avatarSrc} alt={nexus.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                                ) : (
+                                  <div style={{
+                                    width: "100%", height: "100%",
+                                    background: isActive ? "linear-gradient(135deg, #F0D9A8, #C9A87C)" : "linear-gradient(135deg, #e0dbd4, #cbc5bc)",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    fontSize: 18, fontWeight: 800, color: isActive ? "#5C3E10" : "#8A7E74",
+                                    fontFamily: "'Playfair Display', serif", letterSpacing: 1,
+                                  }}>
+                                    {initials}
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ fontSize: 9, fontWeight: 800, color: isActive ? "#C9A87C" : "#8A847E", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                {nexus.name}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* + Add button — sticky outside scroll, popup anchors directly to it */}
+                      <div style={{ position: "relative", flexShrink: 0, paddingBottom: 12 }}>
+                        <div
+                          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                          onClick={() => setShowAddMenu(v => !v)}
+                        >
+                          <div style={{
+                            width: 68, height: 68, borderRadius: "50%",
+                            border: "2.5px dashed #C9A87C",
+                            background: "rgba(201,168,124,0.06)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            color: "#C9A87C", fontSize: 28, fontWeight: 300,
+                            animation: "lm-add-neon 2.5s ease-in-out infinite",
+                            transition: "all 0.25s",
+                            boxSizing: "border-box",
+                          }}>
+                            {showAddMenu ? "×" : "+"}
+                          </div>
+                          <div style={{ fontSize: 9, fontWeight: 800, color: "#C9A87C", textAlign: "center", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                            {showAddMenu ? "Close" : "Add"}
+                          </div>
+                        </div>
+
+                        {/* Popup — position:absolute relative to this small wrapper */}
+                        {showAddMenu && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              position: "absolute", top: "calc(100% - 2px)", right: 0,
+                              background: "linear-gradient(145deg, #FFFDF9, #FFF8EE)",
+                              border: "1.5px solid #C9A87C",
+                              borderRadius: 14,
+                              boxShadow: "0 12px 40px rgba(150,130,100,0.28), 0 4px 12px rgba(150,130,100,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+                              padding: "8px 0", zIndex: 9999, minWidth: 160,
+                              animation: "lm-popup-slide 0.18s ease-out",
+                            }}
+                          >
+                            {/* Connecting arrow */}
+                            <div style={{
+                              position: "absolute", top: -8, right: 22,
+                              width: 0, height: 0,
+                              borderLeft: "8px solid transparent",
+                              borderRight: "8px solid transparent",
+                              borderBottom: "8px solid #C9A87C",
+                            }} />
+                            <div style={{ padding: "6px 14px 4px", fontSize: 9, fontWeight: 700, color: "#C9A87C", letterSpacing: 1.5, textTransform: "uppercase" }}>
+                              Nexus
+                            </div>
+                            <div
+                              onClick={() => { setNexusActionView("join"); setShowAddMenu(false); }}
+                              style={{ padding: "10px 18px", fontSize: 13, fontWeight: 600, color: "#3A3530", cursor: "pointer", letterSpacing: 0.3, display: "flex", alignItems: "center", gap: 10 }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#F8F3EA"}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                            >
+                              <Compass size={15} color="#B8924A" /> Join Nexus
+                            </div>
+                            <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #EAE4D8, transparent)", margin: "2px 12px" }} />
+                            <div
+                              onClick={() => { setNexusActionView("create"); setShowAddMenu(false); }}
+                              style={{ padding: "10px 18px", fontSize: 13, fontWeight: 600, color: "#3A3530", cursor: "pointer", letterSpacing: 0.3, display: "flex", alignItems: "center", gap: 10 }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#F8F3EA"}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                            >
+                              <Globe size={15} color="#B8924A" /> Create Nexus
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     

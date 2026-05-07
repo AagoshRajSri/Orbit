@@ -59,6 +59,9 @@ const STYLES = `
   ::-webkit-scrollbar-thumb:hover{background:rgba(0,255,245,0.5);}
 
   .ncb-glitch-text:hover { position: relative; animation: ncbGlitch1 0.4s infinite; }
+
+  .ncb-scroll-hide::-webkit-scrollbar { display: none; }
+  .ncb-scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .ncb-glitch-text::before, .ncb-glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
   .ncb-glitch-text:hover::before { animation: ncbGlitch1 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite; color: #ff00c8; z-index: -1; }
   .ncb-glitch-text:hover::after { animation: ncbGlitch2 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite; color: #00fff5; z-index: -2; }
@@ -724,10 +727,12 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
                       })()
                     )}
                   </div>
+
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 11, fontWeight: 800, color: M, fontFamily: "'Orbitron',monospace", letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textShadow: `0 0 5px ${M}44` }}>{n.name}</div>
                     <div style={{ fontSize: 8, color: `${M}66`, fontFamily: "'Share Tech Mono'" }}>NODES: {n.members?.length || 0}</div>
                   </div>
+
                   {nexusUnread[n._id] > 0 && (
                      <div style={{ background: M, color: "white", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 4, boxShadow: `0 0 8px ${M}` }}>{nexusUnread[n._id]}</div>
                   )}
@@ -749,7 +754,9 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
                   >
                       🔮
                   </div>
+
                 </div>
+
 
                 {/* Context Menu Inline Expansion */}
                 {activeMenuId === n._id && (
@@ -782,6 +789,7 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
                             </button>
                         </div>
 
+
                         {activeColorPickerId === n._id && (
                             <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(0,0,0,0.5)", borderRadius: 4, border: `1px solid ${M}33`, overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
                                 {[
@@ -801,10 +809,13 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
                                     />
                                 ))}
                             </div>
+
                         )}
                     </div>
+
                 )}
               </div>
+
             ))
           )
         ) : (
@@ -843,11 +854,14 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
                     })()
                   )}
                 </div>
+
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: C, fontFamily: "'Orbitron',monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</div>
                   <div style={{ fontSize: 8, color: `${C}77`, fontFamily: "'Share Tech Mono'" }}>STATUS: {u.online ? "ONLINE" : "OFFLINE"}</div>
                 </div>
+
               </div>
+
             ))
           )
         )}
@@ -1149,6 +1163,7 @@ export default function OrbitNeonCyberpunk({ children }) {
   const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
   const { users, selectedUser, setSelectedUser } = useChatStore();
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   // GSAP entrance animation
   useEffect(() => {
@@ -1257,6 +1272,7 @@ export default function OrbitNeonCyberpunk({ children }) {
                       Neon Cyberpunk Dimension Active — Initialize your pathway.
                     </p>
                   </div>
+
                   {/* Sync CTA */}
                   <button className="ncb-hero-btn" onClick={handleToggleSync} style={{
                     flexShrink: 0, padding: "8px 20px", border: "none", borderRadius: 5, cursor: "pointer",
@@ -1269,13 +1285,153 @@ export default function OrbitNeonCyberpunk({ children }) {
                     {synced ? "🔗 SYNCHRONIZED" : "⚡ SYNC NOW"}
                   </button>
                 </div>
+
               </div>
+
+              {/* Keyframes */}
+              <style>{`
+                @keyframes ncb-neon-pulse {
+                  0%, 100% { box-shadow: 0 0 10px ${M}, 0 0 20px ${M}88, 0 0 35px ${M}44; }
+                  50% { box-shadow: 0 0 15px ${P}, 0 0 30px ${P}bb, 0 0 55px ${P}66; }
+                }
+                @keyframes ncb-add-neon {
+                  0%, 100% { box-shadow: 0 0 8px ${C}66; }
+                  50% { box-shadow: 0 0 20px ${C}cc; }
+                }
+                @keyframes ncb-popup-slide {
+                  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+                  to   { opacity: 1; transform: translateY(0) scale(1); }
+                }
+              `}</style>
+
+              {/* Nexus row + sticky Add button */}
+              <div style={{ marginBottom: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                {/* Scrollable nexus bubbles */}
+                <div className="ncb-scroll-hide" style={{ display: "flex", gap: 20, overflowX: "auto", paddingBottom: 12, flex: 1, WebkitOverflowScrolling: 'touch' }}>
+                  {nexuses?.map((n) => {
+                    const isActive = selectedNexus?._id === n._id;
+                    const initials = (n.name || "?").slice(0, 2).toUpperCase();
+                    const avatarSrc = n.avatar || n.profilePic || n.image;
+                    return (
+                      <div
+                        key={n._id}
+                        onClick={() => { play("click"); setSelectedNexus(n); navigate(`/nexus/${n._id}`); }}
+                        style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                      >
+                        {/* Neon ring — border + box-shadow */}
+                        <div style={{
+                          width: 68, height: 68, borderRadius: "50%",
+                          border: isActive ? `3px solid ${M}` : `2px solid ${M}33`,
+                          boxShadow: isActive
+                            ? `0 0 10px ${M}, 0 0 22px ${M}aa, 0 0 42px ${M}55`
+                            : `0 0 5px ${M}22`,
+                          overflow: "hidden",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          background: isActive ? "rgba(9,0,20,0.97)" : "rgba(9,0,20,0.8)",
+                          animation: isActive ? "ncb-neon-pulse 2s ease-in-out infinite" : "none",
+                          transition: "all 0.3s ease",
+                          boxSizing: "border-box",
+                        }}>
+                          {avatarSrc ? (
+                            <img src={avatarSrc} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          ) : (
+                            <div style={{
+                              width: "100%", height: "100%",
+                              background: isActive ? `linear-gradient(135deg, ${M}44, ${P}22)` : `${M}0a`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 17, fontWeight: 900, color: isActive ? M : `${M}55`,
+                              fontFamily: "'Orbitron',monospace", letterSpacing: 2,
+                            }}>
+                              {initials}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, fontWeight: 800, color: isActive ? M : `${M}66`, letterSpacing: "0.1em", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%", textTransform: "uppercase" }}>
+                          {n.name}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* + Add button — sticky outside scroll, popup anchors directly to it */}
+                <div style={{ position: "relative", flexShrink: 0, paddingBottom: 12 }}>
+                  <div
+                    style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                    onClick={() => { play("click"); setShowAddMenu(v => !v); }}
+                  >
+                    <div style={{
+                      width: 68, height: 68, borderRadius: "50%",
+                      border: `2.5px dashed ${C}`,
+                      background: "rgba(0,255,245,0.04)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: C, fontSize: 28, fontFamily: "'Orbitron',monospace",
+                      animation: "ncb-add-neon 2.5s ease-in-out infinite",
+                      transition: "all 0.25s",
+                      boxSizing: "border-box",
+                    }}>
+                      {showAddMenu ? "×" : "+"}
+                    </div>
+                    <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, fontWeight: 800, color: C, letterSpacing: "0.1em", textAlign: "center", textTransform: "uppercase" }}>
+                      {showAddMenu ? "CLOSE" : "ADD"}
+                    </div>
+                  </div>
+
+                  {/* Popup — position:absolute relative to this small wrapper */}
+                  {showAddMenu && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: "absolute", top: "calc(100% - 2px)", right: 0,
+                        background: `linear-gradient(145deg, rgba(9,0,20,0.99), rgba(15,0,30,0.99))`,
+                        border: `1.5px solid ${C}bb`,
+                        borderRadius: 10,
+                        boxShadow: `0 16px 48px rgba(0,0,0,0.95), 0 4px 12px ${C}44, inset 0 1px 0 ${C}22`,
+                        padding: "8px 0", zIndex: 9999, minWidth: 170,
+                        animation: "ncb-popup-slide 0.18s ease-out",
+                      }}
+                    >
+                      {/* Connecting arrow */}
+                      <div style={{
+                        position: "absolute", top: -8, right: 22,
+                        width: 0, height: 0,
+                        borderLeft: "8px solid transparent",
+                        borderRight: "8px solid transparent",
+                        borderBottom: `8px solid ${C}bb`,
+                      }} />
+                      <div style={{ padding: "6px 14px 4px", fontFamily: "'Orbitron',monospace", fontSize: 8, fontWeight: 900, color: `${C}88`, letterSpacing: "0.15em", textTransform: "uppercase" }}>
+                        Nexus
+                      </div>
+                      <div
+                        onClick={() => { play("click"); setNexusActionView("join"); setShowAddMenu(false); }}
+                        style={{ padding: "10px 18px", fontFamily: "'Orbitron',monospace", fontSize: 10, fontWeight: 700, color: C, cursor: "pointer", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 8 }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${C}11`}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        ⚡ JOIN NEXUS
+                      </div>
+                      <div style={{ height: 1, background: `${C}22`, margin: "0 12px" }} />
+                      <div
+                        onClick={() => { play("click"); setNexusActionView("create"); setShowAddMenu(false); }}
+                        style={{ padding: "10px 18px", fontFamily: "'Orbitron',monospace", fontSize: 10, fontWeight: 700, color: M, cursor: "pointer", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 8 }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${M}11`}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        ⚡ CREATE NEXUS
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+
 
               {/* 2×2 Grid or children (settings/profile/spotify pages) */}
               {children ? (
                 <div style={{ flex: 1, position: "relative", zIndex: 2, overflowY: "auto", display: "flex", flexDirection: "column" }}>
                   {children}
                 </div>
+
               ) : (
                 <div className="ncb-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, flex: 1, position: "relative", zIndex: 2 }}>
                   <div ref={c0} style={{ height: "100%" }}><AudioCard /></div>
@@ -1283,6 +1439,7 @@ export default function OrbitNeonCyberpunk({ children }) {
                   <div ref={c2} style={{ height: "100%" }}><NotifCard /></div>
                   <div ref={c3} style={{ height: "100%" }}><CustomizeCard /></div>
                 </div>
+
               )}
             </div>
           )}
@@ -1376,6 +1533,7 @@ export function CyberpunkSettings({
                             <div style={{ flex: 1, background: previewPrimary }} />
                             <div style={{ flex: 1, background: previewBg }} />
                           </div>
+
                           <div style={{ textAlign: "center" }}>
                             <div style={{ fontSize: 9, color: isSelected ? C : "rgba(255,255,255,0.4)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{THEME_LABELS[t] || t.toUpperCase()}</div>
                             {isSelected && !isApplied && (
@@ -1383,7 +1541,9 @@ export function CyberpunkSettings({
                             )}
                             {isApplied && <div style={{ marginTop: 6, fontSize: 9, color: C, fontWeight: 700, fontFamily: "'Orbitron', monospace" }}>✓ ACTIVE</div>}
                           </div>
+
                         </div>
+
                     );
                   })}
             </div>
@@ -1395,6 +1555,7 @@ export function CyberpunkSettings({
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginBottom: 12, fontFamily: "'Orbitron', monospace", letterSpacing: "0.1em" }}>MASTER GAIN: {(draftSoundSettings.volume * 100).toFixed(0)}%</div>
                 <input type="range" min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={e => { const v = parseFloat(e.target.value); setDraftSoundSettings(p => ({ ...p, volume: v })); try { useSettingsStore.getState().updateSetting('sound.volume', v); } catch (_) {} }} style={{ width: "100%", accentColor: C }} />
               </div>
+
               <ToggleSwitch label="GLOBAL EFFECTS" checked={draftSoundSettings.effectsEnabled} onChange={v => { setDraftSoundSettings(p => ({ ...p, effectsEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.enabled', v); } catch (_) {} }} />
               <ToggleSwitch label="TRANSMISSION PINGS" checked={draftSoundSettings.messageSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, messageSound: v })); try { useSettingsStore.getState().updateSetting('sound.notificationEnabled', v); } catch (_) {} }} />
               <ToggleSwitch label="HAPTIC CLICKS" checked={draftSoundSettings.clickSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, clickSound: v })); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) {} }} />
@@ -1409,10 +1570,12 @@ export function CyberpunkSettings({
                 <input type="text" value={draftDisplayName} onChange={e => setDraftDisplayName(e.target.value)} placeholder={authUser?.username || "Ghost"} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: `1px solid ${C}44`, color: C, padding: "10px 14px", borderRadius: 6, fontFamily: "'Rajdhani', monospace", fontSize: 15, outline: "none", boxShadow: `inset 0 0 10px ${C}11` }} />
               </div>
 
+
               <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
                 <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.06em", display: "block", marginBottom: 10 }}>DIRECTIVE BIO</span>
                 <textarea value={draftBio} onChange={e => setDraftBio(e.target.value)} placeholder="Initialise directive..." style={{ width: "100%", height: 80, background: "rgba(0,0,0,0.4)", border: `1px solid ${C}44`, color: C, padding: "10px 14px", borderRadius: 6, fontFamily: "'Rajdhani', monospace", fontSize: 14, outline: "none", boxShadow: `inset 0 0 10px ${C}11`, resize: "none" }} />
               </div>
+
               <ToggleSwitch label="BROADCAST PRESENCE" checked={draftShowOnlineStatus} onChange={setDraftShowOnlineStatus} color={M} />
             </div>
           )}
@@ -1437,6 +1600,7 @@ export function CyberpunkSettings({
                   <option value="mutual">MUTUAL ORBITS ONLY</option>
                 </select>
               </div>
+
             </div>
           )}
         </NeonCard>

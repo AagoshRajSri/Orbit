@@ -116,7 +116,7 @@ const ForgotPasswordPage = () => {
                       <path d="M5 13l4 4L19 7" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   ) : (
-                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "8px", color: i <= currentStepIndex ? "#a78bfa" : "rgba(255,255,255,0.2)" }}>
+                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "8px", color: i <= currentStepIndex ? "#a78bfa" : "rgba(255,255,255,0.45)" }}>
                       {i + 1}
                     </span>
                   )}
@@ -133,7 +133,7 @@ const ForgotPasswordPage = () => {
           ))}
         </div>
 
-        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "rgba(255,255,255,0.25)" }}>
+        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "rgba(255,255,255,0.45)" }}>
           {STEP_LABELS[step]}
         </p>
       </div>
@@ -242,7 +242,7 @@ const ForgotPasswordPage = () => {
       )}
 
       {/* ── Footer ───────────────────────────── */}
-      <p className="text-center" style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: "rgba(255,255,255,0.2)" }}>
+      <p className="text-center" style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: "rgba(255,255,255,0.45)" }}>
         REMEMBERED?{" "}
         <Link to="/login" style={{ color: "#a78bfa", textDecoration: "none" }}>
           AUTHENTICATE →

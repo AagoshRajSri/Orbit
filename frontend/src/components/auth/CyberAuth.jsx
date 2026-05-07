@@ -121,7 +121,7 @@ export function MorphInput({ label, type, icon, value, onChange, focused, onFocu
                   ? "#818cf8"
                   : filled
                   ? "rgba(129,140,248,0.7)"
-                  : "rgba(255,255,255,0.4)",
+                  : "rgba(255,255,255,0.7)",
                 letterSpacing: "0.05em",
               }}
             >
@@ -137,7 +137,7 @@ export function MorphInput({ label, type, icon, value, onChange, focused, onFocu
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: "14px",
-                color: "#f8fafc",
+                color: "#ffffff",
                 paddingTop: focused || filled ? "16px" : "0",
                 caretColor: "#818cf8",
                 letterSpacing: type === "password" ? "0.15em" : "0",

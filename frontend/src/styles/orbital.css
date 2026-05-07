@@ -86,7 +86,7 @@
   }
 
   .orbital-subtitle {
-    @apply text-xs text-gray-400 font-light tracking-widest uppercase;
+    @apply text-xs text-white/60 font-light tracking-widest uppercase;
   }
 
   /* Form Elements */
@@ -161,7 +161,7 @@
   /* ── Label ── */
   .auth-field-label {
     @apply flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase mb-1.5;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.75);
     letter-spacing: 0.08em;
   }
 
@@ -201,7 +201,7 @@
   }
 
   .auth-field-input::placeholder {
-    color: rgba(255, 255, 255, 0.22);
+    color: rgba(255, 255, 255, 0.55);
     font-weight: 400;
   }
 
@@ -219,7 +219,7 @@
   /* ── Hint text below field ── */
   .auth-field-hint {
     @apply text-[11px] mt-1.5;
-    color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.55);
   }
 
   /* ── Eye toggle button inside password field ── */

@@ -152,7 +152,7 @@ const VerifyEmailPage = () => {
           fontFamily: "'Space Mono', monospace",
           fontSize: "9px",
           letterSpacing: "0.2em",
-          color: "rgba(255,255,255,0.25)",
+          color: "rgba(255,255,255,0.45)",
         }}>
           EMAIL_VERIFICATION_SEQUENCE
         </p>
@@ -164,7 +164,7 @@ const VerifyEmailPage = () => {
           fontFamily: "'Space Mono', monospace",
           fontSize: "10px",
           letterSpacing: "0.05em",
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.65)",
           lineHeight: 1.6,
         }}>
           A security code has been dispatched to:
@@ -179,7 +179,7 @@ const VerifyEmailPage = () => {
           fontFamily: "'Space Mono', monospace",
           fontSize: "9px",
           letterSpacing: "0.2em",
-          color: "rgba(255,255,255,0.2)",
+          color: "rgba(255,255,255,0.75)",
           textTransform: "uppercase"
         }}>
           Enter_6_Digit_Sigil
@@ -335,7 +335,7 @@ const VerifyEmailPage = () => {
           fontFamily: "'Space Mono', monospace",
           fontSize: "8px",
           letterSpacing: "0.15em",
-          color: "rgba(255,255,255,0.1)",
+          color: "rgba(255,255,255,0.45)",
         }}>
           ◈ SECURE_NODE_COMMUNICATION_ESTABLISHED ◈
         </p>

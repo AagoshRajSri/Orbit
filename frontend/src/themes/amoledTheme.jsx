@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useMemo, useRef } from "react";
+﻿import { useState, useEffect, memo, useMemo, useRef } from "react";
 import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
@@ -17,7 +17,7 @@ import RocketAnimation from "../components/effects/RocketAnimation";
 import OrbitLogo from "../components/common/OrbitLogo";
 
 
-/* ─────────────────────────────── KEYFRAMES ─────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ KEYFRAMES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
 
@@ -94,7 +94,7 @@ const CSS = `
 .oa-borderglow { animation:oa-borderglow 3.2s ease-in-out infinite; }
 .oa-float      { animation:oa-float 4s ease-in-out infinite; }
 
-/* ── Subtle Scrollbar ── */
+/* â”€â”€ Subtle Scrollbar â”€â”€ */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: #000; }
 ::-webkit-scrollbar-thumb { 
@@ -104,7 +104,10 @@ const CSS = `
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(198, 160, 110, 0.4); }
 
-/* ── AMOLED Void Chat Theme ── */
+.oa-scroll-hide::-webkit-scrollbar { display: none; }
+.oa-scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* â”€â”€ AMOLED Void Chat Theme â”€â”€ */
 .amoled-chat-env .nxc-shell {
   background: #000000 !important;
   border: none !important;
@@ -213,7 +216,7 @@ const CSS = `
 }
 `;
 
-/* ─────────────────────────────── SUB-COMPONENTS ────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SUB-COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const StarField = memo(({ count = 40 }) => {
   const stars = Array.from({ length: count }, (_, i) => ({
     x: (i * 37 + 13) % 100,
@@ -232,7 +235,7 @@ const StarField = memo(({ count = 40 }) => {
 StarField.displayName = "StarField";
 
 const DataStream = memo(({ x, delay, dur }) => {
-  const chars = "01ABCDEF※△▽◆■★";
+  const chars = "01ABCDEFâ€»â–³â–½â—†â– â˜…";
   const stream = Array.from({ length: 14 }, (_, i) => chars[(i * 7) % chars.length]);
   return (
     <div className="oa-stream-char" style={{ left: x, top: "-90px", animationDuration: dur, animationDelay: delay }}>
@@ -264,7 +267,7 @@ const Waveform = memo(({ playing }) => (
 ));
 Waveform.displayName = "Waveform";
 
-/* ── Spotify mock card ── */
+/* â”€â”€ Spotify mock card â”€â”€ */
 const SpotifyCard = memo(() => {
   const { 
     spotifyLinked, currentTrack, isPlaying, 
@@ -340,7 +343,7 @@ const SpotifyCard = memo(() => {
             {currentTrack?.imageUrl ? (
               <img src={currentTrack.imageUrl} alt="" style={{ width: 80, height: 80, borderRadius: 16, border: `1.5px solid ${hov ? "#4ECDC4" : "rgba(198,160,110,.4)"}`, objectFit: "cover" }} />
             ) : (
-              <div style={{ width: 80, height: 80, borderRadius: 16, background: "linear-gradient(135deg,#4ECDC4,#121212)", border: `1.5px solid ${hov ? "#4ECDC4" : "rgba(198,160,110,.4)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, animation: "oa-float 4s ease-in-out infinite", transition: "all .4s" }}>🎵</div>
+              <div style={{ width: 80, height: 80, borderRadius: 16, background: "linear-gradient(135deg,#4ECDC4,#121212)", border: `1.5px solid ${hov ? "#4ECDC4" : "rgba(198,160,110,.4)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, animation: "oa-float 4s ease-in-out infinite", transition: "all .4s" }}>ðŸŽµ</div>
             )}
             <div style={{ position: "absolute", inset: -5, border: `1px solid ${hov ? "rgba(78,205,196,.3)" : "rgba(198,160,110,.2)"}`, borderRadius: 20, animation: "oa-cw 12s linear infinite" }} />
           </div>
@@ -366,13 +369,13 @@ const SpotifyCard = memo(() => {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
-            <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(198,160,110,.4)", fontSize: 18, transition: "all .2s" }}>⏮</button>
-            <button onClick={(e) => { e.stopPropagation(); isPlaying ? pausePlayback() : playTrack(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#4ECDC4", fontSize: 26, transition: "all .2s" }}>{isPlaying ? "⏸" : "▶"}</button>
-            <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(198,160,110,.4)", fontSize: 18, transition: "all .2s" }}>⏭</button>
+            <button onClick={(e) => { e.stopPropagation(); skipPrevious(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(198,160,110,.4)", fontSize: 18, transition: "all .2s" }}>â®</button>
+            <button onClick={(e) => { e.stopPropagation(); isPlaying ? pausePlayback() : playTrack(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#4ECDC4", fontSize: 26, transition: "all .2s" }}>{isPlaying ? "â¸" : "â–¶"}</button>
+            <button onClick={(e) => { e.stopPropagation(); skipNext(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(198,160,110,.4)", fontSize: 18, transition: "all .2s" }}>â­</button>
             <span className="oa-mono" style={{ fontSize: 11, color: "rgba(198,160,110,.3)", letterSpacing: 2 }}>{fmt(currSec)} / {fmt(totalSec)}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 14, color: "rgba(198,160,110,.3)" }}>🔊</span>
+            <span style={{ fontSize: 14, color: "rgba(198,160,110,.3)" }}>ðŸ”Š</span>
             <div onClick={handleVol} style={{ width: 100, height: 4, background: "rgba(198,160,110,.15)", borderRadius: 4, cursor: "pointer", position: "relative" }}>
               <div style={{ width: `${vol}%`, background: "#4ECDC4", borderRadius: 4, height: "100%" }} />
             </div>
@@ -384,7 +387,7 @@ const SpotifyCard = memo(() => {
 });
 SpotifyCard.displayName = "SpotifyCard";
 
-/* ── Generic action card ── */
+/* â”€â”€ Generic action card â”€â”€ */
 export const ActionCard = memo(({ icon, title, subtitle, color = "#C6A06E", badge, teal, onClick }) => {
   const [hov, setHov] = useState(false);
   return (
@@ -416,7 +419,7 @@ export const ActionCard = memo(({ icon, title, subtitle, color = "#C6A06E", badg
 
         {/* Right Interaction Element */}
         <div style={{ opacity: hov ? 0.8 : 0, transform: hov ? "translateX(0)" : "translateX(-20px)", transition: "all .5s cubic-bezier(.23,1,.32,1)", color }}>
-          <div style={{ fontSize: 28, fontWeight: 300 }}>◹</div>
+          <div style={{ fontSize: 28, fontWeight: 300 }}>â—¹</div>
         </div>
       </div>
 
@@ -427,12 +430,12 @@ export const ActionCard = memo(({ icon, title, subtitle, color = "#C6A06E", badg
 });
 ActionCard.displayName = "ActionCard";
 
-/* ── Sidebar ── */
+/* â”€â”€ Sidebar â”€â”€ */
 const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView, toggleHide, hiddenNexuses }) => {
   const navigate = useNavigate();
   // Removed authUser here as it's not used in this specific implementation snippet, but if needed, pass as prop.
   const orbits = ["# NEXUS PRIME", "# DARKWEB", "# CONSTELLATION", "# SHADOW OPS"];
-  const contacts = [["CIPHER", "⚡", "#C6A06E"], ["NOVA", "◈", "#4ECDC4"], ["PHANTOM", "☽", "#9B59B6"], ["AXIOM", "▲", "#E74C3C"]];
+  const contacts = [["CIPHER", "âš¡", "#C6A06E"], ["NOVA", "â—ˆ", "#4ECDC4"], ["PHANTOM", "â˜½", "#9B59B6"], ["AXIOM", "â–²", "#E74C3C"]];
 
   const [pinnedNexuses, setPinnedNexuses] = useState(() => {
     return JSON.parse(localStorage.getItem('amoled_pinned_nexuses') || '[]');
@@ -490,7 +493,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
       {/* Tab buttons */}
       <div style={{ padding: "16px 14px 12px", borderBottom: "1px solid rgba(198,160,110,.1)", position: "relative", zIndex: 5 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-          {[["orbits", "◈ ORBITS", "teal"], ["contacts", "◉ CONTACTS", "gold"]].map(([tab, label, c]) => (
+          {[["orbits", "â—ˆ ORBITS", "teal"], ["contacts", "â—‰ CONTACTS", "gold"]].map(([tab, label, c]) => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               style={{
                 flex: 1, padding: "10px 6px", borderRadius: 8, fontSize: 11, letterSpacing: 2, cursor: "pointer", fontFamily: "Orbitron,sans-serif",
@@ -503,7 +506,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          {[["+ JOIN ENGINE", "gold", onJoin], ["✦ NEXUS HUB", "teal", onNexus]].map(([l, c, handler]) => (
+          {[["+ JOIN ENGINE", "gold", onJoin], ["âœ¦ NEXUS HUB", "teal", onNexus]].map(([l, c, handler]) => (
             <button key={l} onClick={handler} style={{
               flex: 1, padding: "8px 6px", borderRadius: 7, fontSize: 9.5, letterSpacing: 1.8, cursor: "pointer", fontFamily: "Orbitron,sans-serif",
               background: c === "teal" ? "rgba(78,205,196,.1)" : "rgba(198,160,110,.1)", border: `1px solid ${c === "teal" ? "rgba(78,205,196,.4)" : "rgba(198,160,110,.4)"}`, color: c === "teal" ? "#4ECDC4" : "#C6A06E", transition: "all .2s"
@@ -515,7 +518,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
       <div style={{ flex: 1, padding: "12px 10px", overflowY: "auto", position: "relative", zIndex: 5 }}>
         {activeTab === "orbits" ? (
           <>
-            <div className="oa-mono" style={{ fontSize: 10, color: "rgba(198,160,110,.3)", letterSpacing: 3, padding: "6px 10px", marginBottom: 6 }}>— ACTIVE CHANNELS —</div>
+            <div className="oa-mono" style={{ fontSize: 10, color: "rgba(198,160,110,.3)", letterSpacing: 3, padding: "6px 10px", marginBottom: 6 }}>â€” ACTIVE CHANNELS â€”</div>
             {isNexusesLoading ? (
                <div style={{ color: "rgba(198,160,110,.4)", fontSize: 12, textAlign: "center", padding: "20px 0" }}>SYNCING...</div>
             ) : nexuses.length === 0 ? (
@@ -558,7 +561,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
                     <span style={{ fontSize: 10, color: "rgba(198,160,110,0.5)", background: "rgba(198,160,110,.1)", padding: "2px 6px", borderRadius: 4 }}>{n.members?.length || 0}</span>
                   
                     {pinnedNexuses.includes(n._id) && (
-                        <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>📌</div>
+                        <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>ðŸ“Œ</div>
                     )}
 
                     <div 
@@ -571,7 +574,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
                         onMouseEnter={e => e.currentTarget.style.opacity = 1}
                         onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
                     >
-                        💎
+                        ðŸ’Ž
                     </div>
                   </div>
 
@@ -589,19 +592,19 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
                                   }}
                                   style={{ flex: 1, padding: '6px', background: "rgba(198,160,110,.1)", border: "1px solid rgba(198,160,110,.4)", borderRadius: 4, fontSize: 11, color: "#C6A06E", fontFamily: "Orbitron, sans-serif", cursor: 'pointer' }}
                               >
-                                  Mark 🎨
+                                  Mark ðŸŽ¨
                               </button>
                               <button 
                                   onClick={(e) => togglePin(n._id, e)}
                                   style={{ flex: 1, padding: '6px', background: "rgba(198,160,110,.1)", border: "1px solid rgba(198,160,110,.4)", borderRadius: 4, fontSize: 11, color: "#C6A06E", fontFamily: "Orbitron, sans-serif", cursor: 'pointer' }}
                               >
-                                  {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
+                                  {pinnedNexuses.includes(n._id) ? "Unpin ðŸ“Œ" : "Pin ðŸ“Œ"}
                               </button>
                               <button 
                                   onClick={(e) => toggleHide(n, e)}
                                   style={{ flex: 1, padding: '6px', background: "rgba(198,160,110,.1)", border: "1px solid rgba(198,160,110,.4)", borderRadius: 4, fontSize: 11, color: "#C6A06E", fontFamily: "Orbitron, sans-serif", cursor: 'pointer' }}
                               >
-                                  Hide 💎
+                                  Hide ðŸ’Ž
                               </button>
                           </div>
 
@@ -681,7 +684,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ position: "relative" }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#3d1a00,#1a0a00)", border: "2px solid rgba(198,160,110,.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🔒</div>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#3d1a00,#1a0a00)", border: "2px solid rgba(198,160,110,.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>ðŸ”’</div>
           </div>
           <div>
             <div className="oa-orbitron" style={{ fontSize: 13, color: "#C6A06E", letterSpacing: 2, fontWeight: 900 }}>
@@ -696,7 +699,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
 });
 Sidebar.displayName = "Sidebar";
 
-// ── Hidden Nexus Diamond ──────────────────────────────────────────────────
+// â”€â”€ Hidden Nexus Diamond â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const HiddenNexusDiamond = memo(({ nexus, onReveal }) => {
     const [grabbed, setGrabbed] = useState(false);
     const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -768,12 +771,12 @@ const HiddenNexusDiamond = memo(({ nexus, onReveal }) => {
             onClick={handleClick}
             onDragStart={(e) => e.preventDefault()}
         >
-            💎
+            ðŸ’Ž
         </div>
     );
 });
 
-/* ── Topbar ── */
+/* â”€â”€ Topbar â”€â”€ */
 const TopBar = memo(({ logout, hiddenNexuses, onReveal }) => {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString());
   const navigate = useNavigate();
@@ -787,7 +790,7 @@ const TopBar = memo(({ logout, hiddenNexuses, onReveal }) => {
       {/* Left: Logo + Title */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
         <button onClick={() => navigate("/")} style={{ background: "transparent", border: "none", color: "rgba(198,160,110,.5)", cursor: "pointer", fontSize: 16, padding: "0 10px 0 0", display: location.pathname === "/" ? "none" : "block" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.5)"}>
-          ←
+          â†
         </button>
         <OrbitLogo />
         <span className="oa-shimmer-text oa-orbitron" style={{ fontSize: 14, fontWeight: 700, letterSpacing: 3 }}>ORBIT</span>
@@ -811,7 +814,7 @@ const TopBar = memo(({ logout, hiddenNexuses, onReveal }) => {
         <div className="oa-mono" style={{ fontSize: 10, color: "rgba(78,205,196,.65)", letterSpacing: 2, paddingRight: 16 }}>
           {time}<span style={{ animation: "oa-blink 1s step-end infinite", display: "inline-block" }}>_</span>
         </div>
-        {[["⚙", "SETTINGS", () => navigate("/settings")], ["◉", "PROFILE", () => navigate("/profile")], ["⏻", "LOGOUT", logout]].map(([icon, label, action]) => (
+        {[["âš™", "SETTINGS", () => navigate("/settings")], ["â—‰", "PROFILE", () => navigate("/profile")], ["â»", "LOGOUT", logout]].map(([icon, label, action]) => (
           <button key={label} onClick={action} style={{ padding: "5px 10px", borderRadius: 6, fontSize: 8, letterSpacing: 1.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "Orbitron,sans-serif", background: "rgba(198,160,110,.08)", border: "1px solid rgba(198,160,110,.35)", color: "#C6A06E", transition: "all .25s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(198,160,110,.18)"; e.currentTarget.style.boxShadow = "0 0 12px rgba(198,160,110,.3)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "rgba(198,160,110,.08)"; e.currentTarget.style.boxShadow = "none"; }}>
@@ -824,7 +827,7 @@ const TopBar = memo(({ logout, hiddenNexuses, onReveal }) => {
 });
 TopBar.displayName = "TopBar";
 
-/* ─────────────────────────────── MAIN EXPORT ────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MAIN EXPORT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
   const [activeTab, setActiveTab] = useState("orbits");
   const [mounted, setMounted] = useState(false);
@@ -839,13 +842,15 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
     return () => clearTimeout(t);
   }, []);
 
-  // ── Hidden Nexus State ──
+  // â”€â”€ Hidden Nexus State â”€â”€
   const [hiddenNexuses, setHiddenNexuses] = useState(() => {
       try {
           const saved = localStorage.getItem('amoled_hidden_nexuses');
           return saved ? JSON.parse(saved) : [];
       } catch { return []; }
   });
+
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const toggleHide = (nexus, e) => {
       if (e) e.stopPropagation();
@@ -903,7 +908,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
             hiddenNexuses={hiddenNexuses}
           />
 
-          {/* ── Main content ── */}
+          {/* â”€â”€ Main content â”€â”€ */}
           <div className="oa-main-content" style={{ flex: 1, overflow: "hidden", position: "relative", background: "#000", display: "flex", flexDirection: "column" }}>
 
             {children ? (
@@ -934,16 +939,108 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                 <div className="oa-nebula" style={{ width: 240, height: 240, background: "rgba(155,89,182,.03)", top: "8%", right: "38%", animationDelay: "-10s" }} />
 
                 {/* Header */}
-                <div style={{ marginBottom: 10, position: "relative", zIndex: 5, flexShrink: 0, ...fade(.1) }}>
+                <div style={{ marginBottom: 24, position: "relative", zIndex: 5, flexShrink: 0, ...fade(.1) }}>
                   <div className="oa-mono" style={{ fontSize: 10, color: "rgba(78,205,196,.65)", letterSpacing: 3, marginBottom: 4, display: "flex", alignItems: "center", gap: 9 }}>
                     <div style={{ width: 6, height: 6, background: "#00FF88", borderRadius: "50%", boxShadow: "0 0 8px #00FF88" }} />
-                    STATUS: ONLINE — GALAXY ENGINE ACTIVE
+                    STATUS: ONLINE â€” GALAXY ENGINE ACTIVE
                   </div>
                   <h1 className="oa-shimmer-text oa-orbitron" style={{ fontSize: 28, fontWeight: 900, letterSpacing: 5, marginBottom: 4 }}>WELCOME TO ORBIT</h1>
                   <p className="oa-raj" style={{ fontSize: 12, color: "rgba(198,160,110,.45)", letterSpacing: 3, margin: 0, textTransform: "uppercase" }}>SECURE ACCESS TERMINAL</p>
                 </div>
 
-                {/* Cards grid — stretches to fill remaining space */}
+                {/* Horizontal Nexus List */}
+                <style>{`
+                  @keyframes oa-neon-pulse {
+                    0%,100%{box-shadow:0 0 8px #C6A06E,0 0 18px rgba(198,160,110,.65),0 0 32px rgba(198,160,110,.3)}
+                    50%{box-shadow:0 0 14px #C6A06E,0 0 30px rgba(198,160,110,.9),0 0 52px rgba(198,160,110,.45)}
+                  }
+                  @keyframes oa-add-neon {
+                    0%,100%{box-shadow:0 0 5px rgba(198,160,110,.4)}
+                    50%{box-shadow:0 0 14px rgba(198,160,110,.75)}
+                  }
+                  @keyframes oa-popup-slide {
+                    from{opacity:0;transform:translateY(-8px) scale(.96)}
+                    to{opacity:1;transform:translateY(0) scale(1)}
+                  }
+                `}</style>
+                <div style={{ marginBottom: 24, display: "flex", gap: 16, alignItems: "flex-start", zIndex: 5, ...fade(.15) }}>
+                  <div className="oa-scroll-hide" style={{ display: "flex", gap: 20, overflowX: "auto", paddingBottom: 12, flex: 1, WebkitOverflowScrolling: 'touch' }}>
+                    {nexuses?.map((n) => {
+                      const isActive = selectedNexus?._id === n._id;
+                      const initials = (n.name || "?").slice(0, 2).toUpperCase();
+                      const avatarSrc = n.avatar || n.profilePic || n.image;
+                      return (
+                        <div key={n._id} onClick={() => { setSelectedNexus(n); navigate(`/nexus/${n._id}`); }}
+                          style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                        >
+                          <div style={{
+                            width: 68, height: 68, borderRadius: "50%",
+                            border: isActive ? "3px solid #C6A06E" : "2px solid rgba(198,160,110,0.3)",
+                            boxShadow: isActive ? "0 0 10px #C6A06E,0 0 22px rgba(198,160,110,.7),0 0 42px rgba(198,160,110,.35)" : "0 0 5px rgba(198,160,110,.2)",
+                            overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
+                            background: isActive ? "#0a0a0a" : "#141414",
+                            animation: isActive ? "oa-neon-pulse 2.2s ease-in-out infinite" : "none",
+                            transition: "all 0.3s ease", boxSizing: "border-box",
+                          }}>
+                            {avatarSrc ? (
+                              <img src={avatarSrc} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                            ) : (
+                              <div style={{
+                                width: "100%", height: "100%",
+                                background: isActive ? "linear-gradient(135deg,rgba(198,160,110,.3),rgba(198,160,110,.1))" : "rgba(198,160,110,.05)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: 18, fontWeight: 800, color: isActive ? "#C6A06E" : "rgba(198,160,110,.35)",
+                                fontFamily: "'Rajdhani',monospace", letterSpacing: 2,
+                              }}>{initials}</div>
+                            )}
+                          </div>
+                          <div className="oa-mono" style={{ fontSize: 9, color: isActive ? "#C6A06E" : "rgba(198,160,110,.4)", letterSpacing: 1.5, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>
+                            {n.name}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ position: "relative", flexShrink: 0, paddingBottom: 12 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                      onClick={() => setShowAddMenu(v => !v)}
+                    >
+                      <div style={{
+                        width: 68, height: 68, borderRadius: "50%",
+                        border: "2.5px dashed rgba(198,160,110,.6)", background: "rgba(198,160,110,.04)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "#C6A06E", fontSize: 28, fontWeight: 300,
+                        animation: "oa-add-neon 2.5s ease-in-out infinite", boxSizing: "border-box",
+                      }}>{showAddMenu ? "Ã—" : "+"}</div>
+                      <div className="oa-mono" style={{ fontSize: 9, color: "rgba(198,160,110,.5)", letterSpacing: 1.5, textAlign: "center" }}>
+                        {showAddMenu ? "CLOSE" : "ADD"}
+                      </div>
+                    </div>
+                    {showAddMenu && (
+                      <div onClick={(e) => e.stopPropagation()} style={{
+                        position: "absolute", top: "calc(100% - 2px)", right: 0,
+                        background: "linear-gradient(145deg,#0D0D0D,#111)", border: "1.5px solid #C6A06E",
+                        borderRadius: 14, boxShadow: "0 12px 40px rgba(0,0,0,.8),0 4px 12px rgba(198,160,110,.12),inset 0 1px 0 rgba(198,160,110,.12)",
+                        padding: "8px 0", zIndex: 9999, minWidth: 160, animation: "oa-popup-slide .18s ease-out",
+                      }}>
+                        <div style={{ position: "absolute", top: -8, right: 22, width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderBottom: "8px solid #C6A06E" }} />
+                        <div className="oa-mono" style={{ padding: "6px 14px 4px", fontSize: 9, color: "rgba(198,160,110,.5)", letterSpacing: 2, textTransform: "uppercase" }}>Nexus</div>
+                        <div onClick={() => { setNexusActionView("join"); setShowAddMenu(false); }}
+                          className="oa-mono" style={{ padding: "10px 18px", fontSize: 12, color: "#C6A06E", cursor: "pointer", letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}>
+                          âœ¦ Join Nexus
+                        </div>
+                        <div style={{ height: 1, background: "rgba(198,160,110,.15)", margin: "0 12px" }} />
+                        <div onClick={() => { setNexusActionView("create"); setShowAddMenu(false); }}
+                          className="oa-mono" style={{ padding: "10px 18px", fontSize: 12, color: "#C6A06E", cursor: "pointer", letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}>
+                          âœ¦ Create Nexus
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cards grid â€” stretches to fill remaining space */}
                 <div
                   className="oa-main-grid"
                   style={{
@@ -963,15 +1060,15 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                   </div>
                   <div style={{ ...fade(.3), height: "100%", display: "flex", opacity: 0.7 }}>
                     <ActionCard
-                      icon="🎮"
-                      title="ORBIT GAMES 🔒"
+                      icon="ðŸŽ®"
+                      title="ORBIT GAMES ðŸ”’"
                       subtitle="Coming soon. A new way to play together across the elite grid."
                       color="#4ECDC4"
                     />
                   </div>
                   <div style={{ ...fade(.4), height: "100%", display: "flex" }}>
                     <ActionCard
-                      icon="🔔"
+                      icon="ðŸ””"
                       title="PRIORITY ALERTS"
                       subtitle="Real-time synchronization with your professional orbit"
                       color="#C6A06E"
@@ -980,7 +1077,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                   </div>
                   <div style={{ ...fade(.5), height: "100%", display: "flex" }}>
                     <ActionCard
-                      icon="⚙"
+                      icon="âš™"
                       title="ATELIER"
                       subtitle="Fine-tune your workspace aesthetic and behavior"
                       color="#9B59B6"
@@ -1004,7 +1101,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                     </div>
                   ))}
                   <div style={{ marginLeft: "auto" }}>
-                    <span className="oa-mono" style={{ fontSize: 9, color: "rgba(198,160,110,.2)", letterSpacing: 2 }}>✦ 80 FPS GALAXY ENGINE ✦</span>
+                    <span className="oa-mono" style={{ fontSize: 9, color: "rgba(198,160,110,.2)", letterSpacing: 2 }}>âœ¦ 80 FPS GALAXY ENGINE âœ¦</span>
                   </div>
                 </div>
               </div>
@@ -1014,7 +1111,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
       </div>
 
         {/* Fixed sparkle */}
-        <div style={{ position: "fixed", bottom: 20, right: 22, fontSize: 22, color: "rgba(198,160,110,.45)", animation: "oa-float 3s ease-in-out infinite", filter: "drop-shadow(0 0 8px rgba(198,160,110,.4))", pointerEvents: "none" }}>✦</div>
+        <div style={{ position: "fixed", bottom: 20, right: 22, fontSize: 22, color: "rgba(198,160,110,.45)", animation: "oa-float 3s ease-in-out infinite", filter: "drop-shadow(0 0 8px rgba(198,160,110,.4))", pointerEvents: "none" }}>âœ¦</div>
       </div>
     </>
   );
@@ -1051,14 +1148,14 @@ export function AmoledSettings({
     <OrbitApp>
       <div style={{ maxWidth: 1000, margin: "0 auto", paddingBottom: 40 }}>
         <button onClick={() => navigate("/")} style={{ marginBottom: 20, background: "transparent", color: "rgba(198,160,110,.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'Share Tech Mono', monospace", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.6)"}>
-          ← RETURN TO ORBIT
+          â† RETURN TO ORBIT
         </button>
 
         {/* Header */}
         <div style={{ marginBottom: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <button onClick={() => navigate("/")} style={{ background: "transparent", border: "1px solid rgba(198,160,110,.4)", color: "#C6A06E", width: 44, height: 44, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, transition: "all 0.3s" }} onMouseEnter={e => { e.currentTarget.style.background = "rgba(198,160,110,.1)"; e.currentTarget.style.borderColor = "#C6A06E"; }} onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(198,160,110,.4)"; }}>
-              ◂
+              â—‚
             </button>
             <div>
               <div className="oa-mono" style={{ fontSize: 10, color: "rgba(198,160,110,.65)", letterSpacing: 3, marginBottom: 8 }}>
@@ -1088,12 +1185,12 @@ export function AmoledSettings({
           {/* Settings Nav */}
           <div className="oa-card oa-settings-nav" style={{ width: 220, padding: 12, flexShrink: 0 }}>
             {[
-              { id: "profile", label: "IDENTITY", icon: "◈" },
-              { id: "sound", label: "ACOUSTICS", icon: "🔊" },
-              { id: "appearance", label: "APPEARANCE", icon: "✨" },
-              { id: "notifications", label: "NOTIFICATIONS", icon: "🔔" },
-              { id: "orbit", label: "ORBIT ENGINE", icon: "🪐" },
-              { id: "security", label: "SECURITY", icon: "🔒" }
+              { id: "profile", label: "IDENTITY", icon: "â—ˆ" },
+              { id: "sound", label: "ACOUSTICS", icon: "ðŸ”Š" },
+              { id: "appearance", label: "APPEARANCE", icon: "âœ¨" },
+              { id: "notifications", label: "NOTIFICATIONS", icon: "ðŸ””" },
+              { id: "orbit", label: "ORBIT ENGINE", icon: "ðŸª" },
+              { id: "security", label: "SECURITY", icon: "ðŸ”’" }
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveSection(tab.id)} style={{ width: "100%", textAlign: "left", padding: "12px 14px", background: activeSection === tab.id ? "rgba(198,160,110,.1)" : "transparent", border: "none", borderLeft: activeSection === tab.id ? "2px solid #C6A06E" : "2px solid transparent", color: activeSection === tab.id ? "#C6A06E" : "rgba(198,160,110,.6)", fontFamily: "'Orbitron', sans-serif", fontSize: 11, letterSpacing: 1.5, cursor: "pointer", transition: "all .2s", display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
                 <span>{tab.icon}</span> {tab.label}
@@ -1309,7 +1406,7 @@ export function AmoledProfile() {
       <div style={{ maxWidth: 800, margin: "0 auto", paddingBottom: 40 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <button onClick={() => navigate("/")} style={{ background: "transparent", color: "rgba(198,160,110,.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'Share Tech Mono', monospace", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.6)"}>
-            ← RETURN TO ORBIT
+            â† RETURN TO ORBIT
           </button>
           <button onClick={useAuthStore.getState().logout} style={{ padding: "8px 16px", background: "rgba(255,85,85,.05)", border: "1px solid rgba(255,85,85,.3)", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer" }}>
             LOGOUT
@@ -1371,9 +1468,9 @@ export function AmoledProfile() {
   );
 }
 
-/* ─────────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    AMOLED SPOTIFY
-───────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export function AmoledSpotify() {
   const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore();
   const [playing, setPlaying] = useState(isPlaying || false);
@@ -1384,7 +1481,7 @@ export function AmoledSpotify() {
       <div style={{ maxWidth: 800, margin: "0 auto", paddingBottom: 40, height: "100%", display: "flex", flexDirection: "column" }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <button onClick={() => window.location.href = "/"} style={{ background: "transparent", color: "rgba(198,160,110,.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'Share Tech Mono', monospace", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.6)"}>
-            ← RETURN TO ORBIT
+            â† RETURN TO ORBIT
           </button>
           <button onClick={useAuthStore.getState().logout} style={{ padding: "8px 16px", background: "rgba(255,85,85,.05)", border: "1px solid rgba(255,85,85,.3)", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer" }}>
             LOGOUT
@@ -1407,7 +1504,7 @@ export function AmoledSpotify() {
           {!spotifyLinked ? (
             <>
               <div style={{ position: "relative", width: 140, height: 140, borderRadius: "50%", background: "linear-gradient(135deg,#0a2a2a, #000)", border: "2px solid rgba(78,205,196,0.6)", boxShadow: "0 0 40px rgba(78,205,196,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, margin: "0 auto" }}>
-                🎵
+                ðŸŽµ
               </div>
               <div style={{ maxWidth: 400, margin: "0 auto" }}>
                 <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: "rgba(198,160,110,0.5)", letterSpacing: 2, lineHeight: 1.7, marginBottom: 32, textTransform: "uppercase" }}>
@@ -1449,7 +1546,7 @@ export function AmoledSpotify() {
                 {currentTrack ? (
                   <img src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", filter: playing ? "none" : "grayscale(0.6)" }} alt="Album Art" />
                 ) : (
-                  <div style={{ fontSize: 60 }}>🎵</div>
+                  <div style={{ fontSize: 60 }}>ðŸŽµ</div>
                 )}
                 {playing && <div style={{ position: 'absolute', inset: -1, borderRadius: '50%', border: '1.5px solid #4ECDC4', animation: 'oa-twinkle 3s infinite', pointerEvents: 'none' }} />}
               </div>
@@ -1460,11 +1557,11 @@ export function AmoledSpotify() {
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 36, marginTop: 20 }}>
-                <button onClick={skipPrevious} style={{ background: "none", border: "none", cursor: "pointer", color: "#4ECDC4", fontSize: 24, opacity: 0.6, transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.6}>⏮</button>
+                <button onClick={skipPrevious} style={{ background: "none", border: "none", cursor: "pointer", color: "#4ECDC4", fontSize: 24, opacity: 0.6, transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.6}>â®</button>
                 <button onClick={() => playing ? pausePlayback() : playTrack()} style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,#0a2a2a,rgba(78,205,196,0.2))", border: "2px solid #4ECDC4", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 24, boxShadow: "0 0 24px rgba(78,205,196,0.4)", transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
-                  {playing ? "⏸" : "▶"}
+                  {playing ? "â¸" : "â–¶"}
                 </button>
-                <button onClick={skipNext} style={{ background: "none", border: "none", cursor: "pointer", color: "#4ECDC4", fontSize: 24, opacity: 0.6, transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.6}>⏭</button>
+                <button onClick={skipNext} style={{ background: "none", border: "none", cursor: "pointer", color: "#4ECDC4", fontSize: 24, opacity: 0.6, transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.6}>â­</button>
               </div>
             </>
           )}

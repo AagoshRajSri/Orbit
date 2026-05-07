@@ -38,6 +38,9 @@ const style = `
   }
   ::-webkit-scrollbar-thumb:hover { background: rgba(220, 20, 60, 0.55); }
 
+  .vamp-scroll-hide::-webkit-scrollbar { display: none; }
+  .vamp-scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
   :root {
     --blood:      #8B0000;
     --crimson:    #DC143C;
@@ -1573,6 +1576,7 @@ export default function OrbitVampire({ children }) {
     });
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [activeColorPickerId, setActiveColorPickerId] = useState(null);
+    const [showAddMenu, setShowAddMenu] = useState(false);
 
     const togglePin = (id, e) => {
         e.stopPropagation();
@@ -1790,6 +1794,143 @@ export default function OrbitVampire({ children }) {
                             </p>
 
                             <div className="ornament" ref={ornRef}>✦ ✧ ✦ ✧ ✦</div>
+
+                            {/* Keyframes */}
+                            <style>{`
+                              @keyframes vamp-neon-pulse {
+                                0%, 100% { box-shadow: 0 0 10px #8B0000, 0 0 20px rgba(139,0,0,0.8), 0 0 35px rgba(139,0,0,0.4); }
+                                50% { box-shadow: 0 0 15px #ff0000, 0 0 30px rgba(255,0,0,0.9), 0 0 55px rgba(139,0,0,0.6); }
+                              }
+                              @keyframes vamp-add-neon {
+                                0%, 100% { box-shadow: 0 0 8px rgba(139,0,0,0.5); }
+                                50% { box-shadow: 0 0 18px rgba(255,0,0,0.8); }
+                              }
+                              @keyframes vamp-popup-slide {
+                                from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+                                to   { opacity: 1; transform: translateY(0) scale(1); }
+                              }
+                            `}</style>
+
+                            {/* Nexus row + sticky Add button */}
+                            <div style={{ marginBottom: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                              {/* Scrollable nexus bubbles */}
+                              <div className="vamp-scroll-hide" style={{ display: "flex", gap: 20, overflowX: "auto", paddingBottom: 12, flex: 1, WebkitOverflowScrolling: 'touch' }}>
+                                {nexuses?.map((n) => {
+                                  const isActive = selectedNexus?._id === n._id;
+                                  const initials = (n.name || "?").slice(0, 2).toUpperCase();
+                                  const avatarSrc = n.avatar || n.profilePic || n.image;
+                                  return (
+                                    <div
+                                      key={n._id}
+                                      onClick={() => { setSelectedNexus(n); navigate(`/nexus/${n._id}`); }}
+                                      style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                                    >
+                                      {/* Neon ring — border + box-shadow */}
+                                      <div style={{
+                                        width: 68, height: 68, borderRadius: "50%",
+                                        border: isActive ? "3px solid #ff0000" : "2px solid rgba(139,0,0,0.4)",
+                                        boxShadow: isActive
+                                          ? "0 0 10px #ff0000, 0 0 22px rgba(255,0,0,0.7), 0 0 42px rgba(139,0,0,0.4)"
+                                          : "0 0 5px rgba(139,0,0,0.25)",
+                                        overflow: "hidden",
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                        background: isActive ? "var(--obsidian)" : "rgba(10,0,0,0.85)",
+                                        animation: isActive ? "vamp-neon-pulse 2s ease-in-out infinite" : "none",
+                                        transition: "all 0.3s ease",
+                                        boxSizing: "border-box",
+                                      }}>
+                                        {avatarSrc ? (
+                                          <img src={avatarSrc} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                                        ) : (
+                                          <div style={{
+                                            width: "100%", height: "100%",
+                                            background: isActive ? "linear-gradient(135deg, rgba(139,0,0,0.4), rgba(80,0,0,0.2))" : "rgba(139,0,0,0.1)",
+                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                            fontSize: 18, fontWeight: 700, color: isActive ? "#ff3333" : "rgba(139,0,0,0.4)",
+                                            fontFamily: "'Cinzel', serif", letterSpacing: 2,
+                                          }}>
+                                            {initials}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div style={{ fontFamily: 'Cinzel', fontSize: 9, color: isActive ? "#ff3333" : "var(--mist)", letterSpacing: 1.5, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%", textTransform: "uppercase" }}>
+                                        {n.name}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* + Add button — sticky outside scroll, popup anchors directly to it */}
+                              <div style={{ position: "relative", flexShrink: 0, paddingBottom: 12 }}>
+                                <div
+                                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                                  onClick={() => setShowAddMenu(v => !v)}
+                                >
+                                  <div style={{
+                                    width: 68, height: 68, borderRadius: "50%",
+                                    border: "2.5px dashed var(--blood)",
+                                    background: "rgba(139,0,0,0.05)",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    color: "var(--blood)", fontSize: 28, fontFamily: 'Cinzel',
+                                    animation: "vamp-add-neon 2.5s ease-in-out infinite",
+                                    transition: "all 0.25s",
+                                    boxSizing: "border-box",
+                                  }}>
+                                    {showAddMenu ? "×" : "+"}
+                                  </div>
+                                  <div style={{ fontFamily: 'Cinzel', fontSize: 9, color: "var(--blood)", letterSpacing: 1.5, textAlign: "center", textTransform: "uppercase" }}>
+                                    {showAddMenu ? "Close" : "Add"}
+                                  </div>
+                                </div>
+
+                                {/* Popup — position:absolute relative to this small wrapper */}
+                                {showAddMenu && (
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      position: "absolute", top: "calc(100% - 2px)", right: 0,
+                                      background: "linear-gradient(145deg, #0a0000, #100505)",
+                                      border: "1.5px solid var(--blood)",
+                                      borderRadius: 12,
+                                      boxShadow: "0 16px 48px rgba(0,0,0,0.9), 0 4px 12px rgba(139,0,0,0.2), inset 0 1px 0 rgba(139,0,0,0.2)",
+                                      padding: "8px 0", zIndex: 9999, minWidth: 160,
+                                      animation: "vamp-popup-slide 0.18s ease-out",
+                                    }}
+                                  >
+                                    {/* Connecting arrow */}
+                                    <div style={{
+                                      position: "absolute", top: -8, right: 22,
+                                      width: 0, height: 0,
+                                      borderLeft: "8px solid transparent",
+                                      borderRight: "8px solid transparent",
+                                      borderBottom: "8px solid var(--blood)",
+                                    }} />
+                                    <div style={{ padding: "6px 14px 4px", fontFamily: 'Cinzel', fontSize: 9, color: "rgba(139,0,0,0.7)", letterSpacing: 2, textTransform: "uppercase" }}>
+                                      Nexus
+                                    </div>
+                                    <div
+                                      onClick={() => { setNexusActionView("join"); setShowAddMenu(false); }}
+                                      style={{ padding: "10px 18px", fontFamily: 'Cinzel', fontSize: 12, color: "var(--silver)", cursor: "pointer", letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}
+                                      onMouseEnter={e => e.currentTarget.style.background = "rgba(139,0,0,0.1)"}
+                                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                                    >
+                                      ✦ Join Nexus
+                                    </div>
+                                    <div style={{ height: 1, background: "rgba(139,0,0,0.2)", margin: "0 12px" }} />
+                                    <div
+                                      onClick={() => { setNexusActionView("create"); setShowAddMenu(false); }}
+                                      style={{ padding: "10px 18px", fontFamily: 'Cinzel', fontSize: 12, color: "var(--silver)", cursor: "pointer", letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}
+                                      onMouseEnter={e => e.currentTarget.style.background = "rgba(139,0,0,0.1)"}
+                                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                                    >
+                                      ✦ Create Nexus
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
 
                             <HangingBats />
 

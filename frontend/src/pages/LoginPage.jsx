@@ -96,7 +96,7 @@ const CSS = `
   color: #f0f4ff; line-height: 0.95; letter-spacing: -0.02em; margin: 0 0 8px;
 }
 .lp-headline-sub {
-  font-size: 9.5px; color: rgba(255,255,255,0.22);
+  font-size: 9.5px; color: rgba(255,255,255,0.45);
   letter-spacing: 0.18em; text-transform: uppercase;
   display: flex; align-items: center; gap: 10px;
 }
@@ -124,7 +124,7 @@ const CSS = `
 .lp-field:focus-within::after { width: 100%; }
 .lp-field-label {
   font-size: 8px; font-weight: 700; letter-spacing: 0.18em;
-  text-transform: uppercase; color: rgba(255,255,255,0.2);
+  text-transform: uppercase; color: rgba(255,255,255,0.85);
   margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;
 }
 .lp-field-label a {
@@ -138,7 +138,7 @@ const CSS = `
 .lp-field:focus-within .lp-field-icon { color: rgba(109,40,217,0.65); }
 .lp-input {
   flex: 1; background: transparent; border: none; outline: none;
-  color: #f0f4ff; font-family: 'JetBrains Mono', monospace;
+  color: #ffffff; font-family: 'JetBrains Mono', monospace;
   font-size: clamp(17px, 1.8vw, 23px); caret-color: #7c3aed; padding: 0;
 }
 .lp-input::placeholder { color: rgba(255,255,255,0.08); }
@@ -256,7 +256,7 @@ const CSS = `
   flex-shrink: 0;
   border-top: 1px solid rgba(255,255,255,0.05);
 }
-.lp-footer-left { font-size: 11px; color: rgba(255,255,255,0.22); }
+.lp-footer-left { font-size: 11px; color: rgba(255,255,255,0.45); }
 .lp-footer-left a { color: #7c3aed; text-decoration: none; font-weight: 700; transition: color 0.2s; }
 .lp-footer-left a:hover { color: #a78bfa; }
 .lp-admin-link {

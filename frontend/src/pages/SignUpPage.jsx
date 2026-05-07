@@ -121,7 +121,7 @@ const CSS = `
   color: #f0f4ff; line-height: 0.95; letter-spacing: -0.02em; margin: 0 0 6px;
 }
 .sp-headline-sub {
-  font-size: 9px; color: rgba(255,255,255,0.2);
+  font-size: 9px; color: rgba(255,255,255,0.45);
   letter-spacing: 0.18em; text-transform: uppercase;
   display: flex; align-items: center; gap: 10px;
 }
@@ -159,7 +159,7 @@ const CSS = `
 .sp-field:focus-within::after { width: 100%; }
 .sp-field-label {
   font-size: 7.5px; font-weight: 700; letter-spacing: 0.18em;
-  text-transform: uppercase; color: rgba(255,255,255,0.18); margin-bottom: 7px;
+  text-transform: uppercase; color: rgba(255,255,255,0.85); margin-bottom: 7px;
 }
 .sp-field-inner { display: flex; align-items: center; gap: 12px; }
 .sp-field-icon {
@@ -168,7 +168,7 @@ const CSS = `
 .sp-field:focus-within .sp-field-icon { color: rgba(14,165,233,0.6); }
 .sp-input {
   flex: 1; background: transparent; border: none; outline: none;
-  color: #f0f4ff; font-family: 'JetBrains Mono', monospace;
+  color: #ffffff; font-family: 'JetBrains Mono', monospace;
   font-size: clamp(15px, 1.6vw, 20px); caret-color: #38bdf8; padding: 0;
 }
 .sp-input::placeholder { color: rgba(255,255,255,0.07); }
@@ -274,7 +274,7 @@ const CSS = `
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.05);
 }
-.sp-footer-left { font-size: 11px; color: rgba(255,255,255,0.22); }
+.sp-footer-left { font-size: 11px; color: rgba(255,255,255,0.45); }
 .sp-footer-left a { color: #38bdf8; text-decoration: none; font-weight: 700; transition: color 0.2s; }
 .sp-footer-left a:hover { color: #7dd3fc; }
 .sp-admin-link {
