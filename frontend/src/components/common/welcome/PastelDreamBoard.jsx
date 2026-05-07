@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useThemeStore } from "../../../store/useThemeStore";
 import { useAuthStore } from "../../../store/useAuthStore";
 import { useSpotifyStore } from "../../../store/useSpotifyStore";
-import AnimalEasterEggs, { SittingBird, Flower, Snake } from "./AnimalEasterEggs";
+import EnhancedAnimalEasterEggs, { SittingBird, Flower, Snake } from "./EnhancedAnimalEasterEggs";
 import { useNexusStore } from "../../../store/useNexusStore";
 import NexusActionOverlay from "../../nexus/NexusActionOverlay";
 
@@ -436,7 +436,7 @@ export function TruePastelDashboard() {
       <SparkleClick />
       <BgClouds />
       <Floaties />
-      <AnimalEasterEggs />
+      <EnhancedAnimalEasterEggs />
 
       {/* Side Decorative Plants */}
       <div style={{ position:"absolute", left:-15, bottom:"20%", opacity:0.35, pointerEvents:"none" }}>

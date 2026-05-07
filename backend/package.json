@@ -12,7 +12,6 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@simplewebauthn/server": "^13.3.0",
     "@socket.io/redis-adapter": "^8.3.0",
     "argon2": "^0.44.0",
     "bcryptjs": "^3.0.3",
@@ -30,13 +29,7 @@
     "mongoose": "^8.19.3",
     "nanoid": "^5.1.7",
     "nodemailer": "^8.0.7",
-    "otpauth": "^9.5.0",
-    "otplib": "^13.4.0",
-    "qrcode": "^1.5.4",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
-    "socket.io-msgpack-parser": "^3.0.2",
-    "twilio": "^5.13.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {

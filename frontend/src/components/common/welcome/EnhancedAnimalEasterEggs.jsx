@@ -458,3 +458,65 @@ export const Snake = ({ color = "#88ffcc", ...props }) => (
     <circle fill={color} cx="20" cy="75" r="10" />
   </svg>
 );
+
+/* ── FLYING BIRD TRIGGER ── */
+export const FlyingBirdTrigger = ({ children }) => {
+  const [birds, setBirds] = useState([]);
+
+  const trigger = () => {
+    const id = Date.now();
+    const newBird = {
+      id,
+      top: Math.random() * 60 + 10 + "%",
+      delay: Math.random() * 0.5,
+      duration: Math.random() * 2 + 3,
+    };
+    setBirds((prev) => [...prev, newBird]);
+    setTimeout(() => {
+      setBirds((prev) => prev.filter((b) => b.id !== id));
+    }, 6000);
+  };
+
+  useEffect(() => {
+    window.triggerFlyingBird = trigger;
+    const interval = setInterval(() => {
+      if (Math.random() > 0.7) trigger();
+    }, 10000);
+    return () => {
+      delete window.triggerFlyingBird;
+      clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <>
+      <div onClick={trigger} className="cursor-pointer inline-block">
+        {children}
+      </div>
+      <div className="fixed inset-0 pointer-events-none z-[10000] overflow-hidden">
+        <style>{`
+          @keyframes flyAcross {
+            0% { transform: translateX(-100px) scaleX(1); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateX(calc(100vw + 100px)) scaleX(1); opacity: 0; }
+          }
+        `}</style>
+        {birds.map((bird) => (
+          <div
+            key={bird.id}
+            style={{
+              position: "absolute",
+              top: bird.top,
+              left: 0,
+              animation: `flyAcross ${bird.duration}s linear forwards`,
+              animationDelay: `${bird.delay}s`,
+            }}
+          >
+            <SittingBird color="#ff8ec8" />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+};
