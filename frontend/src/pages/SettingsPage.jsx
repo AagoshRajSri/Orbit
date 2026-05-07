@@ -31,9 +31,9 @@ import { CyberpunkSettings } from "../themes/darkCyberpunkTheme";
 import { LightSettings } from "../themes/lightTheme";
 import { PastelSettings } from "../themes/pastelTheme";
 import { useNavigate } from "react-router-dom";
-import AnimalEasterEggs, {
+import EnhancedAnimalEasterEggs, {
   FlyingBirdTrigger,
-} from "../components/common/welcome/AnimalEasterEggs";
+} from "../components/common/welcome/EnhancedAnimalEasterEggs";
 
 const STORAGE_KEYS = {
   displayName: "orbit_displayName_v1",
@@ -523,7 +523,7 @@ const SettingsPage = () => {
       <div
         className={`h-full min-h-screen relative overflow-hidden transition-colors duration-500 ${isPastel ? "bg-[#fffafa]" : "bg-transparent"}`}
       >
-        {isPastel && <AnimalEasterEggs />}
+        {isPastel && <EnhancedAnimalEasterEggs />}
         <div className="h-full min-h-0 flex flex-col relative z-10 px-4">
           <div className="flex-1 min-h-0 overflow-hidden">
             {/* Mobile top menu */}
