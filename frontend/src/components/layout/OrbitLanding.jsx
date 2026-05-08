@@ -498,7 +498,7 @@ export default function OrbitLanding({ onComplete }) {
       transition={{ duration: 0.9, ease: "easeInOut" }}
       style={{
         width: "100%",
-        height: "100vh",
+        height: "100dvh",
         minHeight: 600,
         overflow: "hidden",
         position: "relative",

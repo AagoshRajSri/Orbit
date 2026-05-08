@@ -41,7 +41,7 @@ const CSS = `
   font-family: 'Inter', 'Outfit', sans-serif;
   color: ${LUXURY_COLORS.textPrimary};
   background-color: ${LUXURY_COLORS.canvas};
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -1103,7 +1103,7 @@ export default function LightTheme({ children }) {
        {/* MOBILE DASHBOARD */}
        <div className="lm-mobile-canvas lm-mobile-only">
          {(nexusSelected || selectedUser || children || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/')) ? (
-           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: 'white' }}>
+           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100dvh', background: 'white' }}>
              {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
            </div>
          ) : (

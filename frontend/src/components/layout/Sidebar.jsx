@@ -613,7 +613,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
       </div>
       {/* Sidebar Footer Action: Your Orbit */}
       <div
-        className={`p-2.5 border-t backdrop-blur-xl shrink-0 ${
+        className={`p-2.5 border-t backdrop-blur-xl shrink-0 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] ${
           !isPastel && !isLight ? "bg-base-200/50 border-[var(--chat-border)]" : ""
         }`}
         style={isPastel ? {

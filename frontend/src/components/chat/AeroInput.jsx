@@ -7,6 +7,7 @@ import { PixelAvatar } from "../avatar/PixelAvatar/PixelAvatar.jsx";
 import { Ico, I } from "./ChatCoreUI.jsx";
 
 const STYLE = `
+.aero-mobile-only { display: none; }
 @media (max-width: 768px) {
   .aero-desktop-only { display: none !important; }
   .aero-mobile-only { display: flex !important; }
@@ -89,6 +90,7 @@ export default function AeroInput({
   return (
     <div className="aero-container" style={{
       padding: "14px 18px",
+      paddingBottom: "calc(14px + env(safe-area-inset-bottom, 0px))",
       background: t["--glass"],
       backdropFilter: `blur(${t["--blur"]})`,
       WebkitBackdropFilter: `blur(${t["--blur"]})`,
@@ -105,7 +107,7 @@ export default function AeroInput({
         boxShadow: focusBoxShadow,
       }}>
         {/* Mobile Left: Plus icon */}
-        <div className="aero-mobile-only" style={{ display: "none" }}>
+        <div className="aero-mobile-only">
           <button className="aero-plus-btn" onClick={onImageAttach}>
              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           </button>
@@ -149,7 +151,7 @@ export default function AeroInput({
             }}
           />
           {/* Mobile Right inside wrapper: Emoji */}
-          <div className="aero-mobile-only" style={{ display: "none", cursor: "pointer", color: "#8A8480" }} onClick={() => onMediaToggle?.("emoji")}>
+          <div className="aero-mobile-only" style={{ cursor: "pointer", color: "#8A8480" }} onClick={() => onMediaToggle?.("emoji")}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
           </div>
         </div>
@@ -208,7 +210,7 @@ export default function AeroInput({
         </div>
 
         {/* Mobile Right: Mic/Send button */}
-        <div className="aero-mobile-only" style={{ display: "none" }}>
+        <div className="aero-mobile-only">
           {value.trim() ? (
             <button className="aero-mic-btn" onClick={handleSend} style={{ background: '#10B981', boxShadow: '0 4px 10px rgba(16, 185, 129, 0.3)' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>

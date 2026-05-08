@@ -54,7 +54,7 @@ const Navbar = ({ onHamburger }) => {
   const isLight = theme === "light";
 
   return (
-    <header className={`fixed top-0 inset-x-0 z-[110] h-14 ${isPastel 
+    <header className={`fixed top-0 inset-x-0 z-[600] h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] ${isPastel
       ? "bg-white/10 backdrop-blur-xl border-b border-primary/10 shadow-[0_4px_20px_rgba(var(--p),0.05)]" 
       : isCyber
         ? "border-b border-[rgba(0,245,212,0.25)] bg-[rgba(4,2,18,0.95)] backdrop-blur-xl"
@@ -77,7 +77,7 @@ const Navbar = ({ onHamburger }) => {
         }
       `}</style>
       
-      <div className="h-full px-5 max-w-[1500px] mx-auto flex items-center justify-between group/nav relative">
+      <div className="h-full px-3 sm:px-5 max-w-[1500px] mx-auto flex items-center justify-between group/nav relative">
         {/* Shimmer effect for navbar */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent w-[200%] -translate-x-[100%] group-hover/nav:translate-x-[100%] transition-all duration-[2000ms] pointer-events-none" />
 

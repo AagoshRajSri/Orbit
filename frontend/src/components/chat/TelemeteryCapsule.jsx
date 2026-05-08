@@ -9,6 +9,7 @@ import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 
 // Inject pulse + scan animations once
 const STYLE = `
+.tc-mobile-only { display: none; }
 @keyframes pdot{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)}60%{box-shadow:0 0 0 5px rgba(34,197,94,0)}}
 @keyframes scan{from{left:-60%}to{left:160%}}
 @keyframes codeCopy{0%{opacity:0;transform:translateY(6px)}30%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateY(6px)}}
@@ -190,7 +191,7 @@ export default function TelemeteryCapsule({
             textShadow: isCyber ? `0 0 8px ${t["--acc"]}` : "none",
             opacity: 0.85,
           }}>
-            <span className="tc-mobile-only" style={{ display: 'none', alignItems: 'center', gap: 4 }}>
+            <span className="tc-mobile-only" style={{ alignItems: 'center', gap: 4 }}>
               {isNexus ? `${entitySub.split(' ')[0]} Members` : entitySub} <span style={{fontSize:8}}>•</span> <InfoIcon size={10} /> Encrypted
             </span>
             <span className="tc-desktop-only">{entitySub}</span>
@@ -318,7 +319,7 @@ export default function TelemeteryCapsule({
             <InfoIcon size={15} />
           </TeleBtn>
         </div>
-        <div className="tc-mobile-only" style={{ display: 'none' }}>
+        <div className="tc-mobile-only">
           <TeleBtn t={t} onClick={onInfoToggle} title="Options" square={isCyber}>
             <MoreIcon size={20} />
           </TeleBtn>

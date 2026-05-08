@@ -9,14 +9,14 @@ export default function OrbitalMainContent() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(0,0,0,0.15),rgba(0,0,0,0.62))]" />
 
       {/* Main holographic system */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative w-full max-w-[1100px] h-[560px]">
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        <div className="relative w-full max-w-[1100px] h-[560px] scale-[0.7] sm:scale-90 md:scale-100 transition-transform">
           <div className="absolute left-1/2 top-[92px] -translate-x-1/2">
             <OrbitalSystem />
           </div>
 
           {/* Center text block */}
-          <div className="absolute left-1/2 top-[310px] -translate-x-1/2 text-center w-[640px]">
+          <div className="absolute left-1/2 top-[310px] -translate-x-1/2 text-center w-[90vw] max-w-[640px]">
             <h2 className="text-[28px] font-semibold tracking-tight bg-[linear-gradient(120deg,#22d3ee,#a855f7)] bg-clip-text text-transparent drop-shadow-[0_0_14px_rgba(56,189,248,0.35)]">
               Orbit Connect
             </h2>

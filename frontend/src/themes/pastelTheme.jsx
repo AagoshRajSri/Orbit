@@ -1382,7 +1382,7 @@ export default function PastelApp({ children }) {
 
   return (
     <div style={{
-      position: "relative", width: "100%", height: "100vh", overflow: "hidden",
+      position: "relative", width: "100%", height: "100dvh", overflow: "hidden",
       fontFamily: "'DM Sans', 'Nunito', system-ui, sans-serif",
       background: "#F7E8F0",
       cursor: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='3' fill='%23C8A9D4' opacity='0.8'/%3E%3C/svg%3E\") 12 12, auto",
@@ -1735,7 +1735,7 @@ export function PastelProfile() {
   if (!authUser) return <div style={{ padding: 40, color: "#d060a8", textAlign: "center" }}>Loading magical profile... ✨</div>;
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", overflow: "hidden", fontFamily: "'Nunito', sans-serif" }}>
+    <div style={{ position: "relative", width: "100%", height: "100dvh", background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", overflow: "hidden", fontFamily: "'Nunito', sans-serif" }}>
       {/* Background decorations */}
       <BgClouds />
       <Floaties />
@@ -1916,7 +1916,7 @@ export function PastelSettings({
   ];
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", overflow: "hidden", fontFamily: "'Nunito', sans-serif" }}>
+    <div style={{ position: "relative", width: "100%", height: "100dvh", background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", overflow: "hidden", fontFamily: "'Nunito', sans-serif" }}>
       <BgClouds />
       <Floaties />
       <SparkleClick />

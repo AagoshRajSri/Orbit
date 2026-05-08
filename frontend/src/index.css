@@ -76,7 +76,7 @@
 /* Smooth visual changes when switching themes */
 html,
 body {
-  height: 100%;
+  height: 100dvh;
   overflow: hidden;
   font-family:
     "Dosis",
@@ -99,7 +99,7 @@ body {
 
 /* Root element fills the full viewport — no outer scroll ever */
 #root {
-  height: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -108,7 +108,7 @@ body {
 
 /* ── MOBILE FOUNDATION ─────────────────────────────────────────── */
 
-/* Fix dynamic viewport height on mobile (fixes the 100vh problem) */
+/* Fix dynamic viewport height on mobile (fixes the 100dvh problem) */
 :root {
   --dvh: 1dvh;
 }
@@ -158,7 +158,7 @@ button, [role="button"] {
   right: 0;
   height: var(--mobile-nav-h);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  z-index: 200;
+  z-index: 700;
   display: none;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -178,7 +178,7 @@ button, [role="button"] {
 .orbit-mobile-drawer {
   position: fixed;
   inset: 0;
-  z-index: 150;
+  z-index: 800;
   pointer-events: none;
 }
 .orbit-mobile-drawer.open {
@@ -2023,9 +2023,9 @@ button, [role="button"] {
 [data-theme="pastel-dream"] .msg-sender-name { color:#a78bfa !important; font-family:'Nunito',sans-serif !important; font-size:10px !important; font-weight:800 !important; letter-spacing:0.12em !important; }
 [data-theme="pastel-dream"] .msg-timestamp { color:rgba(167,139,250,0.45) !important; font-family:'Nunito',sans-serif !important; font-size:9.5px !important; font-weight:700 !important; }
 /* Enhanced orbs */
-[data-theme="pastel-dream"] .nxc-orb-1 { background:radial-gradient(circle,#f9a8d4,#c084fc); width:300px; height:300px; top:-120px; right:-20px; opacity:0.22; filter:blur(80px); }
-[data-theme="pastel-dream"] .nxc-orb-2 { background:radial-gradient(circle,#93c5fd,#818cf8); width:220px; height:220px; bottom:0%; left:-60px; opacity:0.18; filter:blur(70px); animation-delay:-4s; }
-[data-theme="pastel-dream"] .nxc-orb-3 { background:radial-gradient(circle,#fda4af,#f472b6); width:180px; height:180px; top:30%; right:-40px; opacity:0.16; filter:blur(65px); animation-delay:-8s; }
+[data-theme="pastel-dream"] .nxc-orb-1 { background:radial-gradient(circle,#f9a8d4,#c084fc); width:300px; height:300px; top:-120px; right:-20px; opacity:0.22; filter:blur(80px); pointer-events: none; }
+[data-theme="pastel-dream"] .nxc-orb-2 { background:radial-gradient(circle,#93c5fd,#818cf8); width:220px; height:220px; bottom:0%; left:-60px; opacity:0.18; filter:blur(70px); animation-delay:-4s; pointer-events: none; }
+[data-theme="pastel-dream"] .nxc-orb-3 { background:radial-gradient(circle,#fda4af,#f472b6); width:180px; height:180px; top:30%; right:-40px; opacity:0.16; filter:blur(65px); animation-delay:-8s; pointer-events: none; }
 /* Info panel */
 [data-theme="pastel-dream"] .nxp-hero-name { background:linear-gradient(135deg,#7c3aed,#ec4899); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-family:'Nunito',sans-serif; font-weight:900; }
 [data-theme="pastel-dream"] .nxp-member-name { color:#5b21b6; font-family:'Nunito',sans-serif; font-weight:700; }
@@ -2718,6 +2718,7 @@ button, [role="button"] {
   top: -100px; right: 0%;
   opacity: 0.14;
   filter: blur(70px);
+  pointer-events: none;
 }
 [data-theme="pastel-dream"] .nxc-orb-2 {
   background: radial-gradient(circle, #93c5fd, #818cf8);
@@ -2726,6 +2727,7 @@ button, [role="button"] {
   opacity: 0.12;
   filter: blur(60px);
   animation-delay: -4s;
+  pointer-events: none;
 }
 [data-theme="pastel-dream"] .nxc-orb-3 {
   background: radial-gradient(circle, #fda4af, #f472b6);
@@ -2734,6 +2736,7 @@ button, [role="button"] {
   opacity: 0.1;
   filter: blur(55px);
   animation-delay: -8s;
+  pointer-events: none;
 }
 
 /* ── Pastel header icon ── */
@@ -2842,6 +2845,7 @@ button, [role="button"] {
   position: absolute;
   z-index: 20;
   pointer-events: none;
+  max-width: 100vw;
   font-family: 'DM Mono', monospace;
   font-size: 16px;
   line-height: 1;
@@ -2916,6 +2920,7 @@ button, [role="button"] {
   filter: blur(60px);
   opacity: 0.18;
   animation: orb-drift 8s ease-in-out infinite;
+  pointer-events: none;
 }
 .nxc-orb-1 { width: 200px; height: 200px; background: #c084fc; top: -60px; right: 5%; animation-delay: 0s; }
 .nxc-orb-2 { width: 160px; height: 160px; background: #818cf8; bottom: 10%; left: -40px; animation-delay: -3s; }
@@ -2935,6 +2940,7 @@ button, [role="button"] {
   pointer-events: none;
   border-color: rgba(0, 212, 255, 0.4);
   border-style: solid;
+  max-width: 100vw;
 }
 .nxc-amoled-tl {
   top: 0; left: 0;

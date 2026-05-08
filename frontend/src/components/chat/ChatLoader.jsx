@@ -59,7 +59,7 @@ const ChatLoader = () => {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      minHeight: "100vh",
+      minHeight: "100dvh",
       background:
         "linear-gradient(135deg, #0a1628 0%, #0f1f35 50%, #0d1a2e 100%)",
       fontFamily:
