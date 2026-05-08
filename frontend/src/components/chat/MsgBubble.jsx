@@ -10,6 +10,7 @@ const REACT_SET = ["❤️","👍","😂","🔥","✨","🎯","🔐","💫","�
 
 const MSG_STYLE = `
 @media (max-width: 768px) {
+  .msg-content-col { max-width: 85% !important; }
   .msg-mobile-time-inside { display: none !important; }
   .msg-mobile-time-outside { display: flex !important; }
 }
@@ -218,10 +219,13 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
       />
 
       {/* Content col */}
-      <div style={{
-        maxWidth: "65%", display: "flex", flexDirection: "column",
-        gap: 4, alignItems: mine ? "flex-end" : "flex-start",
-      }}>
+      <div
+        className="msg-content-col"
+        style={{
+          maxWidth: "75%", display: "flex", flexDirection: "column",
+          gap: 4, alignItems: mine ? "flex-end" : "flex-start",
+        }}
+      >
         {/* Sender name for received */}
         {!mine && (
           <>

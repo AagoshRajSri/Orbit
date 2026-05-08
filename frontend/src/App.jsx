@@ -643,7 +643,7 @@ const AppContent = () => {
 
 
   return (
-    <div className={`relative h-screen bg-base-300 text-[var(--chat-text)] overflow-hidden flex flex-col ${isOrbitMode ? 'orbit-active' : ''}`}>
+    <div className={`relative h-dvh bg-base-300 text-[var(--chat-text)] overflow-hidden flex flex-col ${isOrbitMode ? 'orbit-active' : ''}`}>
       <GlobalAnnouncementBanner />
       <ThemePortal />
       {!isOnline && <ConnectionStatus />}

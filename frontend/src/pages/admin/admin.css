@@ -37,7 +37,7 @@
   font-family: var(--font); 
   background: var(--bg-base); 
   color: var(--text-primary); 
-  height: 100vh; 
+  height: 100dvh;
   display: flex; 
   overflow: hidden; 
   -webkit-font-smoothing: antialiased; 
@@ -334,7 +334,7 @@
 
 /* ─── Aesthetic Login ───────────────────────── */
 .admin-login-root {
-  min-height: 100vh; background: var(--bg-base);
+  min-height: 100dvh; background: var(--bg-base);
   display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
 }
@@ -422,7 +422,7 @@
    ADMIN LOGIN — Split Panel Redesign
 ════════════════════════════════════════════ */
 .alog-root {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 1fr 1fr;
   background: #040507;

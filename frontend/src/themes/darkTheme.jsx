@@ -64,7 +64,7 @@ const style = `
   body { background: var(--void); font-family: 'Cinzel', serif; }
 
   .orbit-root {
-    min-height: 100vh;
+    min-height: 100dvh;
     background: var(--void);
     color: var(--ivory);
     overflow: hidden;
@@ -386,7 +386,7 @@ const style = `
 
   /* ── Main Content ── */
   .main {
-    margin-left: 280px; height: calc(100vh - 60px); position: relative; z-index: 1;
+    margin-left: 280px; height: calc(100dvh - 60px); position: relative; z-index: 1;
     padding: 0;
     display: flex; flex-direction: column;
     overflow: hidden;
@@ -2084,7 +2084,7 @@ export function VampireProfile() {
     return (
         <div className="vamp-theme-root">
             <style>{style}</style>
-            <div className="orbit-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: '24px 32px', overflow: 'hidden', position: 'relative', zIndex: 500 }}>
+            <div className="orbit-root" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', padding: '24px 32px', overflow: 'hidden', position: 'relative', zIndex: 500 }}>
                 <div className="bg-atmosphere" /><div className="blood-drip" />
                 <BloodRain /><Embers /><Lightning /><Particles />
 
@@ -2327,7 +2327,7 @@ export function VampireSettings({
     return (
         <div className="vamp-theme-root">
             <style>{style}</style>
-            <div className="orbit-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: '24px 32px', overflow: 'hidden', position: 'relative', zIndex: 500 }}>
+            <div className="orbit-root" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', padding: '24px 32px', overflow: 'hidden', position: 'relative', zIndex: 500 }}>
                 <div className="bg-atmosphere" />
                 <div className="blood-drip" />
                 <BloodRain />

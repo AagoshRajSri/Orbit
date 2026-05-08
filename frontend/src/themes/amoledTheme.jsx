@@ -887,7 +887,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       {/* Root */}
-      <div className={`oa-app-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ width: "100%", height: "100vh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter','Rajdhani',sans-serif", position: "relative" }}>
+      <div className={`oa-app-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ width: "100%", height: "100dvh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter','Rajdhani',sans-serif", position: "relative" }}>
 
         <TopBar logout={logout} hiddenNexuses={hiddenNexuses} onReveal={onReveal} />
 

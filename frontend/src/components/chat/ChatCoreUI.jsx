@@ -254,7 +254,7 @@ const GLOBAL_CSS = `
 }
 @keyframes scanline {
   0%{transform:translateY(-100%)}
-  100%{transform:translateY(100vh)}
+  100%{transform:translateY(100dvh)}
 }
 @keyframes float {
   0%,100%{transform:translateY(0)}

@@ -1197,7 +1197,7 @@ export default function OrbitNeonCyberpunk({ children }) {
   }, []);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#060010" }}>
+    <div style={{ position: "relative", width: "100%", height: "100dvh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#060010" }}>
       <style>{STYLES}</style>
 
       {/* Nebula backgrounds */}

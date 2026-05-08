@@ -252,7 +252,7 @@ const GLOBAL_CSS = `
 }
 @keyframes scanline {
   0%{transform:translateY(-100%)}
-  100%{transform:translateY(100vh)}
+  100%{transform:translateY(100dvh)}
 }
 @keyframes float {
   0%,100%{transform:translateY(0)}
@@ -1272,7 +1272,7 @@ export default function NexusChatDesktop() {
   return (
     <>
       <style>{GLOBAL_CSS}</style>
-      <div style={{width:"100vw",height:"100vh",background:"#050505",display:"flex",flexDirection:"column",overflow:"hidden",...cssVars}}>
+      <div style={{width:"100vw",height:"100dvh",background:"#050505",display:"flex",flexDirection:"column",overflow:"hidden",...cssVars}}>
 
         {/* ── THEME SWITCHER BAR ── */}
         <div style={{flexShrink:0,background:"#0a0a0a",borderBottom:"1px solid #1a1a1a",padding:"10px 24px",display:"flex",alignItems:"center",gap:8,overflowX:"auto",scrollbarWidth:"none"}}>

@@ -29,7 +29,7 @@ export default function TetherApproval() {
 
   const cs = {
     wrap: {
-      width: '100vw', height: '100vh', background: '#0a090f', 
+      width: '100vw', height: '100dvh', background: '#0a090f',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '24px', fontFamily: "'Nunito', sans-serif"
     },

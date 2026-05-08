@@ -28,7 +28,7 @@ const IcoLock = () => (
 
 const CSS = `
   .alog-root {
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -51,7 +51,7 @@ const CSS = `
     padding: 48px;
     position: relative;
     overflow: hidden;
-    height: 100vh;
+    height: 100dvh;
   }
 
   .alog-grid-bg {
@@ -147,7 +147,7 @@ const CSS = `
     align-items: center; justify-content: center;
     padding: 48px;
     background: #040507;
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     position: relative;
   }
