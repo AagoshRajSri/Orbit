@@ -1,19 +1,22 @@
 import { motion } from "framer-motion";
+import { memo } from "react";
 
-export default function RadarWidget() {
+const RadarWidget = memo(() => {
   return (
-    <div className="absolute bottom-6 right-8 z-30">
+    <div className="absolute bottom-6 right-8 z-30 pointer-events-none">
       <div className="relative size-20 rounded-full bg-white/5 backdrop-blur-xl border border-white/12 shadow-[0_0_35px_rgba(168,85,247,0.35)]">
         {/* outer glow ring */}
         <div className="absolute inset-[-6px] rounded-full border border-fuchsia-400/25 blur-[0.5px]" />
 
         <motion.div
           className="absolute inset-2 rounded-full border border-cyan-300/25"
+          style={{ willChange: "transform" }}
           animate={{ rotate: 360 }}
           transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
         />
         <motion.div
           className="absolute inset-4 rounded-full border border-fuchsia-300/20"
+          style={{ willChange: "transform" }}
           animate={{ rotate: -360 }}
           transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
         />
@@ -25,6 +28,7 @@ export default function RadarWidget() {
             background:
               "conic-gradient(from 0deg, rgba(34,211,238,0.0), rgba(34,211,238,0.0), rgba(34,211,238,0.16), rgba(168,85,247,0.0), rgba(168,85,247,0.0))",
             filter: "drop-shadow(0 0 12px rgba(34,211,238,0.35))",
+            willChange: "transform",
           }}
           animate={{ rotate: 360 }}
           transition={{ duration: 5.5, repeat: Infinity, ease: "linear" }}
@@ -39,5 +43,8 @@ export default function RadarWidget() {
       </div>
     </div>
   );
-}
+});
+
+RadarWidget.displayName = "RadarWidget";
+export default RadarWidget;
 

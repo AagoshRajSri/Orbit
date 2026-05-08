@@ -167,7 +167,6 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const nexusTypingUsers  = useNexusStore(s => s.nexusTypingUsers);
   const sendNexusMessage  = useNexusStore(s => s.sendNexusMessage);
   const getNexusMessages  = useNexusStore(s => s.getNexusMessages);
-  const setNexusTyping    = useNexusStore(s => s.setNexusTyping);
   // For InfoPanel wiring
   const setSelectedNexus  = useNexusStore(s => s.setSelectedNexus);
   const deleteNexus        = useNexusStore(s => s.deleteNexus);
@@ -175,7 +174,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   // ── Chat store ──
   const selectedUser      = useChatStore(s => s.selectedUser);
   const setSelectedUser   = useChatStore(s => s.setSelectedUser);
-  const messages          = useChatStore(s => s.messages);
+  const messages          = useChatStore(s => s.decryptedMessages || []);
   const isChatLoading     = useChatStore(s => s.isMessagesLoading);
   const sendMessage       = useChatStore(s => s.sendMessage);
   const getMessages       = useChatStore(s => s.getMessages);
@@ -422,11 +421,11 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const rawMsgs = isNexus ? nexusMessages : messages;
   const isLoading = isNexus ? isNexusLoading : isChatLoading;
 
+  const authUserId = authUser?._id?.toString();
   const formattedMsgs = useMemo(() => {
     return (rawMsgs || []).map(m => {
-      const meIdStr = authUser?._id?.toString();
       const sIdStr  = (m.senderId?._id || m.senderId?.id || m.senderId)?.toString();
-      const isMe = sIdStr === meIdStr;
+      const isMe = sIdStr === authUserId;
       return {
         id:        m.id || m._id,
         from:      isMe ? "You" : (m.senderId?.username || m.senderId?.fullName || "Member"),
@@ -440,7 +439,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         isSystem:  m.isSystem,
       };
     });
-  }, [rawMsgs, authUser, localReactions]);
+  }, [rawMsgs, authUserId, localReactions]);
 
   const filtered = searchQ
     ? formattedMsgs.filter(m => (m.text || "").toLowerCase().includes(searchQ.toLowerCase()))
