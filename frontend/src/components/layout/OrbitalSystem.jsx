@@ -54,6 +54,7 @@ const OrbitalSystem = memo(() => {
         {/* core */}
         <motion.div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-5 rounded-full bg-cyan-200/70 shadow-[0_0_24px_rgba(34,211,238,0.75)]"
+          style={{ willChange: "transform, opacity" }}
           animate={{ scale: [1, 1.18, 1], opacity: [0.75, 1, 0.75] }}
           transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
         />
@@ -72,6 +73,7 @@ const OrbitalSystem = memo(() => {
                 idx % 2 === 0
                   ? "0 0 18px rgba(34,211,238,0.15)"
                   : "0 0 18px rgba(168,85,247,0.14)",
+              willChange: "transform",
             }}
             animate={{ rotate: 360 }}
             transition={{
@@ -90,7 +92,7 @@ const OrbitalSystem = memo(() => {
             <motion.div
               key={`wrap-${r.id}`}
               className="absolute left-1/2 top-1/2"
-              style={{ width: 0, height: 0 }}
+              style={{ width: 0, height: 0, willChange: "transform" }}
               animate={{ rotate: 360 }}
               transition={{
                 duration: r.duration,
@@ -107,6 +109,7 @@ const OrbitalSystem = memo(() => {
                     transformOrigin: "center",
                     opacity: p.depth,
                     filter: p.depth < 0.7 ? "blur(0.6px)" : "blur(0px)",
+                    willChange: "transform",
                   }}
                   animate={{ scale: [1, 1.08, 1] }}
                   transition={{

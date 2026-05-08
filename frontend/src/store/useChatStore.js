@@ -27,6 +27,7 @@ const decryptMessagesList = async (messages) => {
 
 export const useChatStore = create((set, get) => ({
   messages: [],
+  decryptedMessages: [], // Store decrypted messages separately to avoid re-decryption on every change
   hasMoreMessages: true,
   users: [],
   contactList: [],
@@ -69,7 +70,7 @@ export const useChatStore = create((set, get) => ({
     const shouldWipe = userId !== currentId || currentMessages.length === 0;
 
     if (shouldWipe) {
-      set({ isMessagesLoading: true, messages: [], hasMoreMessages: true });
+      set({ isMessagesLoading: true, messages: [], decryptedMessages: [], hasMoreMessages: true });
     } else {
       set({ isMessagesLoading: true });
     }
@@ -77,7 +78,8 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get(`/message/${userId}`);
       const decrypted = await decryptMessagesList(res.data);
       set({ 
-        messages: decrypted, 
+        messages: res.data,
+        decryptedMessages: decrypted,
         hasMoreMessages: res.data.length === 50 
       });
     } catch (error) {
@@ -88,7 +90,7 @@ export const useChatStore = create((set, get) => ({
   },
 
   loadMoreMessages: async (userId) => {
-    const { messages, isLoadingMoreParams, hasMoreMessages } = get();
+    const { messages, decryptedMessages, isLoadingMoreParams, hasMoreMessages } = get();
     if (isLoadingMoreParams || !hasMoreMessages || messages.length === 0) return;
 
     set({ isLoadingMoreParams: true });
@@ -98,7 +100,8 @@ export const useChatStore = create((set, get) => ({
       const decrypted = await decryptMessagesList(res.data);
       
       set((state) => ({ 
-        messages: [...decrypted, ...state.messages],
+        messages: [...res.data, ...state.messages],
+        decryptedMessages: [...decrypted, ...state.decryptedMessages],
         hasMoreMessages: res.data.length === 50
       }));
     } catch (error) {
@@ -305,13 +308,14 @@ export const useChatStore = create((set, get) => ({
       }
 
       let newMessages = [...state.messages];
+      let newDecrypted = [...state.decryptedMessages];
       const users = [...state.users];
 
       if (belongsToCurrentChat) {
         const messageId = normalizeId(decryptedMsg);
         const idempotencyKey = decryptedMsg.idempotencyKey;
 
-        const existsIndex = newMessages.findLastIndex((m) => {
+        const existsIndex = newDecrypted.findLastIndex((m) => {
           const mId = normalizeId(m);
           if (mId && messageId && mId === messageId) return true;
           if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
@@ -319,19 +323,26 @@ export const useChatStore = create((set, get) => ({
         });
 
         if (existsIndex === -1) {
-          newMessages.push(decryptedMsg);
+          newMessages.push(message);
+          newDecrypted.push(decryptedMsg);
         } else {
-          const existingMsg = newMessages[existsIndex];
+          const existingMsg = newDecrypted[existsIndex];
           newMessages[existsIndex] = {
+            ...message,
+            _id: message._id || existingMsg._id,
+            status: "sent",
+          };
+          newDecrypted[existsIndex] = {
             ...decryptedMsg,
             _id: decryptedMsg._id || existingMsg._id,
             status: "sent",
           };
         }
 
-        newMessages.sort((a, b) =>
-          new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
-        );
+        // We should sort both
+        const sortFn = (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+        newMessages.sort(sortFn);
+        newDecrypted.sort(sortFn);
       }
 
       // Update sidebar preview / unread badge
@@ -349,7 +360,7 @@ export const useChatStore = create((set, get) => ({
         return user;
       });
 
-      return { messages: newMessages, users: updatedUsers };
+      return { messages: newMessages, decryptedMessages: newDecrypted, users: updatedUsers };
     });
   },
 

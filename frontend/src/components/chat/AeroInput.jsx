@@ -2,7 +2,7 @@
 // AeroInput.jsx — Glassmorphic floating input with self-avatar, actions, E2EE notice
 // Ported from orbit-messaging.html .aero-wrap section.
 // =============================================================================
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, memo } from "react";
 import { PixelAvatar } from "../avatar/PixelAvatar/PixelAvatar.jsx";
 import { Ico, I } from "./ChatCoreUI.jsx";
 
@@ -29,7 +29,7 @@ function injectAeroStyle() {
   document.head.appendChild(s);
 }
 
-export default function AeroInput({
+const AeroInput = memo(({
   t,              // ORBIT_CHAT_THEMES token object
   value,          // controlled string
   onChange,       // (newValue) => void
@@ -42,7 +42,7 @@ export default function AeroInput({
   onVoiceToggle,  // () => void
   isRecording,    // boolean
   disabled,
-}) {
+}) => {
   const taRef = useRef(null);
   const isCyber  = t.id === "cyberpunk" || t.id === "gamer";
   const isPastel = t.id === "pastel";
@@ -54,29 +54,30 @@ export default function AeroInput({
 
   // Auto-resize textarea
   const autoResize = useCallback((el) => {
+    if (!el) return;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 80) + "px";
   }, []);
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     onChange(e.target.value);
     autoResize(e.target);
     onTyping?.();
-  };
+  }, [onChange, autoResize, onTyping]);
 
-  const handleKey = (e) => {
+  const handleKey = useCallback((e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
-  };
+  }, [onSend]);
 
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     onSend();
     if (taRef.current) {
       taRef.current.style.height = "auto";
     }
-  };
+  }, [onSend]);
 
   const focusBorderColor = focused ? t["--acc"] : t["--border"];
   const focusBoxShadow   = focused
@@ -238,7 +239,9 @@ export default function AeroInput({
       </div>
     </div>
   );
-}
+});
+
+export default AeroInput;
 
 function ActionBtn({ t, onClick, title, children, active }) {
   const [hov, setHov] = useState(false);

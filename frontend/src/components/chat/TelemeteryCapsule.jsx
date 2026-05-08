@@ -4,7 +4,7 @@
 //   CENTER: clickable join-code pill (copies to clipboard)
 //   RIGHT:  E2EE · signal · latency · search · call · info
 // =============================================================================
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 
 // Inject pulse + scan animations once
@@ -82,7 +82,7 @@ function CopyIcon({ size = 13, color = "currentColor" }) {
   );
 }
 
-export default function TelemeteryCapsule({
+const TelemeteryCapsule = memo(({
   t,                // resolved ORBIT_CHAT_THEMES token object
   entityName,       // conversation name (plain, no prefix)
   entitySub,        // subtitle (members count / handle / "typing…")
@@ -97,7 +97,7 @@ export default function TelemeteryCapsule({
   onInfoToggle,
   onMobileMenuToggle,
   searchActive,
-}) {
+}) => {
   const [latency, setLatency]     = useState(12);
   const [signalStr, setSignalStr] = useState(4);
   const [copied, setCopied]       = useState(false);
@@ -327,7 +327,9 @@ export default function TelemeteryCapsule({
       </div>
     </div>
   );
-}
+});
+
+export default TelemeteryCapsule;
 
 // ── Icon button ───────────────────────────────────────────────────────────────
 function TeleBtn({ t, onClick, title, children, active, square }) {
