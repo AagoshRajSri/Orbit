@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+.track { stroke: #C0A0C8; stroke-width: 3; fill: none; }
+.tie { stroke: #9B59B0; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+
+@keyframes moveTrain {
+  0%   { transform: translateX(-800px); }
+  66.66% { transform: translateX(8000px); }
+  100% { transform: translateX(8000px); }
+}
+@keyframes smoke1 {
+  0%   { opacity: 0.9; transform: translate(0px, 0px) scale(0.5); }
+  100% { opacity: 0; transform: translate(-30px, -60px) scale(2); }
+}
+@keyframes smoke2 {
+  0%   { opacity: 0.8; transform: translate(0px, 0px) scale(0.4); }
+  100% { opacity: 0; transform: translate(-15px, -70px) scale(1.8); }
+}
+@keyframes smoke3 {
+  0%   { opacity: 0.7; transform: translate(0px, 0px) scale(0.3); }
+  100% { opacity: 0; transform: translate(-40px, -55px) scale(1.5); }
+}
+@keyframes wheelSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.train-group {
+  animation: moveTrain 25s linear infinite;
+}
+.smoke-puff1 { animation: smoke1 1s ease-out infinite; }
+.smoke-puff2 { animation: smoke2 1s ease-out 0.3s infinite; }
+.smoke-puff3 { animation: smoke3 1s ease-out 0.6s infinite; }
+.smoke-puff4 { animation: smoke1 1s ease-out 0.9s infinite; }
+.wheel { animation: wheelSpin 0.4s linear infinite; }
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.5); }
+}
+.sparkle1 { animation: sparkle 0.8s ease-in-out infinite; }
+.sparkle2 { animation: sparkle 0.8s ease-in-out 0.3s infinite; }
+.sparkle3 { animation: sparkle 0.8s ease-in-out 0.6s infinite; }
+
+@keyframes starPulse {
+  0%,100%{ opacity:0.45; transform:scale(1) rotate(0deg); }
+  50%{ opacity:0.9; transform:scale(1.18) rotate(14deg); }
+}
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.38;} }
+@keyframes shimmer {
+  0%{ left:-60%; }
+  100%{ left:130%; }
+}
+@keyframes sparkFly {
+  0%  { transform:translate(0,0) scale(1); opacity:1; }
+  100%{ transform:translate(var(--dx),var(--dy)) scale(0); opacity:0; }
+}
+@keyframes float {
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(-6px); }
+}
+*{ box-sizing:border-box; }
+button:focus{ outline:none; }
+::-webkit-scrollbar{ width:4px; }
+::-webkit-scrollbar-thumb{ background:rgba(200,169,212,0.4); border-radius:99px; }
+
+/* ── Pastel Dream Chat Theme ── */
+.pastel-chat-env .nexus-chat-container {
+  background: rgba(255,255,255,0.6) !important;
+  backdrop-filter: blur(20px) !important;
+  border-radius: 30px !important; /* heavy border radius */
+  overflow: hidden !important;
+  border: 1px solid rgba(255,255,255,0.8) !important;
+  box-shadow: 0 10px 40px rgba(255,150,200,0.1) !important;
+}
+.pastel-chat-env .nxc-messages {
+  background-color: transparent !important;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(200, 180, 255, 0.4) 0%, transparent 60%),
+    radial-gradient(circle at 90% 80%, rgba(180, 255, 200, 0.4) 0%, transparent 60%) !important;
+}
+.pastel-chat-env .nexus-chat-header {
+  background: rgba(255,255,255,0.4) !important;
+  border-bottom: 1px solid rgba(255,183,178,0.4) !important;
+  backdrop-filter: blur(14px) !important;
+  color: #8b5a2b !important; /* Coffee brown */
+}
+.pastel-chat-env .nexus-chat-header .nxc-name { color: #8b5a2b !important; font-weight: 800 !important; }
+.pastel-chat-env .nxc-utility-group, .pastel-chat-env .nxc-telemetry-capsule {
+  background: transparent !important; border: none !important; box-shadow: none !important;
+  color: #8b5a2b !important;
+}
+/* Claymorphic Buttons */
+.pastel-chat-env .nxc-hbtn, .pastel-chat-env .nxc-aero-btn {
+  background: rgba(255,255,255,0.85) !important;
+  border-radius: 50% !important;
+  box-shadow: 4px 4px 10px rgba(255,183,178,0.3), -4px -4px 10px rgba(255,255,255,0.8), inset 2px 2px 4px rgba(255,255,255,1), inset -2px -2px 4px rgba(255,183,178,0.15) !important;
+  color: #8b5a2b !important;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+.pastel-chat-env .nxc-hbtn:hover, .pastel-chat-env .nxc-aero-btn:hover {
+  transform: scale(1.15) !important; /* Popping */
+  box-shadow: 6px 6px 12px rgba(255,183,178,0.35), -6px -6px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,1), inset -2px -2px 4px rgba(255,183,178,0.15) !important;
+}
+.pastel-chat-env .nxc-signal-bars .nxc-bar {
+  background-color: #8b5a2b !important; /* Using coffee brown to keep grounded */
+}
+
+.pastel-chat-env .nxi-shell {
+  background: rgba(255,255,255,0.4) !important;
+  border-top: 1px solid rgba(255,183,178,0.4) !important;
+  backdrop-filter: blur(14px) !important;
+}
+.pastel-chat-env .nxi-textarea {
+  background: rgba(255,255,255,0.6) !important;
+  border: 1px solid rgba(255,183,178,0.5) !important;
+  color: #8b5a2b !important;
+  border-radius: 18px !important;
+}
+.pastel-chat-env .nxi-textarea:focus {
+  border-color: #ffb7b2 !important; box-shadow: 0 0 10px rgba(255,183,178,0.5) !important;
+}
+.pastel-chat-env .nxi-send.ready {
+  background: rgba(255,255,255,0.85) !important;
+  color: #8b5a2b !important;
+  box-shadow: 4px 4px 10px rgba(255,183,178,0.3), inset 2px 2px 4px rgba(255,255,255,1) !important;
+  border-radius: 50% !important;
+}
+.pastel-chat-env .nxi-tool-btn, .pastel-chat-env .nxi-mic { color: #8b5a2b !important; }
+
+/* Bubbles */
+.pastel-chat-env .msg-bubble-mine {
+  background: rgba(255,255,255,0.8) !important;
+  border: 1px solid rgba(255,183,178,0.6) !important;
+  color: #8b5a2b !important;
+  box-shadow: 4px 4px 10px rgba(255,183,178,0.2) !important;
+}
+.pastel-chat-env .msg-bubble-other {
+  background: rgba(255,255,255,0.5) !important;
+  border: 1px solid rgba(255,255,255,0.8) !important;
+  color: #8b5a2b !important;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+  .pastel-main-container { flex-direction: column !important; }
+  .pastel-main-container.chat-inactive { overflow-y: auto; }
+  .pastel-sidebar { width: 100% !important; max-width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(255,183,178,0.4); flex: none !important; }
+  .pastel-sidebar.chat-active { display: none !important; }
+  .pastel-chat-wrapper { min-height: 600px; }
+}
