@@ -24,6 +24,224 @@ const M = "#ff00c8";   // neon magenta
 const P = "#b026ff";   // neon purple
 const Y = "#ffe600";   // neon yellow
 
+const SCAN_FEED = [
+  { node: "NEXUS_7A", type: "HANDSHAKE", time: "0:03", color: C },
+  { node: "GHOST_ID", type: "ENCRYPTED", time: "0:12", color: M, mine: true },
+  { node: "SHADOW_X", type: "LATENCY_OK", time: "0:29", color: P },
+  { node: "YOU", type: "UPLINK_ACT", time: "0:44", color: Y, mine: true },
+];
+
+const METRICS = [
+  { label: "SOCKET_LAT", val: "12ms", color: C },
+  { label: "SYNC_RANK", val: "ALPHA", color: P },
+  { label: "UPTIME", val: "99.9%", color: Y },
+  { label: "NEXUS_CNT", val: "1,337", color: M },
+];
+
+/* ─────────────────────────────────────────────
+   INLINE KEYFRAMES
+───────────────────────────────────────────── */
+const STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  @keyframes ncbPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  @keyframes ncbSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes ncbSpinR{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+  @keyframes ncbStream{0%{top:-100%;height:60px;opacity:0}20%{opacity:0.7}80%{opacity:0.7}100%{top:100%;height:60px;opacity:0}}
+  @keyframes ncbBlink{0%,100%{opacity:1}50%{opacity:0}}
+  @keyframes ncbShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+  @keyframes ncbGlitch1{0%,93%,100%{opacity:0;transform:translateX(0)}94%{opacity:1;transform:translateX(-4px)}96%{opacity:1;transform:translateX(4px)}}
+  @keyframes ncbGlitch2{0%,95%,100%{opacity:0;transform:translateX(0)}96%{opacity:1;transform:translateX(4px)}98%{opacity:1;transform:translateX(-3px)}}
+  @keyframes ncbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes ncbMatrixFade{0%{opacity:1}100%{opacity:0}}
+  @keyframes ncbScanline{0%{transform:translateY(-100%)}100%{transform:translateY(100%)}}
+  *{box-sizing:border-box;} button:focus{outline:none;}
+  ::-webkit-scrollbar{width:3px;height:3px;} 
+  ::-webkit-scrollbar-track{background:rgba(0,0,0,0.4);}
+  ::-webkit-scrollbar-thumb{background:rgba(0,255,245,0.2);border-radius:0;border-top:1px solid rgba(0,255,245,0.08);}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(0,255,245,0.5);}
+
+  .ncb-glitch-text:hover { position: relative; animation: ncbGlitch1 0.4s infinite; }
+
+  .ncb-scroll-hide::-webkit-scrollbar { display: none; }
+  .ncb-scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .ncb-glitch-text::before, .ncb-glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
+  .ncb-glitch-text:hover::before { animation: ncbGlitch1 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite; color: #ff00c8; z-index: -1; }
+  .ncb-glitch-text:hover::after { animation: ncbGlitch2 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite; color: #00fff5; z-index: -2; }
+  
+  @media (max-width: 768px) {
+    .ncb-desktop-nav { flex-wrap: wrap !important; height: auto !important; padding: 10px 14px !important; gap: 8px !important; }
+    .ncb-desktop-nav > div { flex-wrap: wrap !important; }
+    .ncb-center-hud { display: none !important; }
+    .ncb-container { flex-direction: column !important; }
+    .ncb-container.chat-inactive { overflow-y: auto; overflow-x: hidden; }
+    .ncb-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(176,38,255,0.3) !important; max-height: none !important; flex: none !important; }
+    .ncb-container.chat-active .ncb-sidebar { display: none !important; }
+    .ncb-main { min-height: 600px; flex: none !important; }
+    .ncb-container.chat-active .ncb-main { min-height: auto; flex: 1 !important; display: flex; flexDirection: column; }
+    .ncb-grid { grid-template-columns: 1fr !important; }
+    .ncb-hero h1 { font-size: 26px !important; }
+    .ncb-hero-btn { width: 100% !important; text-align: center !important; }
+    .ncb-settings-layout { flex-direction: column !important; }
+    .ncb-settings-nav { width: 100% !important; }
+    .ncb-profile-layout { flex-direction: column !important; }
+    .ncb-profile-card { width: 100% !important; }
+  }
+
+  /* ── Cyberpunk Chat Theme ── */
+  .neon-chat-env .nexus-chat-container {
+    background: linear-gradient(180deg, #1A0033 0%, #000000 100%) !important;
+    border: 1px solid rgba(255,0,255,0.3) !important;
+    border-radius: 12px !important; overflow: hidden !important;
+    box-shadow: 0 0 30px rgba(255,0,255,0.1), inset 0 0 20px rgba(0,255,255,0.05) !important;
+  }
+  .neon-chat-env .nxc-messages {
+    position: relative !important;
+    background: transparent !important;
+  }
+  .neon-chat-env .nxc-messages::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0.02; pointer-events: none;
+    background-image: linear-gradient(180deg, rgba(0,255,255,0) 0%, rgba(0,255,255,1) 50%, rgba(0,255,255,0) 100%);
+    background-size: 10px 200px;
+    background-repeat: repeat;
+    animation: cyber-rain 6s linear infinite;
+  }
+  @keyframes cyber-rain { 100% { background-position: 0 100%; } }
+
+  .neon-chat-env .nexus-chat-header { 
+    background: rgba(5,2,10,0.8) !important; 
+    border-bottom: 2px solid #FF00FF !important;
+    border-top: 2px solid #00FFFF !important;
+    box-shadow: 0 4px 20px rgba(255,0,255,0.2), inset 0 2px 10px rgba(0,255,255,0.2) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+  .neon-chat-env .nexus-chat-header .nxc-name { color: #fff !important; font-family: 'Orbitron', sans-serif !important; letter-spacing: 2px !important; text-shadow: 0 0 8px #FF00FF !important; }
+
+  .neon-chat-env .nxc-utility-group, .neon-chat-env .nxc-telemetry-capsule {
+    background: rgba(0,0,0,0.6) !important;
+    border: 1px solid rgba(0,255,255,0.3) !important;
+  }
+  .neon-chat-env .nxc-hbtn, .neon-chat-env .nxc-aero-btn {
+    color: #00FFFF !important;
+    text-shadow: 1px 0 0 red, -1px 0 0 blue !important; /* chromatic aberration */
+    transition: all 0.2s !important;
+  }
+  .neon-chat-env .nxc-hbtn:hover, .neon-chat-env .nxc-aero-btn:hover {
+    text-shadow: 0 0 10px #FF00FF, 0 0 20px #00FFFF !important;
+    transform: scale(1.1) !important;
+  }
+  .neon-chat-env .bg-white\\/20 { background: #FF00FF !important; opacity: 0.5 !important; }
+
+  .neon-chat-env .nxi-shell {
+    background: rgba(5,2,10,0.8) !important; 
+    border-top: 2px solid #00FFFF !important;
+    backdrop-filter: blur(12px) !important;
+  }
+  .neon-chat-env .nxi-textarea {
+    background: rgba(0,0,0,0.6) !important;
+    border: 1px solid rgba(0,255,255,0.5) !important;
+    color: #00FFFF !important;
+    font-family: 'Rajdhani', monospace !important;
+  }
+  .neon-chat-env .nxi-textarea:focus { border-color: #FF00FF !important; box-shadow: 0 0 10px rgba(255,0,255,0.3) !important; }
+  .neon-chat-env .nxi-send.ready {
+    background: #FF00FF !important;
+    border: 1px solid #FF00FF !important;
+    color: #fff !important;
+    box-shadow: 0 0 15px #FF00FF !important;
+  }
+  .neon-chat-env .nxi-tool-btn, .neon-chat-env .nxi-mic { color: #00FFFF !important; }
+
+  .neon-chat-env .msg-bubble-mine { 
+    background: rgba(255,0,255,0.15) !important; 
+    border: 1px solid #FF00FF !important; 
+    color: #00FFFF !important;
+    box-shadow: 0 0 12px rgba(255,0,255,0.3) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+  }
+  .neon-chat-env .msg-bubble-other { 
+    background: rgba(0,255,255,0.08) !important; 
+    border: 1px solid rgba(0,255,255,0.4) !important; 
+    color: #fff !important;
+    font-family: 'Rajdhani', sans-serif !important;
+  }
+`;
+
+/* ─────────────────────────────────────────────
+   CANVAS: ORBIT CODE RAIN
+───────────────────────────────────────────── */
+const OrbitRain = memo(() => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const ctx = c.getContext("2d");
+    c.width = c.offsetWidth; c.height = c.offsetHeight;
+    const cols = Math.floor(c.width / 16);
+    const drops = Array(cols).fill(1);
+    const chars = "10ORBITНЕХУС//SYS//10101XYZ!@#$%^&*";
+    const iv = setInterval(() => {
+      ctx.fillStyle = "rgba(9,0,20,0.06)";
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.font = "13px 'Share Tech Mono'";
+      drops.forEach((y, i) => {
+        const ch = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillStyle = Math.random() > 0.97 ? P : `rgba(0,255,245,0.35)`;
+        ctx.fillText(ch, i * 16, y * 16);
+        if (y * 16 > c.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      });
+    }, 50);
+    return () => clearInterval(iv);
+  }, []);
+  return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.18 }} />;
+});
+
+/* ─────────────────────────────────────────────
+   CANVAS: ORBITAL RING VISUALIZER
+───────────────────────────────────────────── */
+const OrbitalViz = memo(({ playing }) => {
+  const ref = useRef(null);
+  const bars = useRef(Array.from({ length: 28 }, () => 0.3 + Math.random() * 0.7));
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const ctx = c.getContext("2d"), W = c.width, H = c.height, cx = W / 2, cy = H / 2;
+    let t = 0, raf;
+    const colors = [C, P, M, Y, C];
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      if (playing) bars.current = bars.current.map(v => Math.max(0.05, Math.min(1, v + (Math.random() - 0.5) * 0.35)));
+      // Outer ring
+      ctx.strokeStyle = `rgba(0,255,245,0.2)`; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx, cy, 52, 0, Math.PI * 2); ctx.stroke();
+      // Bars around circle
+      bars.current.forEach((h, i) => {
+        const a = (i / bars.current.length) * Math.PI * 2 - Math.PI / 2;
+        const r0 = 32, r1 = r0 + h * 18;
+        ctx.strokeStyle = colors[i % colors.length];
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = colors[i % colors.length]; ctx.shadowBlur = 4;
+        ctx.beginPath();
+        ctx.moveTo(cx + r0 * Math.cos(a), cy + r0 * Math.sin(a));
+        ctx.lineTo(cx + r1 * Math.cos(a), cy + r1 * Math.sin(a));
+        ctx.stroke(); ctx.shadowBlur = 0;
+      });
+      // Center dot
+      const grd = ctx.createRadialGradient(cx, cy, 2, cx, cy, 18);
+      grd.addColorStop(0, P); grd.addColorStop(1, "transparent");
+      ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(cx, cy, 18, 0, Math.PI * 2); ctx.fill();
+      // Rotating spoke
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(t);
+      ctx.strokeStyle = `rgba(0,255,245,0.6)`; ctx.lineWidth = 1;
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(52, 0); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      t += 0.03; raf = requestAnimationFrame(draw);
+    };
+    draw(); return () => cancelAnimationFrame(raf);
+  }, [playing]);
+  return <canvas ref={ref} width={120} height={120} style={{ display: "block" }} />;
+});
+
 /* ─────────────────────────────────────────────
    INTERNAL COMPONENTS
 ───────────────────────────────────────────── */

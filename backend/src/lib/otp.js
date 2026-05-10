@@ -1,9 +1,9 @@
+import crypto from "crypto";
 import OTP from "../models/otp.model.js";
 
 import crypto from "crypto";
 
 export const generateOTP = () => {
-  // Generate a cryptographically secure 6-digit OTP
   return crypto.randomInt(100000, 1000000).toString();
 };
 
