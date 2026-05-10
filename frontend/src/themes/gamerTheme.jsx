@@ -1483,7 +1483,7 @@ export default function OrbitGrind({ children }) {
           color: #fff !important;
         }
 
-        @media (max-width: 800px) {
+        @media (max-width: 768px) {
           .gamer-container { flex-direction: column !important; }
           .gamer-container.chat-inactive { overflow-y: auto; overflow-x: hidden; }
           .gamer-sidebar { width: 100% !important; border-right: none !important; border-bottom: 2px solid #333 !important; flex: none !important; }
