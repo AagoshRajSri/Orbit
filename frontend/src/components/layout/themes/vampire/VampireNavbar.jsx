@@ -1,5 +1,6 @@
-import { memo, useState, useEffect } from "react";
+import React, { memo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSoundManager } from "../../../../hooks/useSoundManager";
 import { useAuthStore } from "../../../../store/useAuthStore";
 import { useNexusStore } from "../../../../store/useNexusStore";
 import batLogo from "../../../../assets/bat.svg";
@@ -41,7 +42,8 @@ const HiddenNexusBat = memo(({ nexus, onReveal }) => {
 });
 
 const VampireNavbar = () => {
-    const navigate = useNavigate();
+    const { play } = useSoundManager();
+  const navigate = useNavigate();
     const logout = useAuthStore(state => state.logout);
     const [hiddenNexuses, setHiddenNexuses] = useState(() => JSON.parse(localStorage.getItem('vampire_hidden_nexuses') || '[]'));
 

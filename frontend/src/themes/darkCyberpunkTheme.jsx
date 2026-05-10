@@ -1121,9 +1121,84 @@ function CircuitOverlay() {
 }
 
 /* ─────────────────────────────────────────────
+   MOBILE COMPONENTS
+───────────────────────────────────────────── */
+const CyberpunkMobileNav = memo(({ authUser, navigate }) => {
+  const { play } = useSoundManager();
+  return (
+    <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', background: 'rgba(6,0,16,0.96)', borderBottom: `1.5px solid ${C}44`, backdropFilter: 'blur(20px)', flexShrink: 0, zIndex: 1000 }}>
+      <div onClick={() => { play("click"); navigate("/profile"); }} style={{ width: 34, height: 34, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${C}`, boxShadow: `0 0 10px ${C}44`, cursor: "pointer" }}>
+        <img src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </div>
+      <div className="ncb-glitch-text oa-orbitron" data-text="ORBIT" style={{ fontSize: 18, fontWeight: 900, letterSpacing: 4, color: C, textShadow: `0 0 10px ${C}` }}>ORBIT</div>
+      <div onClick={() => { play("click"); navigate("/settings"); }} style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, color: C, textShadow: `0 0 8px ${C}` }}>⚙</div>
+    </div>
+  );
+});
+
+const CyberpunkMobileDash = memo(({ 
+  synced, onToggleSync, 
+  nexuses, isNexusesLoading, setSelectedNexus, 
+  users, setSelectedUser, 
+  nexusUnread, setNexusActionView, 
+  hiddenNexuses, toggleHide,
+  activeTab, setActiveTab
+}) => {
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', background: '#060010', position: 'relative' }}>
+      <CircuitOverlay />
+      <div style={{ padding: "20px 16px" }}>
+        <StatusBar synced={synced} />
+        <Sidebar 
+          synced={synced} 
+          onToggleSync={onToggleSync} 
+          onJoin={() => setNexusActionView("join")}
+          onNexus={() => setNexusActionView("create")}
+          nexuses={nexuses}
+          isNexusesLoading={isNexusesLoading}
+          setSelectedNexus={setSelectedNexus}
+          users={users || []}
+          setSelectedUser={setSelectedUser}
+          nexusUnread={nexusUnread || {}}
+          setNexusActionView={setNexusActionView}
+          hiddenNexuses={hiddenNexuses}
+          toggleHide={toggleHide}
+          forcedTab={activeTab === "orbits" ? "orbits" : "chats"}
+        />
+      </div>
+    </div>
+  );
+});
+
+const CyberpunkMobileTabBar = memo(({ currentTab, onTabChange }) => {
+  const { play } = useSoundManager();
+  const tabs = [
+    { id: 'orbits', label: 'NODES', icon: '🌀', color: C },
+    { id: 'chats', label: 'COMMS', icon: '💬', color: M },
+  ];
+
+  return (
+    <div style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-around', background: 'rgba(6,0,16,0.96)', borderTop: `1.5px solid ${P}44`, backdropFilter: 'blur(20px)', paddingBottom: 'env(safe-area-inset-bottom)', flexShrink: 0, zIndex: 1000 }}>
+      {tabs.map(t => {
+        const active = currentTab === t.id;
+        return (
+          <div key={t.id} onClick={() => { play("click"); onTabChange(t.id); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer', opacity: active ? 1 : 0.4, transition: 'all 0.3s' }}>
+            <div style={{ fontSize: 20, color: active ? t.color : '#fff', textShadow: active ? `0 0 10px ${t.color}` : 'none' }}>{t.icon}</div>
+            <div className="oa-orbitron" style={{ fontSize: 8, fontWeight: 900, letterSpacing: 1.5, color: active ? t.color : 'rgba(255,255,255,0.5)' }}>{t.label}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
+/* ─────────────────────────────────────────────
    MAIN EXPORT
 ───────────────────────────────────────────── */
 export default function OrbitNeonCyberpunk({ children }) {
+  const [activeTab, setActiveTab] = useState("orbits");
+  const { play } = useSoundManager();
+  const navigate = useNavigate();
   const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
   const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
   const [synced, setSynced] = useState(true);
@@ -1213,30 +1288,32 @@ export default function OrbitNeonCyberpunk({ children }) {
       {/* Data streams overlay */}
       <DataStreams count={6} color={P} />
 
-      <TopNav 
-        navRef={navRef} 
-        synced={synced} 
-        hiddenNexuses={hiddenNexuses} 
-        onReveal={onReveal} 
-      />
-
-      <div className={`ncb-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 42, left: 0, right: 0, bottom: 0, display: "flex" }}>
-        <Sidebar 
-          sidebarRef={sidebarRef} 
-          synced={synced} 
-          onToggleSync={handleToggleSync} 
-          onJoin={() => setNexusActionView("join")}
-          onNexus={() => setNexusActionView("create")}
-          nexuses={nexuses}
-          isNexusesLoading={isNexusesLoading}
-          setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
-          users={users || []}
-          setSelectedUser={setSelectedUser}
-          nexusUnread={nexusUnread || {}}
-          setNexusActionView={setNexusActionView}
-          hiddenNexuses={hiddenNexuses}
-          toggleHide={toggleHide}
+      {/* ── Desktop Canvas ── */}
+      <div className="lm-desktop-only" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+        <TopNav 
+            navRef={navRef} 
+            synced={synced} 
+            hiddenNexuses={hiddenNexuses} 
+            onReveal={onReveal} 
         />
+
+        <div className={`ncb-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 42, left: 0, right: 0, bottom: 0, display: "flex" }}>
+            <Sidebar 
+            sidebarRef={sidebarRef} 
+            synced={synced} 
+            onToggleSync={handleToggleSync} 
+            onJoin={() => setNexusActionView("join")}
+            onNexus={() => setNexusActionView("create")}
+            nexuses={nexuses}
+            isNexusesLoading={isNexusesLoading}
+            setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
+            users={users || []}
+            setSelectedUser={setSelectedUser}
+            nexusUnread={nexusUnread || {}}
+            setNexusActionView={setNexusActionView}
+            hiddenNexuses={hiddenNexuses}
+            toggleHide={toggleHide}
+            />
 
         {/* Main content */}
         <div className="ncb-main" style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
@@ -1446,6 +1523,43 @@ export default function OrbitNeonCyberpunk({ children }) {
         </div>
       </div>
     </div>
+
+
+      {/* ── Mobile Canvas ── */}
+      <div className="lm-mobile-canvas lm-mobile-only">
+        {nexusActionView ? (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 10000 }}>
+            <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} />
+          </div>
+        ) : (nexusSelected || selectedUser || children || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/')) ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: '#060010' }}>
+            {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
+          </div>
+        ) : (
+          <>
+            <CyberpunkMobileNav authUser={useAuthStore.getState().authUser} navigate={navigate} />
+            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <CyberpunkMobileDash
+                synced={synced}
+                onToggleSync={handleToggleSync}
+                nexuses={nexuses}
+                isNexusesLoading={isNexusesLoading}
+                setSelectedNexus={setSelectedNexus}
+                users={users}
+                setSelectedUser={setSelectedUser}
+                nexusUnread={nexusUnread}
+                setNexusActionView={setNexusActionView}
+                hiddenNexuses={hiddenNexuses}
+                toggleHide={toggleHide}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              />
+            </div>
+            <CyberpunkMobileTabBar currentTab={activeTab} onTabChange={setActiveTab} />
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 /* ─────────────────────────────────────────────
@@ -1494,7 +1608,7 @@ export function CyberpunkSettings({
         <NeonCard color={C} style={{ width: 260, padding: 20, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }} className="ncb-settings-nav">
           <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: "0.25em", color: `${C}88`, fontFamily: "'Orbitron',monospace", marginBottom: 4 }}>// SYS.PREFERENCES</div>
           {sections.map(s => (
-            <button key={s.id} onClick={() => { play("click"); setActiveSection(s.id); }} style={{ width: "100%", textAlign: "left", padding: "12px 16px", background: activeSection === s.id ? `${C}14` : "transparent", border: "1px solid", borderColor: activeSection === s.id ? C : "transparent", borderRadius: 6, color: activeSection === s.id ? "#fff" : `${C}66`, fontFamily: "'Orbitron', monospace", fontSize: 11, letterSpacing: "0.15em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 10, boxShadow: activeSection === s.id ? `0 0 10px ${C}33` : "none" }}>
+            <button key={s.id} onClick={() => { play("click"); setActiveSection(activeSection === s.id ? null : s.id); }} style={{ width: "100%", textAlign: "left", padding: "12px 16px", background: activeSection === s.id ? `${C}14` : "transparent", border: "1px solid", borderColor: activeSection === s.id ? C : "transparent", borderRadius: 6, color: activeSection === s.id ? "#fff" : `${C}66`, fontFamily: "'Orbitron', monospace", fontSize: 11, letterSpacing: "0.15em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 10, boxShadow: activeSection === s.id ? `0 0 10px ${C}33` : "none" }}>
               <span style={{ fontSize: 16 }}>{s.icon}</span>{s.label}
             </button>
           ))}
@@ -1505,7 +1619,8 @@ export function CyberpunkSettings({
         </NeonCard>
 
         {/* Settings Content */}
-        <NeonCard color={P} style={{ flex: 1, padding: 28, overflowY: "auto" }}>
+        {activeSection && (
+        <NeonCard color={P} style={{ flex: 1, padding: "28px 28px 100px", overflowY: "auto" }}>
           <h2 style={{ fontSize: 20, fontWeight: 900, color: C, fontFamily: "'Orbitron',monospace", marginBottom: 24, textShadow: `0 0 10px ${C}`, letterSpacing: "0.15em" }}>
             SYS_PREF // {activeSection.toUpperCase()}
           </h2>
@@ -1537,7 +1652,7 @@ export function CyberpunkSettings({
                           <div style={{ textAlign: "center" }}>
                             <div style={{ fontSize: 9, color: isSelected ? C : "rgba(255,255,255,0.4)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{THEME_LABELS[t] || t.toUpperCase()}</div>
                             {isSelected && !isApplied && (
-                              <button onClick={e => { e.stopPropagation(); play("click"); setDraftTheme(t); }} style={{ marginTop: 6, padding: "5px 8px", width: "100%", background: C, border: "none", color: "#000", fontSize: 8, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: `0 0 8px ${C}66` }}>DEPLOY</button>
+                              <button onClick={e => { e.stopPropagation(); play("click"); setDraftTheme(t); handleSave(t); }} style={{ marginTop: 6, padding: "5px 8px", width: "100%", background: C, border: "none", color: "#000", fontSize: 8, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: `0 0 8px ${C}66` }}>DEPLOY</button>
                             )}
                             {isApplied && <div style={{ marginTop: 6, fontSize: 9, color: C, fontWeight: 700, fontFamily: "'Orbitron', monospace" }}>✓ ACTIVE</div>}
                           </div>
@@ -1604,6 +1719,7 @@ export function CyberpunkSettings({
             </div>
           )}
         </NeonCard>
+        )}
       </div>
     </OrbitNeonCyberpunk>
   );

@@ -256,9 +256,9 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
         .nao-btn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
         .nao-close:hover { opacity: 1 !important; }
         @media (max-width: 768px) {
-          .nao-container { flex-direction: column !important; overflow-y: auto !important; }
-          .nao-left-panel { width: 100% !important; padding: 24px 20px !important; border-right: none !important; border-bottom: 1px solid ${tk.accentBorder} !important; flex: 0 0 auto !important; }
-          .nao-right-panel { padding: 32px 24px !important; flex: 1 0 auto !important; }
+          .nao-container { flex-direction: column !important; overflow-y: auto !important; border-radius: 0 !important; }
+          .nao-left-panel { display: none !important; }
+          .nao-right-panel { padding: 40px 24px !important; flex: 1 !important; display: flex; flex-direction: column; justify-content: center; min-height: 100dvh; box-sizing: border-box; }
         }
       `}</style>
 

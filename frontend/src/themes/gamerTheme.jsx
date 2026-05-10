@@ -627,6 +627,85 @@ const TopNav = memo(({ navRef, killCount, setSelectedNexus, setSelectedUser, log
     </div>
   );
 });
+TopNav.displayName = "TopNav";
+
+/* ── Mobile Components ── */
+
+const GamerMobileNav = memo(({ logout }) => {
+  const navigate = useNavigate();
+  return (
+    <div className="lm-mobile-only" style={{ height: 60, padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(4,2,18,0.98)", borderBottom: "1px solid rgba(0,245,212,0.3)", backdropFilter: "blur(20px)", zIndex: 100 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,45,120,0.15)", border: "1px solid #ff2d78", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🌀</div>
+        <span style={{ fontSize: 18, fontWeight: 900, letterSpacing: 2, color: "#00f5d4", fontFamily: "'Orbitron',sans-serif", textShadow: "0 0 10px #00f5d4" }}>ORBIT</span>
+      </div>
+      <button onClick={logout} style={{ padding: "6px 12px", background: "rgba(255,45,120,0.1)", border: "1px solid #ff2d78", borderRadius: 6, color: "#ff2d78", fontSize: 10, fontWeight: 900, fontFamily: "'Orbitron',sans-serif" }}>LOGOUT</button>
+    </div>
+  );
+});
+
+const GamerMobileDash = memo(({ 
+  nexuses, isNexusesLoading, selectedNexus, selectedNexusId, setSelectedNexus,
+  users, selectedUser, selectedUserId, setSelectedUser,
+  nexusUnread, setNexusActionView, hiddenNexuses, toggleHide,
+  locked, onToggleLocked, activeTab
+}) => {
+  return (
+    <div className="lm-mobile-only" style={{ flex: 1, display: "flex", flexDirection: "column", background: "#040212", overflowY: "auto", position: "relative" }}>
+        <DebrisLayer />
+        <div style={{ padding: "20px 16px" }}>
+            <StatusBar locked={locked} />
+            <Sidebar 
+                nexuses={nexuses}
+                isNexusesLoading={isNexusesLoading}
+                selectedNexus={selectedNexus}
+                selectedNexusId={selectedNexusId}
+                setSelectedNexus={setSelectedNexus}
+                users={users}
+                selectedUser={selectedUser}
+                selectedUserId={selectedUserId}
+                setSelectedUser={setSelectedUser}
+                nexusUnread={nexusUnread}
+                onJoin={() => setNexusActionView("join")}
+                onNexus={() => setNexusActionView("create")}
+                setNexusActionView={setNexusActionView}
+                hiddenNexuses={hiddenNexuses}
+                toggleHide={toggleHide}
+                locked={locked}
+                onToggleLocked={onToggleLocked}
+                forcedTab={activeTab === "orbits" ? "orbits" : "chats"}
+            />
+        </div>
+    </div>
+  );
+});
+
+const GamerMobileTabBar = memo(({ activeTab, setActiveTab }) => {
+  const tabs = [
+    { id: "orbits", label: "NODES", icon: "🌀" },
+    { id: "chats", label: "COMMMS", icon: "💬" },
+    { id: "settings", label: "CONFIG", icon: "⚙️" }
+  ];
+  const navigate = useNavigate();
+
+  return (
+    <div className="lm-mobile-only" style={{ height: 70, display: "flex", background: "rgba(4,2,18,0.98)", borderTop: "1px solid rgba(0,245,212,0.3)", backdropFilter: "blur(20px)", zIndex: 100, paddingBottom: "env(safe-area-inset-bottom)" }}>
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          onClick={() => {
+            if (t.id === "settings") navigate("/settings");
+            else setActiveTab(t.id);
+          }}
+          style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, background: "none", border: "none", cursor: "pointer", color: activeTab === t.id ? "#00f5d4" : "rgba(255,255,255,0.4)", transition: "all 0.3s" }}
+        >
+          <span style={{ fontSize: 20, filter: activeTab === t.id ? "drop-shadow(0 0 8px #00f5d4)" : "none" }}>{t.icon}</span>
+          <span style={{ fontSize: 8, fontWeight: 900, letterSpacing: 1.5, fontFamily: "'Orbitron',sans-serif" }}>{t.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+});
 
 /* ─────────────────────────────────────────────
    GAMING HERO ANIMATION (Centerpiece)
@@ -921,18 +1000,27 @@ const GamingHeroAnimation = memo(() => {
 });
 
 
-const Sidebar = memo(({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses, isNexusesLoading, selectedNexus, selectedNexusId, setSelectedNexus, users, selectedUser, selectedUserId, setSelectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) => {
-  const navigate = useNavigate();
-  const [tab, setTab] = useState("orbits");
-
+const Sidebar = memo(({ 
+    sidebarRef, locked, onToggleLocked, onJoin, onNexus, 
+    nexuses, isNexusesLoading, selectedNexus, selectedNexusId, setSelectedNexus, 
+    users, selectedUser, selectedUserId, setSelectedUser, 
+    nexusUnread, setNexusActionView, hiddenNexuses, toggleHide,
+    forcedTab = null
+}) => {
+  const [tab, setTab] = useState(forcedTab || "orbits");
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [activeColorPickerId, setActiveColorPickerId] = useState(null);
   const [pinnedNexuses, setPinnedNexuses] = useState(() => {
     return JSON.parse(localStorage.getItem('gamer_pinned_nexuses') || '[]');
   });
   const [nexusColors, setNexusColors] = useState(() => {
     return JSON.parse(localStorage.getItem('gamer_nexus_colors') || '{}');
   });
-  const [activeMenuId, setActiveMenuId] = useState(null);
-  const [activeColorPickerId, setActiveColorPickerId] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (forcedTab) setTab(forcedTab);
+  }, [forcedTab]);
 
   const togglePin = (id, e) => {
     e.stopPropagation();
@@ -1327,17 +1415,20 @@ function StatusBar({ locked }) {
   );
 }
 
-export default function OrbitGrind({ children }) {
-  const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
-  const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
-  const [locked, setLocked] = useState(false);
-  const [killCount, setKillCount] = useState(14);
+export default function OrbitGrind({ children, title = "SECURE TERMINAL" }) {
+  const [activeTab, setActiveTab] = useState("orbits");
+  const [mounted, setMounted] = useState(false);
+  const navigate = useNavigate();
   const { logout } = useAuthStore();
   const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
-  const { users, selectedUser, selectedUserId, setSelectedUser } = useChatStore();
-
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
+  const { users, selectedUser, selectedUserId, setSelectedUser } = useChatStore();
   const userSelected = Boolean(selectedUser || selectedUserId);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(t);
+  }, []);
 
   // ── Hidden Nexus State ──
   const [hiddenNexuses, setHiddenNexuses] = useState(() => {
@@ -1371,6 +1462,26 @@ export default function OrbitGrind({ children }) {
       localStorage.setItem('gamer_hidden_nexuses', JSON.stringify(next));
   };
 
+  const [locked, setLocked] = useState(false);
+  const [killCount, setKillCount] = useState(14);
+  const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
+  const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
+
+  const handleLockIn = useCallback(() => {
+    setLocked(p => {
+      const isLocking = !p;
+      if (isLocking) {
+        gsap.to("body", { filter: "hue-rotate(90deg) contrast(1.5)", duration: 0.1, yoyo: true, repeat: 5 });
+        if (heroRef.current) gsap.fromTo(heroRef.current, { scale: 0.9, opacity: 0.5 }, { scale: 1, opacity: 1, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+        gsap.fromTo(document.body, { x: -8 }, { x: 0, duration: 0.08, yoyo: true, repeat: 7, clearProps: "x" });
+      } else if (!isLocking) {
+        gsap.to("body", { filter: "none", duration: 0.3 });
+      }
+      return isLocking;
+    });
+    setKillCount(k => k + (Math.floor(Math.random() * 3) + 1));
+  }, []);
+
   useEffect(() => {
     const ctx = gsap.context(() => {
       const cards = [c0, c1, c2, c3].map(r => r?.current).filter(Boolean);
@@ -1395,20 +1506,7 @@ export default function OrbitGrind({ children }) {
     return () => ctx.revert();
   }, []);
 
-  const handleLockIn = useCallback(() => {
-    setLocked(p => {
-      const isLocking = !p;
-      if (isLocking) {
-        gsap.to("body", { filter: "hue-rotate(90deg) contrast(1.5)", duration: 0.1, yoyo: true, repeat: 5 });
-        if (heroRef.current) gsap.fromTo(heroRef.current, { scale: 0.9, opacity: 0.5 }, { scale: 1, opacity: 1, duration: 0.5, ease: "elastic.out(1, 0.3)" });
-        gsap.fromTo(document.body, { x: -8 }, { x: 0, duration: 0.08, yoyo: true, repeat: 7, clearProps: "x" });
-      } else if (!isLocking) {
-        gsap.to("body", { filter: "none", duration: 0.3 });
-      }
-      return isLocking;
-    });
-    setKillCount(k => k + (Math.floor(Math.random() * 3) + 1));
-  }, []);
+  if (!mounted) return null;
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100dvh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#040212" }}>
@@ -1492,92 +1590,134 @@ export default function OrbitGrind({ children }) {
           .gamer-container.chat-active .gamer-main { min-height: auto; flex: 1 !important; display: flex; flex-direction: column; overflow: hidden !important; }
         }
       `}</style>
-
-
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 50%,rgba(80,0,120,0.55) 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,rgba(0,60,120,0.45) 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,rgba(0,80,60,0.35) 0%,transparent 40%),radial-gradient(ellipse at 10% 80%,rgba(120,0,80,0.3) 0%,transparent 40%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,rgba(255,255,255,0.35) 1px,transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none", opacity: 0.25 }} />
 
       <Scanlines />
       <DebrisLayer />
-      <TopNav 
-        navRef={navRef} 
-        locked={locked} 
-        killCount={killCount} 
-        setSelectedNexus={setSelectedNexus}
-        setSelectedUser={setSelectedUser}
-        logout={logout}
-        hiddenNexuses={hiddenNexuses}
-        onReveal={onReveal}
-      />
 
-      <div className={`gamer-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 48, left: 0, right: 0, bottom: 0, display: "flex" }}>
-        <Sidebar
-          sidebarRef={sidebarRef}
-          locked={locked}
-          onToggleLocked={handleLockIn}
-          onJoin={() => setNexusActionView("join")}
-          onNexus={() => setNexusActionView("create")}
-          nexuses={nexuses}
-          isNexusesLoading={isNexusesLoading}
-          selectedNexus={selectedNexus}
-          selectedNexusId={selectedNexusId}
-          setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
-          users={users || []}
-          selectedUser={selectedUser}
-          selectedUserId={selectedUserId}
-          setSelectedUser={(u) => { setSelectedUser(u); setSelectedNexus(null); }}
-          nexusUnread={nexusUnread || {}}
-          setNexusActionView={setNexusActionView}
-          hiddenNexuses={hiddenNexuses}
-          toggleHide={toggleHide}
+      {/* ── Desktop Canvas ── */}
+      <div className="lm-desktop-only" style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>
+        <TopNav 
+            navRef={navRef} 
+            locked={locked} 
+            killCount={killCount} 
+            setSelectedNexus={setSelectedNexus}
+            setSelectedUser={setSelectedUser}
+            logout={logout}
+            hiddenNexuses={hiddenNexuses}
+            onReveal={onReveal}
         />
 
-        <div className="gamer-main" style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
-          <MainCircuits />
+        <div className={`gamer-container ${nexusSelected || userSelected ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 48, left: 0, right: 0, bottom: 0, display: "flex" }}>
+            <Sidebar
+                sidebarRef={sidebarRef}
+                locked={locked}
+                onToggleLocked={handleLockIn}
+                onJoin={() => setNexusActionView("join")}
+                onNexus={() => setNexusActionView("create")}
+                nexuses={nexuses}
+                isNexusesLoading={isNexusesLoading}
+                selectedNexus={selectedNexus}
+                selectedNexusId={selectedNexusId}
+                setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
+                users={users || []}
+                selectedUser={selectedUser}
+                selectedUserId={selectedUserId}
+                setSelectedUser={(u) => { setSelectedUser(u); setSelectedNexus(null); }}
+                nexusUnread={nexusUnread || {}}
+                setNexusActionView={setNexusActionView}
+                hiddenNexuses={hiddenNexuses}
+                toggleHide={toggleHide}
+            />
 
-          {children ? (
-            <div style={{ flex: 1, position: "relative", zIndex: 2, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-              {children}
-            </div>
-          ) : nexusActionView ? (
-            <div style={{ position: "absolute", inset: 0, zIndex: 20 }}>
-              <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
-            </div>
-          ) : nexusSelected ? (
-            <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-              <UniversalChatContainer key={selectedNexus?._id || selectedNexusId} type="nexus" />
-            </div>
-          ) : userSelected ? (
-            <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-              <UniversalChatContainer key={selectedUser?._id || selectedUserId} type="dm" />
-            </div>
-          ) : (
-            <div style={{ flex: 1, padding: "12px 16px 10px 16px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", position: "relative" }}>
-              <div ref={heroRef} style={{ position: "relative", zIndex: 2 }}>
-                <StatusBar locked={locked} />
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap", marginBottom: "10px" }}>
-                  <div>
-                    <h1 style={{ margin: "0 0 2px 0", fontSize: 34, fontWeight: 900, letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1.02, color: "#fff", textShadow: "0 0 20px rgba(0,245,212,0.5),0 0 40px rgba(0,245,212,0.25)", fontFamily: "'Orbitron',monospace" }}>WELCOME TO ORBIT</h1>
-                    <p style={{ margin: 0, fontSize: 10.5, color: "rgba(180,220,210,0.6)", letterSpacing: "0.06em", fontFamily: "'Rajdhani',monospace" }}>Choose a pathway to begin your mission. Time to LOCK IN and push rank.</p>
-                  </div>
-                  {/* LOCK IN hero CTA */}
-                  <button onClick={handleLockIn} style={{ flexShrink: 0, padding: "8px 20px", border: "none", borderRadius: 5, cursor: "pointer", background: locked ? "linear-gradient(90deg,#ff2d78,#ff6030)" : "linear-gradient(90deg,#ffe600,#ffaa00)", color: "#000", fontFamily: "'Orbitron',monospace", fontSize: 13, fontWeight: 900, letterSpacing: "0.18em", boxShadow: locked ? "0 0 20px #ff2d78,0 0 40px #ff2d7866" : "0 0 20px #ffe600,0 0 40px #ffe60066", transition: "all 0.25s", position: "relative", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)", animation: "shimmer 1.8s infinite" }} />
-                    {locked ? "🔒 LOCKED IN — GRINDING" : "⚡ LOCK IN NOW"}
-                  </button>
-                </div>
-              </div>
+            <div className="gamer-main" style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+                <MainCircuits />
 
-              {/* 2×2 Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, flex: 1, position: "relative", zIndex: 2 }}>
-                <div ref={c0} style={{ height: "100%" }}><AudioCard /></div>
-                <div ref={c1} style={{ height: "100%" }}><ChatCard /></div>
-                <div ref={c2} style={{ height: "100%" }}><NotifCard /></div>
-                <div ref={c3} style={{ height: "100%" }}><CustomizeCard /></div>
-              </div>
+                {children ? (
+                    <div style={{ flex: 1, position: "relative", zIndex: 2, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+                    {children}
+                    </div>
+                ) : nexusActionView ? (
+                    <div style={{ position: "absolute", inset: 0, zIndex: 20 }}>
+                    <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
+                    </div>
+                ) : nexusSelected ? (
+                    <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+                    <UniversalChatContainer key={selectedNexus?._id || selectedNexusId} type="nexus" />
+                    </div>
+                ) : userSelected ? (
+                    <div className="gamer-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+                    <UniversalChatContainer key={selectedUser?._id || selectedUserId} type="dm" />
+                    </div>
+                ) : (
+                    <div style={{ flex: 1, padding: "12px 16px 10px 16px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", position: "relative" }}>
+                        <div ref={heroRef} style={{ position: "relative", zIndex: 2 }}>
+                            <StatusBar locked={locked} />
+                            <div style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap", marginBottom: "10px" }}>
+                            <div>
+                                <h1 style={{ margin: "0 0 2px 0", fontSize: 34, fontWeight: 900, letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1.02, color: "#fff", textShadow: "0 0 20px rgba(0,245,212,0.5),0 0 40px rgba(0,245,212,0.25)", fontFamily: "'Orbitron',monospace" }}>WELCOME TO ORBIT</h1>
+                                <p style={{ margin: 0, fontSize: 10.5, color: "rgba(180,220,210,0.6)", letterSpacing: "0.06em", fontFamily: "'Rajdhani',monospace" }}>Choose a pathway to begin your mission. Time to LOCK IN and push rank.</p>
+                            </div>
+                            <button onClick={handleLockIn} style={{ flexShrink: 0, padding: "8px 20px", border: "none", borderRadius: 5, cursor: "pointer", background: locked ? "linear-gradient(90deg,#ff2d78,#ff6030)" : "linear-gradient(90deg,#ffe600,#ffaa00)", color: "#000", fontFamily: "'Orbitron',monospace", fontSize: 13, fontWeight: 900, letterSpacing: "0.18em", boxShadow: locked ? "0 0 20px #ff2d78,0 0 40px #ff2d7866" : "0 0 20px #ffe600,0 0 40px #ffe60066", transition: "all 0.25s", position: "relative", overflow: "hidden" }}>
+                                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)", animation: "shimmer 1.8s infinite" }} />
+                                {locked ? "🔒 LOCKED IN — GRINDING" : "⚡ LOCK IN NOW"}
+                            </button>
+                            </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, flex: 1, position: "relative", zIndex: 2 }}>
+                            <div ref={c0} style={{ height: "100%" }}><AudioCard /></div>
+                            <div ref={c1} style={{ height: "100%" }}><ChatCard /></div>
+                            <div ref={c2} style={{ height: "100%" }}><NotifCard /></div>
+                            <div ref={c3} style={{ height: "100%" }}><CustomizeCard /></div>
+                        </div>
+                    </div>
+                )}
             </div>
-          )}
         </div>
+      </div>
+
+      {/* ── Mobile Canvas ── */}
+      <div className="lm-mobile-canvas lm-mobile-only">
+        <GamerMobileNav logout={logout} />
+        
+        {children ? (
+          <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
+             {children}
+          </div>
+        ) : (nexusSelected || userSelected) ? (
+          <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
+             <UniversalChatContainer key={selectedNexus?._id || selectedNexusId || selectedUser?._id || selectedUserId} type={nexusSelected ? "nexus" : "dm"} />
+          </div>
+        ) : (
+          <GamerMobileDash 
+            nexuses={nexuses}
+            isNexusesLoading={isNexusesLoading}
+            selectedNexus={selectedNexus}
+            selectedNexusId={selectedNexusId}
+            setSelectedNexus={setSelectedNexus}
+            users={users}
+            selectedUser={selectedUser}
+            selectedUserId={selectedUserId}
+            setSelectedUser={setSelectedUser}
+            nexusUnread={nexusUnread}
+            setNexusActionView={setNexusActionView}
+            hiddenNexuses={hiddenNexuses}
+            toggleHide={toggleHide}
+            locked={locked}
+            onToggleLocked={handleLockIn}
+            activeTab={activeTab}
+          />
+        )}
+
+        <GamerMobileTabBar activeTab={activeTab} setActiveTab={setActiveTab} />
+        
+        {nexusActionView && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "#000" }}>
+             <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1615,14 +1755,14 @@ export function GamerSettings({
       <div style={{ display: "flex", gap: 20, height: "100%" }}>
         {/* Sidebar for Settings */}
         <NeonCard color="#00cfff" style={{ width: 280, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-          {[
+          { [
             { id: "profile", label: "IDENTITY", icon: "👤" },
             { id: "sound", label: "AUDIO", icon: "🔊" },
             { id: "appearance", label: "VISUALS", icon: "🎨" },
             { id: "notifications", label: "ALERTS", icon: "🔔" },
             { id: "orbit", label: "ENGINE", icon: "🪐" },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveSection(tab.id)} style={{ width: "100%", textAlign: "left", padding: "16px 20px", background: activeSection === tab.id ? "rgba(0,207,255,0.15)" : "transparent", border: "1px solid", borderColor: activeSection === tab.id ? "#00cfff" : "transparent", borderRadius: 8, color: activeSection === tab.id ? "#fff" : "rgba(0,207,255,0.6)", fontFamily: "'Orbitron', monospace", fontSize: 13, letterSpacing: "0.15em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 14 }}>
+            <button key={tab.id} onClick={() => setActiveSection(activeSection === tab.id ? null : tab.id)} style={{ width: "100%", textAlign: "left", padding: "16px 20px", background: activeSection === tab.id ? "rgba(0,207,255,0.15)" : "transparent", border: "1px solid", borderColor: activeSection === tab.id ? "#00cfff" : "transparent", borderRadius: 8, color: activeSection === tab.id ? "#fff" : "rgba(0,207,255,0.6)", fontFamily: "'Orbitron', monospace", fontSize: 13, letterSpacing: "0.15em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 14 }}>
               <span style={{ fontSize: 18 }}>{tab.icon}</span> {tab.label}
             </button>
           ))}
@@ -1633,7 +1773,8 @@ export function GamerSettings({
         </NeonCard>
 
         {/* Content Area */}
-        <NeonCard color="#00cfff" style={{ flex: 1, padding: 32, overflowY: "auto" }}>
+        {activeSection && (
+        <NeonCard color="#00cfff" style={{ flex: 1, padding: '32px 32px 100px', overflowY: "auto" }}>
           <h2 style={{ fontSize: 24, fontWeight: 900, color: "#00cfff", fontFamily: "'Orbitron',monospace", marginBottom: 24, textShadow: "0 0 10px #00cfff", letterSpacing: "0.15em" }}>SYSTEM_PREFERENCES // {activeSection.toUpperCase()}</h2>
 
           {activeSection === "appearance" && (
@@ -1662,7 +1803,7 @@ export function GamerSettings({
                     <div style={{ textAlign: "center" }}>
                       <div style={{ fontSize: 10, color: isSelected ? "#00f5d4" : "rgba(255,255,255,0.5)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{THEME_LABELS[t] || t.toUpperCase()}</div>
                       {isSelected && !isApplied && (
-                        <button onClick={(e) => { e.stopPropagation(); setDraftTheme(t); }} style={{ marginTop: 8, padding: "6px 10px", width: "100%", background: "#00f5d4", border: "none", color: "#000", fontSize: 9, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: "0 0 8px rgba(0,245,212,0.5)" }}>
+                        <button onClick={(e) => { e.stopPropagation(); setDraftTheme(t); handleSave(t); }} style={{ marginTop: 8, padding: "6px 10px", width: "100%", background: "#00f5d4", border: "none", color: "#000", fontSize: 9, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: "0 0 8px rgba(0,245,212,0.5)" }}>
                           DEPLOY THEME
                         </button>
                       )}
@@ -1747,6 +1888,7 @@ export function GamerSettings({
           )}
 
         </NeonCard>
+        )}
       </div>
     </OrbitGrind>
   );
