@@ -200,7 +200,7 @@ const CSS = `
 }
 
 
-@media (max-width: 800px) {
+@media (max-width: 768px) {
   .oa-main-grid { grid-template-columns: 1fr !important; }
   .oa-desktop-nav { flex-wrap: wrap !important; height: auto !important; padding: 10px !important; gap: 8px !important; }
   .oa-main-wrapper { flex-direction: column !important; }

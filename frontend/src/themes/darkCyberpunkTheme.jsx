@@ -66,7 +66,7 @@ const STYLES = `
   .ncb-glitch-text:hover::before { animation: ncbGlitch1 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite; color: #ff00c8; z-index: -1; }
   .ncb-glitch-text:hover::after { animation: ncbGlitch2 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite; color: #00fff5; z-index: -2; }
   
-  @media (max-width: 800px) {
+  @media (max-width: 768px) {
     .ncb-desktop-nav { flex-wrap: wrap !important; height: auto !important; padding: 10px 14px !important; gap: 8px !important; }
     .ncb-desktop-nav > div { flex-wrap: wrap !important; }
     .ncb-center-hud { display: none !important; }
