@@ -1,0 +1,122 @@
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  @keyframes ncbPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  @keyframes ncbSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes ncbSpinR{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+  @keyframes ncbStream{0%{top:-100%;height:60px;opacity:0}20%{opacity:0.7}80%{opacity:0.7}100%{top:100%;height:60px;opacity:0}}
+  @keyframes ncbBlink{0%,100%{opacity:1}50%{opacity:0}}
+  @keyframes ncbShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+  @keyframes ncbGlitch1{0%,93%,100%{opacity:0;transform:translateX(0)}94%{opacity:1;transform:translateX(-4px)}96%{opacity:1;transform:translateX(4px)}}
+  @keyframes ncbGlitch2{0%,95%,100%{opacity:0;transform:translateX(0)}96%{opacity:1;transform:translateX(4px)}98%{opacity:1;transform:translateX(-3px)}}
+  @keyframes ncbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes ncbMatrixFade{0%{opacity:1}100%{opacity:0}}
+  @keyframes ncbScanline{0%{transform:translateY(-100%)}100%{transform:translateY(100%)}}
+  *{box-sizing:border-box;} button:focus{outline:none;}
+  ::-webkit-scrollbar{width:3px;height:3px;}
+  ::-webkit-scrollbar-track{background:rgba(0,0,0,0.4);}
+  ::-webkit-scrollbar-thumb{background:rgba(0,255,245,0.2);border-radius:0;border-top:1px solid rgba(0,255,245,0.08);}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(0,255,245,0.5);}
+
+  .ncb-glitch-text:hover { position: relative; animation: ncbGlitch1 0.4s infinite; }
+
+  .ncb-scroll-hide::-webkit-scrollbar { display: none; }
+  .ncb-scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .ncb-glitch-text::before, .ncb-glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
+  .ncb-glitch-text:hover::before { animation: ncbGlitch1 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite; color: #ff00c8; z-index: -1; }
+  .ncb-glitch-text:hover::after { animation: ncbGlitch2 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite; color: #00fff5; z-index: -2; }
+
+  @media (max-width: 800px) {
+    .ncb-desktop-nav { flex-wrap: wrap !important; height: auto !important; padding: 10px 14px !important; gap: 8px !important; }
+    .ncb-desktop-nav > div { flex-wrap: wrap !important; }
+    .ncb-center-hud { display: none !important; }
+    .ncb-container { flex-direction: column !important; }
+    .ncb-container.chat-inactive { overflow-y: auto; overflow-x: hidden; }
+    .ncb-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(176,38,255,0.3) !important; max-height: none !important; flex: none !important; }
+    .ncb-container.chat-active .ncb-sidebar { display: none !important; }
+    .ncb-main { min-height: 600px; flex: none !important; }
+    .ncb-container.chat-active .ncb-main { min-height: auto; flex: 1 !important; display: flex; flex-direction: column; }
+    .ncb-grid { grid-template-columns: 1fr !important; }
+    .ncb-hero h1 { font-size: 26px !important; }
+    .ncb-hero-btn { width: 100% !important; text-align: center !important; }
+    .ncb-settings-layout { flex-direction: column !important; }
+    .ncb-settings-nav { width: 100% !important; }
+    .ncb-profile-layout { flex-direction: column !important; }
+    .ncb-profile-card { width: 100% !important; }
+  }
+
+  /* ── Cyberpunk Chat Theme ── */
+  .neon-chat-env .nexus-chat-container {
+    background: linear-gradient(180deg, #1A0033 0%, #000000 100%) !important;
+    border: 1px solid rgba(255,0,255,0.3) !important;
+    border-radius: 12px !important; overflow: hidden !important;
+    box-shadow: 0 0 30px rgba(255,0,255,0.1), inset 0 0 20px rgba(0,255,255,0.05) !important;
+  }
+  .neon-chat-env .nxc-messages {
+    position: relative !important;
+    background: transparent !important;
+  }
+  .neon-chat-env .nxc-messages::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0.02; pointer-events: none;
+    background-image: linear-gradient(180deg, rgba(0,255,255,0) 0%, rgba(0,255,255,1) 50%, rgba(0,255,255,0) 100%);
+    background-size: 10px 200px;
+    background-repeat: repeat;
+    animation: cyber-rain 6s linear infinite;
+  }
+  @keyframes cyber-rain { 100% { background-position: 0 100%; } }
+
+  .neon-chat-env .nexus-chat-header {
+    background: rgba(5,2,10,0.8) !important;
+    border-bottom: 2px solid #FF00FF !important;
+    border-top: 2px solid #00FFFF !important;
+    box-shadow: 0 4px 20px rgba(255,0,255,0.2), inset 0 2px 10px rgba(0,255,255,0.2) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+  .neon-chat-env .nexus-chat-header .nxc-name { color: #fff !important; font-family: 'Orbitron', sans-serif !important; letter-spacing: 2px !important; text-shadow: 0 0 8px #FF00FF !important; }
+
+  .neon-chat-env .nxc-utility-group, .neon-chat-env .nxc-telemetry-capsule {
+    background: rgba(0,0,0,0.6) !important;
+    border: 1px solid rgba(0,255,255,0.3) !important;
+  }
+  .neon-chat-env .nxc-hbtn, .neon-chat-env .nxc-aero-btn {
+    color: #00FFFF !important;
+    text-shadow: 1px 0 0 red, -1px 0 0 blue !important; /* chromatic aberration */
+    transition: all 0.2s !important;
+  }
+  .neon-chat-env .nxc-hbtn:hover, .neon-chat-env .nxc-aero-btn:hover {
+    text-shadow: 0 0 10px #FF00FF, 0 0 20px #00FFFF !important;
+    transform: scale(1.1) !important;
+  }
+  .neon-chat-env .bg-white\\/20 { background: #FF00FF !important; opacity: 0.5 !important; }
+
+  .neon-chat-env .nxi-shell {
+    background: rgba(5,2,10,0.8) !important;
+    border-top: 2px solid #00FFFF !important;
+    backdrop-filter: blur(12px) !important;
+  }
+  .neon-chat-env .nxi-textarea {
+    background: rgba(0,0,0,0.6) !important;
+    border: 1px solid rgba(0,255,255,0.5) !important;
+    color: #00FFFF !important;
+    font-family: 'Rajdhani', monospace !important;
+  }
+  .neon-chat-env .nxi-textarea:focus { border-color: #FF00FF !important; box-shadow: 0 0 10px rgba(255,0,255,0.3) !important; }
+  .neon-chat-env .nxi-send.ready {
+    background: #FF00FF !important;
+    border: 1px solid #FF00FF !important;
+    color: #fff !important;
+    box-shadow: 0 0 15px #FF00FF !important;
+  }
+  .neon-chat-env .nxi-tool-btn, .neon-chat-env .nxi-mic { color: #00FFFF !important; }
+
+  .neon-chat-env .msg-bubble-mine {
+    background: rgba(255,0,255,0.15) !important;
+    border: 1px solid #FF00FF !important;
+    color: #00FFFF !important;
+    box-shadow: 0 0 12px rgba(255,0,255,0.3) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+  }
+  .neon-chat-env .msg-bubble-other {
+    background: rgba(0,255,255,0.08) !important;
+    border: 1px solid rgba(0,255,255,0.4) !important;
+    color: #fff !important;
+    font-family: 'Rajdhani', sans-serif !important;
+  }

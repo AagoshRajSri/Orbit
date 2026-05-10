@@ -1,0 +1,51 @@
+/* ── VAMPIRE THEME STYLES ── */
+.vampire-navbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; height: 60px;
+    background: linear-gradient(180deg, rgba(5,5,8,0.98) 0%, rgba(10,10,16,0.92) 100%);
+    border-bottom: 1px solid rgba(139,0,0,0.3);
+    backdrop-filter: blur(20px);
+    position: relative; z-index: 100;
+}
+
+.vampire-navbar .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: 20px; font-weight: 900;
+    color: #F0E6D3;
+    text-shadow: 0 0 20px #DC143C, 0 0 40px #8B0000;
+    letter-spacing: 3px;
+    cursor: pointer;
+}
+
+.vampire-sidebar {
+    position: fixed; top: 60px; left: 0; bottom: 0; width: 280px;
+    background: linear-gradient(180deg, #0A0A10 0%, #050508 100%);
+    border-right: 1px solid rgba(139,0,0,0.2);
+    z-index: 9;
+    display: flex; flex-direction: column;
+}
+
+.vampire-fixed-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+}
+
+/* ── AMOLED THEME STYLES ── */
+.amoled-navbar {
+    height: 44px; background: rgba(2,2,2,.96);
+    border-bottom: 1px solid rgba(198,160,110,.14);
+    display: flex; alignItems: center; padding: 0 20px;
+    backdrop-filter: blur(22px); flex-shrink: 0; z-index: 20;
+    position: relative;
+}
+
+.amoled-sidebar {
+    width: 280px; background: #020202;
+    border-right: 1px solid rgba(198,160,110,.12);
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden; flex-shrink: 0;
+}
+
+.amoled-background-root {
+    position: absolute; inset: 0; pointer-events: none; background: #000;
+}

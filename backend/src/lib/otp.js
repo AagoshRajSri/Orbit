@@ -1,7 +1,10 @@
 import OTP from "../models/otp.model.js";
 
+import crypto from "crypto";
+
 export const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate a cryptographically secure 6-digit OTP
+  return crypto.randomInt(100000, 1000000).toString();
 };
 
 export const storeOTP = async (email, otp) => {
