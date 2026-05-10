@@ -1,0 +1,195 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
+
+@keyframes oa-cw       { from{transform:rotate(0deg)}   to{transform:rotate(360deg)} }
+@keyframes oa-ccw      { from{transform:rotate(360deg)} to{transform:rotate(0deg)} }
+@keyframes oa-float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes oa-wave     { 0%,100%{height:4px} 50%{height:24px} }
+@keyframes oa-shimmer  { 0%{background-position:-200% center} 100%{background-position:200% center} }
+@keyframes oa-scan     { 0%{top:-2px;opacity:1} 100%{top:100%;opacity:0} }
+@keyframes oa-stream   { 0%{transform:translateY(-120px);opacity:0} 8%{opacity:1} 92%{opacity:1} 100%{transform:translateY(110vh);opacity:0} }
+@keyframes oa-twinkle  { 0%,100%{opacity:.15;transform:scale(1)} 50%{opacity:1;transform:scale(1.6)} }
+@keyframes oa-nebula   { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(18px,-14px) scale(1.05)} 66%{transform:translate(-14px,10px) scale(.95)} }
+@keyframes oa-blink    { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes oa-borderglow { 0%,100%{box-shadow:0 0 10px rgba(198,160,110,.3),inset 0 0 10px rgba(198,160,110,.05)} 50%{box-shadow:0 0 26px rgba(198,160,110,.65),inset 0 0 20px rgba(198,160,110,.12)} }
+@keyframes oa-progressfill { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+
+.oa-orbitron { font-family:'Orbitron',sans-serif; }
+.oa-mono     { font-family:'Share Tech Mono',monospace; }
+.oa-raj      { font-family:'Rajdhani',sans-serif; }
+
+.oa-shimmer-text {
+  background:linear-gradient(90deg,#C6A06E 0%,#F0D5A0 38%,#C6A06E 58%,#8B6914 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:oa-shimmer 3s linear infinite;
+}
+.oa-card {
+  background:rgba(15,15,15,.88);
+  backdrop-filter:blur(22px);
+  border:1px solid rgba(198,160,110,.2);
+  border-radius:12px;
+  transition:all .32s cubic-bezier(.23,1,.32,1);
+  position:relative; overflow:hidden;
+}
+.oa-card:hover {
+  border-color:rgba(198,160,110,.52);
+  box-shadow:0 0 32px rgba(198,160,110,.14),0 0 64px rgba(198,160,110,.05);
+  transform:translateY(-4px) scale(1.01);
+}
+.oa-bracket::before,.oa-bracket::after {
+  content:''; position:absolute; width:13px; height:13px;
+  border-color:rgba(198,160,110,.65); border-style:solid; z-index:10;
+}
+.oa-bracket::before { top:0; left:0; border-width:1.5px 0 0 1.5px; }
+.oa-bracket::after  { bottom:0; right:0; border-width:0 1.5px 1.5px 0; }
+.oa-scan::after {
+  content:''; position:absolute; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,transparent,rgba(78,205,196,.45),transparent);
+  animation:oa-scan 4s linear infinite; pointer-events:none;
+}
+.oa-scan { position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:12px; }
+.oa-progress-fill {
+  background:linear-gradient(90deg,#C6A06E,#E8C990,#C6A06E);
+  background-size:200% auto;
+  animation:oa-progressfill 2.2s linear infinite;
+  border-radius:2px; height:100%;
+}
+.oa-star {
+  position:absolute; width:2px; height:2px;
+  background:rgba(198,160,110,.45); border-radius:50%;
+  animation:oa-twinkle ease-in-out infinite;
+}
+.oa-nebula {
+  position:absolute; border-radius:50%;
+  filter:blur(80px); pointer-events:none;
+  animation:oa-nebula 16s ease-in-out infinite;
+}
+.oa-stream-char {
+  position:absolute; font-family:'Share Tech Mono',monospace; font-size:11px;
+  color:rgba(198,160,110,.16); pointer-events:none; user-select:none;
+  animation:oa-stream linear infinite;
+}
+.oa-borderglow { animation:oa-borderglow 3.2s ease-in-out infinite; }
+.oa-float      { animation:oa-float 4s ease-in-out infinite; }
+
+/* â”€â”€ Subtle Scrollbar â”€â”€ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb {
+  background: rgba(198, 160, 110, 0.2);
+  border-radius: 0;
+  border-left: 1px solid rgba(198,160,110,0.08);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(198, 160, 110, 0.4); }
+
+.oa-scroll-hide::-webkit-scrollbar { display: none; }
+.oa-scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* â”€â”€ AMOLED Void Chat Theme â”€â”€ */
+.amoled-chat-env .nxc-shell {
+  background: #000000 !important;
+  border: none !important;
+  box-shadow: 0 0 100px rgba(0,0,0,1) !important;
+  background-image: radial-gradient(circle at 50% 0%, rgba(198,160,110,0.08) 0%, transparent 500px) !important;
+}
+.amoled-chat-env .nexus-chat-header {
+  background: #000000 !important;
+  border-bottom: none !important;
+}
+.amoled-chat-env .nexus-chat-header * { color: #C6A06E !important; font-family: 'Rajdhani', sans-serif !important; }
+.amoled-chat-env .nexus-chat-header .nxc-name { font-family: 'Orbitron', sans-serif !important; letter-spacing: 2px !important; font-weight: 900 !important; text-shadow: 0 0 10px rgba(198,160,110,0.3); }
+
+/* Pinned Banner Visibility */
+.amoled-chat-env div[style*="background: var(--tag)"] {
+  background: rgba(198,160,110,0.12) !important;
+  border-bottom: 2px solid rgba(198,160,110,0.4) !important;
+  backdrop-filter: blur(10px);
+}
+.amoled-chat-env div[style*="background: var(--tag)"] * {
+  color: #F0D5A0 !important;
+  font-weight: 600 !important;
+}
+
+.amoled-chat-env .nxc-utility-group, .amoled-chat-env .nxc-telemetry-capsule {
+  background: rgba(198,160,110,0.08) !important;
+  border: 1px solid rgba(198,160,110,0.2) !important;
+  padding: 4px 8px !important;
+  border-radius: 12px !important;
+}
+.amoled-chat-env .nxc-hbtn, .amoled-chat-env .nxc-aero-btn {
+  background: transparent !important; color: #F0D5A0 !important; border: none !important;
+  opacity: 0.9 !important; transition: all 0.2s;
+}
+.amoled-chat-env .nxc-hbtn:hover { transform: translateY(-1px); text-shadow: 0 0 10px #C6A06E; }
+
+.amoled-chat-env .nxi-shell {
+  background: #000000 !important;
+  border-top: none !important;
+  padding: 20px !important;
+}
+.amoled-chat-env .nxi-textarea-wrapper {
+  background: rgba(198,160,110,0.03) !important;
+  border: 1.5px solid rgba(198,160,110,0.5) !important;
+  border-radius: 14px !important;
+}
+.amoled-chat-env .nxi-textarea {
+  background: transparent !important;
+  color: #F0D5A0 !important;
+  font-family: 'Share Tech Mono', monospace !important;
+  font-size: 15px !important;
+}
+.amoled-chat-env .nxi-textarea::placeholder {
+  color: rgba(198,160,110,0.4) !important;
+}
+
+.amoled-chat-env .nxi-send.ready {
+  background: #C6A06E !important;
+  border: 1px solid #F0D5A0 !important;
+  color: #000 !important;
+  box-shadow: 0 0 20px rgba(198,160,110,0.5) !important;
+}
+.amoled-chat-env .nxi-tool-btn, .amoled-chat-env .nxi-mic {
+  color: #C6A06E !important;
+  opacity: 1 !important;
+}
+
+/* Empty State & Dividers */
+.amoled-chat-env div[style*="textAlign: center"][style*="padding: 48px 0"] * {
+  color: #F0D5A0 !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 15px rgba(198,160,110,0.2);
+}
+.amoled-chat-env div[style*="height: 1px"] {
+  background: rgba(198,160,110,0.5) !important;
+  box-shadow: 0 0 8px rgba(198,160,110,0.3);
+}
+
+.amoled-chat-env .msg-bubble-mine {
+  background: #000000 !important;
+  border: 2px solid #C6A06E !important;
+  color: #F0D5A0 !important;
+  box-shadow: 0 4px 25px rgba(0,0,0,1), 0 0 15px rgba(198,160,110,0.15) !important;
+}
+.amoled-chat-env .msg-bubble-other {
+  background: #000000 !important;
+  border: 1.5px solid rgba(198,160,110,0.4) !important;
+  color: #F0D5A0 !important;
+}
+
+
+@media (max-width: 768px) {
+  .oa-main-grid { grid-template-columns: 1fr !important; }
+  .oa-desktop-nav { flex-wrap: wrap !important; height: auto !important; padding: 10px !important; gap: 8px !important; }
+  .oa-main-wrapper { flex-direction: column !important; }
+  .oa-app-container.chat-inactive .oa-main-wrapper { overflow-y: auto; overflow-x: hidden; display: block !important; }
+  .oa-app-container.chat-inactive .oa-main-content { display: none !important; }
+  .oa-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(198,160,110,.12) !important; max-height: none !important; flex: none !important; }
+  .oa-app-container.chat-active .oa-sidebar { display: none !important; }
+  .oa-main-content { min-height: 600px; flex: none !important; display: flex; flex-direction: column; }
+  .oa-app-container.chat-active .oa-main-content { min-height: auto; flex: 1 !important; }
+  .oa-settings-wrapper { flex-direction: column !important; gap: 16px !important; }
+  .oa-settings-nav { width: 100% !important; }
+  .oa-profile-wrapper { flex-direction: column !important; gap: 16px !important; }
+}

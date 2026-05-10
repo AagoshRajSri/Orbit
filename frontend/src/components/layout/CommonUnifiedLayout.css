@@ -1,0 +1,66 @@
+/**
+ * CommonUnifiedLayout.css
+ * Core layout styles shared across all themes.
+ */
+
+.layout-body-wrapper {
+    display: flex;
+    flex-direction: row;
+    height: calc(100dvh - 64px); /* Subtract Navbar height */
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+
+.layout-main-content {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Allow content to shrink below its content size in flex */
+    height: 100%;
+}
+
+.page-content-scrollable {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    height: 100%;
+    scrollbar-width: thin;
+}
+
+.chat-interface-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.absolute-overlay-full {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 800px) {
+    .layout-body-wrapper.chat-active .layout-sidebar {
+        display: none !important;
+    }
+
+    .layout-body-wrapper.chat-inactive .layout-main-content {
+        display: none !important;
+    }
+
+    .layout-body-wrapper.chat-inactive .layout-sidebar {
+        width: 100% !important;
+        flex: 1 !important;
+    }
+
+    .layout-body-wrapper {
+        flex-direction: column;
+    }
+}
