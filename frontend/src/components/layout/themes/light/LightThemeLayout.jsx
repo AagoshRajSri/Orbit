@@ -7,7 +7,7 @@ const LightThemeLayout = ({ children }) => {
   return (
     <CommonUnifiedLayout
       className="light-theme-root"
-      Navbar={LightNavbar}
+      Navbar={<LightNavbar />}
       Sidebar={<LightSidebar />}
     >
       {children}

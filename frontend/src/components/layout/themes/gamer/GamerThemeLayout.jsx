@@ -10,7 +10,7 @@ const GamerThemeLayout = ({ children }) => {
   return (
     <CommonUnifiedLayout
       className="gamer-theme-root"
-      Navbar={GamerNavbar}
+      Navbar={<GamerNavbar />}
       Sidebar={<GamerSidebar activeTab={activeTab} setActiveTab={setActiveTab} />}
       BackgroundEffects={GamerBackground}
     >
