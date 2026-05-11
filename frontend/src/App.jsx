@@ -80,28 +80,39 @@ const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPas
   useEffect(() => {
     const loadTheme = async () => {
       try {
+        let Component = null;
+
         if (isDark) {
           const mod = await import("./themes/darkTheme");
-          setThemeComponent(() => mod.default);
+          Component = mod.default;
         } else if (isCyber) {
           const mod = await import("./themes/darkCyberpunkTheme");
-          setThemeComponent(() => mod.default);
+          Component = mod.default;
         } else if (isGamer) {
           const mod = await import("./themes/gamerTheme");
-          setThemeComponent(() => mod.default);
+          Component = mod.default;
         } else if (isAmoled) {
           const mod = await import("./themes/amoledTheme");
-          setThemeComponent(() => mod.default);
+          Component = mod.default;
         } else if (isLight) {
           const mod = await import("./themes/lightTheme");
-          setThemeComponent(() => mod.default);
+          Component = mod.default;
         } else if (isPastel) {
           const mod = await import("./themes/pastelTheme");
-          setThemeComponent(() => mod.default);
+          Component = mod.default;
         } else {
           // If no theme, render children directly or fallback to HomePage
-          setThemeComponent(() => ({ children }) => children || <HomePage />);
+          Component = ({ children }) => children || <HomePage />;
         }
+
+        // Safety: ensure we got a real callable React component, not a stale
+        // module object or undefined (which would cause React error #31).
+        if (typeof Component !== "function") {
+          console.error("[DynamicThemeLoader] Theme module did not export a valid component:", Component);
+          Component = ({ children }) => children || <HomePage />;
+        }
+
+        setThemeComponent(() => Component);
       } catch (err) {
         console.error("Theme load failed:", err);
         if (err.name === "TypeError" || err.message?.includes("fetch")) {
@@ -397,8 +408,16 @@ const AppContent = () => {
     }
   }, []);
 
-  // Primary Socket Lifecycle - Mount Once
+  // Primary Socket Lifecycle - Tied to authUser
+  // Only initialize and attach handlers once the user is authenticated.
+  // This prevents "Access Denied" errors on unauthenticated page loads.
   useEffect(() => {
+    if (!authUser) {
+      // User logged out — disconnect and clear
+      disconnectSocket();
+      return;
+    }
+
     const socket = getSocket();
     if (!socket) return;
 
@@ -518,14 +537,22 @@ const AppContent = () => {
         socket.off(event, handlers[event]);
       });
     };
-  }, []); // Mount Once
+  // Use the user ID (not the full object) as the dep — avoids re-attaching
+  // handlers on every profile update while still responding to login/logout.
+  }, [authUser?._id || authUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handle Token Updates
+  // Handle Token Updates — also initialises the socket the first time
+  // a fresh token arrives after a page reload (cookie-based auth).
   useEffect(() => {
     if (socketToken) {
-      updateSocketToken(socketToken);
+      // If socket doesn't exist yet (first token after reload), create it
+      const existingSocket = getSocket();
+      if (existingSocket) {
+        updateSocketToken(socketToken);
+      }
     }
   }, [socketToken]);
+
 
   // Post-Auth Sync
   useEffect(() => {

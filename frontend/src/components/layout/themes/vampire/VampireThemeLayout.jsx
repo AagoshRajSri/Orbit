@@ -21,7 +21,7 @@ const VampireThemeLayout = ({ children }) => {
   return (
     <CommonUnifiedLayout
       className="vamp-theme-root"
-      Navbar={VampireNavbar}
+      Navbar={<VampireNavbar />}
       Sidebar={<VampireSidebar activeTab={activeTab} setActiveTab={setActiveTab} />}
       BackgroundEffects={BackgroundEffects}
     >

@@ -8,7 +8,7 @@ const PastelThemeLayout = ({ children }) => {
   return (
     <CommonUnifiedLayout
       className="pastel-theme-root"
-      Navbar={PastelNavbar}
+      Navbar={<PastelNavbar />}
       Sidebar={<PastelSidebar />}
       BackgroundEffects={PastelBackground}
     >

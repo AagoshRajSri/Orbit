@@ -281,8 +281,480 @@ const OrbitalViz = ({ playing }) => (
   </div>
 );
 
+/* ─────────────────────────────────────────────
+   CIRCUIT OVERLAY
+───────────────────────────────────────────── */
+function CircuitOverlay() {
+  return (
+    <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.07, pointerEvents: "none" }} viewBox="0 0 790 460" preserveAspectRatio="none">
+      <g stroke={C} strokeWidth="0.7" fill="none">
+        <line x1="0" y1="50" x2="60" y2="50" /><line x1="60" y1="50" x2="80" y2="30" /><line x1="80" y1="30" x2="200" y2="30" />
+        <line x1="790" y1="120" x2="730" y2="120" /><line x1="730" y1="120" x2="710" y2="100" />
+        <line x1="0" y1="400" x2="80" y2="400" /><line x1="80" y1="400" x2="100" y2="420" />
+        <circle cx="60" cy="50" r="2.5" fill={C} /><circle cx="730" cy="120" r="2.5" fill={C} /><circle cx="80" cy="400" r="2.5" fill={C} />
+      </g>
+      <g stroke={P} strokeWidth="0.5" fill="none" opacity="0.8">
+        <line x1="400" y1="0" x2="400" y2="460" /><line x1="0" y1="230" x2="790" y2="230" />
+        <circle cx="400" cy="230" r="3" fill={P} />
+      </g>
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   MOBILE COMPONENTS
+───────────────────────────────────────────── */
+const CyberpunkMobileNav = memo(({ authUser, navigate }) => {
+  const { play } = useSoundManager();
+  return (
+    <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', background: 'rgba(6,0,16,0.96)', borderBottom: `1.5px solid ${C}44`, backdropFilter: 'blur(20px)', flexShrink: 0, zIndex: 1000 }}>
+      <div onClick={() => { play("click"); navigate("/profile"); }} style={{ width: 34, height: 34, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${C}`, boxShadow: `0 0 10px ${C}44`, cursor: "pointer" }}>
+        <img src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </div>
+      <div className="ncb-glitch-text oa-orbitron" data-text="ORBIT" style={{ fontSize: 18, fontWeight: 900, letterSpacing: 4, color: C, textShadow: `0 0 10px ${C}` }}>ORBIT</div>
+      <div onClick={() => { play("click"); navigate("/settings"); }} style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, color: C, textShadow: `0 0 8px ${C}` }}>⚙</div>
+    </div>
+  );
+});
+
+const CyberpunkMobileDash = memo(({ 
+  synced, onToggleSync, 
+  nexuses, isNexusesLoading, setSelectedNexus, 
+  users, setSelectedUser, 
+  nexusUnread, setNexusActionView, 
+  hiddenNexuses, toggleHide,
+  activeTab, setActiveTab
+}) => {
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', background: '#060010', position: 'relative' }}>
+      <CircuitOverlay />
+      <div style={{ padding: "20px 16px" }}>
+        <StatusBar synced={synced} />
+        <Sidebar 
+          synced={synced} 
+          onToggleSync={onToggleSync} 
+          onJoin={() => setNexusActionView("join")}
+          onNexus={() => setNexusActionView("create")}
+          nexuses={nexuses}
+          isNexusesLoading={isNexusesLoading}
+          setSelectedNexus={setSelectedNexus}
+          users={users || []}
+          setSelectedUser={setSelectedUser}
+          nexusUnread={nexusUnread || {}}
+          setNexusActionView={setNexusActionView}
+          hiddenNexuses={hiddenNexuses}
+          toggleHide={toggleHide}
+          forcedTab={activeTab === "orbits" ? "orbits" : "chats"}
+        />
+      </div>
+    </div>
+  );
+});
+
+const CyberpunkMobileTabBar = memo(({ currentTab, onTabChange }) => {
+  const { play } = useSoundManager();
+  const tabs = [
+    { id: 'orbits', label: 'NODES', icon: '🌀', color: C },
+    { id: 'chats', label: 'COMMS', icon: '💬', color: M },
+  ];
+
+  return (
+    <div style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-around', background: 'rgba(6,0,16,0.96)', borderTop: `1.5px solid ${P}44`, backdropFilter: 'blur(20px)', paddingBottom: 'env(safe-area-inset-bottom)', flexShrink: 0, zIndex: 1000 }}>
+      {tabs.map(t => {
+        const active = currentTab === t.id;
+        return (
+          <div key={t.id} onClick={() => { play("click"); onTabChange(t.id); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer', opacity: active ? 1 : 0.4, transition: 'all 0.3s' }}>
+            <div style={{ fontSize: 20, color: active ? t.color : '#fff', textShadow: active ? `0 0 10px ${t.color}` : 'none' }}>{t.icon}</div>
+            <div className="oa-orbitron" style={{ fontSize: 8, fontWeight: 900, letterSpacing: 1.5, color: active ? t.color : 'rgba(255,255,255,0.5)' }}>{t.label}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
+/* ─────────────────────────────────────────────
+   MAIN EXPORT
+───────────────────────────────────────────── */
 export default function OrbitNeonCyberpunk({ children }) {
-  return <CyberpunkThemeLayout children={children} />;
+  const [activeTab, setActiveTab] = useState("orbits");
+  const { play } = useSoundManager();
+  const navigate = useNavigate();
+  const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
+  const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
+  const [synced, setSynced] = useState(true);
+
+  // ── Hidden Nexus State ──
+  const [hiddenNexuses, setHiddenNexuses] = useState(() => {
+      try {
+          const saved = localStorage.getItem('cyberpunk_hidden_nexuses');
+          return saved ? JSON.parse(saved) : [];
+      } catch { return []; }
+  });
+
+  const toggleHide = (nexus, e) => {
+      if (e) e.stopPropagation();
+      const id = nexus._id;
+      const isHidden = (hiddenNexuses || []).some(h => h._id === id);
+      
+      if (!isHidden && hiddenNexuses.length >= 3) {
+          import("react-hot-toast").then(({ toast }) => toast.error("Maximum 3 hidden Nexuses allowed per theme."));
+          return;
+      }
+
+      const next = isHidden
+          ? hiddenNexuses.filter(h => h._id !== id)
+          : [...hiddenNexuses, { _id: id, name: nexus.name }];
+      
+      setHiddenNexuses(next);
+      localStorage.setItem('cyberpunk_hidden_nexuses', JSON.stringify(next));
+  };
+
+  const onReveal = (id) => {
+      const next = hiddenNexuses.filter(h => h._id !== id);
+      setHiddenNexuses(next);
+      localStorage.setItem('cyberpunk_hidden_nexuses', JSON.stringify(next));
+  };
+
+  const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
+  const nexusSelected = Boolean(selectedNexus || selectedNexusId);
+  const { users, selectedUser, setSelectedUser } = useChatStore();
+  const [showAddMenu, setShowAddMenu] = useState(false);
+
+  // GSAP entrance animation
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const cards = [c0, c1, c2, c3].map(r => r.current).filter(Boolean);
+      const nav = navRef.current;
+      const sidebar = sidebarRef.current;
+      const hero = heroRef.current;
+
+      if (nav) gsap.set(nav, { opacity: 0, y: -20 });
+      if (sidebar) gsap.set(sidebar, { opacity: 0, x: -30 });
+      if (hero) gsap.set(hero, { opacity: 0, y: 14 });
+      if (cards.length > 0) gsap.set(cards, { opacity: 0, y: 24, scale: 0.94 });
+
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      if (nav) tl.to(nav, { opacity: 1, y: 0, duration: 0.5 });
+      if (sidebar) tl.to(sidebar, { opacity: 1, x: 0, duration: 0.45 }, "-=0.3");
+      if (hero) tl.to(hero, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25");
+      if (cards.length > 0) tl.to(cards, { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.09 }, "-=0.2");
+    });
+
+    return () => ctx.revert();
+  }, []);
+
+  const handleToggleSync = useCallback(() => {
+    setSynced(p => !p);
+    if (heroRef.current) gsap.fromTo(heroRef.current,
+      { filter: "hue-rotate(180deg) brightness(1.5)" },
+      { filter: "none", duration: 0.6, ease: "power2.out" }
+    );
+  }, []);
+
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100dvh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#060010" }}>
+      <style>{STYLES}</style>
+
+      {/* Nebula backgrounds */}
+      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 20% 50%,${P}44 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,${C}18 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,${M}22 0%,transparent 40%)`, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,rgba(255,255,255,0.3) 1px,transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none", opacity: 0.12 }} />
+
+      {/* Scanlines */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)", mixBlendMode: "overlay" }} />
+
+      {/* Code rain */}
+      <OrbitRain />
+
+      {/* Data streams overlay */}
+      <DataStreams count={6} color={P} />
+
+      {/* ── Desktop Canvas ── */}
+      <div className="lm-desktop-only" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+        <TopNav 
+            navRef={navRef} 
+            synced={synced} 
+            hiddenNexuses={hiddenNexuses} 
+            onReveal={onReveal} 
+        />
+
+        <div className={`ncb-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 42, left: 0, right: 0, bottom: 0, display: "flex" }}>
+            <Sidebar 
+            sidebarRef={sidebarRef} 
+            synced={synced} 
+            onToggleSync={handleToggleSync} 
+            onJoin={() => setNexusActionView("join")}
+            onNexus={() => setNexusActionView("create")}
+            nexuses={nexuses}
+            isNexusesLoading={isNexusesLoading}
+            setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
+            users={users || []}
+            setSelectedUser={setSelectedUser}
+            nexusUnread={nexusUnread || {}}
+            setNexusActionView={setNexusActionView}
+            hiddenNexuses={hiddenNexuses}
+            toggleHide={toggleHide}
+            />
+
+        {/* Main content */}
+        <div className="ncb-main" style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
+          {children ? (
+            <div style={{ flex: 1, overflowY: "auto", position: "relative" }}>
+               {children}
+            </div>
+          ) : nexusActionView ? (
+            <div style={{ position: "absolute", inset: 0, zIndex: 120 }}>
+              <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
+            </div>
+          ) : nexusSelected ? (
+            <div className="neon-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+              <UniversalChatContainer type="nexus" />
+            </div>
+          ) : selectedUser ? (
+            <div className="neon-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+              <UniversalChatContainer type="dm" />
+            </div>
+          ) : (
+            <div style={{ flex: 1, padding: "12px 16px 10px 16px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", position: "relative" }}>
+              <CircuitOverlay />
+
+              {/* Hero area */}
+              <div ref={heroRef} className="ncb-hero" style={{ position: "relative", zIndex: 2 }}>
+                <StatusBar synced={synced} />
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
+                  <div>
+                    <h1 data-text="WELCOME TO ORBIT" className="ncb-glitch-text" style={{ margin: "0 0 2px 0", fontSize: 34, fontWeight: 900, letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1.02, color: "#fff", textShadow: `0 0 20px ${C}66,0 0 40px ${C}33`, fontFamily: "'Orbitron',monospace" }}>
+                      WELCOME TO ORBIT
+                    </h1>
+                    <p style={{ margin: 0, fontSize: 10.5, color: "rgba(140,220,220,0.55)", letterSpacing: "0.06em", fontFamily: "'Rajdhani',monospace" }}>
+                      Neon Cyberpunk Dimension Active — Initialize your pathway.
+                    </p>
+                  </div>
+
+                  {/* Sync CTA */}
+                  <button className="ncb-hero-btn" onClick={handleToggleSync} style={{
+                    flexShrink: 0, padding: "8px 20px", border: "none", borderRadius: 5, cursor: "pointer",
+                    background: synced ? `linear-gradient(90deg,${C},${P})` : `linear-gradient(90deg,${P}88,${M}88)`,
+                    color: "#000", fontFamily: "'Orbitron',monospace", fontSize: 13, fontWeight: 900, letterSpacing: "0.18em",
+                    boxShadow: synced ? `0 0 20px ${C},0 0 40px ${C}66` : `0 0 10px ${P}55`,
+                    transition: "all 0.25s", position: "relative", overflow: "hidden",
+                  }}>
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)", backgroundSize: "200% 100%", animation: "ncbShimmer 1.8s infinite" }} />
+                    {synced ? "🔗 SYNCHRONIZED" : "⚡ SYNC NOW"}
+                  </button>
+                </div>
+
+              </div>
+
+              {/* Keyframes */}
+              <style>{`
+                @keyframes ncb-neon-pulse {
+                  0%, 100% { box-shadow: 0 0 10px ${M}, 0 0 20px ${M}88, 0 0 35px ${M}44; }
+                  50% { box-shadow: 0 0 15px ${P}, 0 0 30px ${P}bb, 0 0 55px ${P}66; }
+                }
+                @keyframes ncb-add-neon {
+                  0%, 100% { box-shadow: 0 0 8px ${C}66; }
+                  50% { box-shadow: 0 0 20px ${C}cc; }
+                }
+                @keyframes ncb-popup-slide {
+                  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+                  to   { opacity: 1; transform: translateY(0) scale(1); }
+                }
+              `}</style>
+
+              {/* Nexus row + sticky Add button */}
+              <div style={{ marginBottom: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                {/* Scrollable nexus bubbles */}
+                <div className="ncb-scroll-hide" style={{ display: "flex", gap: 20, overflowX: "auto", paddingBottom: 12, flex: 1, WebkitOverflowScrolling: 'touch' }}>
+                  {nexuses?.map((n) => {
+                    const isActive = selectedNexus?._id === n._id;
+                    const initials = (n.name || "?").slice(0, 2).toUpperCase();
+                    const avatarSrc = n.avatar || n.profilePic || n.image;
+                    return (
+                      <div
+                        key={n._id}
+                        onClick={() => { play("click"); setSelectedNexus(n); navigate(`/nexus/${n._id}`); }}
+                        style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                      >
+                        {/* Neon ring — border + box-shadow */}
+                        <div style={{
+                          width: 68, height: 68, borderRadius: "50%",
+                          border: isActive ? `3px solid ${M}` : `2px solid ${M}33`,
+                          boxShadow: isActive
+                            ? `0 0 10px ${M}, 0 0 22px ${M}aa, 0 0 42px ${M}55`
+                            : `0 0 5px ${M}22`,
+                          overflow: "hidden",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          background: isActive ? "rgba(9,0,20,0.97)" : "rgba(9,0,20,0.8)",
+                          animation: isActive ? "ncb-neon-pulse 2s ease-in-out infinite" : "none",
+                          transition: "all 0.3s ease",
+                          boxSizing: "border-box",
+                        }}>
+                          {avatarSrc ? (
+                            <img src={avatarSrc} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          ) : (
+                            <div style={{
+                              width: "100%", height: "100%",
+                              background: isActive ? `linear-gradient(135deg, ${M}44, ${P}22)` : `${M}0a`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 17, fontWeight: 900, color: isActive ? M : `${M}55`,
+                              fontFamily: "'Orbitron',monospace", letterSpacing: 2,
+                            }}>
+                              {initials}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, fontWeight: 800, color: isActive ? M : `${M}66`, letterSpacing: "0.1em", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%", textTransform: "uppercase" }}>
+                          {n.name}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* + Add button — sticky outside scroll, popup anchors directly to it */}
+                <div style={{ position: "relative", flexShrink: 0, paddingBottom: 12 }}>
+                  <div
+                    style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", width: 68 }}
+                    onClick={() => { play("click"); setShowAddMenu(v => !v); }}
+                  >
+                    <div style={{
+                      width: 68, height: 68, borderRadius: "50%",
+                      border: `2.5px dashed ${C}`,
+                      background: "rgba(0,255,245,0.04)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: C, fontSize: 28, fontFamily: "'Orbitron',monospace",
+                      animation: "ncb-add-neon 2.5s ease-in-out infinite",
+                      transition: "all 0.25s",
+                      boxSizing: "border-box",
+                    }}>
+                      {showAddMenu ? "×" : "+"}
+                    </div>
+                    <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, fontWeight: 800, color: C, letterSpacing: "0.1em", textAlign: "center", textTransform: "uppercase" }}>
+                      {showAddMenu ? "CLOSE" : "ADD"}
+                    </div>
+                  </div>
+
+                  {/* Popup — position:absolute relative to this small wrapper */}
+                  {showAddMenu && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: "absolute", top: "calc(100% - 2px)", right: 0,
+                        background: `linear-gradient(145deg, rgba(9,0,20,0.99), rgba(15,0,30,0.99))`,
+                        border: `1.5px solid ${C}bb`,
+                        borderRadius: 10,
+                        boxShadow: `0 16px 48px rgba(0,0,0,0.95), 0 4px 12px ${C}44, inset 0 1px 0 ${C}22`,
+                        padding: "8px 0", zIndex: 9999, minWidth: 170,
+                        animation: "ncb-popup-slide 0.18s ease-out",
+                      }}
+                    >
+                      {/* Connecting arrow */}
+                      <div style={{
+                        position: "absolute", top: -8, right: 22,
+                        width: 0, height: 0,
+                        borderLeft: "8px solid transparent",
+                        borderRight: "8px solid transparent",
+                        borderBottom: `8px solid ${C}bb`,
+                      }} />
+                      <div style={{ padding: "6px 14px 4px", fontFamily: "'Orbitron',monospace", fontSize: 8, fontWeight: 900, color: `${C}88`, letterSpacing: "0.15em", textTransform: "uppercase" }}>
+                        Nexus
+                      </div>
+                      <div
+                        onClick={() => { play("click"); setNexusActionView("join"); setShowAddMenu(false); }}
+                        style={{ padding: "10px 18px", fontFamily: "'Orbitron',monospace", fontSize: 10, fontWeight: 700, color: C, cursor: "pointer", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 8 }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${C}11`}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        ⚡ JOIN NEXUS
+                      </div>
+                      <div style={{ height: 1, background: `${C}22`, margin: "0 12px" }} />
+                      <div
+                        onClick={() => { play("click"); setNexusActionView("create"); setShowAddMenu(false); }}
+                        style={{ padding: "10px 18px", fontFamily: "'Orbitron',monospace", fontSize: 10, fontWeight: 700, color: M, cursor: "pointer", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 8 }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${M}11`}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        ⚡ CREATE NEXUS
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+
+
+              {/* 2×2 Grid or children (settings/profile/spotify pages) */}
+              {children ? (
+                <div style={{ flex: 1, position: "relative", zIndex: 2, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+                  {children}
+                </div>
+
+              ) : (
+                <div className="ncb-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, flex: 1, position: "relative", zIndex: 2 }}>
+                  <div ref={c0} style={{ height: "100%" }}><AudioCard /></div>
+                  <div ref={c1} style={{ height: "100%" }}><ChatCard /></div>
+                  <div ref={c2} style={{ height: "100%" }}><NotifCard /></div>
+                  <div ref={c3} style={{ height: "100%" }}><CustomizeCard /></div>
+                </div>
+
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+
+
+      {/* ── Mobile Canvas ── */}
+      <div className="lm-mobile-canvas lm-mobile-only">
+        {nexusActionView ? (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 10000 }}>
+            <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} />
+          </div>
+        ) : (nexusSelected || selectedUser || children || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/')) ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: '#060010' }}>
+            {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
+          </div>
+        ) : (
+          <>
+            <CyberpunkMobileNav authUser={useAuthStore.getState().authUser} navigate={navigate} />
+            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <CyberpunkMobileDash
+                synced={synced}
+                onToggleSync={handleToggleSync}
+                nexuses={nexuses}
+                isNexusesLoading={isNexusesLoading}
+                setSelectedNexus={setSelectedNexus}
+                users={users}
+                setSelectedUser={setSelectedUser}
+                nexusUnread={nexusUnread}
+                setNexusActionView={setNexusActionView}
+                hiddenNexuses={hiddenNexuses}
+                toggleHide={toggleHide}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              />
+            </div>
+            <CyberpunkMobileTabBar currentTab={activeTab} onTabChange={setActiveTab} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+/* ─────────────────────────────────────────────
+   TOGGLE SWITCH (for settings panels)
+───────────────────────────────────────────── */
+function ToggleSwitch({ label, checked, onChange, color = C }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)" }}>
+      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{label}</span>
+      <div onClick={() => onChange(!checked)} style={{ width: 36, height: 20, borderRadius: 10, background: checked ? `linear-gradient(90deg,${color},${P})` : "rgba(255,255,255,0.08)", position: "relative", cursor: "pointer", transition: "all 0.2s", boxShadow: checked ? `0 0 10px ${color}88` : "none" }}>
+        <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: checked ? 19 : 3, transition: "all 0.2s", boxShadow: checked ? `0 0 6px ${color}` : "none" }} />
+      </div>
+    </div>
+  );
 }
 
 export function CyberpunkSettings({
@@ -314,7 +786,7 @@ export function CyberpunkSettings({
         <NeonCard color={C} style={{ width: 260, padding: 20, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }} className="ncb-settings-nav">
           <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: "0.25em", color: `${C}88`, fontFamily: "'Orbitron',monospace", marginBottom: 4 }}>// SYS.PREFERENCES</div>
           {sections.map(s => (
-            <button key={s.id} onClick={() => { play?.("click"); setActiveSection(s.id); }} style={{ width: "100%", textAlign: "left", padding: "12px 16px", background: activeSection === s.id ? `${C}14` : "transparent", border: "1px solid", borderColor: activeSection === s.id ? C : "transparent", borderRadius: 6, color: activeSection === s.id ? "#fff" : `${C}66`, fontFamily: "'Orbitron', monospace", fontSize: 11, letterSpacing: "0.15em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 10, boxShadow: activeSection === s.id ? `0 0 10px ${C}33` : "none" }}>
+            <button key={s.id} onClick={() => { play("click"); setActiveSection(activeSection === s.id ? null : s.id); }} style={{ width: "100%", textAlign: "left", padding: "12px 16px", background: activeSection === s.id ? `${C}14` : "transparent", border: "1px solid", borderColor: activeSection === s.id ? C : "transparent", borderRadius: 6, color: activeSection === s.id ? "#fff" : `${C}66`, fontFamily: "'Orbitron', monospace", fontSize: 11, letterSpacing: "0.15em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 10, boxShadow: activeSection === s.id ? `0 0 10px ${C}33` : "none" }}>
               <span style={{ fontSize: 16 }}>{s.icon}</span>{s.label}
             </button>
           ))}
@@ -325,7 +797,8 @@ export function CyberpunkSettings({
         </NeonCard>
 
         {/* Settings Content */}
-        <NeonCard color={P} style={{ flex: 1, padding: 28, overflowY: "auto" }}>
+        {activeSection && (
+        <NeonCard color={P} style={{ flex: 1, padding: "28px 28px 100px", overflowY: "auto" }}>
           <h2 style={{ fontSize: 20, fontWeight: 900, color: C, fontFamily: "'Orbitron',monospace", marginBottom: 24, textShadow: `0 0 10px ${C}`, letterSpacing: "0.15em" }}>
             SYS_PREF // {activeSection.toUpperCase()}
           </h2>
@@ -357,7 +830,7 @@ export function CyberpunkSettings({
                           <div style={{ textAlign: "center" }}>
                             <div style={{ fontSize: 9, color: isSelected ? C : "rgba(255,255,255,0.4)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{THEME_LABELS[t] || t.toUpperCase()}</div>
                             {isSelected && !isApplied && (
-                              <button onClick={e => { e.stopPropagation(); play?.("click"); setDraftTheme(t); }} style={{ marginTop: 6, padding: "5px 8px", width: "100%", background: C, border: "none", color: "#000", fontSize: 8, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: `0 0 8px ${C}66` }}>DEPLOY</button>
+                              <button onClick={e => { e.stopPropagation(); play("click"); setDraftTheme(t); handleSave(t); }} style={{ marginTop: 6, padding: "5px 8px", width: "100%", background: C, border: "none", color: "#000", fontSize: 8, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: `0 0 8px ${C}66` }}>DEPLOY</button>
                             )}
                             {isApplied && <div style={{ marginTop: 6, fontSize: 9, color: C, fontWeight: 700, fontFamily: "'Orbitron', monospace" }}>✓ ACTIVE</div>}
                           </div>
@@ -424,6 +897,7 @@ export function CyberpunkSettings({
             </div>
           )}
         </NeonCard>
+        )}
       </div>
     </OrbitNeonCyberpunk>
   );

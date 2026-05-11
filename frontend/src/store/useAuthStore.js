@@ -275,8 +275,21 @@ export const useAuthStore = create(
       finishPostAuthLoader: () => set({ showPostAuthLoader: false }),
       refreshSocketToken: async () => {
         try {
-          const { reconnectSocket } = await import("../lib/socket");
-          reconnectSocket();
+          const { updateSocketToken, reconnectSocket, getSocket } = await import("../lib/socket");
+          const currentToken = get().socketToken;
+          const currentAuthUser = get().authUser;
+
+          if (!currentAuthUser) {
+            // Logging out — full disconnect; App.jsx will not re-init since authUser is null
+            reconnectSocket();
+          } else if (currentToken) {
+            // Token rotated — update the existing socket's auth without full teardown
+            updateSocketToken(currentToken);
+          } else {
+            // No token yet (fresh login) — let App.jsx's authUser effect handle init
+            // Do nothing here; the effect will call getSocket() once authUser is set
+            console.log("[refreshSocketToken] No token yet, deferring to auth effect.");
+          }
         } catch (e) {
           console.error("Failed to refresh socket:", e);
         }

@@ -840,7 +840,7 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
   const dangerRed="#ef4444";
 
   return (
-    <div className="ip-wrapper ip-mobile-bg" style={{width:fullArea ? "100%" : 340,borderLeft:fullArea ? "none" : "1px solid "+t.border,background:t.panel,display:"flex",flexDirection:fullArea ? "row" : "column",height:"100%",animation:"fadeIn .3s ease",flexShrink:0,position:"relative",overflow:"hidden"}}>
+    <div className="ip-wrapper ip-mobile-bg" style={{width:fullArea ? "100%" : 340,borderLeft:fullArea ? "none" : "1px solid "+t.border,background:t.panel,display:"flex",flexDirection:"column",height:"100%",animation:"fadeIn .3s ease",flexShrink:0,position:"relative",overflow:"hidden"}}>
       <ParticleCanvas t={t} style={{opacity:.18}}/>
 
       {/* ── MOBILE ONLY UI ── */}
@@ -895,28 +895,28 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
       </div>
 
       {/* ── DESKTOP UI ── */}
-      <div className="ip-desktop-only" style={{padding:"24px 20px 20px",borderBottom:fullArea ? "none" : "1px solid "+t.border,borderRight:fullArea ? "1px solid "+t.border : "none",background:t.headerGrad,position:"relative",zIndex:1,flexShrink:0,width:fullArea ? 380 : 340,height:fullArea ? "100%" : "auto",overflowY:fullArea ? "auto" : "visible", display: "flex", flexDirection: "column"}}>
-        <div style={{ maxWidth: 500, margin: "0 auto", width: "100%" }}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+      <div className="ip-desktop-only" style={{padding:"24px 20px 20px",borderBottom:"1px solid "+t.border,borderRight:"none",background:t.headerGrad,position:"relative",zIndex:1,flexShrink:0,width:"100%",height:"auto",overflowY:"visible", display: "flex", flexDirection: "column"}}>
+        <div style={{ maxWidth: 500, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14, width: "100%"}}>
             <button onClick={onClose}
-            style={{background:t.msgIn,border:"1px solid "+t.border,color:t.txt2,cursor:"pointer",padding:"6px 8px",borderRadius:9,display:"flex",transition:"border-color .15s"}}
+            style={{background:t.msgIn,border:"1px solid "+t.border,color:t.txt2,cursor:"pointer",padding:"6px 8px",borderRadius:9,display:"flex",transition:"border-color .15s", flexShrink: 0}}
             onMouseEnter={e=>e.currentTarget.style.borderColor=t.acc}
             onMouseLeave={e=>e.currentTarget.style.borderColor=t.border}>
             <Ico d={I.back} size={16} stroke={t.txt2}/>
           </button>
-          <div style={{flex:1,color:t.txt,fontSize:14,fontWeight:700,fontFamily:t.font,letterSpacing:".04em"}}>Nexus Profile</div>
-          <div style={{display:"flex",alignItems:"center",gap:5,background:themeAccentBg,border:"1px solid "+t.acc+"40",borderRadius:20,padding:"4px 10px"}}>
+          <div style={{flex:1,color:t.txt,fontSize:13,fontWeight:700,fontFamily:t.font,letterSpacing:".04em", textAlign: "center"}}>Nexus Profile</div>
+          <div style={{display:"flex",alignItems:"center",gap:5,background:themeAccentBg,border:"1px solid "+t.acc+"40",borderRadius:20,padding:"4px 10px", flexShrink: 0}}>
             <div style={{width:7,height:7,borderRadius:"50%",background:t.status,boxShadow:"0 0 6px "+t.status}}/>
-            <span style={{color:t.acc,fontSize:10,fontFamily:t.font,fontWeight:700,letterSpacing:".06em"}}>
+            <span style={{color:t.acc,fontSize:9,fontFamily:t.font,fontWeight:700,letterSpacing:".06em"}}>
               {group.members.filter(m=>m.status==="online").length} ONLINE
             </span>
           </div>
         </div>
 
         {/* Avatar */}
-        <div style={{textAlign:"center",padding:"20px 0 30px"}}>
-          <div style={{position:"relative",display:"inline-block",marginBottom:20}}>
-            <div style={{width:fullArea ? 130 : 90,height:fullArea ? 130 : 90,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44,boxShadow:"0 12px 48px "+t.glow,cursor:"pointer",transition:"all .3s ease", overflow:"hidden", border: `2px solid ${t.acc}30`}}
+        <div style={{textAlign:"center",padding:fullArea ? "10px 0 20px" : "20px 0 30px", width: "100%"}}>
+          <div style={{position:"relative",display:"inline-block",marginBottom:16}}>
+            <div style={{width:fullArea ? 110 : 90,height:fullArea ? 110 : 90,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44,boxShadow:"0 12px 48px "+t.glow,cursor:"pointer",transition:"all .3s ease", overflow:"hidden", border: `2px solid ${t.acc}30`}}
               onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 20px 60px "+t.glow; e.currentTarget.style.transform="scale(1.05)"}}
               onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 12px 48px "+t.glow; e.currentTarget.style.transform="scale(1)"}}>
               {(() => {
@@ -928,7 +928,7 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
                   <PixelAvatarBadge
                     type={animal}
                     state="idle"
-                    size={fullArea ? 120 : 80}
+                    size={fullArea ? 100 : 80}
                     showDot={false}
                     style={{
                       imageRendering: "pixelated",
@@ -942,8 +942,8 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
             </div>
             <div style={{position:"absolute",inset:-4,borderRadius:"50%",border:"1px solid "+t.acc+"30",pointerEvents:"none"}}/>
           </div>
-          <div style={{color:t.txt,fontSize:fullArea ? 24 : 18,fontWeight:900,fontFamily:t.font,letterSpacing:".02em",marginBottom:6, textShadow: `0 2px 10px ${t.bg}`}}>{group.name}</div>
-          <div style={{color:t.txt2,fontSize:13,fontFamily:t.font,marginBottom:20, opacity: 0.8, fontWeight: 500}}>
+          <div style={{color:t.txt,fontSize:fullArea ? 22 : 18,fontWeight:900,fontFamily:t.font,letterSpacing:".02em",marginBottom:6, textShadow: `0 2px 10px ${t.bg}`}}>{group.name}</div>
+          <div style={{color:t.txt2,fontSize:12,fontFamily:t.font,marginBottom:16, opacity: 0.8, fontWeight: 500}}>
             {group.members.length} members <span style={{margin: "0 6px", opacity: 0.4}}>•</span> {(group.messageCount||0).toLocaleString()} messages
           </div>
           <div style={{display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap"}}>
@@ -976,14 +976,14 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
       </div>
 
       {/* CONTENT (DESKTOP) */}
-      <div className="ip-desktop-only" style={{flex:1,overflowY:"auto",padding:"30px 0",position:"relative",zIndex:1,scrollbarWidth:"thin",scrollbarColor:t.scrollbar+" transparent",display:"flex",flexDirection:"column",height:fullArea ? "100%" : "auto", background: t.bg}}>
-        <div style={{ maxWidth: 800, margin: "0 auto", width: "100%", padding: "0 40px" }}>
+      <div className="ip-desktop-only" style={{flex:1,overflowY:"auto",padding:"30px 0",position:"relative",zIndex:1,scrollbarWidth:"thin",scrollbarColor:t.scrollbar+" transparent",display:"flex",flexDirection:"column",height:"auto", background: t.bg}}>
+        <div style={{ maxWidth: 800, margin: "0 auto", width: "100%", padding: fullArea ? "0 16px" : "0 40px" }}>
 
         {/* ── OVERVIEW ── */}
         {tab==="overview"&&(
           <div style={{padding:"0 14px",animation:"fadeUp .2s ease"}}>
             {/* Quick actions */}
-            <div style={{display:"grid",gridTemplateColumns: fullArea ? "repeat(4, 1fr)" : "1fr 1fr",gap:16,marginBottom:32}}>
+            <div style={{display:"grid",gridTemplateColumns: fullArea ? "repeat(4, 1fr)" : "1fr 1fr",gap:fullArea ? 10 : 16,marginBottom:32}}>
               {[
                 {label:"Mute",   icon:I.bell,   action:()=>addToast("Notifications muted")},
                 {label:"Search", icon:I.search, action:()=>addToast("Search in chat")},
@@ -991,17 +991,17 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
                 {label:"Invite", icon:I.link,   action:copyInvite},
               ].map(({label,icon,action})=>(
                 <Btn3D key={label} onClick={action} title={label}
-                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10,padding:"20px 12px",background:t.msgIn,border:"1px solid "+t.border,borderRadius:20,cursor:"pointer",transition:"all .3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 4px 15px rgba(0,0,0,0.05)`}}
+                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:fullArea ? 6 : 10,padding:fullArea ? "14px 8px" : "20px 12px",background:t.msgIn,border:"1px solid "+t.border,borderRadius:20,cursor:"pointer",transition:"all .3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 4px 15px rgba(0,0,0,0.05)`}}
                   onMouseEnter={e => {e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.borderColor=t.acc; e.currentTarget.style.boxShadow=`0 10px 25px ${t.acc}20`}}
                   onMouseLeave={e => {e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=t.border; e.currentTarget.style.boxShadow=`0 4px 15px rgba(0,0,0,0.05)`}}>
-                  <div style={{width:48,height:48,borderRadius:14,background:themeAccentBg,display:"flex",alignItems:"center",justifyContent:"center", boxShadow: `inset 0 2px 8px ${t.acc}20`}}>
-                    <Ico d={icon} size={20} stroke={t.acc}/>
+                  <div style={{width:fullArea ? 40 : 48,height:fullArea ? 40 : 48,borderRadius:14,background:themeAccentBg,display:"flex",alignItems:"center",justifyContent:"center", boxShadow: `inset 0 2px 8px ${t.acc}20`, flexShrink: 0}}>
+                    <Ico d={icon} size={fullArea ? 18 : 20} stroke={t.acc}/>
                   </div>
-                  <span style={{color:t.txt,fontSize:11,fontFamily:t.font,fontWeight:800,letterSpacing:".1em",textTransform:"uppercase"}}>{label}</span>
+                  <span style={{color:t.txt,fontSize:fullArea ? 10 : 11,fontFamily:t.font,fontWeight:800,letterSpacing:".1em",textTransform:"uppercase"}}>{label}</span>
                 </Btn3D>
               ))}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: fullArea ? "1fr 1fr" : "1fr", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: fullArea ? "1fr" : "1fr 1fr", gap: 20 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 <PanelSection t={t} title="Group Name" icon={I.hash} defaultOpen>
                   <EditField t={t} value={group.name||""} onChange={v=>updateField("name",v)} placeholder="Enter group name…"/>
@@ -1025,7 +1025,7 @@ function InfoPanel({t,group,setGroup,onClose,addToast,onUpdate,onLeave,onDelete,
               </div>
             </div>
             <PanelSection t={t} title="Stats" icon={I.clock} defaultOpen>
-              <div style={{display:"grid",gridTemplateColumns: fullArea ? "repeat(4, 1fr)" : "1fr 1fr",gap:16}}>
+            <div style={{display:"grid",gridTemplateColumns: fullArea ? "repeat(2, 1fr)" : "repeat(4, 1fr)",gap:16}}>
                 {[
                   ["Messages",(group.messageCount||0).toLocaleString()],
                   ["Members",group.members?.length||0],

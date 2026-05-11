@@ -10,7 +10,7 @@ const AmoledThemeLayout = ({ children }) => {
   return (
     <CommonUnifiedLayout
       className="amoled-theme-root"
-      Navbar={AmoledNavbar}
+      Navbar={<AmoledNavbar />}
       Sidebar={<AmoledSidebar activeTab={activeTab} setActiveTab={setActiveTab} />}
       BackgroundEffects={AmoledBackground}
     >

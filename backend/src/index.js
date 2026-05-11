@@ -205,8 +205,11 @@ const io = new Server(httpServer, {
   // Render free-tier does not support WS upgrades. Force polling-only.
   transports: ["polling"],
   allowUpgrades: false,
-  pingInterval: 5000, 
-  pingTimeout: 2500,
+  // For polling-only mode, ping intervals must be much longer than the
+  // poll request itself. A 2.5s timeout will cause false disconnects on
+  // Render's free tier where cold-start response times can reach 5-10s.
+  pingInterval: 25000,
+  pingTimeout: 20000,
 });
 
 async function initApp() {

@@ -10,7 +10,7 @@ const CyberpunkThemeLayout = ({ children }) => {
   return (
     <CommonUnifiedLayout
       className="cyberpunk-theme-root"
-      Navbar={CyberpunkNavbar}
+      Navbar={<CyberpunkNavbar />}
       Sidebar={<CyberpunkSidebar activeTab={activeTab} setActiveTab={setActiveTab} />}
       BackgroundEffects={CyberpunkBackground}
     >

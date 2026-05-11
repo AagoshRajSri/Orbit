@@ -314,8 +314,10 @@ const SettingsPage = () => {
 
   const handleSave = async (forceTheme) => {
     const finalTheme = forceTheme || draftTheme;
+    
+    // Apply theme immediately for instant feedback
+    if (finalTheme) setTheme(finalTheme);
 
-    // Persist draft values locally (theme is applied globally via the theme store).
     try {
       // Update username on backend if it has changed
       if ((draftDisplayName !== authUser?.username && draftDisplayName.trim()) || draftBio !== authUser?.bio) {
@@ -351,7 +353,7 @@ const SettingsPage = () => {
       setSavedNotifications(draftNotifications);
       setSavedShowOnlineStatus(draftShowOnlineStatus);
       setSavedOrbitBehavior(draftOrbitBehavior);
-      setSavedTheme(draftTheme);
+      setSavedTheme(finalTheme);
       setSavedSoundSettings(draftSoundSettings);
 
       localStorage.setItem(
@@ -375,7 +377,7 @@ const SettingsPage = () => {
         "orbit.autoPauseOnHover": draftOrbitBehavior.autoPauseOnHover ?? true,
       });
 
-      setTheme(draftTheme);
+      // finalTheme already applied at start
       toast.success("Settings saved");
       setMobileNavOpen(false);
     } catch (e) {
@@ -465,6 +467,7 @@ const SettingsPage = () => {
         activeSection={activeSection} setActiveSection={setActiveSection}
         draftTheme={draftTheme} setDraftTheme={setDraftTheme}
         draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
+        draftBio={draftBio} setDraftBio={setDraftBio}
         draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
         draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
         draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
@@ -636,7 +639,7 @@ const SettingsPage = () => {
               </aside>
 
               <section className="col-span-12 lg:col-span-9 min-h-0 flex flex-col">
-                <div className="flex-1 min-h-0 overflow-y-auto pr-0 lg:pr-2">
+                <div className="flex-1 min-h-0 overflow-y-auto pr-0 lg:pr-2 pb-24 lg:pb-0">
                   {/* ANIMATIONS */}
                   {activeSection === "animations" && (
                     <AnimationSettingsPanel isPastel={false} />
