@@ -1,8 +1,6 @@
 import crypto from "crypto";
 import OTP from "../models/otp.model.js";
 
-import crypto from "crypto";
-
 export const generateOTP = () => {
   return crypto.randomInt(100000, 1000000).toString();
 };
