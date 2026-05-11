@@ -6,7 +6,7 @@ import { applyTheme, initTheme } from "../lib/themeSwitcher";
 const getInitialTheme = () =>
   initTheme({
     allowedThemes: THEMES,
-    defaultTheme: "light",
+    defaultTheme: "dark",
   });
 
 export const useThemeStore = create((set, get) => ({
@@ -25,10 +25,15 @@ export const useThemeStore = create((set, get) => ({
       settingsStore.subscribe(
         (settings) => settings.settings.appearance.theme,
         (newTheme) => {
-          if (typeof window !== "undefined" && THEMES.includes(newTheme)) {
-            applyTheme(newTheme);
+          let validTheme = newTheme;
+          if (!newTheme || !THEMES.includes(newTheme)) {
+            validTheme = "dark"; // Fallback to a known valid theme
           }
-          set({ theme: newTheme });
+          
+          if (typeof window !== "undefined") {
+            applyTheme(validTheme);
+          }
+          set({ theme: validTheme });
         },
       );
 
@@ -38,18 +43,23 @@ export const useThemeStore = create((set, get) => ({
 
   setTheme: (newTheme) => {
     set((state) => {
-      if (typeof window !== "undefined" && THEMES.includes(newTheme)) {
-        applyTheme(newTheme);
+      let validTheme = newTheme;
+      if (!newTheme || !THEMES.includes(newTheme)) {
+        validTheme = "dark";
+      }
+
+      if (typeof window !== "undefined") {
+        applyTheme(validTheme);
       }
 
       // Also update settings store if it's initialized
       if (state.settingsStore) {
         state.settingsStore
           .getState()
-          .updateSetting("appearance.theme", newTheme);
+          .updateSetting("appearance.theme", validTheme);
       }
 
-      return { theme: newTheme };
+      return { theme: validTheme };
     });
   },
 
