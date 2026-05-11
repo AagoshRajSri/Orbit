@@ -1126,7 +1126,7 @@ export function LightSpotify() {
           </div>
         )}
       </div>
-    </LightTheme>
+    </LuxuryWrapper>
   );
 }
 
@@ -1202,7 +1202,7 @@ export function LightProfile() {
           </div>
         </div>
       </div>
-    </LightTheme>
+    </LuxuryWrapper>
   );
 }
 
@@ -1357,7 +1357,7 @@ export function LightSettings({
           )}
         </div>
       </div>
-    </LightTheme>
+    </LuxuryWrapper>
   );
 }
 

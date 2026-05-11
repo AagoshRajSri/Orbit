@@ -275,11 +275,7 @@ const ToggleSwitch = ({ label, checked, onChange, color = C }) => (
   </div>
 );
 
-const OrbitalViz = ({ playing }) => (
-  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#050505" }}>
-    <div className={`orbit-spinner ${playing ? "running" : "paused"}`} style={{ width: 60, height: 60, border: `2px solid ${C}22`, borderRadius: "50%", borderTopColor: C, animation: "ncb-spin 2s linear infinite" }} />
-  </div>
-);
+
 
 /* ─────────────────────────────────────────────
    CIRCUIT OVERLAY
@@ -746,16 +742,7 @@ export default function OrbitNeonCyberpunk({ children }) {
 /* ─────────────────────────────────────────────
    TOGGLE SWITCH (for settings panels)
 ───────────────────────────────────────────── */
-function ToggleSwitch({ label, checked, onChange, color = C }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)" }}>
-      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{label}</span>
-      <div onClick={() => onChange(!checked)} style={{ width: 36, height: 20, borderRadius: 10, background: checked ? `linear-gradient(90deg,${color},${P})` : "rgba(255,255,255,0.08)", position: "relative", cursor: "pointer", transition: "all 0.2s", boxShadow: checked ? `0 0 10px ${color}88` : "none" }}>
-        <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: checked ? 19 : 3, transition: "all 0.2s", boxShadow: checked ? `0 0 6px ${color}` : "none" }} />
-      </div>
-    </div>
-  );
-}
+
 
 export function CyberpunkSettings({
   activeSection, setActiveSection,

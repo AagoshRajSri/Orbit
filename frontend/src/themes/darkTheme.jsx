@@ -1799,10 +1799,10 @@ export function VampireSettings({
                 <div style={{ position: "relative", zIndex: 10, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
                     <div className="nav-logo">
                         <div className="nav-logo-icon"><img src={batLogo} alt="Orbit Bat" /></div>
-                        ORBIT <span style={{ fontSize: 12, color: 'var(--mist)', marginLeft: 15, letterSpacing: '4px' }}>// ACCOUNT SETTINGS</span>
+                        ORBIT <span style={{ fontSize: 12, color: 'var(--mist)', marginLeft: 15, letterSpacing: '4px' }}>ACCOUNT SETTINGS</span>
                     </div>
                     <div style={{ display: 'flex', gap: 12 }}>
-                        <button className="nav-btn" onClick={() => navigate("/")} style={{ border: '1px solid rgba(139,0,0,0.3)', padding: '8px 16px', borderRadius: '4px' }}>
+                        <button className="nav-btn" onClick={() => navigate('')} style={{ border: '1px solid rgba(139,0,0,0.3)', padding: '8px 16px', borderRadius: '4px' }}>
                             <span>◀</span> GO BACK
                         </button>
                     </div>
@@ -1842,7 +1842,7 @@ export function VampireSettings({
                     {/* Content */}
                     <div className="card" style={{ flex: 1, padding: '40px 40px 100px', overflowY: "auto", height: '100%', minHeight: 0 }}>
                         <h2 style={{ fontSize: 20, fontWeight: 900, color: "var(--crimson)", fontFamily: "'Cinzel', serif", marginBottom: 32, textShadow: "0 0 10px rgba(220,20,60,0.4)", letterSpacing: "4px" }}>
-                            {activeSection.toUpperCase()} // PROTOCOL
+                            {activeSection?.toUpperCase()}
                         </h2>
 
                         {activeSection === "profile" && (
@@ -1870,7 +1870,7 @@ export function VampireSettings({
                                 <div className="v-toggle" onClick={() => setDraftShowOnlineStatus(!draftShowOnlineStatus)} style={{ cursor: 'pointer' }}>
                                     <div style={{ fontSize: 13, color: 'var(--mist)' }}>SHOW ONLINE STATUS</div>
                                     <button type="button" style={{ color: draftShowOnlineStatus ? 'var(--crimson)' : 'var(--mist)', background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', pointerEvents: 'none' }}>
-                                        {draftShowOnlineStatus ? '◉' : '○'}
+                                        {draftShowOnlineStatus ? 'ON' : 'OFF'}
                                     </button>
                                 </div>
                             </div>
@@ -1884,7 +1884,6 @@ export function VampireSettings({
                                         <input type="range" style={{ flex: 1, accentColor: 'var(--crimson)', cursor: 'pointer' }} min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={e => {
                                             const vol = parseFloat(e.target.value);
                                             setDraftSoundSettings({ ...draftSoundSettings, volume: vol });
-                                            // Live preview: update SoundManager immediately
                                             try { useSettingsStore.getState().updateSetting('sound.volume', vol); } catch (_) { }
                                         }} />
                                         <span style={{ color: 'var(--ivory)', fontFamily: 'Cinzel', width: 40 }}>{Math.round(draftSoundSettings.volume * 100)}%</span>
@@ -1897,32 +1896,15 @@ export function VampireSettings({
                                 }} style={{ cursor: 'pointer' }}>
                                     <div className="v-label" style={{ marginBottom: 0 }}>ENABLE SOUND EFFECTS</div>
                                     <button type="button" style={{ color: draftSoundSettings.effectsEnabled ? 'var(--crimson)' : 'var(--mist)', background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', pointerEvents: 'none' }}>
-                                        {draftSoundSettings.effectsEnabled ? '◉' : '○'}
+                                        {draftSoundSettings.effectsEnabled ? 'ON' : 'OFF'}
                                     </button>
                                 </div>
-
                             </div>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            {activeSection === "profile" && (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                                    <div>
-                                        <label className="v-label">ALIAS</label>
-                                        <input className="v-input" value={draftDisplayName} onChange={e => setDraftDisplayName(e.target.value)} />
-                                    </div>
-                                    <ToggleSwitch label="BROADCAST PRESENCE" checked={draftShowOnlineStatus} onChange={setDraftShowOnlineStatus} />
-                                </div>
-                            )}
-                            {activeSection === "sound" && (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                                    <ToggleSwitch label="GLOBAL EFFECTS" checked={draftSoundSettings.effectsEnabled} onChange={v => setDraftSoundSettings(p => ({ ...p, effectsEnabled: v }))} />
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
-        </OrbitVampire>
+        </div>
     );
 }
 

@@ -1419,7 +1419,8 @@ export function PastelSettings({
   ];
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100dvh", background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", overflow: "hidden", fontFamily: "'Nunito', sans-serif" }}>
+    <PastelApp>
+      <div style={{ position: "relative", width: "100%", height: "100%", background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", overflow: "hidden", fontFamily: "'Nunito', sans-serif" }}>
       <BgClouds />
       <Floaties />
       <SparkleClick />
@@ -1534,27 +1535,6 @@ export function PastelSettings({
             )}
           </div>
         </div>
-      </div>
-    </PastelApp>
-  );
-}
-
-export function PastelSpotify() {
-  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore();
-  return (
-    <PastelApp>
-      <div style={{ padding: 40, textAlign: "center", maxWidth: 600, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 32, color: "#d060a8", marginBottom: 40, fontWeight: 900 }}>Musical Magic 🎵</h1>
-        <div style={{ padding: 40, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(20px)", borderRadius: 40, border: "3px solid #fff", boxShadow: "0 20px 40px rgba(230,190,220,0.3)" }}>
-          {!spotifyLinked ? (
-            <button onClick={() => spotifyService.initiateLogin()} style={{ padding: "12px 24px", background: "#1DB954", color: "#fff", border: "none", borderRadius: 25, fontWeight: "bold", cursor: "pointer" }}>LINK SPOTIFY</button>
-          ) : (
-            <div>
-              <img src={currentTrack?.imageUrl || "/spotify.png"} style={{ width: 280, height: 280, borderRadius: 30, marginBottom: 20 }} alt="track" />
-              <h2 style={{ fontSize: 24, color: "#d060a8", fontWeight: 900 }}>{currentTrack ? currentTrack.name : "Awaiting..."}</h2>
-              <button onClick={() => isPlaying ? pausePlayback() : playTrack()} style={{ marginTop: 20, width: 80, height: 80, borderRadius: "50%", background: "#f472b6", color: "white", border: "none", fontSize: 32, cursor: "pointer" }}>{isPlaying ? "⏸" : "▶"}</button>
-            </div>
-          )}
         </div>
       </div>
     </PastelApp>
@@ -1582,3 +1562,5 @@ export function PastelSpotify() {
     </PastelApp>
   );
 }
+
+
