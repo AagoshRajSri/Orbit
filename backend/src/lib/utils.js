@@ -99,9 +99,6 @@ export const refreshAccessToken = async (req, res) => {
       .update(refreshToken)
       .digest("hex");
 
-    // Strict Tab Isolation: 
-    // Ensure the refresh token belongs to the specific sessionId requested by this tab.
-    // If another tab logged in, the cookie might mismatch the tab's store session.
     const query = { hashedRefreshToken, isValid: true };
     if (sessionId) {
       query.sessionId = sessionId;
@@ -119,11 +116,9 @@ export const refreshAccessToken = async (req, res) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    // Invalidate old session (token rotation — prevents reuse)
     session.isValid = false;
     await session.save();
 
-    // Issue a fresh token pair
     const tokens = await generateToken(user._id, req, res);
 
     return res.status(200).json({

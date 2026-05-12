@@ -297,7 +297,6 @@ export const useAuthStore = create(
       partialize: (state) => ({
         authUser: state.authUser,
         sessionId: state.sessionId,
-        showPostAuthLoader: state.showPostAuthLoader,
       }),
     }
   )

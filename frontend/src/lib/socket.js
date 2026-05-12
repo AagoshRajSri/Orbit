@@ -11,23 +11,25 @@ export const getSocket = () => {
   if (socket) return socket;
 
   const authState = useAuthStore.getState();
+  const token = authState.socketToken;
 
   console.log("[Socket.IO] Initializing client v2.0 - Polling Forced");
 
-  socket = io(API_URL, {
-    auth: {
-      token: authState.socketToken,
-    },
+  const socketConfig = {
     withCredentials: true,
-    // Render free-tier does not support WS upgrade from Socket.IO polling sessions.
-    // Polling-only is reliable and still delivers real-time events.
     transports: ["polling"],
     upgrade: false,
     reconnectionAttempts: 20,
     reconnectionDelay: 2000,
     reconnectionDelayMax: 10000,
     timeout: 45000,
-  });
+  };
+
+  if (token && token !== "null" && token !== "undefined") {
+    socketConfig.auth = { token };
+  }
+
+  socket = io(API_URL, socketConfig);
 
   socket.on("connect", () => {
     connectionState = "connected";
@@ -40,11 +42,18 @@ export const getSocket = () => {
     connectionError = error.message;
     console.error("[Socket.IO] Connection error:", error.message);
     
-    // Check if error is related to Authentication/Token expiry
-    if (error.message.includes("Authentication") || error.message.includes("Token expired") || error.message.includes("Access Denied")) {
+    if (error.message.includes("No identity established") || error.message.includes("Authentication rejected")) {
+      console.warn("[Socket.IO] No identity - clearing session and redirecting to login");
+      useAuthStore.getState().logout();
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+      return;
+    }
+
+    if (error.message.includes("Authentication") || error.message.includes("Token expired")) {
       console.log("[Socket.IO] Auth error detected. Attempting to trigger token refresh...");
       try {
-        // Hitting a protected route to trigger the axios interceptor's silent refresh
         await axiosInstance.get("/auth/check");
       } catch (err) {
         console.warn("[Socket.IO] Token refresh triggered by socket failed.");

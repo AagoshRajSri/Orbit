@@ -67,8 +67,8 @@ axiosInstance.interceptors.response.use(
 
       try {
         const authState = useAuthStore.getState();
-        const refreshRes = await axios.post(
-          `${API_URL}/api/auth/refresh`,
+        const refreshRes = await axiosInstance.post(
+          "/auth/refresh",
           { sessionId: authState.sessionId },
           { withCredentials: true }
         );
@@ -83,12 +83,10 @@ axiosInstance.interceptors.response.use(
           sessionId: newSessionId || authState.sessionId
         });
         
-        // Background refresh socket token to keep it in sync
         if (typeof authState.refreshSocketToken === "function") {
           authState.refreshSocketToken().catch(console.error);
         }
 
-        // Inform the socket immediately of the new token
         import("./socket.js").then(({ updateSocketToken }) => {
           if (updateSocketToken) updateSocketToken(newAuthToken);
         }).catch(console.error);
@@ -100,7 +98,6 @@ axiosInstance.interceptors.response.use(
         processQueue(refreshError);
         
         console.warn("[Axios Interceptor] Refresh failed. Wiping session.", refreshError.response?.data || refreshError.message);
-        // Wipe local session on refresh failure
         useAuthStore.setState({ authUser: null, sessionId: null, socketToken: null });
         localStorage.removeItem("orbit-auth-storage");
         
