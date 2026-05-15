@@ -612,12 +612,13 @@ export const useNexusStore = create((set, get) => ({
   },
   addNexusMessage: (message) => {
     set((state) => {
-      const { selectedNexusId, nexusMessages, nexusUnread, nexuses } = state;
+      const { selectedNexusId, selectedNexus, nexusMessages, nexusUnread, nexuses } = state;
       const msgNexusId = message.nexusId?.toString();
-      const selNexusId = selectedNexusId?.toString();
 
-      // O(1) membership check if we can assume nexusId is already known
-      const belongsToCurrentNexus = !!selNexusId && msgNexusId === selNexusId;
+      const belongsToCurrentNexus = !!selectedNexus && (
+        selectedNexus._id?.toString() === msgNexusId ||
+        selectedNexus.id?.toString() === msgNexusId
+      );
 
       if (belongsToCurrentNexus) {
         const authUser = useAuthStore.getState().authUser;
@@ -633,7 +634,12 @@ export const useNexusStore = create((set, get) => ({
               if (idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
               if (messageId && m._id?.toString() === messageId) return true;
               return false;
-            });
+        }).catch(decErr => {
+          console.error("[Nexus E2EE] Message decrypt failed, showing encrypted notice:", decErr);
+          set(s => ({
+            nexusMessages: [...s.nexusMessages, { ...message, text: "🔒 [Decryption failed]", isMe: false }],
+          }));
+        });
 
             if (existsIndex === -1) {
               newMessages.push(decrypted);
@@ -668,8 +674,8 @@ export const useNexusStore = create((set, get) => ({
 
   updateNexusMessage: (nexusId, messageId, updates) => {
     const { selectedNexus, nexusMessages } = get();
-    const selNexusId = selectedNexus?._id?.toString?.() ?? selectedNexus?._id;
-    if (selNexusId === nexusId?.toString()) {
+    const nid = nexusId?.toString();
+    if (selectedNexus?._id?.toString() === nid || selectedNexus?.id?.toString() === nid) {
       set({
         nexusMessages: nexusMessages.map((m) =>
           m._id?.toString() === messageId?.toString() ? { ...m, ...updates } : m
@@ -680,8 +686,8 @@ export const useNexusStore = create((set, get) => ({
 
   deleteNexusMessage: (nexusId, messageId) => {
     const { selectedNexus, nexusMessages } = get();
-    const selNexusId = selectedNexus?._id?.toString?.() ?? selectedNexus?._id;
-    if (selNexusId === nexusId?.toString()) {
+    const nid = nexusId?.toString();
+    if (selectedNexus?._id?.toString() === nid || selectedNexus?.id?.toString() === nid) {
       set({
         nexusMessages: nexusMessages.filter((m) => m._id?.toString() !== messageId?.toString()),
       });
@@ -690,8 +696,8 @@ export const useNexusStore = create((set, get) => ({
 
   markNexusMessageSeen: (nexusId, messageId, seenAt) => {
     const { selectedNexus, nexusMessages } = get();
-    const selNexusId = selectedNexus?._id?.toString?.() ?? selectedNexus?._id;
-    if (selNexusId === nexusId?.toString()) {
+    const nid = nexusId?.toString();
+    if (selectedNexus?._id?.toString() === nid || selectedNexus?.id?.toString() === nid) {
       set({
         nexusMessages: nexusMessages.map((m) =>
           m._id?.toString() === messageId?.toString() ? { ...m, seenAt } : m
@@ -787,19 +793,37 @@ export const useNexusStore = create((set, get) => ({
 
       // 1. Fetch distributions addressed to me
       const res = await axiosInstance.get(`/nexus/${nexusId}/sender-keys`);
-      const dists = res.data.distributions;
+      const dists = res.data?.distributions;
+      if (!Array.isArray(dists)) return;
 
       const myKeys = await getKeyPair(myId);
       if (!myKeys) return;
 
       for (const d of dists) {
+        if (!d?.x3dh?.identityKey || !d?.x3dh?.ephemeralKey) {
+          console.warn("[Nexus E2EE] Malformed distribution — missing x3dh header, skipping", d.senderId);
+          continue;
+        }
         // Skip if we already have a newer or same key (unless it's a rotation)
         // For now, we always process to ensure we're up to date
         try {
           const spk = await getSignedPrekey(myId);
-          const opkPriv = d.x3dh.opkId
-            ? await consumeOneTimePrekey(myId, d.x3dh.opkId)
-            : null;
+          if (!spk) {
+            console.warn("[Nexus E2EE] No signed prekey found, skipping distribution from", d.senderId);
+            continue;
+          }
+
+          const opkId = d.x3dh?.opkId;
+          let opkPriv = null;
+          if (opkId) {
+            opkPriv = await consumeOneTimePrekey(myId, opkId);
+            if (!opkPriv) {
+              // OPK consumed or rotated during re-login — can't decrypt this distribution.
+              // The sender will need to re-distribute when they send the next message.
+              console.warn("[Nexus E2EE] OPK", opkId, "not found (consumed or rotated), skipping distribution from", d.senderId);
+              continue;
+            }
+          }
 
           const sessionKey = await x3dhReceiver({
             recipientIdentityPrivateKey: myKeys.privateKey,
