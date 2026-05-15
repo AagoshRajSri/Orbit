@@ -263,6 +263,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
         animation: isLatest ? "fadeUpMsg 0.25s ease-out" : "none",
         marginBottom: 2,
         width: "100%",
+        boxSizing: "border-box",
       }}
     >
       {/* Avatar (only for others) */}
