@@ -450,7 +450,7 @@ export const useNexusStore = create((set, get) => ({
           )
         }));
       } catch (error) {
-        if (error.code === 'ERR_NETWORK' || !error.response) {
+        if (error.code === 'ERR_NETWORK') {
           const { pushToQueue } = await import("../lib/offlineQueue.js");
           await pushToQueue({ ...optimisticMessage, targetId: nexusId, type: "nexus" });
         } else {
@@ -707,8 +707,17 @@ export const useNexusStore = create((set, get) => ({
       const res = await axiosInstance.get(`/nexus/${nexusId}/member-keys`);
       const members = res.data.members;
 
-      const myKeys = await getKeyPair(myId);
-      if (!myKeys) throw new Error("Local identity keys missing");
+      let myKeys = await getKeyPair(myId);
+      if (!myKeys) {
+        // initE2EE is fire-and-forget on login — keys may still be writing.
+        // Retry with backoff before giving up.
+        for (let attempt = 0; attempt < 5; attempt++) {
+          await new Promise(r => setTimeout(r, 300));
+          myKeys = await getKeyPair(myId);
+          if (myKeys) break;
+        }
+        if (!myKeys) throw new Error("Local identity keys missing");
+      }
 
       // 2. Create X3DH-wrapped distributions for each member
       const payload = createDistributionPayload(senderKey, nexusId, myId);
@@ -750,6 +759,7 @@ export const useNexusStore = create((set, get) => ({
     } catch (err) {
       console.error("[Nexus E2EE] Failed to distribute keys:", err);
       toast.error("Group security setup failed. Your messages may not be readable by others.");
+      throw err;
     }
   },
 
