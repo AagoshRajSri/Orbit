@@ -634,12 +634,7 @@ export const useNexusStore = create((set, get) => ({
               if (idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
               if (messageId && m._id?.toString() === messageId) return true;
               return false;
-        }).catch(decErr => {
-          console.error("[Nexus E2EE] Message decrypt failed, showing encrypted notice:", decErr);
-          set(s => ({
-            nexusMessages: [...s.nexusMessages, { ...message, text: "🔒 [Decryption failed]", isMe: false }],
-          }));
-        });
+            });
 
             if (existsIndex === -1) {
               newMessages.push(decrypted);
@@ -657,6 +652,11 @@ export const useNexusStore = create((set, get) => ({
             }
             return { nexusMessages: newMessages };
           });
+        }).catch(decErr => {
+          console.error("[Nexus E2EE] Message decrypt failed, showing encrypted notice:", decErr);
+          set(s => ({
+            nexusMessages: [...s.nexusMessages, { ...message, text: "🔒 [Decryption failed]", isMe: false }],
+          }));
         });
 
         return state;
