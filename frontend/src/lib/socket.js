@@ -83,7 +83,6 @@ export const getSocket = () => {
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
-    socket = null;
     connectionState = "disconnected";
   }
 };
@@ -101,7 +100,14 @@ export const updateSocketToken = (newToken) => {
 };
 
 export const reconnectSocket = () => {
-  disconnectSocket();
+  const authState = useAuthStore.getState();
+  const token = authState.socketToken;
+
+  if (socket) {
+    if (token) socket.auth = { token };
+    socket.disconnect().connect();
+    return socket;
+  }
   return getSocket();
 };
 

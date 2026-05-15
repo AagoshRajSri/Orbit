@@ -346,33 +346,35 @@ export const useChatStore = create((set, get) => ({
       const partnerId = msgSenderId === myId ? msgReceiverId : msgSenderId;
 
       if (partnerId) {
-        const bucket = cache[partnerId] || { messages: [], hasMore: false };
+        const bucket = { ...(cache[partnerId] || { messages: [], hasMore: false }) };
+        const bucketMessages = [...(bucket.messages || [])];
         const msgId = decryptedMsg._id?.toString();
         const idempotencyKey = decryptedMsg.idempotencyKey;
 
         // Optimized deduplication using findLastIndex but with earlier exit
-        const existsIndex = bucket.messages.findLastIndex((m) => {
+        const existsIndex = bucketMessages.findLastIndex((m) => {
           if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
           if (m._id && msgId && m._id.toString() === msgId) return true;
           return false;
         });
 
         if (existsIndex === -1) {
-          bucket.messages = [...bucket.messages, decryptedMsg];
+          bucketMessages.push(decryptedMsg);
           // Only sort if timestamps are out of order (rare for append)
-          if (bucket.messages.length > 1 && 
-              new Date(bucket.messages[bucket.messages.length - 2].createdAt).getTime() > 
+          if (bucketMessages.length > 1 && 
+              new Date(bucketMessages[bucketMessages.length - 2].createdAt).getTime() > 
               new Date(decryptedMsg.createdAt).getTime()) {
-            bucket.messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+            bucketMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
           }
         } else {
-          bucket.messages[existsIndex] = {
+          bucketMessages[existsIndex] = {
             ...decryptedMsg,
-            _id: decryptedMsg._id || bucket.messages[existsIndex]._id,
+            _id: decryptedMsg._id || bucketMessages[existsIndex]._id,
             status: "sent",
           };
         }
-        cache[partnerId] = { ...bucket };
+        bucket.messages = bucketMessages;
+        cache[partnerId] = bucket;
       }
 
       if (belongsToCurrentChat) {

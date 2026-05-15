@@ -370,9 +370,14 @@ export const useNexusStore = create((set, get) => ({
     try {
       const cursor = nexusMessages[0].createdAt;
       const res = await axiosInstance.get(`/nexus/${nexusId}/messages?cursor=${cursor}`);
+      const authUser = useAuthStore.getState().authUser;
+      const userId = authUser?._id?.toString();
+      const decrypted = await Promise.all(
+        res.data.map(m => decryptSingleNexusMessage(m, userId))
+      );
       
       set((state) => ({ 
-        nexusMessages: [...res.data, ...state.nexusMessages],
+        nexusMessages: [...decrypted, ...state.nexusMessages],
         hasMoreNexusMessages: res.data.length === 50
       }));
     } catch (error) {
