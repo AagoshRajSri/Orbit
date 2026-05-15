@@ -224,9 +224,9 @@ const io = new Server(httpServer, {
     credentials: true,
     methods: ["GET", "POST"]
   },
-  // Render free-tier does not support WS upgrades. Force polling-only in production.
-  transports: process.env.NODE_ENV === "production" ? ["polling"] : ["websocket", "polling"],
-  allowUpgrades: process.env.NODE_ENV !== "production",
+  // Enable standard Socket.IO transports (polling -> websocket upgrade)
+  transports: ["polling", "websocket"],
+  allowUpgrades: true,
   pingInterval: 5000, 
   pingTimeout: 2500,
 });
