@@ -433,11 +433,10 @@ export const useNexusStore = create((set, get) => ({
 
         const res = await axiosInstance.post(
           `/nexus/${nexusId}/send`,
-          { 
-            ...messageData, 
-            ...ciphertext, // Inject v, ciphertext, iv, n, sig
-            idempotencyKey 
-          }
+          Object.fromEntries(
+            Object.entries({ ...messageData, ...ciphertext, idempotencyKey })
+              .filter(([, v]) => v != null)
+          )
         );
         
         // Decrypt our own outgoing message (just sets status to sent and maps IDs)
@@ -478,19 +477,22 @@ export const useNexusStore = create((set, get) => ({
 
     try {
       const targetId = msg.nexusId?._id || msg.nexusId;
-      await axiosInstance.post(`/nexus/${targetId}/send`, {
-        text: msg.text,
-        image: msg.image,
-        idempotencyKey: msg.idempotencyKey,
-        // v4 support
-        v: msg.v,
-        ciphertext: msg.ciphertext,
-        iv: msg.iv,
-        n: msg.n,
-        sig: msg.sig,
-      });
+      await axiosInstance.post(`/nexus/${targetId}/send`,
+        Object.fromEntries(
+          Object.entries({
+            text: msg.text,
+            image: msg.image,
+            idempotencyKey: msg.idempotencyKey,
+            v: msg.v,
+            ciphertext: msg.ciphertext,
+            iv: msg.iv,
+            n: msg.n,
+            sig: msg.sig,
+          }).filter(([, v]) => v != null)
+        )
+      );
     } catch (err) {
-      if (err.code === 'ERR_NETWORK' || !err.response) {
+      if (err.code === 'ERR_NETWORK') {
         const { pushToQueue } = await import("../lib/offlineQueue.js");
         const targetId = msg.nexusId?._id || msg.nexusId;
         await pushToQueue({ ...msg, targetId: targetId, type: "nexus", status: "pending" });

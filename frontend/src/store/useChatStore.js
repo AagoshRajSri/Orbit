@@ -308,7 +308,7 @@ export const useChatStore = create((set, get) => ({
         });
       } catch (error) {
         console.error("[Retry][E2EE] Retry failed:", error);
-        if (error.code === 'ERR_NETWORK' || !error.response) {
+        if (error.code === 'ERR_NETWORK') {
           const { pushToQueue } = await import("../lib/offlineQueue.js");
           await pushToQueue({ ...msg, targetId: targetId, type: "direct", status: "pending" });
           set((s) => ({
