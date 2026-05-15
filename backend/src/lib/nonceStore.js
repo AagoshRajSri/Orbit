@@ -1,64 +1,91 @@
 import crypto from "crypto";
+import { redisClient, isRedisAvailable } from "./redis.js";
 
 /**
- * In-memory nonce store with TTL cleanup.
+ * Distributed Nonce Store with TTL cleanup.
  *
- * In production with horizontal scaling, replace this with a Redis-backed store:
- *   redis.set(`nonce:${nonce}`, '1', 'EX', 120)
- *   redis.del(`nonce:${nonce}`)
- *
- * Each nonce is a 32-byte random hex string, valid for 2 minutes.
- * It is tied to the client's IP + User-Agent to prevent cross-session replay.
+ * Provides distributed replay protection.
+ * Uses atomic GETDEL to ensure no race-condition replay windows.
  */
 
-const NONCE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+const NONCE_TTL_S = 2 * 60; // 2 minutes
+const NONCE_TTL_MS = NONCE_TTL_S * 1000;
 
-/** Map<nonce, { expiresAt, ip, userAgent }> */
-const store = new Map();
+/** Fallback Map<nonce, { expiresAt, ip, userAgent }> */
+const fallbackStore = new Map();
 
-// Sweep expired nonces every 5 minutes
+// Sweep expired nonces every 5 minutes for fallback store
 setInterval(() => {
   const now = Date.now();
-  for (const [nonce, data] of store) {
-    if (data.expiresAt < now) store.delete(nonce);
+  for (const [nonce, data] of fallbackStore) {
+    if (data.expiresAt < now) fallbackStore.delete(nonce);
   }
 }, 5 * 60 * 1000);
 
 /**
  * Issue a fresh challenge nonce.
- * @param {string} ip
- * @param {string} userAgent
+ * @param {string|null} ip - IP address (optional)
+ * @param {string|null} userAgent - User Agent (optional)
  */
-export function issueNonce(ip, userAgent) {
+export async function issueNonce(ip = null, userAgent = null) {
   const nonce = crypto.randomBytes(32).toString("hex");
-  store.set(nonce, {
-    expiresAt: Date.now() + NONCE_TTL_MS,
-    ip,
-    userAgent,
-  });
+  const payloadData = { ip, userAgent };
+  
+  if (isRedisAvailable) {
+    const payload = JSON.stringify(payloadData);
+    await redisClient.set(`nonce:${nonce}`, payload, 'EX', NONCE_TTL_S);
+  } else {
+    fallbackStore.set(nonce, {
+      expiresAt: Date.now() + NONCE_TTL_MS,
+      ...payloadData
+    });
+  }
   return nonce;
 }
 
 /**
  * Consume a nonce — idempotent single-use check.
- * Returns true if the nonce is valid and has not been used.
- * Deletes it immediately on success (prevents replay).
+ * Atomic validation preventing race-condition replays in distributed environments.
  *
  * @param {string} nonce
- * @param {string} ip
- * @param {string} userAgent
+ * @param {string|null} ip
+ * @param {string|null} userAgent
  */
-export function consumeNonce(nonce, ip, userAgent) {
+export async function consumeNonce(nonce, ip = null, userAgent = null) {
   if (!nonce) return false;
-  const data = store.get(nonce);
-  if (!data) return false;                       // unknown or already consumed
-  if (data.expiresAt < Date.now()) {             // expired
-    store.delete(nonce);
-    return false;
+
+  if (isRedisAvailable) {
+    let payload;
+    try {
+      // Atomic get-and-delete prevents race conditions
+      payload = await redisClient.getdel(`nonce:${nonce}`);
+    } catch (err) {
+      // Fallback to GET then DEL if GETDEL is not supported by Redis version
+      payload = await redisClient.get(`nonce:${nonce}`);
+      if (payload) await redisClient.del(`nonce:${nonce}`);
+    }
+
+    if (!payload) return false;
+
+    try {
+      const data = JSON.parse(payload);
+      if (ip && data.ip !== ip) return false;
+      if (userAgent && data.userAgent !== userAgent) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  } else {
+    const data = fallbackStore.get(nonce);
+    if (!data) return false;
+    if (data.expiresAt < Date.now()) {
+      fallbackStore.delete(nonce);
+      return false;
+    }
+    if (ip && data.ip !== ip) return false;
+    if (userAgent && data.userAgent !== userAgent) return false;
+    
+    fallbackStore.delete(nonce);
+    return true;
   }
-  if (data.ip !== ip || data.userAgent !== userAgent) { // session-binding check
-    return false;
-  }
-  store.delete(nonce); // single-use: remove immediately
-  return true;
 }

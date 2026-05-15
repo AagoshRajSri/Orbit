@@ -33,6 +33,7 @@
     "otpauth": "^9.5.0",
     "otplib": "^13.4.0",
     "qrcode": "^1.5.4",
+    "rate-limit-redis": "^5.0.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "socket.io-msgpack-parser": "^3.0.2",

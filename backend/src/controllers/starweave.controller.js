@@ -22,6 +22,7 @@ import {
   applyLockout,
   updateBiometricProfile,
 } from '../services/starweave.service.js';
+import { issueNonce, consumeNonce } from "../lib/nonceStore.js";
 
 const ITEM_POOL = [
   'Red Planet', 'Blue Planet', 'Green Planet', 'Yellow Planet', 'Purple Planet', 'Ice Planet',
@@ -45,32 +46,6 @@ function secureHashInt(str) {
 
 const STARWEAVE_SECRET = process.env.STARWEAVE_SECRET || 'starweave_fallback_secret_123';
 
-// In-memory nonce store (swap for Redis in production)
-const _nonceStore = new Map();
-const NONCE_TTL = 5 * 60 * 1000; // 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, v] of _nonceStore) {
-    if (v.expiresAt < now) _nonceStore.delete(k);
-  }
-}, 60 * 1000);
-
-function issueNonce(userId) {
-  const nonce = crypto.randomBytes(24).toString('hex');
-  _nonceStore.set(nonce, { userId, expiresAt: Date.now() + NONCE_TTL });
-  return nonce;
-}
-
-function consumeNonce(nonce, expectedUserId) {
-  const entry = _nonceStore.get(nonce);
-  if (!entry) return false;
-  _nonceStore.delete(nonce); // single-use
-  if (entry.expiresAt < Date.now()) return false;
-  // If expectedUserId provided, optionally verify (enroll doesn't have userId yet)
-  if (expectedUserId && entry.userId && entry.userId !== expectedUserId) return false;
-  return true;
-}
-
 // ─── GET /challenge ──────────────────────
 export async function challengeHandler(req, res) {
   try {
@@ -85,7 +60,7 @@ export async function challengeHandler(req, res) {
     }
 
     const { email, type } = parsed.data;
-    const nonce = issueNonce(null);
+    const nonce = await issueNonce(null, null);
 
     const VISIBLE_COUNT = 24;
     let glyphConfig = [];
@@ -223,7 +198,7 @@ export async function enrollHandler(req, res) {
       signatureGlyphs, // Required signature glyphs from challenge
       configSignature  // HMAC array of the layout
     } = parsed.data;
-    if (!consumeNonce(nonce, null)) {
+    if (!(await consumeNonce(nonce, null, null))) {
       console.warn('[Enroll] Nonce rejected — expired or already used:', nonce?.slice(0, 12));
       return res.status(400).json({ message: 'Invalid or expired nonce.' });
     }
@@ -348,7 +323,7 @@ export async function loginHandler(req, res) {
       signatureGlyphs,
       configSignature
     } = parsed.data;
-    if (!consumeNonce(nonce, null)) {
+    if (!(await consumeNonce(nonce, null, null))) {
       return res.status(400).json({ message: 'Invalid or expired nonce.' });
     }
 

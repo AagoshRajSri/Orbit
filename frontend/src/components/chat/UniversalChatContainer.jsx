@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, Component } from "react";
 import { useNavigate } from "react-router-dom";
+import { Virtuoso } from "react-virtuoso";
 import { THEMES, Ico, I, Toast, CallOverlay, VoiceBubble, ImgBubble, FileBubble, InfoPanel, Wave, MediaPanel } from "./ChatCoreUI";
 import { useNexusStore } from "../../store/useNexusStore";
 import { useChatStore } from "../../store/useChatStore";
@@ -10,7 +11,7 @@ import { soundManager } from "../../lib/SoundManager";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import { useAvatarState } from "../avatar/PixelAvatar/useAvatarState.js";
 import TelemeteryCapsule from "./TelemeteryCapsule.jsx";
-import { OrbitMsgBubble } from "./MsgBubble.jsx";
+import { OrbitMsgBubble, SafeImage } from "./MsgBubble.jsx";
 import { OrbitTypingIndicator } from "./OrbitTypingIndicator.jsx";
 import AeroInput from "./AeroInput.jsx";
 import { resolveTheme } from "./OrbitChatTheme.js";
@@ -57,34 +58,16 @@ function formatTime(date) {
   }
 }
 
-// ─── Global animation CSS injected once ──────────────────────────────────────
-const ANIM_CSS = `
-@keyframes typingBounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-7px);opacity:1}}
-@keyframes cyberBlink{0%,100%{opacity:1;background:var(--acc)}50%{opacity:0}}
-@keyframes pastelDot{0%,100%{transform:translateY(0) scale(1)}30%{transform:translateY(-8px) scale(1.15)}}
-@keyframes recPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.15)}}
-@keyframes waveBar{0%,100%{height:4px}50%{height:var(--h,20px)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeUpMsg{from{opacity:0;transform:translateY(12px) scale(0.97)}to{opacity:1;transform:none}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideInRight{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
-@keyframes notifSlide{0%{transform:translateY(-60px);opacity:0}15%,85%{transform:translateY(0);opacity:1}100%{transform:translateY(-60px);opacity:0}}
-@keyframes popIn{0%{opacity:0;transform:scale(.85) translateY(8px)}70%{transform:scale(1.04) translateY(-2px)}100%{opacity:1;transform:scale(1) translateY(0)}}
-@keyframes borderGlow{0%,100%{box-shadow:0 0 5px var(--acc)}50%{box-shadow:0 0 20px var(--acc),0 0 40px var(--acc)}}
-@keyframes scan{from{left:-60%}to{left:160%}}
-@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-*{box-sizing:border-box}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{border-radius:6px}
-::selection{background:var(--sel,rgba(255,255,255,0.2))}
-`;
+// FIX 5: ANIM_CSS removed — all keyframes now live in src/styles/animations.css
+// imported once in main.jsx; zero per-mount style recalculations.
+
+const SKELETON_LAYOUT = [false, true, false, true, false];
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 function MsgSkeleton({ ot }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {[false, true, false, true, false].map((out, i) => (
+      {SKELETON_LAYOUT.map((out, i) => (
         <div key={i} style={{ display: "flex", justifyContent: out ? "flex-end" : "flex-start" }}>
           <div style={{
             width: `${140 + (i * 37) % 120}px`, height: 44, 
@@ -149,11 +132,12 @@ function NoSelection({ ot }) {
  * @param {("nexus"|"dm")} type
  */
 export default function UniversalChatContainer({ type, onMobileBack, onOpenSidebar }) {
-  const { theme } = useThemeStore();
+  // FIX 3: Atomic selector
+  const theme = useThemeStore((state) => state.theme);
   const themeId = THEME_BRIDGE[theme] || "vampire";
   const t       = THEMES[themeId];
   // New orbit-messaging theme tokens for the new chat UI components
-  const ot = resolveTheme(theme);
+  const ot = useMemo(() => resolveTheme(theme), [theme]);
   const navigate = useNavigate();
 
   const authUser = useAuthStore(s => s.authUser);
@@ -183,12 +167,13 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const isNexus = type === "nexus";
 
   // ── Pixel Avatar: deterministic animal from entity id ─────────────────────
-  const entityId = isNexus
+  const entityId = useMemo(() => isNexus
     ? (selectedNexus?.id || selectedNexus?._id || "").toString()
-    : (selectedUser?.id || selectedUser?._id || "").toString();
-  const ANIMALS = ['dog', 'cat', 'bunny'];
-  const peerAnimal = ANIMALS[parseInt((entityId || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
-  const myAnimal   = ANIMALS[parseInt((authUser?._id || authUser?.id || "1").toString().slice(-4) || "0", 16) % ANIMALS.length];
+    : (selectedUser?.id || selectedUser?._id || "").toString(), [isNexus, selectedNexus, selectedUser]);
+  
+  const ANIMALS = useMemo(() => ['dog', 'cat', 'bunny'], []);
+  const peerAnimal = useMemo(() => ANIMALS[parseInt((entityId || "").toString().slice(-4) || '0', 16) % ANIMALS.length], [entityId, ANIMALS]);
+  const myAnimal   = useMemo(() => ANIMALS[parseInt((authUser?._id || authUser?.id || "1").toString().slice(-4) || "0", 16) % ANIMALS.length], [authUser, ANIMALS]);
 
   // ── Avatar state machines ──────────────────────────────────────────────────
   const peerAvatar = useAvatarState('idle', { sleepAfter: 120_000 });
@@ -201,8 +186,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
       const found = nexuses.find(n => (n._id?.toString() === selectedNexusId?.toString()));
       if (found) return found;
     }
-    // Fallback: if we only have selectedNexusId, return a stub so it doesn't crash
-    if (selectedNexusId) return { _id: selectedNexusId, name: "Loading Nexus...", members: [] };
+    // Fallback: if we only have selectedNexusId, return null so we don't trigger infinite loops with new object references
     return null;
   }, [isNexus, selectedNexus, selectedNexusId, nexuses]);
 
@@ -228,6 +212,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const [pinnedVisible, setPinnedVisible] = useState(true);
   const [pinnedMsgData, setPinnedMsgData] = useState(null);
   const [localNexusGroup, setLocalNexusGroup] = useState(null); // for InfoPanel edits
+  const [seenPinnedEntities, setSeenPinnedEntities] = useState(new Set());
 
   const endRef   = useRef(null);
   const inputRef = useRef(null);
@@ -235,19 +220,37 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const typingTimerRef = useRef(null);
   const styleInjected = useRef(false);
 
-  // ── Inject global animation CSS once ──
+  // ── Secure Tether (Phase 3/4) states ──
+  const [pqAvailable, setPqAvailable] = useState(false);
+  const [lastAction, setLastAction] = useState(null);
+  const tetherMsgCount = useRef(0);
+
+  const isTypingActive = useMemo(() => {
+    return isNexus
+      ? (nexusTypingUsers?.filter(u => u.userId !== (authUser?._id || authUser?.id)?.toString()).length > 0)
+      : !!selectedUser?.isTyping;
+  }, [isNexus, nexusTypingUsers, authUser, selectedUser]);
+
   useEffect(() => {
-    if (styleInjected.current) return;
-    styleInjected.current = true;
-    const s = document.createElement("style");
-    s.textContent = ANIM_CSS;
-    document.head.appendChild(s);
+    import("../../lib/hybridKem.js").then(mod => {
+      if (mod.isPostQuantumAvailable) mod.isPostQuantumAvailable().then(setPqAvailable);
+    }).catch(() => {});
   }, []);
+
+  // FIX 5: CSS injection removed — animations loaded via animations.css in main.jsx
 
   // ── Load messages when entity changes ──
   useEffect(() => {
     if (isNexus && (activeNexus?.id || activeNexus?._id)) {
       getNexusMessages(activeNexus.id || activeNexus._id);
+      // Only show pinned banner if never seen before for this entity
+      const eid = (activeNexus.id || activeNexus._id).toString();
+      if (!seenPinnedEntities.has(eid)) {
+        setPinnedVisible(true);
+        setSeenPinnedEntities(prev => new Set(prev).add(eid));
+      } else {
+        setPinnedVisible(false);
+      }
       // Build local group state for InfoPanel from live nexus data
       setLocalNexusGroup({
         id: activeNexus.id || activeNexus._id,
@@ -279,34 +282,44 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         messageCount: nexusMessages.length,
         voiceActive: false,
       });
-      setPinnedVisible(true);
     } else if (!isNexus && (selectedUser?.id || selectedUser?._id)) {
       getMessages(selectedUser.id || selectedUser._id);
+      const eid = (selectedUser.id || selectedUser._id).toString();
+      if (!seenPinnedEntities.has(eid)) {
+        setPinnedVisible(true);
+        setSeenPinnedEntities(prev => new Set(prev).add(eid));
+      } else {
+        setPinnedVisible(false);
+      }
     }
   }, [isNexus, activeNexus?.id, activeNexus?._id, selectedUser?.id, selectedUser?._id, getNexusMessages, getMessages, t.acc]);
 
-  // ── Auto scroll ──
-  useEffect(() => {
-    const container = endRef.current?.parentElement;
-    if (!container) return;
-    
-    // Always scroll to bottom when messages or typing status changes
-    // This ensures we always see the latest content as requested.
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [nexusMessages?.length, messages?.length, nexusTypingUsers, selectedUser?.isTyping, authUser?._id, isNexus]);
+  // FIX 16: Use last-message-id instead of messages.length — prevents spurious re-renders
+  // when the array reference changes but the last message stays the same.
+  const lastMsgId = useMemo(() => {
+    const arr = isNexus ? nexusMessages : messages;
+    return arr.at(-1)?._id ?? arr.at(-1)?.id ?? null;
+  }, [isNexus, nexusMessages, messages]);
 
-  // ── Force scroll to bottom on chat switch ──
+  // FIX 1: Virtuoso ref for programmatic scroll
+  const virtuosoRef = useRef(null);
+
+  const scrollToBottom = useCallback((behavior = "smooth") => {
+    if (virtuosoRef.current) {
+      virtuosoRef.current.scrollToIndex({ index: "LAST", behavior });
+    } else {
+      endRef.current?.scrollIntoView({ behavior, block: "end" });
+    }
+  }, []);
+
+  // FIX 16: Use lastMsgId (stable derived id) to trigger scroll — not messages.length
   useEffect(() => {
-    // Force immediate scroll to bottom when switching chats
-    const forceScroll = () => {
-      endRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
-    };
-    forceScroll();
-    // Also try after a short delay for cases where content is still rendering
-    const timer = setTimeout(forceScroll, 50);
-    const timer2 = setTimeout(forceScroll, 250);
-    return () => { clearTimeout(timer); clearTimeout(timer2); };
-  }, [isNexus, activeNexus?.id, activeNexus?._id, selectedUser?.id, selectedUser?._id]);
+    scrollToBottom("smooth");
+  }, [lastMsgId, isTypingActive, scrollToBottom]);
+
+  useEffect(() => {
+    scrollToBottom("auto");
+  }, [activeNexus?.id, selectedUser?.id, scrollToBottom]);
 
   // ── Wire peer avatar to incoming messages ─────────────────────────────────
   useEffect(() => {
@@ -325,12 +338,9 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
   // ── Wire peer avatar to typing events ─────────────────────────────────────
   useEffect(() => {
-    const isTypingActive = isNexus
-      ? (nexusTypingUsers?.filter(u => u.userId !== (authUser?._id || authUser?.id)?.toString()).length > 0)
-      : !!selectedUser?.isTyping;
     if (isTypingActive) peerAvatar.onPeerTyping();
     else peerAvatar.onPeerIdle();
-  }, [nexusTypingUsers, selectedUser?.isTyping, isNexus, authUser]);
+  }, [isTypingActive, peerAvatar]);
 
   // ── Recording timer ──
   useEffect(() => {
@@ -389,18 +399,18 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   };
 
   // ── Send ──
-  const sendMsg = useCallback(async (text) => {
-    if (!text.trim()) return;
+  const sendMsg = useCallback(async (text, image = null) => {
+    if (!text?.trim() && !image) return;
     emitTyping(false);
     clearTimeout(typingTimerRef.current);
     myAvatar.onMessageSent();
     try {
       if (isNexus) {
         if (!(selectedNexus?.id || selectedNexus?._id)) return;
-        await sendNexusMessage(selectedNexus.id || selectedNexus._id, { text });
+        await sendNexusMessage(selectedNexus.id || selectedNexus._id, { text, image });
       } else {
         if (!(selectedUser?.id || selectedUser?._id)) return;
-        await sendMessage(selectedUser.id || selectedUser._id, text, null);
+        await sendMessage(selectedUser.id || selectedUser._id, text, image);
       }
       setInput("");
       setMediaPanel(null);
@@ -408,6 +418,31 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
       addToast("Failed to send message");
     }
   }, [isNexus, selectedNexus, selectedUser, sendNexusMessage, sendMessage, emitTyping, addToast, myAvatar]);
+
+  // ── Universal File Attachment (E2EE) ──
+  const handleAttach = useCallback(async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "*/*"; // Support files, images, documents, videos
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        addToast("Image too large (max 5MB)");
+        return;
+      }
+
+      try {
+        // Pass File (Blob) directly instead of blobUrl string to allow SafeImage to manage lifecycle
+        await sendMsg("", file);
+      } catch (err) {
+        console.error("Media upload failed:", err);
+        addToast("Media upload failed");
+      }
+    };
+    input.click();
+  }, [sendMsg, addToast]);
 
   // ── Reaction handler (local optimistic) ──
   const [localReactions, setLocalReactions] = useState({});
@@ -422,34 +457,33 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const rawMsgs = isNexus ? nexusMessages : messages;
   const isLoading = isNexus ? isNexusLoading : isChatLoading;
 
-  const formattedMsgs = useMemo(() => {
-    return (rawMsgs || []).map(m => {
-      const meIdStr = authUser?._id?.toString();
-      const sIdStr  = (m.senderId?._id || m.senderId?.id || m.senderId)?.toString();
-      const isMe = sIdStr === meIdStr;
-      return {
-        id:        m.id || m._id,
-        from:      isMe ? "You" : (m.senderId?.username || m.senderId?.fullName || "Member"),
-        text:      m.text || null,
-        image:     m.image || null,
-        uid:       sIdStr,
-        out:       isMe,
-        time:      formatTime(m.createdAt),
-        reactions: localReactions[m.id || m._id] || {},
-        status:    m.status || "sent",
-        isSystem:  m.isSystem,
-      };
-    });
-  }, [rawMsgs, authUser, localReactions]);
+  const filtered = useMemo(() => {
+    const arr = rawMsgs || [];
+    if (!searchQ) return arr;
+    const q = searchQ.toLowerCase();
+    return arr.filter(m => (m.text || "").toLowerCase().includes(q));
+  }, [rawMsgs, searchQ]);
 
-  const filtered = searchQ
-    ? formattedMsgs.filter(m => (m.text || "").toLowerCase().includes(searchQ.toLowerCase()))
-    : formattedMsgs;
 
-  // Is the other side typing?
-  const isTypingActive = isNexus
-    ? (nexusTypingUsers?.filter(u => u.userId !== authUser?._id?.toString()).length > 0)
-    : !!selectedUser?.isTyping;
+
+  // Watch messages for tether pulses & Ratchet events
+  useEffect(() => {
+    if (!filtered || isNexus) return;
+    if (filtered.length > tetherMsgCount.current) {
+      const lastMsg = filtered[filtered.length - 1];
+      const sIdStr = (lastMsg.senderId?._id || lastMsg.senderId?.id || lastMsg.senderId)?.toString();
+      const out = sIdStr === authUser?._id?.toString();
+      const isRatchet = lastMsg.v === 3 && !out; 
+      
+      setLastAction({ 
+        type: isRatchet ? 'ratchet' : (out ? 'sent' : 'received'), 
+        ts: Date.now() 
+      });
+    }
+    tetherMsgCount.current = filtered.length;
+  }, [filtered, isNexus]);
+
+
 
   const entityName = isNexus ? (activeNexus?.name || "Nexus") : (selectedUser?.username || selectedUser?.fullName || "User");
   const entitySub  = isNexus
@@ -461,6 +495,36 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
 
   // CSS vars for selection / accent
   const cssVars = { "--sel": t.selection, "--acc": t.acc };
+
+  const renderItemContent = useCallback((index, m) => {
+    const mKey = m._id || m.id || m.idempotencyKey;
+    const sIdStr = (m.senderId?._id || m.senderId?.id || m.senderId)?.toString();
+    const out = sIdStr === authUser?._id?.toString();
+    const isLatest = index === filtered.length - 1;
+    const rowAvatarType = out ? myAnimal : peerAnimal;
+    const rowAvatarState = isLatest ? (out ? myAvatar.state : peerAvatar.state) : "idle";
+
+    if (m.text === "__voice__") return <VoiceBubble key={mKey} t={t} out={m.out} />;
+    if (m.text === "__img__")   return <ImgBubble   key={mKey} t={t} out={m.out} />;
+    if (m.text === "__file__")  return <FileBubble  key={mKey} t={t} out={m.out} />;
+
+    return (
+      <MsgErrorBoundary key={mKey}>
+        <OrbitMsgBubble
+          msg={m}
+          rawOut={out}
+          isLatest={isLatest}
+          authUser={authUser}
+          localReactions={localReactions[mKey] || {}}
+          t={ot}
+          avatarAnimal={rowAvatarType}
+          avatarState={rowAvatarState}
+          onReact={handleReact}
+          onPin={(msg) => { setPinnedMsgData(msg); setPinnedVisible(true); addToast("Message pinned"); }}
+        />
+      </MsgErrorBoundary>
+    );
+  }, [filtered.length, authUser, myAnimal, peerAnimal, myAvatar.state, peerAvatar.state, t, ot, handleReact, localReactions, addToast]);
 
   if (!entity) return (
     <div style={{ flex: 1, display: "flex", height: "100%", background: ot["--bg"], ...cssVars }}>
@@ -503,34 +567,9 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
     }
   };
 
-  return (
-    <div
-      style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", minHeight: 0, width: "100%", position: "relative", overflow: "hidden", background: ot["--bg"], ...cssVars }}
-    >
-      {/* ── Cyber scanlines overlay ── */}
-      {ot.scanlines && (
-        <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 998,
-          background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,157,0.012) 2px,rgba(0,255,157,0.012) 4px)" }} />
-      )}
 
-      {/* ── NEW TelemeteryCapsule header — fully self-contained ── */}
-      <TelemeteryCapsule
-        t={ot}
-        entityName={entityName}
-        entitySub={entitySub}
-        isNexus={isNexus}
-        isOnline={true}
-        joinCode={isNexus ? (activeNexus?.joinCode || null) : null}
-        peerAnimal={peerAnimal}
-        peerAvatarState={peerAvatar.state}
-        onBack={() => { if (onMobileBack) onMobileBack(); else { if (isNexus) setSelectedNexus(null); else setSelectedUser(null); navigate("/"); } }}
-        onSearch={() => { setSearchOpen(x => !x); setSearchQ(""); }}
-        onCall={() => setCallType("voice")}
-        onInfoToggle={() => setShowInfo(x => !x)}
-        onMobileMenuToggle={onOpenSidebar ? () => onOpenSidebar(isNexus ? "nexus" : "contacts") : null}
-        searchActive={searchOpen}
-      />
-
+  const chatContent = (
+    <>
       {/* ── SEARCH BAR ── */}
       {searchOpen && (
         <div style={{ background: t.header, borderBottom: `1px solid ${t.border}`, padding: "8px 20px", display: "flex", gap: 10, alignItems: "center", animation: "fadeUp .15s ease", flexShrink: 0, zIndex: 9 }}>
@@ -551,7 +590,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         </div>
       )}
 
-      {/* ── PINNED BANNER (Nexus description / pinned msg) ── */}
+      {/* ── PINNED BANNER ── */}
       {pinnedVisible && (
         <div 
           style={{ background: t.tag, borderBottom: `1px solid ${t.border}`, padding: "7px 20px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, cursor: pinnedMsgData ? "pointer" : "default" }}
@@ -568,11 +607,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
               {pinnedMsgData ? "Pinned Message" : (isNexus ? "Pinned" : "Encrypted · End-to-End")}
             </div>
             <div style={{ color: t.txt, fontSize: 12, fontFamily: t.font, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: .9 }}>
-              {pinnedMsgData 
-                ? pinnedMsgData.text 
-                : (isNexus
-                  ? (localNexusGroup?.pinnedMsg || selectedNexus?.description || "No pinned message")
-                  : "Messages are secured with end-to-end encryption.")}
+              {pinnedMsgData ? pinnedMsgData.text : (isNexus ? (localNexusGroup?.pinnedMsg || selectedNexus?.description || "No pinned message") : "Messages are secured.")}
             </div>
           </div>
           <button onClick={(e) => { e.stopPropagation(); setPinnedVisible(false); }} style={{ background: "none", border: "none", color: t.txt2, cursor: "pointer", display: "flex", padding: 4 }}>
@@ -581,33 +616,17 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         </div>
       )}
 
-      {/* ── FULL-AREA INFO PANEL ── replaces message+input when open ── */}
-      {showInfo && isNexus && localNexusGroup && (
-        <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", animation: "fadeIn .2s ease" }}>
-          <InfoPanel
-            t={t}
-            group={localNexusGroup}
-            setGroup={setLocalNexusGroup}
-            onClose={() => setShowInfo(false)}
-            addToast={addToast}
-            onUpdate={handleInfoUpdate}
-            onLeave={handleLeaveNexus}
-            onDelete={handleDeleteNexus}
-            fullArea
-          />
-        </div>
-      )}
-
-      {/* ── MESSAGE AREA ── hidden when info panel is open ── */}
+      {/* ── MESSAGE AREA — virtualized ── */}
       <div style={{
-        flex: 1, overflowY: "auto", padding: "20px 20px 10px",
-        background: ot["--bg"],
-        scrollbarWidth: "thin", scrollbarColor: `${ot["--border"]} transparent`,
-        position: "relative", display: showInfo && isNexus ? "none" : "flex", flexDirection: "column", gap: 10,
+        flex: 1,
+        position: "relative",
+        display: showInfo && isNexus ? "none" : "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        zIndex: 1,
       }}>
-
         {/* Date divider */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "6px 0", fontSize: 10, color: ot["--text2"], opacity: 0.55, fontWeight: 700, letterSpacing: "1.5px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 20px", fontSize: 10, color: ot["--text2"], opacity: 0.55, fontWeight: 700, letterSpacing: "1.5px", flexShrink: 0 }}>
           <div style={{ flex: 1, height: 1, background: ot["--border"] }} />
           <span style={{ fontFamily: ot.fontMono, whiteSpace: "nowrap", textTransform: "uppercase" }}>
             {isNexus ? "Nexus Thread" : "Direct Line"} · {new Date().toLocaleDateString("en", { month: "short", day: "numeric" })}
@@ -615,150 +634,108 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
           <div style={{ flex: 1, height: 1, background: ot["--border"] }} />
         </div>
 
-        {/* Loading state */}
+        {/* Loading skeleton */}
         {isLoading && <MsgSkeleton ot={ot} />}
 
-        {/* Empty state */}
-        {!isLoading && filtered.length === 0 && !searchQ && (
-          <div style={{ textAlign: "center", padding: "48px 0" }}>
-            <div style={{ fontSize: 40, marginBottom: 12, opacity: .6 }}>{ot.decorator}</div>
-            <div style={{ color: ot["--text2"], fontSize: 14, fontFamily: ot.font, lineHeight: 1.6 }}>
-              No messages yet. Say something {ot.decorator}
-            </div>
-          </div>
-        )}
-
-        {/* Messages */}
-        {!isLoading && filtered.map(m => {
-          const mKey = m._id || m.id || m.idempotencyKey;
-          if (m.text === "__voice__") return <MsgErrorBoundary key={mKey}><VoiceBubble t={t} out={m.out} /></MsgErrorBoundary>;
-          if (m.text === "__img__")   return <MsgErrorBoundary key={mKey}><ImgBubble   t={t} out={m.out} /></MsgErrorBoundary>;
-          if (m.text === "__file__")  return <MsgErrorBoundary key={mKey}><FileBubble  t={t} out={m.out} /></MsgErrorBoundary>;
-
-          // Real image message
-          if (m.image && !m.text) {
-            return (
-              <MsgErrorBoundary key={mKey}>
-                <div style={{ display: "flex", justifyContent: m.out ? "flex-end" : "flex-start", marginBottom: 14, animation: "fadeUp .28s ease", position: "relative", zIndex: 1 }}>
-                  <div style={{ background: m.out ? t.msgOut : t.msgIn, border: `1px solid ${m.out ? t.msgOutBrd : t.border}`, borderRadius: 18, [`borderBottom${m.out ? "Right" : "Left"}Radius`]: 3, padding: 4, overflow: "hidden", maxWidth: 280 }}>
-                    <img src={m.image} alt="Shared media" style={{ width: 272, height: "auto", borderRadius: 14, objectFit: "cover", display: "block" }} />
-                    <div style={{ padding: "4px 8px", fontSize: 11, color: t.txt2, fontFamily: t.font }}>{m.time}</div>
-                  </div>
-                </div>
-              </MsgErrorBoundary>
-            );
-          }
-
-          if (m.isSystem) {
-            return (
-              <MsgErrorBoundary key={mKey}>
-                <div style={{ display: "flex", justifyContent: "center", margin: "16px 0", position: "relative", zIndex: 1, width: "100%" }}>
-                  <div style={{
-                    padding: "6px 16px",
-                    background: `linear-gradient(135deg, ${t.msgIn}, transparent)`,
-                    border: `1px solid ${t.border}`,
-                    borderRadius: 16,
-                    color: t.txt2,
-                    fontFamily: t.font,
-                    fontSize: 12,
-                    fontStyle: "italic",
-                    textAlign: "center",
-                    opacity: 0.8,
-                    boxShadow: `0 4px 12px ${t.glow}`
-                  }}>
-                    {m.text}
-                    <span style={{ opacity: 0.5, marginLeft: 8, fontSize: 10 }}>{m.time}</span>
-                  </div>
-                </div>
-              </MsgErrorBoundary>
-            );
-          }
-
-          // Text + optional image — using new OrbitMsgBubble
-          const isLatest = mKey === (filtered[filtered.length - 1]?._id || filtered[filtered.length - 1]?.id);
-          const rowAvatarType = m.out ? myAnimal : peerAnimal;
-          const rowAvatarState = isLatest ? (m.out ? myAvatar.state : peerAvatar.state) : "idle";
-
-          return (
-            <MsgErrorBoundary key={mKey}>
-              <OrbitMsgBubble
-                msg={m}
-                t={ot}
-                avatarAnimal={rowAvatarType}
-                avatarState={rowAvatarState}
-                onReact={handleReact}
-                onPin={(msg) => { setPinnedMsgData(msg); setPinnedVisible(true); addToast("Message pinned to top"); }}
-              />
-            </MsgErrorBoundary>
-          );
-        })}
-
-        {/* Typing indicator — new OrbitTypingIndicator */}
-        {isTypingActive && (
-          <OrbitTypingIndicator
-            t={ot}
-            peerAnimal={peerAnimal}
-            peerAvatarState={peerAvatar.state}
-            typingUsers={isNexus
-              ? (Array.isArray(nexusTypingUsers) ? nexusTypingUsers : []).filter(u => u.userId !== authUser?._id?.toString()).map(u => u.username)
-              : [selectedUser?.username || "user"]}
+        {/* Virtuoso message list — only ~25-35 DOM nodes regardless of message count */}
+        {!isLoading && (
+          <Virtuoso
+            ref={virtuosoRef}
+            style={{ flex: 1, padding: isNexus ? "0 20px 10px" : "0 20px 10px", overflowX: "hidden" }}
+            data={filtered}
+            followOutput="smooth"
+            increaseViewportBy={250}
+            initialTopMostItemIndex={filtered.length > 0 ? filtered.length - 1 : 0}
+            alignToBottom
+            itemContent={renderItemContent}
+            components={{
+              Footer: () => (
+                <>
+                  {isTypingActive && (
+                    <div style={{ padding: "0 0 10px" }}>
+                      <OrbitTypingIndicator
+                        t={ot}
+                        peerAnimal={peerAnimal}
+                        peerAvatarState={peerAvatar.state}
+                        typingUsers={isNexus
+                          ? (Array.isArray(nexusTypingUsers) ? nexusTypingUsers : []).filter(u => u.userId !== authUser?._id?.toString()).map(u => u.username)
+                          : [selectedUser?.username || "user"]}
+                      />
+                    </div>
+                  )}
+                  <div ref={endRef} />
+                </>
+              )
+            }}
           />
         )}
-
-        <div ref={endRef} />
       </div>
 
-      {/* ── NEW AeroInput — hidden when info panel is open ── */}
-      {!(showInfo && isNexus) && <div style={{ position: "relative", zIndex: 100 }}>
-        {/* Media/Emoji panel */}
-        {mediaPanel && (
-          <div style={{ position: "absolute", bottom: "100%", left: 0, right: 0, zIndex: 101, marginBottom: 10 }}>
-            <MediaPanel
-              t={t} mode={mediaPanel}
-              onClose={() => setMediaPanel(null)}
-              onSelectEmoji={e => { setInput(v => v + e); inputRef.current?.focus(); setMediaPanel(null); }}
-            />
-          </div>
-        )}
+      {/* ── INPUT AREA ── */}
+      {!(showInfo && isNexus) && (
+        <div style={{ position: "relative", zIndex: 100, display: "flex", flexDirection: "column" }}>
+          {mediaPanel && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 8px)",
+              right: typeof window !== "undefined" && window.innerWidth < 640 ? 0 : 16,
+              left: typeof window !== "undefined" && window.innerWidth < 640 ? 0 : "auto",
+              zIndex: 200,
+            }}>
+              <MediaPanel t={ot} mode={mediaPanel} onClose={() => setMediaPanel(null)} onSelectEmoji={e => { setInput(v => v + e); inputRef.current?.focus(); }} />
+            </div>
+          )}
+          {recording && (
+            <div style={{ position: "absolute", bottom: "100%", left: 20, right: 20, zIndex: 101, marginBottom: 10, padding: "10px 20px", background: ot["--bg2"], border: `1px solid ${ot["--border"]}`, borderRadius: ot["--radius"], display: "flex", alignItems: "center", gap: 14, boxShadow: ot["--shadow"], animation: "fadeUp .3s ease" }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff3131", animation: "recPulse 1s ease-in-out infinite", flexShrink: 0 }} />
+              <Wave color={ot["--acc"]} active bars={36} h={32} />
+              <span style={{ color: ot["--text"], fontSize: 14, fontFamily: ot.font, minWidth: 40, fontVariantNumeric: "tabular-nums" }}>{fmt(recSec)}</span>
+              <span style={{ color: ot["--text2"], fontSize: 12, fontFamily: ot.font, marginLeft: "auto" }}>Recording...</span>
+            </div>
+          )}
+          <AeroInput
+            t={ot} value={input} onChange={setInput}
+            onSend={() => { sendMsg(input); setInput(""); }}
+            onTyping={() => { emitTyping(true); myAvatar.onTyping(); clearTimeout(typingTimerRef.current); typingTimerRef.current = setTimeout(() => emitTyping(false), 2000); }}
+            onMediaToggle={(mode) => setMediaPanel(m => m === mode ? null : mode)}
+            onVoiceToggle={() => setRecording(!recording)}
+            onImageAttach={handleAttach}
+            isRecording={recording} selfAnimal={myAnimal} selfAvatarState={myAvatar.state} disabled={false}
+          />
+        </div>
+      )}
+      {/* SECURITY ASSURANCE FOOTER REMOVED - NOW IN HEADER TOOLTIP */}
 
-        {/* Recording bar overlay */}
-        {recording && (
-          <div style={{
-            position: "absolute", bottom: "100%", left: 20, right: 20, zIndex: 101, marginBottom: 10,
-            padding: "10px 20px", background: ot["--bg2"], border: `1px solid ${ot["--border"]}`,
-            borderRadius: ot["--radius"], display: "flex", alignItems: "center", gap: 14,
-            boxShadow: ot["--shadow"], animation: "fadeUp .3s ease"
-          }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff3131", animation: "recPulse 1s ease-in-out infinite", flexShrink: 0 }} />
-            <Wave color={ot["--acc"]} active bars={36} h={32} />
-            <span style={{ color: ot["--text"], fontSize: 14, fontFamily: ot.font, minWidth: 40, fontVariantNumeric: "tabular-nums" }}>{fmt(recSec)}</span>
-            <span style={{ color: ot["--text2"], fontSize: 12, fontFamily: ot.font, marginLeft: "auto" }}>Recording...</span>
-          </div>
-        )}
+    </>
+  );
 
-        <AeroInput
-          t={ot}
-          value={input}
-          onChange={setInput}
-          onSend={() => { sendMsg(input); setInput(""); }}
-          onTyping={() => { emitTyping(true); myAvatar.onTyping(); clearTimeout(typingTimerRef.current); typingTimerRef.current = setTimeout(() => emitTyping(false), 2000); }}
-          onMediaToggle={(mode) => setMediaPanel(m => m === mode ? null : mode)}
-          onVoiceToggle={() => setRecording(!recording)}
-          isRecording={recording}
-          selfAnimal={myAnimal}
-          selfAvatarState={myAvatar.state}
-          disabled={false}
-        />
-      </div>}
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", minHeight: 0, width: "100%", position: "relative", overflow: "hidden", background: ot["--bg"], ...cssVars }}>
+      {ot.scanlines && (
+        <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 998, background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,157,0.012) 2px,rgba(0,255,157,0.012) 4px)" }} />
+      )}
 
+      <TelemeteryCapsule
+        t={ot} entityName={entityName} entitySub={entitySub} isNexus={isNexus} isOnline={true}
+        joinCode={isNexus ? (activeNexus?.joinCode || null) : null} peerAnimal={peerAnimal} peerAvatarState={peerAvatar.state}
+        onBack={() => { if (onMobileBack) onMobileBack(); else { if (isNexus) setSelectedNexus(null); else setSelectedUser(null); navigate("/"); } }}
+        onSearch={() => { setSearchOpen(x => !x); setSearchQ(""); }}
+        onCall={() => setCallType("voice")} onInfoToggle={() => setShowInfo(x => !x)}
+        onMobileMenuToggle={onOpenSidebar ? () => onOpenSidebar(isNexus ? "nexus" : "contacts") : null}
+        searchActive={searchOpen}
+      />
+      
+      {showInfo && localNexusGroup && isNexus && (
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", animation: "fadeIn .2s ease" }}>
+          <InfoPanel t={t} group={localNexusGroup} setGroup={setLocalNexusGroup} onClose={() => setShowInfo(false)} addToast={addToast} onUpdate={handleInfoUpdate} onLeave={handleLeaveNexus} onDelete={handleDeleteNexus} fullArea />
+        </div>
+      )}
 
+      <div style={{ flex: 1, position: "relative", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        {chatContent}
+      </div>
 
-      {/* Info panel is now rendered above as full-area, not as absolute overlay */}
-
-      {/* ── CALL OVERLAY ── */}
       {callType && <CallOverlay t={t} type={callType} onEnd={() => setCallType(null)} />}
-
-      {/* ── TOAST ── */}
       {toast && <Toast key={toast + Date.now()} t={t} msg={toast} onDone={() => setToast(null)} />}
     </div>
   );

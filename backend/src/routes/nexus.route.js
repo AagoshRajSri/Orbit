@@ -12,6 +12,9 @@ import {
   leaveNexus,
   checkMembership,
   deleteNexus,
+  publishSenderKeyDistributions,
+  getSenderKeyDistributions,
+  getMemberPublicKeys,
 } from "../controllers/nexus.controller.js";
 
 import { protectRoute } from "../middleware/auth.middleware.js";
@@ -48,4 +51,10 @@ router.patch("/:nexusId/remove-member", nexusWriteLimiter, removeNexusMember);
 router.patch("/:nexusId", nexusWriteLimiter, updateNexus);
 router.delete("/:nexusId", nexusWriteLimiter, deleteNexus);
 
+// ── Sender Key Distribution routes ────────────────────────────────────────────
+router.get("/:nexusId/member-keys", getMemberPublicKeys);
+router.get("/:nexusId/sender-keys", getSenderKeyDistributions);
+router.post("/:nexusId/sender-keys", nexusWriteLimiter, publishSenderKeyDistributions);
+
 export default router;
+

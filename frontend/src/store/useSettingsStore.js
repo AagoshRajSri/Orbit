@@ -41,7 +41,7 @@ const DEFAULT_SETTINGS = {
 
   // Appearance
   appearance: {
-    theme: "dark", // Theme name (light/dark/etc)
+    theme: "light", // Theme name (light/dark/etc)
     accentColor: "purple", // Primary accent
     fontSize: "medium", // small/medium/large
     animationsEnabled: true, // UI animations

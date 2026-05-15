@@ -2,9 +2,45 @@
 // MsgBubble.jsx — per-theme message bubble with reactions, status tick, avatar
 // Derived from orbit-messaging.html's .msg-bubble styles + ChatCoreUI MsgBubble.
 // =============================================================================
-import { useState, memo, useCallback } from "react";
+import { useState, memo, useCallback, useEffect, useMemo } from "react";
 import { PixelAvatar } from "../avatar/PixelAvatar/PixelAvatar.jsx";
 import MessageStatusRing from "./MessageStatusRing.jsx";
+
+export function SafeImage({ src, alt, style }) {
+  const [url, setUrl] = useState(null);
+
+  useEffect(() => {
+    if (!src) return;
+    let blobUrl = null;
+    if (src instanceof ArrayBuffer || src instanceof Uint8Array) {
+      const blob = new Blob([src]);
+      blobUrl = URL.createObjectURL(blob);
+      setUrl(blobUrl);
+    } else if (src instanceof Blob) {
+      blobUrl = URL.createObjectURL(src);
+      setUrl(blobUrl);
+    } else if (typeof src === "string") {
+      setUrl(src);
+    }
+
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [src]);
+
+  if (!url) return <div style={{ ...style, background: "rgba(255,255,255,0.05)", minHeight: 180, borderRadius: 8 }} />;
+  return (
+    <img 
+      src={url} 
+      alt={alt} 
+      style={{ ...style, minHeight: 100 }} 
+      loading="lazy" 
+      decoding="async"
+    />
+  );
+}
 
 const REACT_SET = ["❤️","👍","😂","🔥","✨","🎯","🔐","💫","😮","🥺"];
 
@@ -118,6 +154,8 @@ function ReactionStrip({ reactions, onReact, t }) {
   );
 }
 
+
+
 function QuickReactBar({ t, onReact, onPin, mine }) {
   return (
     <div style={{
@@ -128,10 +166,11 @@ function QuickReactBar({ t, onReact, onPin, mine }) {
       border: `1px solid ${t["--border"]}`,
       borderRadius: 24,
       padding: "4px 8px",
-      display: "flex", gap: 6, zIndex: 20,
+      display: "flex", gap: 6, zIndex: 1000,
       boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
       animation: "popIn 0.2s ease",
       alignItems: "center",
+      pointerEvents: "auto",
     }}>
       {REACT_SET.slice(0, 6).map(e => (
         <span
@@ -159,24 +198,40 @@ function QuickReactBar({ t, onReact, onPin, mine }) {
 }
 
 export const OrbitMsgBubble = memo(function OrbitMsgBubble({
-  msg,      // { id, text, image, out, from, time, reactions, status, isSystem }
-  t,        // ORBIT_CHAT_THEMES token object
+  msg,            // RAW message object
+  rawOut,         // boolean
+  isLatest,       // boolean — only the newest message animates (FIX 4)
+  authUser,       // object
+  localReactions, // object
+  t,              // ORBIT_CHAT_THEMES token object
   avatarAnimal,   // 'dog'|'cat'|'bunny'
   avatarState,    // useAvatarState .state
   onReact,        // (msgId, emoji) => void
   onPin,          // (msg) => void
 }) {
   const [hov, setHov] = useState(false);
-  const mine = !!msg.out;
+  const mine = !!rawOut;
   const isCyber  = t.id === "cyberpunk" || t.id === "gamer";
   const isPastel = t.id === "pastel";
+
+
+  const msgId = msg.id || msg._id || msg.idempotencyKey;
+  const timeStr = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit", hour12: false }) : "00:00";
+  const fromStr = mine ? "You" : (msg.senderId?.username || msg.senderId?.fullName || "Member");
 
   // Inject styles on mount
   useState(() => { injectMsgStyle(); });
 
+  const bubbleStyle = useMemo(() => getBubbleStyle(t, mine), [t, mine]);
+  const bubbleHoverStyle = useMemo(() => ({
+    ...bubbleStyle,
+    transform: "scale(1.015)",
+    boxShadow: `0 10px 40px ${t["--shadow"]}`,
+  }), [bubbleStyle, t]);
+
   const handleReact = useCallback((emoji) => {
-    onReact?.(msg.id, emoji);
-  }, [msg.id, onReact]);
+    onReact?.(msgId, emoji);
+  }, [msgId, onReact]);
 
   if (msg.isSystem) {
     return (
@@ -195,27 +250,35 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
 
   return (
     <div
-      id={`msg-${msg.id || msg._id}`}
+      id={`msg-${msgId}`}
       style={{
-        display: "flex", alignItems: "flex-end",
-        gap: 8, flexDirection: mine ? "row-reverse" : "row",
-        animation: "fadeUpMsg 0.4s cubic-bezier(0.34,1.56,0.64,1)",
+        display: "flex", 
+        alignItems: "flex-end",
+        gap: 8, 
+        flexDirection: mine ? "row-reverse" : "row",
+        // Balance the layout: add margin on the aligned side to match the avatar space on the other side
+        paddingRight: mine ? 40 : 0, 
+        paddingLeft: mine ? 0 : 4,
+        // FIX 4: Only animate the latest message
+        animation: isLatest ? "fadeUpMsg 0.25s ease-out" : "none",
         marginBottom: 2,
+        width: "100%",
       }}
     >
-      {/* Avatar */}
-      <PixelAvatar
-        type={avatarAnimal || "dog"}
-        state={avatarState || "idle"}
-        size={28}
-        style={{
-          imageRendering: "pixelated",
-          borderRadius: isPastel ? "50%" : "8px",
-          border: `1.5px solid ${mine ? t["--acc"] : t["--border"]}`,
-          display: "block", flexShrink: 0,
-          boxShadow: (mine && isCyber) ? `0 0 10px ${t["--acc"]}` : "none",
-        }}
-      />
+      {/* Avatar (only for others) */}
+      {!mine && (
+        <PixelAvatar
+          type={avatarAnimal || "dog"}
+          state={avatarState || "idle"}
+          size={28}
+          style={{
+            imageRendering: "pixelated",
+            borderRadius: isPastel ? "50%" : "8px",
+            border: `1.5px solid ${t["--border"]}`,
+            display: "block", flexShrink: 0,
+          }}
+        />
+      )}
 
       {/* Content col */}
       <div style={{
@@ -230,15 +293,15 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
               fontFamily: t.font, fontWeight: 600, letterSpacing: "0.04em",
               display: "flex", alignItems: "center", gap: 4
             }}>
-              <span>{msg.from}</span>
+              <span>{fromStr}</span>
               <span style={{ fontSize: 14, opacity: 0.5 }}>•</span>
-              <span>{msg.time}</span>
+              <span>{timeStr}</span>
             </div>
             <div className="msg-mobile-time-inside" style={{
               fontSize: 11, color: t["--text2"], marginLeft: 14,
               fontFamily: t.font, fontWeight: 600, letterSpacing: "0.04em",
             }}>
-              {msg.from}
+              {fromStr}
             </div>
           </>
         )}
@@ -250,7 +313,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
             fontFamily: t.font, fontWeight: 600, letterSpacing: "0.04em",
             alignSelf: "flex-end"
           }}>
-            {msg.time}
+            {timeStr}
           </div>
         )}
 
@@ -263,20 +326,14 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
           {hov && <QuickReactBar t={t} onReact={handleReact} onPin={() => onPin?.(msg)} mine={mine} />}
 
           <div
-            style={{
-              ...getBubbleStyle(t, mine),
-              transform: hov ? "scale(1.015)" : "scale(1)",
-              boxShadow: hov
-                ? `0 10px 40px ${t["--shadow"]}`
-                : getBubbleStyle(t, mine).boxShadow,
-            }}
+            style={hov ? bubbleHoverStyle : bubbleStyle}
           >
             {/* Cyber prefix */}
             {isCyber && <CyberPrefix mine={mine} t={t} />}
 
             {/* Image */}
             {msg.image && (
-              <img
+              <SafeImage
                 src={msg.image}
                 alt="attachment"
                 style={{
@@ -306,8 +363,11 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
                 fontSize: 9.5, color: t["--text2"],
                 fontFamily: t.fontMono, letterSpacing: "0.04em", fontWeight: 700,
               }}>
-                {msg.time}
+                {timeStr}
               </span>
+              {(msg.v === 3 || msg.v === 4) && (
+                <span title="End-to-End Encrypted" style={{ fontSize: 9, opacity: 0.8 }}>🔐</span>
+              )}
               {mine && (
                 <MessageStatusRing
                   status={msg.status || "delivered"}
@@ -323,7 +383,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
         </div>
 
         {/* Reactions */}
-        <ReactionStrip reactions={msg.reactions} onReact={handleReact} t={t} />
+        <ReactionStrip reactions={localReactions} onReact={handleReact} t={t} />
       </div>
     </div>
   );

@@ -61,6 +61,8 @@ import GlobalMiniPlayer from "./components/layout/GlobalMiniPlayer";
 import GlobalAnnouncementBanner from "./components/layout/GlobalAnnouncementBanner";
 import { normalizeId } from "./lib/idUtils";
 
+import { resolveTheme, injectOrbitChatVars } from "./components/chat/OrbitChatTheme.js";
+
 import OrbitChatApp from "./components/layout/OrbitChatApp";
 import { useAnimationContext } from "./components/effects/AnimLayer";
 import { AvatarProvider } from "./context/AvatarContext.jsx";
@@ -128,8 +130,15 @@ const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPas
  */
 const DynamicRouteHandler = (props) => {
   const { nexusId, userId } = useParams();
-  const { nexuses, setSelectedNexus, selectedNexus } = useNexusStore();
-  const { users, setSelectedUser, selectedUser } = useChatStore();
+  // FIX 3: Atomic selectors to prevent App-wide re-renders on every message/typing event
+  const nexuses = useNexusStore((state) => state.nexuses);
+  const setSelectedNexus = useNexusStore((state) => state.setSelectedNexus);
+  const selectedNexus = useNexusStore((state) => state.selectedNexus);
+  
+  const users = useChatStore((state) => state.users);
+  const setSelectedUser = useChatStore((state) => state.setSelectedUser);
+  const selectedUser = useChatStore((state) => state.selectedUser);
+  
   const location = useLocation();
 
   useEffect(() => {
@@ -241,6 +250,12 @@ const AppContent = () => {
     };
   }, []);
 
+  // FIX 19: Global Theme Variable Injection
+  useEffect(() => {
+    const themeObj = resolveTheme(theme);
+    injectOrbitChatVars(themeObj);
+  }, [theme]);
+
   useEffect(() => {
     ensureAppSettings();
     performanceDetector.detect();
@@ -253,7 +268,9 @@ const AppContent = () => {
   const requestFinishPostAuthLoader = useCallback(() => {
     if (!postAuthDataReadyRef.current || !postAuthAnimationReadyRef.current)
       return;
-    const MIN_VISIBLE_MS = 4000;
+    // FIX 14: Reduced from 4000ms to 300ms — returning users see the app in ~300ms.
+    // A 4-second forced wait was the single biggest perceived performance issue.
+    const MIN_VISIBLE_MS = 300;
     const startedAt = postAuthLoaderStartedAtRef.current ?? Date.now();
     const elapsed = Date.now() - startedAt;
     const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
@@ -608,10 +625,14 @@ const AppContent = () => {
     }
   }, [isOrbitMode, location.pathname]);
 
+  const lastClickSoundRef = useRef(0);
   useEffect(() => {
     const handleGlobalClick = (e) => {
+      const now = Date.now();
+      if (now - lastClickSoundRef.current < 80) return;
       const clickable = e.target.closest('button, a, input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], select, [role="button"], .v-toggle, .enter-orbit-card, .btn');
       if (clickable) {
+        lastClickSoundRef.current = now;
         soundManager.play("click");
       }
     };

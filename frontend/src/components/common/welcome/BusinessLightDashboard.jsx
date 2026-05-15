@@ -215,7 +215,7 @@ export function ElegantSpotifyCard({ onClick }) {
         <div style={{ display:"flex", alignItems:"center", gap:14, flex:1 }}>
           <div style={{ width:68, height:68, borderRadius:11, background:"#221f1d", border:`1px solid var(--chat-border)`, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 6px 20px rgba(0,0,0,0.15)", flexShrink:0 }}>
             {currentTrack?.imageUrl
-              ? <img src={currentTrack.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              ? <img loading="lazy" decoding="async" src={currentTrack.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               : <span style={{ fontSize:28, opacity:0.7 }}>🎵</span>
             }
           </div>

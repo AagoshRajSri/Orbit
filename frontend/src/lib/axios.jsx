@@ -7,16 +7,24 @@ export const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-axiosInstance.interceptors.request.use((config) => {
+axiosInstance.interceptors.request.use(async (config) => {
   try {
     const authState = useAuthStore.getState();
     const token = authState.socketToken;
-    if (token && !config.headers["X-Auth-Token"]) {
+    if (token) {
       config.headers["X-Auth-Token"] = token;
     }
   } catch (e) {
     console.error("Interceptor failed to attach token:", e);
   }
+
+  // Phase 3: Attach device ID for anomaly detection
+  try {
+    const { getOrCreateDeviceIdentity } = await import("./deviceFingerprint.js");
+    const { deviceId } = await getOrCreateDeviceIdentity();
+    if (deviceId) config.headers["X-Device-ID"] = deviceId;
+  } catch { /* Device fingerprinting not critical — silently skip */ }
+
   return config;
 });
 

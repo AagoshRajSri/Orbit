@@ -34,6 +34,7 @@ import { useNavigate } from "react-router-dom";
 import AnimalEasterEggs, {
   FlyingBirdTrigger,
 } from "../components/common/welcome/AnimalEasterEggs";
+import SecurityExplanation from "../components/settings/SecurityExplanation";
 
 const STORAGE_KEYS = {
   displayName: "orbit_displayName_v1",
@@ -151,6 +152,8 @@ const SettingsPage = () => {
 
   const [activeSection, setActiveSection] = useState("profile");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
 
   // Draft vs saved state (to power the sticky Save/Reset UX)
   const [savedDisplayName, setSavedDisplayName] = useState("");
@@ -521,11 +524,11 @@ const SettingsPage = () => {
   return (
     <OrbitalPageWrapper>
       <div
-        className={`h-full min-h-screen relative overflow-hidden transition-colors duration-500 ${isPastel ? "bg-[#fffafa]" : "bg-transparent"}`}
+        className={`h-full min-h-0 relative overflow-hidden transition-colors duration-500 ${isPastel ? "bg-[#fffafa]" : "bg-transparent"}`}
       >
         {isPastel && <AnimalEasterEggs />}
         <div className="h-full min-h-0 flex flex-col relative z-10 px-4">
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {/* Mobile top menu */}
             <div
               className={`lg:hidden p-4 border-b backdrop-blur-md ${isPastel ? "bg-white/40 border-pink-100" : "bg-base-100/60 border-base-300/60"}`}
@@ -862,65 +865,80 @@ const SettingsPage = () => {
                             Theme
                           </div>
                           <div className="grid grid-cols-2 gap-3">
-                            {THEMES.map((t) => {
-                              const isSelected = draftTheme === t;
-                              
-                              // Fixed preview colors for each theme
-                              let previewPrimary = "#3b82f6"; // default (blue)
-                              let previewBg = "#ffffff";
-                              
-                              if (t === "light") { previewPrimary = "#3b82f6"; previewBg = "#ffffff"; }
-                              else if (t === "dark") { previewPrimary = "#ef4444"; previewBg = "#0a0a0a"; }
-                              else if (t === "neon-cyberpunk") { previewPrimary = "#8b5cf6"; previewBg = "#0c0e14"; }
-                              else if (t === "gamer-high-energy") { previewPrimary = "#ff2d78"; previewBg = "#080614"; }
-                              else if (t === "pastel-dream") { previewPrimary = "#e060b0"; previewBg = "#ffd4ee"; }
-                              else if (t === "amoled-dark") { previewPrimary = "#E8C990"; previewBg = "#000000"; }
+                              {THEMES.map((t) => {
+                               const isSelected = draftTheme === t;
+                               const isComingSoon = isMobile && t !== "light";
+                               
+                               // Fixed preview colors for each theme
+                               let previewPrimary = "#3b82f6"; // default (blue)
+                               let previewBg = "#ffffff";
+                               
+                               if (t === "light") { previewPrimary = "#3b82f6"; previewBg = "#ffffff"; }
+                               else if (t === "dark") { previewPrimary = "#ef4444"; previewBg = "#0a0a0a"; }
+                               else if (t === "neon-cyberpunk") { previewPrimary = "#8b5cf6"; previewBg = "#0c0e14"; }
+                               else if (t === "gamer-high-energy") { previewPrimary = "#ff2d78"; previewBg = "#080614"; }
+                               else if (t === "pastel-dream") { previewPrimary = "#e060b0"; previewBg = "#ffd4ee"; }
+                               else if (t === "amoled-dark") { previewPrimary = "#E8C990"; previewBg = "#000000"; }
 
-                              return (
-                                <button
-                                  key={t}
-                                  className={`theme-select-button group flex flex-col items-center gap-3 p-3 rounded-xl transition-colors border ${
-                                    isSelected
-                                      ? "bg-base-200 border-primary active"
-                                      : "hover:bg-base-200/50 border-base-300"
-                                  }`}
-                                  onClick={() => setDraftTheme(t)}
-                                  type="button"
-                                >
-                                  <div
-                                    className="theme-preview-swatch relative h-12 w-full rounded-lg overflow-hidden border-2"
-                                    style={{
-                                      background: previewBg,
-                                      borderColor: isSelected ? previewPrimary : "rgba(128,128,128,0.2)",
-                                    }}
-                                  >
-                                    <div className="absolute inset-0 flex p-1.5 gap-1.5">
-                                      <div
-                                        className="theme-preview-color flex-1 rounded-sm"
-                                        style={{ background: previewPrimary }}
-                                      />
-                                      <div
-                                        className="theme-preview-color flex-1 rounded-sm"
-                                        style={{ background: previewBg }}
-                                      />
-                                    </div>
-                                    {/* Theme indicator icon */}
-                                    {isSelected && (
-                                      <div
-                                        className="theme-indicator absolute top-1 right-1 w-2 h-2 rounded-full"
-                                        style={{
-                                          background: previewPrimary,
-                                          boxShadow: `0 0 8px ${previewPrimary}`,
-                                        }}
-                                      />
-                                    )}
-                                  </div>
-                                  <span className="text-xs font-semibold truncate w-full text-center">
-                                    {THEME_LABELS[t] ?? t}
-                                  </span>
-                                </button>
-                              );
-                            })}
+                               return (
+                                 <button
+                                   key={t}
+                                   className={`theme-select-button group flex flex-col items-center gap-3 p-3 rounded-xl transition-colors border ${
+                                     isSelected
+                                       ? "bg-base-200 border-primary active"
+                                       : "hover:bg-base-200/50 border-base-300"
+                                   }`}
+                                   onClick={() => { if (!isComingSoon) setDraftTheme(t); }}
+                                   type="button"
+                                   style={{ position: 'relative', opacity: isComingSoon ? 0.7 : 1 }}
+                                 >
+                                   {isComingSoon && (
+                                     <div style={{
+                                       position: "absolute", inset: 0, zIndex: 10,
+                                       display: "flex", alignItems: "center", justifyContent: "center",
+                                       background: "rgba(0,0,0,0.6)", backdropFilter: "blur(2px)", borderRadius: 12
+                                     }}>
+                                       <div style={{
+                                         background: "#3b82f6", color: "#fff",
+                                         fontSize: 8, fontWeight: 900, padding: "2px 6px", borderRadius: 4,
+                                         letterSpacing: 1, boxShadow: "0 0 8px rgba(59,130,246,0.6)"
+                                       }}>COMING SOON</div>
+                                     </div>
+                                   )}
+                                   <div
+                                     className="theme-preview-swatch relative h-12 w-full rounded-lg overflow-hidden border-2"
+                                     style={{
+                                       background: previewBg,
+                                       borderColor: isSelected ? previewPrimary : "rgba(128,128,128,0.2)",
+                                     }}
+                                   >
+                                     <div className="absolute inset-0 flex p-1.5 gap-1.5">
+                                       <div
+                                         className="theme-preview-color flex-1 rounded-sm"
+                                         style={{ background: previewPrimary }}
+                                       />
+                                       <div
+                                         className="theme-preview-color flex-1 rounded-sm"
+                                         style={{ background: previewBg }}
+                                       />
+                                     </div>
+                                     {/* Theme indicator icon */}
+                                     {isSelected && (
+                                       <div
+                                         className="theme-indicator absolute top-1 right-1 w-2 h-2 rounded-full"
+                                         style={{
+                                           background: previewPrimary,
+                                           boxShadow: `0 0 8px ${previewPrimary}`,
+                                         }}
+                                       />
+                                     )}
+                                   </div>
+                                   <span className="text-xs font-semibold truncate w-full text-center">
+                                     {THEME_LABELS[t] ?? t}
+                                   </span>
+                                 </button>
+                               );
+                             })}
                           </div>
                           <div className="mt-4 text-xs text-base-content/65 italic">
                             Changes apply when you hit Save.
@@ -1212,6 +1230,11 @@ const SettingsPage = () => {
                             Change Password
                           </button>
                         </div>
+                      </div>
+
+                      {/* Animated Security Explanation */}
+                      <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 backdrop-blur-md overflow-hidden">
+                        <SecurityExplanation isDark={!isPastel} />
                       </div>
                     </div>
                   )}

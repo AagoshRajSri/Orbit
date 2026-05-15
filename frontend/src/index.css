@@ -236,6 +236,27 @@ button, [role="button"] {
   animation: slideUpFade 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Orbit ring spin animation (used by QuickAccessRing) */
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Ensure fullscreen themes on mobile also get bottom-safe padding 
+   when the orbit-mobile-nav is rendered inside the theme */
+@media (max-width: 767px) {
+  .theme-mobile-safe {
+    padding-bottom: calc(var(--mobile-nav-h, 64px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* Mobile back button in chat header */
 .mobile-back-btn {
   display: none;

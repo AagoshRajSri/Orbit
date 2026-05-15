@@ -350,7 +350,7 @@ export default function GlobalMiniPlayer() {
               onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
             >
               {currentTrack.imageUrl ? (
-                <img src={currentTrack.imageUrl} alt="Album art" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img loading="lazy" decoding="async" src={currentTrack.imageUrl} alt="Album art" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
                 <Music size={14} color={palette.accent} style={{ margin: "auto", display: "block", marginTop: 8 }} />
               )}

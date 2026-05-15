@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, useCallback, useMemo, memo } from "react";
 import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "../store/useAuthStore";
+import toast from "../lib/toast";
+import SecurityExplanation from "../components/settings/SecurityExplanation";
 import { useChatStore } from "../store/useChatStore";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { THEMES, THEME_LABELS } from "../constants";
@@ -10,6 +13,7 @@ import { useNexusStore } from "../store/useNexusStore";
 import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
 import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { useSoundManager } from "../hooks/useSoundManager";
 import { spotifyService } from "../services/spotifyService";
 import { API_URL } from "../config";
 
@@ -1032,7 +1036,7 @@ const Sidebar = memo(({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nex
                     <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
                       <div style={{ width: 36, height: 36, borderRadius: 6, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                         {n.avatar ? (
-                          <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <img loading="lazy" decoding="async" src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         ) : (
                           (() => {
                             const ANIMALS = ['dog', 'cat', 'bunny'];
@@ -1155,7 +1159,7 @@ const Sidebar = memo(({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nex
               >
                 <div style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {u.profilePic ? (
-                    <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img loading="lazy" decoding="async" src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     (() => {
                       const ANIMALS = ['dog', 'cat', 'bunny'];
@@ -1327,14 +1331,59 @@ function StatusBar({ locked }) {
   );
 }
 
+/* ── MOBILE COMPONENTS ── */
+const MobileGamerNav = memo(() => {
+  const navigate = useNavigate();
+  return (
+    <div className="gm-mobile-nav">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,245,212,0.1)', border: '1.5px solid #00f5d4', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(0,245,212,0.4)' }}>
+          <span style={{ fontSize: 16 }}>🌀</span>
+        </div>
+        <span style={{ fontSize: 16, fontWeight: 900, letterSpacing: '0.15em', color: '#00f5d4', fontFamily: "'Orbitron',monospace", textShadow: '0 0 10px #00f5d466' }}>ORBIT</span>
+      </div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        <div onClick={() => navigate('/settings')} style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>⚙️</div>
+      </div>
+    </div>
+  );
+});
+
+const MobileGamerTabBar = memo(({ activeTab }) => {
+  const navigate = useNavigate();
+  const tabs = [
+    { id: 'orbits', label: 'ORBITS', icon: '📡' },
+    { id: 'contacts', label: 'SQUAD', icon: '👤' },
+    { id: 'spotify', label: 'AUDIO', icon: '🎵' },
+    { id: 'profile', label: 'LEVEL', icon: '🏆' }
+  ];
+
+  return (
+    <div className="gm-tab-bar">
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          onClick={() => navigate(t.id === 'orbits' ? '/' : `/${t.id}`)}
+          className={`gm-tab-btn ${activeTab === t.id ? 'gm-tab-active' : ''}`}
+        >
+          <span style={{ fontSize: 20, marginBottom: 2 }}>{t.icon}</span>
+          <span>{t.label}</span>
+          {activeTab === t.id && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#00f5d4', marginTop: 4, boxShadow: '0 0 8px #00f5d4' }} />}
+        </button>
+      ))}
+    </div>
+  );
+});
+
 export default function OrbitGrind({ children }) {
   const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
+  const navigate = useNavigate();
   const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
   const [locked, setLocked] = useState(false);
   const [killCount, setKillCount] = useState(14);
-  const { logout } = useAuthStore();
-  const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
-  const { users, selectedUser, selectedUserId, setSelectedUser } = useChatStore();
+  const { logout } = useAuthStore(useShallow(state => ({ logout: state.logout })));
+  const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore(useShallow(state => ({ nexusActionView: state.nexusActionView, setNexusActionView: state.setNexusActionView, nexuses: state.nexuses, setSelectedNexus: state.setSelectedNexus, isNexusesLoading: state.isNexusesLoading, nexusUnread: state.nexusUnread, selectedNexus: state.selectedNexus, selectedNexusId: state.selectedNexusId })));
+  const { users, selectedUser, selectedUserId, setSelectedUser } = useChatStore(useShallow(state => ({ users: state.users, selectedUser: state.selectedUser, selectedUserId: state.selectedUserId, setSelectedUser: state.setSelectedUser })));
 
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
   const userSelected = Boolean(selectedUser || selectedUserId);
@@ -1410,8 +1459,90 @@ export default function OrbitGrind({ children }) {
     setKillCount(k => k + (Math.floor(Math.random() * 3) + 1));
   }, []);
 
+  const location = useLocation();
+  const currentTab = new URLSearchParams(location.search).get('tab') || 'orbits';
+  const isMobileChat = nexusSelected || !!selectedUser || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/');
+
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#040212" }}>
+    <>
+    {/* ── MOBILE CANVAS ── */ }
+    <div className="gm-mobile-canvas gm-mobile-only">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        @keyframes debounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        .gm-pulse { animation: pulse 2s infinite; }
+      `}</style>
+      <div style={{ position:'absolute', inset:0, background:`radial-gradient(ellipse at 20% 50%,rgba(80,0,120,0.4) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(0,245,212,0.15) 0%,transparent 50%)`, pointerEvents:'none' }} />
+      {(isMobileChat || children) ? (
+        <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100dvh' }}>
+          <div className="gamer-chat-env" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
+          </div>
+        </div>
+      ) : (
+        <>
+          <MobileGamerNav />
+          <div className="gm-mobile-scroll">
+            {/* Squad Nodes Carousel */}
+            <div style={{ display:'flex', gap:16, overflowX:'auto', paddingBottom:16, marginLeft:-14, marginRight:-14, paddingLeft:14, paddingRight:14, WebkitOverflowScrolling:'touch', scrollbarWidth:'none' }}>
+              {nexuses?.map(n => (
+                <div key={n._id} onClick={() => { setSelectedNexus(n); setSelectedUser(null); navigate(`/nexus/${n._id}`); }} style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer' }}>
+                  <div style={{ width:62, height:62, borderRadius:'50%', border:`2px solid #ff2d78`, padding:2, background:'rgba(0,0,0,0.6)', boxShadow:`0 0 10px #ff2d7866` }}>
+                    <div style={{ width:'100%', height:'100%', borderRadius:'50%', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, color:'#ff2d78', fontFamily:"'Orbitron',monospace", fontWeight:'900' }}>{n.name[0].toUpperCase()}</div>
+                  </div>
+                  <span style={{ fontSize:8, color:'#ff2d78', fontFamily:"'Orbitron',monospace", letterSpacing:'0.08em', maxWidth:64, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontWeight: 800 }}>{n.name.toUpperCase()}</span>
+                </div>
+              ))}
+              {users?.map(u => (
+                <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer' }}>
+                  <div style={{ width:62, height:62, borderRadius:'50%', border:`2px solid #00f5d4`, padding:2, background:'rgba(0,0,0,0.6)', boxShadow:`0 0 10px #00f5d466` }}>
+                    <div style={{ width:'100%', height:'100%', borderRadius:'50%', overflow:'hidden' }}>
+                      <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} alt={u.username} />
+                    </div>
+                  </div>
+                  <span style={{ fontSize:8, color:'#00f5d4', fontFamily:"'Orbitron',monospace", letterSpacing:'0.08em', maxWidth:64, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontWeight: 800 }}>{u.username.toUpperCase()}</span>
+                </div>
+              ))}
+            </div>
+            
+            {/* Mission Status */}
+            <div style={{ display:'flex', alignItems:'center', gap:8, margin:'16px 0 12px', padding:'10px 14px', background:`rgba(0,245,212,0.08)`, border:`1.5px solid rgba(0,245,212,0.3)`, borderRadius:6 }}>
+              <div style={{ width:8, height:8, borderRadius:'50%', background:'#00f5d4', boxShadow:`0 0 10px #00f5d4`, animation:'pulse 2s infinite' }} />
+              <span style={{ fontSize:10, fontWeight:900, color:'#00f5d4', fontFamily:"'Orbitron',monospace", letterSpacing:'0.15em' }}>MISSION: {locked ? 'LOCKED IN' : 'WAITING'}</span>
+            </div>
+
+            {/* Action Cards */}
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <NeonCard color="#00f5d4" style={{ padding:'16px 14px', cursor:'pointer' }} onClick={() => navigate('/spotify')}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <div style={{ fontSize:10, fontWeight:900, color:'#00f5d4', fontFamily:"'Orbitron',monospace", letterSpacing:'0.12em' }}>⚡ NEXUS AUDIO</div>
+                  <span style={{ fontSize: 12 }}>🔊</span>
+                </div>
+                <div style={{ fontSize:12, color:'rgba(180,220,210,0.6)', fontFamily: "'Rajdhani', sans-serif" }}>Sync your gaming soundtrack with the squad.</div>
+              </NeonCard>
+              <NeonCard color="#ff2d78" style={{ padding:'16px 14px', cursor:'pointer' }} onClick={() => navigate('/settings')}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <div style={{ fontSize:10, fontWeight:900, color:'#ff2d78', fontFamily:"'Orbitron',monospace", letterSpacing:'0.12em' }}>⚙ CONFIG</div>
+                  <span style={{ fontSize: 12 }}>🎮</span>
+                </div>
+                <div style={{ fontSize:12, color:'rgba(220,180,190,0.6)', fontFamily: "'Rajdhani', sans-serif" }}>Adjust your setup, themes, and sound profile.</div>
+              </NeonCard>
+              <NeonCard color="#ffe600" style={{ padding:'16px 14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <div style={{ fontSize:10, fontWeight:900, color:'#ffe600', fontFamily:"'Orbitron',monospace", letterSpacing:'0.12em' }}>🏆 CHALLENGES</div>
+                  <span style={{ fontSize: 12 }}>⚔️</span>
+                </div>
+                <div style={{ fontSize:12, color:'rgba(220,220,180,0.6)', fontFamily: "'Rajdhani', sans-serif" }}>Complete daily quests to earn XP and Rank UP.</div>
+              </NeonCard>
+            </div>
+          </div>
+          <MobileGamerTabBar activeTab={currentTab} />
+        </>
+      )}
+    </div>
+
+    {/* ── DESKTOP CANVAS ── */}
+    <div className="gm-desktop-only" style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#040212" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         @keyframes debrisFloat{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-8px) rotate(10deg);}}
@@ -1491,6 +1622,17 @@ export default function OrbitGrind({ children }) {
           .gamer-main { min-height: 600px; flex: none !important; }
           .gamer-container.chat-active .gamer-main { min-height: auto; flex: 1 !important; display: flex; flex-direction: column; overflow: hidden !important; }
         }
+
+        /* ── MOBILE GAMER UI ── */
+        @media (min-width: 769px) { .gm-mobile-only { display: none !important; } }
+        @media (max-width: 768px) { .gm-desktop-only { display: none !important; } }
+        .gm-mobile-canvas { display: flex; flex-direction: column; min-height: 100dvh; background: #040212; position: relative; font-family: 'Space Grotesk','Rajdhani',system-ui,sans-serif; }
+        .gm-mobile-nav { height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: rgba(4,2,18,0.95); border-bottom: 2px solid rgba(0,245,212,0.3); flex-shrink: 0; position: relative; z-index: 10; }
+        .gm-mobile-scroll { flex: 1; overflow-y: auto; padding: 14px 14px 90px; -webkit-overflow-scrolling: touch; }
+        .gm-mobile-scroll::-webkit-scrollbar { display: none; }
+        .gm-tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 68px; background: rgba(4,2,18,0.98); border-top: 2px solid rgba(0,245,212,0.2); display: flex; align-items: center; justify-content: space-around; z-index: 999; backdrop-filter: blur(20px); }
+        .gm-tab-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; flex: 1; padding: 6px 4px; background: none; border: none; cursor: pointer; color: rgba(0,245,212,0.3); font-family: 'Orbitron',monospace; font-size: 7px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s; -webkit-tap-highlight-color: transparent; }
+        .gm-tab-btn.gm-tab-active { color: #00f5d4; text-shadow: 0 0 8px #00f5d4; }
       `}</style>
 
 
@@ -1568,6 +1710,41 @@ export default function OrbitGrind({ children }) {
                 </div>
               </div>
 
+              {/* ── SQUAD NODES (Circular Orbits) ── */}
+              <div style={{ 
+                display: 'flex', 
+                gap: 16, 
+                overflowX: 'auto', 
+                paddingBottom: 16, 
+                marginBottom: 4, 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                position: 'relative',
+                zIndex: 5
+              }} className="gamer-no-scrollbar">
+                <style>{`.gamer-no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+                {users.map(u => (
+                  <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                    <div style={{ width: 58, height: 58, borderRadius: '50%', border: `2.5px solid #00f5d4`, padding: 2, background: 'rgba(0,0,0,0.6)', boxShadow: `0 0 12px rgba(0,245,212,0.4)` }}>
+                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden' }}>
+                        <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 9, color: '#00f5d4', fontFamily: "'Share Tech Mono'", letterSpacing: '0.1em', fontWeight: 800 }}>{u.username.toUpperCase()}</span>
+                  </div>
+                ))}
+                {nexuses.map(n => (
+                  <div key={n._id} onClick={() => { setSelectedNexus(n); setSelectedUser(null); navigate(`/nexus/${n._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                    <div style={{ width: 58, height: 58, borderRadius: '50%', border: `2.5px solid #ff2d78`, padding: 2, background: 'rgba(0,0,0,0.6)', boxShadow: `0 0 12px rgba(255,45,120,0.4)` }}>
+                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#ff2d78', fontFamily: "'Orbitron', monospace", fontWeight: '900' }}>
+                        {n.name[0].toUpperCase()}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 9, color: '#ff2d78', fontFamily: "'Share Tech Mono'", letterSpacing: '0.1em', fontWeight: 800 }}>{n.name.toUpperCase()}</span>
+                  </div>
+                ))}
+              </div>
+
               {/* 2×2 Grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, flex: 1, position: "relative", zIndex: 2 }}>
                 <div ref={c0} style={{ height: "100%" }}><AudioCard /></div>
@@ -1580,6 +1757,7 @@ export default function OrbitGrind({ children }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -1609,9 +1787,15 @@ export function GamerSettings({
   isDirty, handleSave, handleReset, authUser
 }) {
   const [focusedTheme, setFocusedTheme] = useState(draftTheme);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
 
   return (
-    <OrbitGrind>
+    <div style={{ width: "100%", height: "100%", background: "#040212", position: "relative", overflow: "hidden" }}>
+      <style>{`
+        @keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(200%);}}
+      `}</style>
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 50%,rgba(80,0,120,0.55) 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,rgba(0,60,120,0.45) 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,rgba(0,80,60,0.35) 0%,transparent 40%)", pointerEvents: "none" }} />
       <div style={{ display: "flex", gap: 20, height: "100%" }}>
         {/* Sidebar for Settings */}
         <NeonCard color="#00cfff" style={{ width: 280, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1621,8 +1805,9 @@ export function GamerSettings({
             { id: "appearance", label: "VISUALS", icon: "🎨" },
             { id: "notifications", label: "ALERTS", icon: "🔔" },
             { id: "orbit", label: "ENGINE", icon: "🪐" },
+            { id: "security", label: "CORE_CIPHER", icon: "🛡️" },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveSection(tab.id)} style={{ width: "100%", textAlign: "left", padding: "16px 20px", background: activeSection === tab.id ? "rgba(0,207,255,0.15)" : "transparent", border: "1px solid", borderColor: activeSection === tab.id ? "#00cfff" : "transparent", borderRadius: 8, color: activeSection === tab.id ? "#fff" : "rgba(0,207,255,0.6)", fontFamily: "'Orbitron', monospace", fontSize: 13, letterSpacing: "0.15em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 14 }}>
+            <button key={tab.id} onClick={() => setActiveSection(activeSection === tab.id ? null : tab.id)} style={{ width: "100%", textAlign: "left", padding: "16px 20px", background: activeSection === tab.id ? "rgba(0,207,255,0.15)" : "transparent", border: "1px solid", borderColor: activeSection === tab.id ? "#00cfff" : "transparent", borderRadius: 8, color: activeSection === tab.id ? "#fff" : "rgba(0,207,255,0.6)", fontFamily: "'Orbitron', monospace", fontSize: 13, letterSpacing: "0.15em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 14 }}>
               <span style={{ fontSize: 18 }}>{tab.icon}</span> {tab.label}
             </button>
           ))}
@@ -1633,6 +1818,7 @@ export function GamerSettings({
         </NeonCard>
 
         {/* Content Area */}
+        {activeSection && (
         <NeonCard color="#00cfff" style={{ flex: 1, padding: 32, overflowY: "auto" }}>
           <h2 style={{ fontSize: 24, fontWeight: 900, color: "#00cfff", fontFamily: "'Orbitron',monospace", marginBottom: 24, textShadow: "0 0 10px #00cfff", letterSpacing: "0.15em" }}>SYSTEM_PREFERENCES // {activeSection.toUpperCase()}</h2>
 
@@ -1641,6 +1827,7 @@ export function GamerSettings({
               {THEMES.map(t => {
                 const isSelected = focusedTheme === t;
                 const isApplied = draftTheme === t;
+                const isComingSoon = isMobile && t !== "light";
 
                 // Fixed preview colors for each theme
                 let previewPrimary = "#ff2d78"; // default (gamer pink)
@@ -1654,7 +1841,20 @@ export function GamerSettings({
                 else if (t === "amoled-dark") { previewPrimary = "#E8C990"; previewBg = "#000000"; }
 
                 return (
-                  <div key={t} onClick={() => setFocusedTheme(t)} style={{ padding: 16, borderRadius: 12, border: isSelected ? "2px solid #00f5d4" : "1px solid rgba(255,255,255,0.1)", background: isSelected ? "rgba(0,245,212,0.1)" : "rgba(255,255,255,0.03)", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", transition: "all 0.2s" }}>
+                  <div key={t} onClick={() => { if (!isComingSoon) setFocusedTheme(t); }} style={{ padding: 16, borderRadius: 12, border: isSelected ? "2px solid #00f5d4" : "1px solid rgba(255,255,255,0.1)", background: isSelected ? "rgba(0,245,212,0.1)" : "rgba(255,255,255,0.03)", display: "flex", flexDirection: "column", gap: 12, cursor: isComingSoon ? "not-allowed" : "pointer", transition: "all 0.2s", position: "relative", opacity: isComingSoon ? 0.7 : 1 }}>
+                    {isComingSoon && (
+                      <div style={{
+                        position: "absolute", inset: 0, zIndex: 10,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(1px)", borderRadius: 12
+                      }}>
+                        <div style={{
+                          background: "#00f5d4", color: "#000",
+                          fontSize: 8, fontWeight: 900, padding: "2px 6px", borderRadius: 4,
+                          letterSpacing: 1, boxShadow: "0 0 10px #00f5d4"
+                        }}>COMING SOON</div>
+                      </div>
+                    )}
                     <div style={{ width: "100%", height: 40, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: previewBg, display: "flex", overflow: "hidden" }}>
                       <div style={{ flex: 1, background: previewPrimary }} />
                       <div style={{ flex: 1, background: previewBg }} />
@@ -1662,7 +1862,7 @@ export function GamerSettings({
                     <div style={{ textAlign: "center" }}>
                       <div style={{ fontSize: 10, color: isSelected ? "#00f5d4" : "rgba(255,255,255,0.5)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{THEME_LABELS[t] || t.toUpperCase()}</div>
                       {isSelected && !isApplied && (
-                        <button onClick={(e) => { e.stopPropagation(); setDraftTheme(t); }} style={{ marginTop: 8, padding: "6px 10px", width: "100%", background: "#00f5d4", border: "none", color: "#000", fontSize: 9, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: "0 0 8px rgba(0,245,212,0.5)" }}>
+                        <button onClick={(e) => { if (isComingSoon) return; e.stopPropagation(); setDraftTheme(t); handleSave(t); }} style={{ marginTop: 8, padding: "6px 10px", width: "100%", background: "#00f5d4", border: "none", color: "#000", fontSize: 9, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: "0 0 8px rgba(0,245,212,0.5)" }}>
                           DEPLOY THEME
                         </button>
                       )}
@@ -1745,21 +1945,38 @@ export function GamerSettings({
               </div>
             </div>
           )}
-
+          {activeSection === "security" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              <div style={{ background: "rgba(255,255,255,0.02)", padding: 24, borderRadius: 16, border: "1px solid rgba(0,245,212,0.15)" }}>
+                <SecurityExplanation isDark={true} />
+              </div>
+              
+              <div style={{ background: "rgba(255,255,255,0.01)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", fontFamily: "'Rajdhani', monospace", lineHeight: 1.6, margin: 0 }}>
+                  High-performance encryption is the core of the Orbit engine. Your messages are hardened via X3DH and Double Ratchet protocols.
+                </p>
+              </div>
+            </div>
+          )}
         </NeonCard>
+        )}
       </div>
-    </OrbitGrind>
+    </div>
   );
 }
 
 export function GamerProfile() {
   const authUser = useAuthStore(s => s.authUser);
   return (
-    <OrbitGrind>
+    <div style={{ width: "100%", height: "100%", background: "#040212", position: "relative", overflow: "hidden" }}>
+      <style>{`
+        @keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(200%);}}
+      `}</style>
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 50%,rgba(80,0,120,0.55) 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,rgba(0,60,120,0.45) 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,rgba(0,80,60,0.35) 0%,transparent 40%)", pointerEvents: "none" }} />
       <div style={{ display: "flex", gap: 20, height: "100%" }}>
         <NeonCard color="#ff2d78" style={{ width: 300, padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           <div style={{ width: 120, height: 120, borderRadius: "50%", border: "2px solid #ff2d78", overflow: "hidden", boxShadow: "0 0 20px rgba(255,45,120,0.5)" }}>
-            <img src={authUser?.profilePic || "https://api.dicebear.com/7.x/avataaars/svg?seed=Gamer"} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
+            <img loading="lazy" decoding="async" src={authUser?.profilePic || "https://api.dicebear.com/7.x/avataaars/svg?seed=Gamer"} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
           </div>
           <div style={{ textAlign: "center" }}>
             <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", fontFamily: "'Orbitron',monospace", letterSpacing: "0.1em" }}>{authUser?.username || "GUEST_USER"}</h2>
@@ -1781,12 +1998,12 @@ export function GamerProfile() {
           </div>
         </NeonCard>
       </div>
-    </OrbitGrind>
+    </div>
   );
 }
 
 export function GamerSpotify() {
-  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore();
+  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore(useShallow(state => ({ spotifyLinked: state.spotifyLinked, currentTrack: state.currentTrack, isPlaying: state.isPlaying, pausePlayback: state.pausePlayback, playTrack: state.playTrack })));
   const [playing, setPlaying] = useState(isPlaying || true);
 
   useEffect(() => {
@@ -1794,7 +2011,11 @@ export function GamerSpotify() {
   }, [isPlaying]);
 
   return (
-    <OrbitGrind>
+    <div style={{ width: "100%", height: "100%", background: "#040212", position: "relative", overflow: "hidden" }}>
+      <style>{`
+        @keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(200%);}}
+      `}</style>
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 50%,rgba(80,0,120,0.55) 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,rgba(0,60,120,0.45) 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,rgba(0,80,60,0.35) 0%,transparent 40%)", pointerEvents: "none" }} />
       <NeonCard color="#1DB954" style={{ flex: 1, padding: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 30 }}>
         <h2 style={{ fontSize: 32, fontWeight: 900, color: "#1DB954", fontFamily: "'Orbitron',monospace", textShadow: "0 0 20px rgba(29,185,84,0.5)", letterSpacing: "0.15em" }}>SPOTIFY SYNC</h2>
 
@@ -1821,7 +2042,7 @@ export function GamerSpotify() {
             <div style={{ width: 240, height: 240, borderRadius: 16, border: "2px solid #1DB954", overflow: "hidden", boxShadow: "0 0 40px rgba(29,185,84,0.3)", position: "relative" }}>
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(29,185,84,0.2),transparent)" }} />
               {currentTrack ? (
-                <img src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Album Art" />
+                <img loading="lazy" decoding="async" src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Album Art" />
               ) : (
                 <svg width="240" height="240" viewBox="0 0 52 52"><rect width="52" height="52" fill="#1a1a1a" /><rect x="0" y="8" width="52" height="16" fill="rgba(29,185,84,0.3)" /><rect x="0" y="30" width="52" height="12" fill="rgba(29,185,84,0.2)" /><line x1="13" y1="0" x2="13" y2="52" stroke="rgba(255,255,255,0.1)" strokeWidth="1" /><line x1="30" y1="0" x2="30" y2="52" stroke="rgba(255,255,255,0.05)" strokeWidth="1" /></svg>
               )}
@@ -1853,6 +2074,6 @@ export function GamerSpotify() {
           </>
         )}
       </NeonCard>
-    </OrbitGrind>
+      </div>
   );
 }

@@ -7,8 +7,12 @@
     <title>Orbit</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Optimized Font Payload: Only 400 (Regular) and 700 (Bold) to slash CSS bandwidth by 60% -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:wght@400;700&family=Orbitron:wght@400;700&family=Rajdhani:wght@400;700&family=Share+Tech+Mono&family=Nunito:wght@400;700&family=Playfair+Display:wght@400;700&family=Quicksand:wght@400;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet" />
+    <!-- FIX 12: Optimized Font Payload - Removed unused fonts, added preconnect -->
+    <!-- Removed: Cinzel, Cinzel Decorative, Cormorant Garamond, DM Mono, Quicksand -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Orbitron:wght@400;700&family=Rajdhani:wght@400;700&family=Share+Tech+Mono&family=Nunito:wght@400;700&family=Playfair+Display:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+    
+    <!-- FIX 20: Preload critical React app entrypoint so network fetch begins before HTML parsing finishes -->
+    <link rel="preload" href="/src/main.jsx" as="script" type="module" crossorigin="anonymous" />
   </head>
   <body>
     <div id="root"></div>

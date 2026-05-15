@@ -6,7 +6,7 @@ import { applyTheme, initTheme } from "../lib/themeSwitcher";
 const getInitialTheme = () =>
   initTheme({
     allowedThemes: THEMES,
-    defaultTheme: "dark",
+    defaultTheme: "light",
   });
 
 export const useThemeStore = create((set, get) => ({
@@ -27,7 +27,7 @@ export const useThemeStore = create((set, get) => ({
         (newTheme) => {
           let validTheme = newTheme;
           if (!newTheme || !THEMES.includes(newTheme)) {
-            validTheme = "dark"; // Fallback to a known valid theme
+            validTheme = "light"; // Fallback to a known valid theme
           }
           
           if (typeof window !== "undefined") {
@@ -45,7 +45,7 @@ export const useThemeStore = create((set, get) => ({
     set((state) => {
       let validTheme = newTheme;
       if (!newTheme || !THEMES.includes(newTheme)) {
-        validTheme = "dark";
+        validTheme = "light";
       }
 
       if (typeof window !== "undefined") {

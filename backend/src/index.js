@@ -21,6 +21,8 @@ import spotifySessionRoutes from "./routes/spotifySession.route.js";
 import starweaveRoutes from "./routes/starweave.route.js";
 import adminRoutes from "./routes/admin.route.js";
 import configRoutes from "./routes/config.route.js";
+import prekeyRoutes from "./routes/prekey.route.js";
+import deviceRoutes from "./routes/device.route.js";
 import { connectDB } from "./lib/db.js";
 import { initializeConfig } from "./lib/config.init.js";
 import { initializeSocketIO } from "./socket/socket.js";
@@ -87,7 +89,25 @@ const allowedOrigins = process.env.FRONTEND_URL
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(compression());
 app.use(requestLogger);
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'", 
+        process.env.NODE_ENV === "production" ? "'strict-dynamic'" : "'unsafe-inline'",
+        process.env.NODE_ENV === "production" ? "" : "'unsafe-eval'",
+      ].filter(Boolean),
+      workerSrc: ["'self'", "blob:"],
+      childSrc: ["'self'", "blob:"],
+      connectSrc: ["'self'", "wss:", "ws:", "https:", "http:"],
+      imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com"],
+      mediaSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com"],
+      "require-trusted-types-for": ["'script'"],
+    }
+  }
+}));
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -137,8 +157,10 @@ app.use("/api/spotify/session", spotifySessionRoutes);
 app.use("/api/starweave", starweaveRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/config", configRoutes);
+app.use("/api/prekeys", prekeyRoutes);
+app.use("/api/devices", deviceRoutes);
 app.get("/", (req, res) => {
-  res.json({ message: "Orbit API is running", version: "1.0.0" });
+  res.json({ message: "Orbit API is running", version: "1.0.0", security: "zero-trust-v3" });
 });
 
 app.get("/health", async (req, res) => {
@@ -202,9 +224,9 @@ const io = new Server(httpServer, {
     credentials: true,
     methods: ["GET", "POST"]
   },
-  // Render free-tier does not support WS upgrades. Force polling-only.
-  transports: ["polling"],
-  allowUpgrades: false,
+  // Render free-tier does not support WS upgrades. Force polling-only in production.
+  transports: process.env.NODE_ENV === "production" ? ["polling"] : ["websocket", "polling"],
+  allowUpgrades: process.env.NODE_ENV !== "production",
   pingInterval: 5000, 
   pingTimeout: 2500,
 });

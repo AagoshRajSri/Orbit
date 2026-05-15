@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { axiosInstance } from "../lib/axios.jsx";
 import toast from "../lib/toast";
+import { storeKeyPair, clearKeyPair, exportPublicKeyForServer, hasKeyPair } from "../lib/keyStore";
 
 export const useAuthStore = create(
   persist(
@@ -16,18 +17,140 @@ export const useAuthStore = create(
       sessionId: null,
       socketToken: null,
       appConfig: null,
-      e2eeKeys: null, // { publicKey, privateKey } base64
+      // Only the base64 public key is kept in state (for sharing with contacts).
+      // The private key lives exclusively in IndexedDB as a non-extractable CryptoKey.
+      e2eePublicKey: null, // base64 SPKI public key — safe to share
 
       initE2EE: async () => {
+        const userId = get().authUser?._id?.toString();
+        if (!userId) return;
+
         try {
-          const { generateKeyPair } = await import("../lib/e2ee.js");
-          const keys = await generateKeyPair();
-          set({ e2eeKeys: keys });
-          // Upload public key to backend
-          await axiosInstance.put("/auth/update-public-key", { publicKey: keys.publicKey });
-          return keys;
+          const { generateKeyPair, exportPublicKey } = await import("../lib/e2ee.js");
+          const {
+            generateSigningKeyPair,
+            generatePrekeyBundle,
+            exportSigningPublicKey,
+          } = await import("../lib/x3dh.js");
+          const {
+            storeSigningKeyPair,
+            storeSignedPrekey,
+            storeOneTimePrekey,
+          } = await import("../lib/sessionStore.js");
+
+          // ── 1. Identity key (ECDH) ──────────────────────────────────────────
+          const alreadyHasKey = await hasKeyPair(userId);
+          let identityKeyB64 = get().e2eePublicKey;
+
+          if (!alreadyHasKey) {
+            const identityKeyPair = await generateKeyPair();
+            await storeKeyPair(userId, identityKeyPair);
+            identityKeyB64 = await exportPublicKey(identityKeyPair.publicKey);
+            set({ e2eePublicKey: identityKeyB64 });
+          } else if (!identityKeyB64) {
+            identityKeyB64 = await exportPublicKeyForServer(userId);
+            if (identityKeyB64) set({ e2eePublicKey: identityKeyB64 });
+          }
+
+          if (!identityKeyB64) {
+            throw new Error("[E2EE] Could not obtain identity public key");
+          }
+
+          // ── 2. Signing key (ECDSA) ──────────────────────────────────────
+          const signingKP = await generateSigningKeyPair();
+          const signingKeyB64 = await exportSigningPublicKey(signingKP.publicKey);
+          await storeSigningKeyPair(userId, signingKP.privateKey, signingKeyB64);
+
+          // ── 3. Signed prekey + OPKs ───────────────────────────────────
+          const { getKeyPair } = await import("../lib/keyStore.js");
+          const identityKP = await getKeyPair(userId);
+          if (!identityKP) throw new Error("[E2EE] Identity key pair not in store");
+
+          const { bundle, privateKeys } = await generatePrekeyBundle(
+            identityKP.privateKey,
+            signingKP.privateKey,
+            10
+          );
+
+          // Store SPK private key
+          await storeSignedPrekey(userId, privateKeys.signedPrekeyPrivate, bundle.signedPrekey);
+
+          // Store OPK private keys
+          for (const [opkId, opkPriv] of Object.entries(privateKeys.oneTimePrekeyPrivates)) {
+            await storeOneTimePrekey(userId, opkId, opkPriv);
+          }
+
+          // ── 4. Publish bundle to server ───────────────────────────────────────────────
+          await axiosInstance.post("/prekeys/bundle", {
+            identityKey:    identityKeyB64,
+            signingKey:     signingKeyB64,
+            signedPrekey:   bundle.signedPrekey,
+            spkSignature:   bundle.spkSignature,
+            oneTimePrekeys: bundle.oneTimePrekeys,
+          });
+
+          // Also keep User.publicKey in sync (backward compat)
+          await axiosInstance.put("/auth/update-public-key", { publicKey: identityKeyB64 });
+
+          console.log("[E2EE] Prekey bundle published ✓");
+
+          // ── Phase 3: Device Registration (non-blocking) ──────────────────────────
+          ;(async () => {
+            try {
+              const { createDeviceAttestation, getOrCreateDeviceIdentity } =
+                await import("../lib/deviceFingerprint.js");
+              const { deviceId, devicePublicKey, deviceName } = await getOrCreateDeviceIdentity();
+              const { timestamp, attestation } = await createDeviceAttestation(userId);
+              await axiosInstance.post("/devices/register", {
+                deviceId, devicePublicKey, deviceName, timestamp, attestation
+              });
+              console.log("[Phase 3] Device registered ✓", deviceName);
+            } catch (devErr) {
+              console.warn("[Phase 3] Device registration failed (non-fatal):", devErr.message);
+            }
+          })();
+
+          // ── Phase 4: Hybrid KEM bundle (Post-Quantum, non-blocking) ───────────
+          ;(async () => {
+            try {
+              const { generateHybridKeyBundle, isPostQuantumAvailable } =
+                await import("../lib/hybridKem.js");
+              const { storeKeyPair: storeHybridKP } = await import("../lib/keyStore.js");
+
+              const pqAvailable = await isPostQuantumAvailable();
+              const hybridBundle = await generateHybridKeyBundle();
+
+              // Publish the hybrid public keys to the prekey server
+              // The backend stores these alongside the classical X3DH bundle
+              await axiosInstance.post("/prekeys/hybrid-bundle", {
+                classicalPublicKey: hybridBundle.classicalPublicKey,
+                kyberPublicKey:     hybridBundle.kyberPublicKey,
+                algorithm:          hybridBundle.algorithm,
+              }).catch(() => {}); // Best-effort — endpoint may not exist yet
+
+              console.log(`[Phase 4] Hybrid KEM bundle published ✓ (${pqAvailable ? 'PQ+Classical' : 'Classical only'})`);
+            } catch (pqErr) {
+              console.warn("[Phase 4] Hybrid KEM init failed (non-fatal):", pqErr.message);
+            }
+          })();
+
         } catch (error) {
-          console.error("Failed to init E2EE keys", error);
+          console.error("[E2EE] Failed to initialize prekey bundle:", error);
+        }
+      },
+
+      /** Check OPK count and replenish if below watermark */
+      checkAndReplenishPrekeys: async () => {
+        const userId = get().authUser?._id?.toString();
+        if (!userId) return;
+        try {
+          const res = await axiosInstance.get("/prekeys/status");
+          if (!res.data.hasBundle || res.data.lowWaterMark) {
+            console.log("[E2EE] Low OPK count — replenishing prekeys...");
+            await get().initE2EE();
+          }
+        } catch (e) {
+          console.error("[E2EE] Prekey status check failed:", e);
         }
       },
 
@@ -53,9 +176,8 @@ export const useAuthStore = create(
             }).catch(console.error);
           }
 
-          if (!get().e2eeKeys) {
-            get().initE2EE();
-          }
+          // Ensure E2EE prekey bundle is initialized/replenished (non-blocking)
+          get().checkAndReplenishPrekeys().catch(console.error);
         } catch (error) {
           console.error("[checkAuth] Server error status:", error.response?.status);
           console.error("[checkAuth] Server error details:", error.response?.data);
@@ -91,7 +213,17 @@ export const useAuthStore = create(
           const { authToken, sessionId } = res.data.data;
            set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
           get().refreshSocketToken();
-          get().initE2EE(); // Force new keys on signup
+          // Force-generate fresh E2EE keys for new account (after userId is set)
+          setTimeout(() => get().initE2EE().catch(console.error), 0);
+
+          // Set default theme to light for new users
+          try {
+            const { useThemeStore } = await import("./useThemeStore");
+            useThemeStore.getState().setTheme("light");
+          } catch (e) {
+            console.error("Failed to set default theme on signup:", e);
+          }
+
           toast.success("Account created successfully!");
           return { success: true, email: data.email };
         } catch (error) {
@@ -116,7 +248,7 @@ export const useAuthStore = create(
             sessionId 
           });
           get().refreshSocketToken();
-          if (!get().e2eeKeys) get().initE2EE();
+          get().initE2EE().catch(console.error);
           toast.success("Logged in successfully");
           return { success: true };
         } catch (error) {
@@ -165,6 +297,15 @@ export const useAuthStore = create(
             sessionId 
           });
           get().refreshSocketToken();
+          
+          // Set default theme to light for new users
+          try {
+            const { useThemeStore } = await import("./useThemeStore");
+            useThemeStore.getState().setTheme("light");
+          } catch (e) {
+            console.error("Failed to set default theme on constellation signup:", e);
+          }
+
           toast.success("Constellation identity sealed ✦");
           return true;
         } catch (error) {
@@ -212,13 +353,29 @@ export const useAuthStore = create(
       },
 
       logout: async () => {
+        const userId = get().authUser?._id?.toString();
         try {
           await axiosInstance.post("/auth/logout");
         } catch (error) {
           console.warn("Server logout failed, forcing local session clear.");
         } finally {
-          set({ authUser: null, sessionId: null, socketToken: null });
-          get().refreshSocketToken(); // This will effectively disconnect and clear the socket singleton
+          // Clear all crypto material from IndexedDB
+          if (userId) {
+            const { clearAllSessions, clearPrekeys } = await import("../lib/sessionStore.js").catch(() => ({}));
+            const { clearAllNexusSenderKeys } = await import("../lib/nexusKeyStore.js").catch(() => ({}));
+            const { clearDeviceIdentity } = await import("../lib/deviceFingerprint.js").catch(() => ({}));
+            const { resetSealedSender } = await import("../lib/sealedSender.js").catch(() => ({}));
+            await Promise.allSettled([
+              clearKeyPair(userId),
+              clearAllSessions?.(),
+              clearPrekeys?.(userId),
+              clearAllNexusSenderKeys?.(),
+              clearDeviceIdentity?.(),
+            ]);
+            resetSealedSender?.();
+          }
+          set({ authUser: null, sessionId: null, socketToken: null, e2eePublicKey: null });
+          get().refreshSocketToken();
         }
       },
 
@@ -297,6 +454,8 @@ export const useAuthStore = create(
       partialize: (state) => ({
         authUser: state.authUser,
         sessionId: state.sessionId,
+        socketToken: state.socketToken,
+        e2eePublicKey: state.e2eePublicKey, // safe: only public key
       }),
     }
   )

@@ -302,7 +302,7 @@ export function TruePastelSpotifyCard({ cardRef, onClick }) {
       <div style={{ display:"flex", alignItems:"center", gap:16 }}>
         <div style={{ width:72, height:72, borderRadius:16, flexShrink:0, overflow:"hidden", boxShadow:"0 5px 15px rgba(255,100,180,0.3)", border:"3px solid white" }}>
           {currentTrack?.imageUrl ? (
-            <img src={currentTrack.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+            <img loading="lazy" decoding="async" src={currentTrack.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-pink-300 to-purple-400 flex items-center justify-center relative">
               <span style={{fontSize: 32, animation: "float 2s ease-in-out infinite"}}>🎵</span>

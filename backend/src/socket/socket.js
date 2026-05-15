@@ -128,6 +128,9 @@ export const initializeSocketIO = (io) => {
       next();
     } catch (error) {
       console.error("Orbit Secure Handshake Failed:", error.message);
+      if (error.name === "TokenExpiredError") {
+        return next(new Error("Orbit Shield: Token expired"));
+      }
       next(new Error("Orbit Shield: Authentication rejected"));
     }
   });

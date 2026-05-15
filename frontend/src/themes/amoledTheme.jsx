@@ -1,7 +1,9 @@
 import { useState, useEffect, memo, useMemo, useRef } from "react";
 import UniversalChatContainer from "../components/chat/UniversalChatContainer";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "../store/useAuthStore";
+import SecurityExplanation from "../components/settings/SecurityExplanation";
 import toast from "../lib/toast";
 import { THEMES, THEME_LABELS } from "../constants";
 import { useSpotifyStore } from "../store/useSpotifyStore";
@@ -338,7 +340,7 @@ const SpotifyCard = memo(() => {
         <div style={{ display: "flex", gap: 24, alignItems: "center", flex: 1 }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
             {currentTrack?.imageUrl ? (
-              <img src={currentTrack.imageUrl} alt="" style={{ width: 80, height: 80, borderRadius: 16, border: `1.5px solid ${hov ? "#4ECDC4" : "rgba(198,160,110,.4)"}`, objectFit: "cover" }} />
+              <img loading="lazy" decoding="async" src={currentTrack.imageUrl} alt="" style={{ width: 80, height: 80, borderRadius: 16, border: `1.5px solid ${hov ? "#4ECDC4" : "rgba(198,160,110,.4)"}`, objectFit: "cover" }} />
             ) : (
               <div style={{ width: 80, height: 80, borderRadius: 16, background: "linear-gradient(135deg,#4ECDC4,#121212)", border: `1.5px solid ${hov ? "#4ECDC4" : "rgba(198,160,110,.4)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, animation: "oa-float 4s ease-in-out infinite", transition: "all .4s" }}>🎵</div>
             )}
@@ -534,7 +536,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
                   <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
                     <div style={{ width: 24, height: 24, borderRadius: "50%", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                       {n.avatar ? (
-                        <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img loading="lazy" decoding="async" src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         (() => {
                           const ANIMALS = ['dog', 'cat', 'bunny'];
@@ -648,7 +650,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
                 >
                   <div style={{ width: 38, height: 38, borderRadius: "50%", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, overflow: "hidden" }}>
                     {u.profilePic ? (
-                      <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img loading="lazy" decoding="async" src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       (() => {
                         const ANIMALS = ['dog', 'cat', 'bunny'];
@@ -825,14 +827,59 @@ const TopBar = memo(({ logout, hiddenNexuses, onReveal }) => {
 TopBar.displayName = "TopBar";
 
 /* ─────────────────────────────── MAIN EXPORT ────────────────────────────── */
+/* ── MOBILE NAV (amoled) ── */
+const MobileAmoledNav = memo(() => {
+  const navigate = useNavigate();
+  const { authUser } = useAuthStore(useShallow(state => ({ authUser: state.authUser })));
+  return (
+    <div style={{ height:56, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 18px', background:'#000', borderBottom:'1px solid rgba(198,160,110,.2)', position:'relative', zIndex:10 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }} onClick={() => navigate('/')}>
+        <div style={{ width:28, height:28, borderRadius:'50%', border:'1.5px solid #C6A06E', display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(198,160,110,.05)' }}>
+           <span style={{ fontSize:14 }}>💎</span>
+        </div>
+        <span className="oa-orbitron" style={{ fontSize:14, fontWeight:900, color:'#C6A06E', letterSpacing:3 }}>ORBIT</span>
+      </div>
+      <div style={{ display:'flex', alignItems:'center', gap:15 }}>
+        <div onClick={() => navigate('/settings')} style={{ fontSize:18, color:'rgba(198,160,110,.6)' }}>⚙</div>
+        <div onClick={() => navigate('/profile')} style={{ width:32, height:32, borderRadius:'50%', border:'1px solid rgba(198,160,110,.3)', overflow:'hidden' }}>
+          <img loading="lazy" decoding="async" src={authUser?.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${authUser?.username}`} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+/* ── MOBILE TAB BAR (amoled) ── */
+const MobileAmoledTabBar = memo(({ activeTab }) => {
+  const navigate = useNavigate();
+  const TABS = [
+    { id:'orbits', icon:'◈', label:'VOID', path:'/' },
+    { id:'contacts', icon:'◉', label:'NEURAL', path:'/?tab=contacts' },
+    { id:'spotify', icon:'🎵', label:'AUDIO', path:'/spotify' },
+    { id:'profile', icon:'◐', label:'CORE', path:'/profile' },
+  ];
+  return (
+    <div style={{ position:'fixed', bottom:0, left:0, right:0, height:72, background:'#000', borderTop:'1px solid rgba(198,160,110,.15)', display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:1000, paddingBottom:'env(safe-area-inset-bottom)' }}>
+      {TABS.map(t => (
+        <button key={t.id} onClick={() => navigate(t.path)} style={{ background:'none', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:4, color: activeTab === t.id ? '#C6A06E' : 'rgba(198,160,110,.35)', cursor:'pointer', transition:'all .3s' }}>
+          <span style={{ fontSize:22, transform: activeTab === t.id ? 'translateY(-2px)' : 'none', textShadow: activeTab === t.id ? '0 0 10px rgba(198,160,110,.5)' : 'none' }}>{t.icon}</span>
+          <span className="oa-mono" style={{ fontSize:8, letterSpacing:2, fontWeight: activeTab === t.id ? 900 : 400 }}>{t.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+});
+
+/* ─────────────────────────────── MAIN EXPORT ────────────────────────────── */
 export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
   const [activeTab, setActiveTab] = useState("orbits");
   const [mounted, setMounted] = useState(false);
+  const heroRef = useRef(null);
   const navigate = useNavigate();
-  const { logout } = useAuthStore();
-  const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
+  const { logout } = useAuthStore(useShallow(state => ({ logout: state.logout })));
+  const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore(useShallow(state => ({ nexusActionView: state.nexusActionView, setNexusActionView: state.setNexusActionView, nexuses: state.nexuses, setSelectedNexus: state.setSelectedNexus, isNexusesLoading: state.isNexusesLoading, nexusUnread: state.nexusUnread, selectedNexus: state.selectedNexus, selectedNexusId: state.selectedNexusId })));
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
-  const { users, selectedUser, setSelectedUser } = useChatStore();
+  const { users, selectedUser, setSelectedUser } = useChatStore(useShallow(state => ({ users: state.users, selectedUser: state.selectedUser, setSelectedUser: state.setSelectedUser })));
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -877,12 +924,79 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
     transition: `all .6s ease ${delay}s`,
   });
 
+  const location = useLocation();
+  const currentTab = new URLSearchParams(location.search).get('tab') || 'orbits';
+  const isMobileChat = nexusSelected || !!selectedUser || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/');
+
   return (
     <>
+    {/* ── MOBILE CANVAS ── */}
+    <div className="oa-mobile-canvas oa-mobile-only">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <StarField count={20} />
+      {(isMobileChat || children) ? (
+        <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100dvh' }}>
+          <div className="amoled-chat-env" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:'#000' }}>
+            {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
+          </div>
+        </div>
+      ) : (
+        <>
+          <MobileAmoledNav />
+          <div className="oa-mobile-scroll">
+            {/* orbital rings */}
+            <div style={{ display:'flex', gap:18, overflowX:'auto', paddingBottom:16, marginLeft:-16, marginRight:-16, paddingLeft:16, paddingRight:16, WebkitOverflowScrolling:'touch', scrollbarWidth:'none' }}>
+              {nexuses?.map(n => (
+                <div key={n._id} onClick={() => { setSelectedNexus(n); setSelectedUser(null); navigate(`/nexus/${n._id}`); }} style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer' }}>
+                  <div style={{ width:64, height:64, borderRadius:'50%', padding:2, background:'linear-gradient(135deg,#4ECDC4,#9B59B6)', boxShadow:'0 0 12px rgba(78,205,196,0.2)' }}>
+                    <div style={{ width:'100%', height:'100%', borderRadius:'50%', background:'#111', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, color:'#C6A06E', fontFamily:'Orbitron,sans-serif' }}>{n.name[0].toUpperCase()}</div>
+                  </div>
+                  <span className="oa-raj" style={{ fontSize:9, color:'rgba(78,205,196,0.7)', fontWeight:800, letterSpacing:1.5, textTransform:'uppercase', maxWidth:64, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{n.name}</span>
+                </div>
+              ))}
+              {users?.map(u => (
+                <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer' }}>
+                  <div style={{ width:64, height:64, borderRadius:'50%', padding:2, background:'linear-gradient(135deg,#C6A06E,#4ECDC4)', boxShadow:'0 0 12px rgba(198,160,110,0.2)' }}>
+                    <div style={{ width:'100%', height:'100%', borderRadius:'50%', background:'#000', overflow:'hidden' }}>
+                      <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} alt={u.username} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    </div>
+                  </div>
+                  <span className="oa-raj" style={{ fontSize:9, color:'rgba(198,160,110,0.7)', fontWeight:800, letterSpacing:1.5, textTransform:'uppercase', maxWidth:64, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{u.username}</span>
+                </div>
+              ))}
+            </div>
+            {/* status tag */}
+            <div className="oa-mono" style={{ display:'flex', alignItems:'center', gap:8, margin:'16px 0 12px', fontSize:9, color:'rgba(78,205,196,0.5)', letterSpacing:2 }}>
+              <div style={{ width:5, height:5, background:'#00FF88', borderRadius:'50%', boxShadow:'0 0 6px #00FF88' }} />
+              STATUS: ONLINE — GALAXY ENGINE ACTIVE
+            </div>
+            {/* cards */}
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div className="oa-card oa-bracket" style={{ padding:'16px 20px', cursor:'pointer' }} onClick={() => navigate('/spotify')}>
+                <div className="oa-scan" />
+                <div className="oa-orbitron" style={{ fontSize:10, color:'#4ECDC4', letterSpacing:2, marginBottom:6 }}>🎵 AUDIO STREAM</div>
+                <div className="oa-raj" style={{ fontSize:12, color:'rgba(198,160,110,0.55)' }}>Connect Spotify to share your listening orbit.</div>
+              </div>
+              <div className="oa-card oa-bracket" style={{ padding:'16px 20px', cursor:'pointer' }} onClick={() => navigate('/settings')}>
+                <div className="oa-orbitron" style={{ fontSize:10, color:'#9B59B6', letterSpacing:2, marginBottom:6 }}>⚙ ATELIER</div>
+                <div className="oa-raj" style={{ fontSize:12, color:'rgba(198,160,110,0.55)' }}>Fine-tune your workspace aesthetic and behavior.</div>
+              </div>
+              <div className="oa-card oa-bracket" style={{ padding:'16px 20px', opacity:0.6 }}>
+                <div className="oa-orbitron" style={{ fontSize:10, color:'#C6A06E', letterSpacing:2, marginBottom:6 }}>🎮 ORBIT GAMES 🔒</div>
+                <div className="oa-raj" style={{ fontSize:12, color:'rgba(198,160,110,0.45)' }}>Coming soon — a new way to play together.</div>
+              </div>
+            </div>
+          </div>
+          <MobileAmoledTabBar activeTab={currentTab} />
+        </>
+      )}
+    </div>
+    {/* ── DESKTOP CANVAS ── */}
+    <div className="oa-desktop-only">
+    <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-      {/* Root */}
-      <div className={`oa-app-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ width: "100%", height: "100vh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter','Rajdhani',sans-serif", position: "relative" }}>
+    {/* Root */}
+    <div className={`oa-app-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ width: "100%", height: "100vh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter','Rajdhani',sans-serif", position: "relative" }}>
 
         <TopBar logout={logout} hiddenNexuses={hiddenNexuses} onReveal={onReveal} />
 
@@ -934,13 +1048,49 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                 <div className="oa-nebula" style={{ width: 240, height: 240, background: "rgba(155,89,182,.03)", top: "8%", right: "38%", animationDelay: "-10s" }} />
 
                 {/* Header */}
-                <div style={{ marginBottom: 10, position: "relative", zIndex: 5, flexShrink: 0, ...fade(.1) }}>
+                <div ref={heroRef} style={{ marginBottom: 10, position: "relative", zIndex: 5, flexShrink: 0, ...fade(.1) }}>
                   <div className="oa-mono" style={{ fontSize: 10, color: "rgba(78,205,196,.65)", letterSpacing: 3, marginBottom: 4, display: "flex", alignItems: "center", gap: 9 }}>
                     <div style={{ width: 6, height: 6, background: "#00FF88", borderRadius: "50%", boxShadow: "0 0 8px #00FF88" }} />
                     STATUS: ONLINE — GALAXY ENGINE ACTIVE
                   </div>
                   <h1 className="oa-shimmer-text oa-orbitron" style={{ fontSize: 28, fontWeight: 900, letterSpacing: 5, marginBottom: 4 }}>WELCOME TO ORBIT</h1>
                   <p className="oa-raj" style={{ fontSize: 12, color: "rgba(198,160,110,.45)", letterSpacing: 3, margin: 0, textTransform: "uppercase" }}>SECURE ACCESS TERMINAL</p>
+                </div>
+                
+                {/* ── ORBITAL NODES (Horizontal Circles) ── */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: 20, 
+                  overflowX: 'auto', 
+                  paddingBottom: 20, 
+                  marginBottom: 10, 
+                  scrollbarWidth: 'none', 
+                  msOverflowStyle: 'none', 
+                  position: 'relative', 
+                  zIndex: 5, 
+                  ...fade(.15) 
+                }} className="oa-no-scrollbar">
+                  <style>{`.oa-no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+                  {users.map((u) => (
+                    <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0, transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                      <div style={{ width: 66, height: 66, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg, #C6A06E 0%, #4ECDC4 100%)', boxShadow: '0 0 15px rgba(198,160,110,.2)' }}>
+                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#000', overflow: 'hidden', border: '2px solid #000' }}>
+                          <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      </div>
+                      <span className="oa-raj" style={{ fontSize: 9, color: 'rgba(198,160,110,.7)', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase' }}>{u.username}</span>
+                    </div>
+                  ))}
+                  {nexuses.map((n) => (
+                    <div key={n._id} onClick={() => { setSelectedNexus(n); setSelectedUser(null); navigate(`/nexus/${n._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0, transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                      <div style={{ width: 66, height: 66, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg, #4ECDC4 0%, #9B59B6 100%)', boxShadow: '0 0 15px rgba(78,205,196,.2)' }}>
+                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#111', overflow: 'hidden', border: '2px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#C6A06E', fontFamily: 'Orbitron, sans-serif' }}>
+                          {n.name[0].toUpperCase()}
+                        </div>
+                      </div>
+                      <span className="oa-raj" style={{ fontSize: 9, color: 'rgba(78,205,196,.7)', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase' }}>{n.name}</span>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Cards grid — stretches to fill remaining space */}
@@ -1016,6 +1166,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
         {/* Fixed sparkle */}
         <div style={{ position: "fixed", bottom: 20, right: 22, fontSize: 22, color: "rgba(198,160,110,.45)", animation: "oa-float 3s ease-in-out infinite", filter: "drop-shadow(0 0 8px rgba(198,160,110,.4))", pointerEvents: "none" }}>✦</div>
       </div>
+    </div>
     </>
   );
 }
@@ -1047,8 +1198,12 @@ export function AmoledSettings({
   isDirty, handleSave, handleReset, authUser
 }) {
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
   return (
-    <OrbitApp>
+    <div style={{ width: "100%", height: "100%", background: "#000", position: "relative", overflow: "hidden", padding: "40px 20px" }}>
+      <style>{CSS}</style>
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 50%,#3d1a00 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,#1a0a00 0%,transparent 45%)", pointerEvents: "none" }} />
       <div style={{ maxWidth: 1000, margin: "0 auto", paddingBottom: 40 }}>
         <button onClick={() => navigate("/")} style={{ marginBottom: 20, background: "transparent", color: "rgba(198,160,110,.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'Share Tech Mono', monospace", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.6)"}>
           ← RETURN TO ORBIT
@@ -1095,13 +1250,14 @@ export function AmoledSettings({
               { id: "orbit", label: "ORBIT ENGINE", icon: "🪐" },
               { id: "security", label: "SECURITY", icon: "🔒" }
             ].map(tab => (
-              <button key={tab.id} onClick={() => setActiveSection(tab.id)} style={{ width: "100%", textAlign: "left", padding: "12px 14px", background: activeSection === tab.id ? "rgba(198,160,110,.1)" : "transparent", border: "none", borderLeft: activeSection === tab.id ? "2px solid #C6A06E" : "2px solid transparent", color: activeSection === tab.id ? "#C6A06E" : "rgba(198,160,110,.6)", fontFamily: "'Orbitron', sans-serif", fontSize: 11, letterSpacing: 1.5, cursor: "pointer", transition: "all .2s", display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
+              <button key={tab.id} onClick={() => setActiveSection(activeSection === tab.id ? null : tab.id)} style={{ width: "100%", textAlign: "left", padding: "12px 14px", background: activeSection === tab.id ? "rgba(198,160,110,.1)" : "transparent", border: "none", borderLeft: activeSection === tab.id ? "2px solid #C6A06E" : "2px solid transparent", color: activeSection === tab.id ? "#C6A06E" : "rgba(198,160,110,.6)", fontFamily: "'Orbitron', sans-serif", fontSize: 11, letterSpacing: 1.5, cursor: "pointer", transition: "all .2s", display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
                 <span>{tab.icon}</span> {tab.label}
               </button>
             ))}
           </div>
 
           {/* Settings Content */}
+          {activeSection && (
           <div className="oa-card oa-borderglow" style={{ flex: 1, minWidth: 280, padding: 30 }}>
             {activeSection === "profile" && (
               <div>
@@ -1154,6 +1310,7 @@ export function AmoledSettings({
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16 }}>
                   {THEMES.map(t => {
                     const isSelected = draftTheme === t;
+                    const isComingSoon = isMobile && t !== "light";
                     
                     // Fixed preview colors for each theme
                     let previewPrimary = "#E8C990"; // default (gold)
@@ -1167,7 +1324,20 @@ export function AmoledSettings({
                     else if (t === "amoled-dark") { previewPrimary = "#E8C990"; previewBg = "#000000"; }
 
                     return (
-                      <div key={t} onClick={() => setDraftTheme(t)} style={{ padding: 16, borderRadius: 8, border: isSelected ? "1px solid #4ECDC4" : "1px solid rgba(198,160,110,.2)", background: isSelected ? "rgba(78,205,196,.05)" : "rgba(10,10,10,.6)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "all .2s" }}>
+                      <div key={t} onClick={() => { if (!isComingSoon) { setDraftTheme(t); handleSave(t); } }} style={{ padding: 16, borderRadius: 8, border: isSelected ? "1px solid #4ECDC4" : "1px solid rgba(198,160,110,.2)", background: isSelected ? "rgba(78,205,196,.05)" : "rgba(10,10,10,.6)", cursor: isComingSoon ? "not-allowed" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "all .2s", position: "relative", opacity: isComingSoon ? 0.7 : 1 }}>
+                        {isComingSoon && (
+                          <div style={{
+                            position: "absolute", inset: 0, zIndex: 10,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            background: "rgba(0,0,0,0.7)", backdropFilter: "blur(1px)", borderRadius: 8
+                          }}>
+                            <div style={{
+                              background: "#4ECDC4", color: "#000",
+                              fontSize: 8, fontWeight: 900, padding: "2px 6px", borderRadius: 4,
+                              letterSpacing: 1, boxShadow: "0 0 10px #4ECDC4"
+                            }}>COMING SOON</div>
+                          </div>
+                        )}
                         {/* Tiny Preview Box */}
                         <div style={{ width: "100%", height: 30, borderRadius: 4, background: previewBg, border: "1px solid rgba(198,160,110,.2)", display: "flex", overflow: "hidden" }}>
                           <div style={{ flex: 1, background: previewPrimary }} />
@@ -1219,27 +1389,32 @@ export function AmoledSettings({
             )}
 
             {activeSection === "security" && (
-              <div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                 <h3 className="oa-orbitron" style={{ fontSize: 16, color: "#E8C990", letterSpacing: 2, marginBottom: 20 }}>SYSTEM SECURITY</h3>
-                <p className="oa-raj" style={{ color: "rgba(198,160,110,.6)", fontSize: 15, lineHeight: 1.5 }}>
-                  Password reset capabilities require cryptographic isolation and are executed through the standard application framework.
-                </p>
-                <button onClick={() => setDraftTheme("default")} style={{ marginTop: 20, padding: "10px 20px", background: "rgba(198,160,110,.1)", border: "1px solid rgba(198,160,110,.3)", color: "#C6A06E", borderRadius: 4, fontFamily: "Orbitron, sans-serif", fontSize: 11, letterSpacing: 1.5, cursor: "pointer" }}>
-                  REVERT TO STANDARD ENGINE
-                </button>
+                
+                <div style={{ padding: '24px', background: 'rgba(78,205,196,0.02)', borderRadius: 16, border: '1px solid rgba(78,205,196,0.1)' }}>
+                  <SecurityExplanation isDark={true} />
+                </div>
+
+                <div style={{ marginTop: 24, padding: 16, background: "rgba(198,160,110,.03)", border: "1px solid rgba(198,160,110,.1)", borderRadius: 8 }}>
+                   <p className="oa-raj" style={{ color: "rgba(198,160,110,.6)", fontSize: 13, lineHeight: 1.5, margin: 0 }}>
+                    Password reset capabilities and cryptographic isolation are managed through the standard application framework.
+                  </p>
+                </div>
               </div>
             )}
 
           </div>
+          )}
         </div>
       </div>
-    </OrbitApp>
+    </div>
   );
 }
 
 export function AmoledProfile() {
   const navigate = useNavigate();
-  const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
+  const { authUser, isUpdatingProfile, updateProfile } = useAuthStore(useShallow(state => ({ authUser: state.authUser, isUpdatingProfile: state.isUpdatingProfile, updateProfile: state.updateProfile })));
   const [profileDraft, setProfileDraft] = useState({
     username: "",
     email: "",
@@ -1305,7 +1480,9 @@ export function AmoledProfile() {
   };
 
   return (
-    <OrbitApp>
+    <div style={{ width: "100%", height: "100%", background: "#000", position: "relative", overflow: "hidden", padding: "40px 20px" }}>
+      <style>{CSS}</style>
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 50%,#3d1a00 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,#1a0a00 0%,transparent 45%)", pointerEvents: "none" }} />
       <div style={{ maxWidth: 800, margin: "0 auto", paddingBottom: 40 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <button onClick={() => navigate("/")} style={{ background: "transparent", color: "rgba(198,160,110,.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'Share Tech Mono', monospace", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.6)"}>
@@ -1334,7 +1511,7 @@ export function AmoledProfile() {
               {/* Avatar Section */}
               <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
                 <div style={{ position: "relative", width: 120, height: 120, borderRadius: "50%", background: "linear-gradient(135deg,#3d1a00,#1a0a00)", border: "2px solid #C6A06E", boxShadow: "0 0 20px rgba(198,160,110,.3)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                  <img src={profileDraft.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img loading="lazy" decoding="async" src={profileDraft.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <label htmlFor="avatar-upload" style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 35, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)" }}>
                     <span className="oa-mono" style={{ fontSize: 10, color: "#C6A06E", letterSpacing: 1 }}>EDIT</span>
                     <input type="file" id="avatar-upload" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUpdatingProfile} />
@@ -1367,7 +1544,7 @@ export function AmoledProfile() {
           </div>
         </form>
       </div>
-    </OrbitApp>
+    </div>
   );
 }
 
@@ -1375,12 +1552,14 @@ export function AmoledProfile() {
    AMOLED SPOTIFY
 ───────────────────────────────────────────── */
 export function AmoledSpotify() {
-  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore();
+  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore(useShallow(state => ({ spotifyLinked: state.spotifyLinked, currentTrack: state.currentTrack, isPlaying: state.isPlaying, pausePlayback: state.pausePlayback, playTrack: state.playTrack, skipNext: state.skipNext, skipPrevious: state.skipPrevious })));
   const [playing, setPlaying] = useState(isPlaying || false);
   useEffect(() => { setPlaying(isPlaying); }, [isPlaying]);
 
   return (
-    <OrbitApp>
+    <div style={{ width: "100%", height: "100%", background: "#000", position: "relative", overflow: "hidden", padding: "40px 20px" }}>
+      <style>{CSS}</style>
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 50%,#3d1a00 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,#1a0a00 0%,transparent 45%)", pointerEvents: "none" }} />
       <div style={{ maxWidth: 800, margin: "0 auto", paddingBottom: 40, height: "100%", display: "flex", flexDirection: "column" }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <button onClick={() => window.location.href = "/"} style={{ background: "transparent", color: "rgba(198,160,110,.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'Share Tech Mono', monospace", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.6)"}>
@@ -1447,7 +1626,7 @@ export function AmoledSpotify() {
             <>
               <div style={{ position: "relative", width: 280, height: 280, borderRadius: "50%", background: "linear-gradient(135deg,#121212, #000)", border: "2px solid rgba(78,205,196,0.4)", boxShadow: "0 0 40px rgba(78,205,196,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto", overflow: "hidden" }}>
                 {currentTrack ? (
-                  <img src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", filter: playing ? "none" : "grayscale(0.6)" }} alt="Album Art" />
+                  <img loading="lazy" decoding="async" src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", filter: playing ? "none" : "grayscale(0.6)" }} alt="Album Art" />
                 ) : (
                   <div style={{ fontSize: 60 }}>🎵</div>
                 )}
@@ -1468,8 +1647,8 @@ export function AmoledSpotify() {
               </div>
             </>
           )}
-        </div>
       </div>
-    </OrbitApp>
+    </div>
+  </div>
   );
 }

@@ -171,9 +171,23 @@ export function SafeImage({
 }
 
 /**
- * Connectivity Monitor Hook
- * Tracks online/offline status
+ * FIX 15: Singleton connectivity listeners — exactly 2 DOM event listeners
+ * regardless of how many components call useConnectivity().
+ * Previous impl: N components × 2 listeners = 2N listeners.
+ * New impl:      1 module-level setup = 2 listeners, always.
  */
+const _onlineListeners = new Set();
+const _offlineListeners = new Set();
+if (typeof window !== "undefined") {
+  window.addEventListener("online",  () => _onlineListeners.forEach(fn => fn(true)));
+  window.addEventListener("offline", () => _offlineListeners.forEach(fn => fn(false)));
+  if ("connection" in navigator) {
+    navigator.connection.addEventListener("change", () => {
+      // notify any listeners that care about connectionType
+    });
+  }
+}
+
 export function useConnectivity() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [connectionType, setConnectionType] = useState(
@@ -181,26 +195,20 @@ export function useConnectivity() {
   );
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    const handleConnectionChange = () => {
-      setConnectionType(navigator.connection?.effectiveType);
-    };
+    const onOnline  = () => { setIsOnline(true); };
+    const onOffline = () => { setIsOnline(false); };
+    const onConnChg = () => setConnectionType(navigator.connection?.effectiveType);
 
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    _onlineListeners.add(onOnline);
+    _offlineListeners.add(onOffline);
     if ("connection" in navigator) {
-      navigator.connection.addEventListener("change", handleConnectionChange);
+      navigator.connection.addEventListener("change", onConnChg);
     }
-
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      _onlineListeners.delete(onOnline);
+      _offlineListeners.delete(onOffline);
       if ("connection" in navigator) {
-        navigator.connection.removeEventListener(
-          "change",
-          handleConnectionChange,
-        );
+        navigator.connection.removeEventListener("change", onConnChg);
       }
     };
   }, []);

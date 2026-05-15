@@ -7,6 +7,7 @@ import { useSettingsStore } from "../store/useSettingsStore";
 import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 import { THEMES, THEME_LABELS } from "../constants";
+import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { spotifyService } from "../services/spotifyService";
@@ -16,6 +17,7 @@ import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
 import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge.jsx";
+import SecurityExplanation from "../components/settings/SecurityExplanation";
 
 // ── Vampire-Orbit UI ──────────────────────────────────────────────
 // Fonts loaded via @import inside the style tag below
@@ -1095,7 +1097,7 @@ const VampireTopNav = memo(({ navRef, navigate, logout, hiddenNexuses, onReveal 
     return (
         <nav className="navbar" ref={navRef} style={{ display: 'flex', alignItems: 'center' }}>
             <div className="nav-logo" onClick={() => navigate("/")} style={{ cursor: 'pointer' }}>
-                <div className="nav-logo-icon"><img src={batLogo} alt="Orbit Bat" /></div>
+                <div className="nav-logo-icon"><img loading="lazy" decoding="async" src={batLogo} alt="Orbit Bat" /></div>
                 ORBIT
             </div>
 
@@ -1212,7 +1214,7 @@ const VampireSidebar = memo(({
                                     <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
                                         <div style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                                             {n.avatar ? (
-                                              <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+                                              <img loading="lazy" decoding="async" src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
                                             ) : (
                                               (() => {
                                                 const ANIMALS = ['dog', 'cat', 'bunny'];
@@ -1312,7 +1314,7 @@ const VampireSidebar = memo(({
                                 }}
                             >
                                 <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(139,0,0,0.2)", border: "1px solid rgba(220,20,60,0.4)", overflow: "hidden", flexShrink: 0 }}>
-                                    {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "rgba(220,20,60,0.8)" }}>{u.username?.[0]?.toUpperCase()}</div>}
+                                    {u.profilePic ? <img loading="lazy" decoding="async" src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "rgba(220,20,60,0.8)" }}>{u.username?.[0]?.toUpperCase()}</div>}
                                 </div>
                                 <div style={{ fontSize: 13, color: (selectedUser?._id === u._id) ? "#fff" : "#F0E6D3", fontFamily: "'Cinzel',serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</div>
                             </div>
@@ -1396,7 +1398,7 @@ const VampireSpotifyCard = memo(({ addCardRef, navigate }) => {
 
             <div className="spotify-track">
                 {currentTrack?.imageUrl ? (
-                    <img src={currentTrack.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit:"cover" }} />
+                    <img loading="lazy" decoding="async" src={currentTrack.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit:"cover" }} />
                 ) : (
                     <div className="track-art">🎼</div>
                 )}
@@ -1557,9 +1559,9 @@ HiddenNexusBat.displayName = "HiddenNexusBat";
 export default function OrbitVampire({ children }) {
     const navigate = useNavigate();
     const logout = useAuthStore(state => state.logout);
-    const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
+    const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore(useShallow(state => ({ nexusActionView: state.nexusActionView, setNexusActionView: state.setNexusActionView, nexuses: state.nexuses, setSelectedNexus: state.setSelectedNexus, isNexusesLoading: state.isNexusesLoading, nexusUnread: state.nexusUnread, selectedNexus: state.selectedNexus, selectedNexusId: state.selectedNexusId })));
     const nexusSelected = Boolean(selectedNexus || selectedNexusId);
-    const { users, selectedUser, setSelectedUser } = useChatStore();
+    const { users, selectedUser, setSelectedUser } = useChatStore(useShallow(state => ({ users: state.users, selectedUser: state.selectedUser, setSelectedUser: state.setSelectedUser })));
     const [activeTab, setActiveTab] = useState("orbits");
 
     const [pinnedNexuses, setPinnedNexuses] = useState(() => {
@@ -1777,19 +1779,56 @@ export default function OrbitVampire({ children }) {
                         </div>
                     ) : (
                         <div className="main-content-flow">
-                            <div className="status-line">
-                                <span className="status-text">Status: Online</span>
-                                <span className="status-dot" />
+                            <div ref={heroRef}>
+                                <div className="status-line">
+                                    <span className="status-text">Status: Online</span>
+                                    <span className="status-dot" />
+                                </div>
+
+                                <h1 className="welcome-title" ref={titleRef}>
+                                    Welcome to <span>Orbit</span>
+                                </h1>
+                                <p className="welcome-sub" ref={subRef}>
+                                    Choose a pathway to begin your dark mission.
+                                </p>
                             </div>
 
-                            <h1 className="welcome-title" ref={titleRef}>
-                                Welcome to <span>Orbit</span>
-                            </h1>
-                            <p className="welcome-sub" ref={subRef}>
-                                Choose a pathway to begin your dark mission.
-                            </p>
-
                             <div className="ornament" ref={ornRef}>✦ ✧ ✦ ✧ ✦</div>
+
+                            {/* ── COVEN NODES (Circular Orbits) ── */}
+                            <div style={{ 
+                                display: 'flex', 
+                                gap: 20, 
+                                overflowX: 'auto', 
+                                paddingBottom: 20, 
+                                marginBottom: 10, 
+                                scrollbarWidth: 'none', 
+                                msOverflowStyle: 'none', 
+                                position: 'relative', 
+                                zIndex: 5,
+                            }} className="vampire-no-scrollbar">
+                                <style>{`.vampire-no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+                                {users.map((u) => (
+                                    <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0, transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                                        <div style={{ width: 66, height: 66, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg, #dc143c 0%, #1a0000 100%)', boxShadow: '0 0 15px rgba(220,20,60,0.3)' }}>
+                                            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#000', overflow: 'hidden', border: '2px solid #000' }}>
+                                                <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            </div>
+                                        </div>
+                                        <span style={{ fontSize: 10, color: '#dc143c', fontWeight: 600, fontFamily: 'Cinzel, serif', letterSpacing: 1, textTransform: 'uppercase' }}>{u.username}</span>
+                                    </div>
+                                ))}
+                                {nexuses.map((n) => (
+                                    <div key={n._id} onClick={() => { setSelectedNexus(n); setSelectedUser(null); navigate(`/nexus/${n._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0, transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                                        <div style={{ width: 66, height: 66, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg, #1a0000 0%, #dc143c 100%)', boxShadow: '0 0 15px rgba(220,20,60,0.2)' }}>
+                                            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#111', overflow: 'hidden', border: '2px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#dc143c', fontFamily: 'Cinzel, serif' }}>
+                                                {n.name[0].toUpperCase()}
+                                            </div>
+                                        </div>
+                                        <span style={{ fontSize: 10, color: '#999', fontWeight: 600, fontFamily: 'Cinzel, serif', letterSpacing: 1, textTransform: 'uppercase' }}>{n.name}</span>
+                                    </div>
+                                ))}
+                            </div>
 
                             <HangingBats />
 
@@ -1848,7 +1887,7 @@ export default function OrbitVampire({ children }) {
 
 export function VampireProfile() {
     const navigate = useNavigate();
-    const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
+    const { authUser, isUpdatingProfile, updateProfile } = useAuthStore(useShallow(state => ({ authUser: state.authUser, isUpdatingProfile: state.isUpdatingProfile, updateProfile: state.updateProfile })));
 
     // ── Edit mode ─────────────────────────────────────────────────────
     const [isRitualMode, setIsRitualMode] = useState(false);
@@ -1950,7 +1989,7 @@ export function VampireProfile() {
                 {/* Top Nav */}
                 <div style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexShrink: 0 }}>
                     <div className="nav-logo">
-                        <div className="nav-logo-icon" style={{ animation: 'pulse-glow 5s linear infinite' }}><img src={batLogo} alt="Orbit Bat" /></div>
+                        <div className="nav-logo-icon" style={{ animation: 'pulse-glow 5s linear infinite' }}><img loading="lazy" decoding="async" src={batLogo} alt="Orbit Bat" /></div>
                         ORBIT <span style={{ fontSize: 12, color: 'var(--mist)', marginLeft: 15, letterSpacing: '4px' }}>// CHRONICLES OF THE ANCIENT</span>
                     </div>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -1980,7 +2019,7 @@ export function VampireProfile() {
                         <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: '28px 20px', flexShrink: 0 }}>
                             <div style={{ position: 'relative' }}>
                                 <div style={{ width: 120, height: 120, borderRadius: '50%', border: '2px solid var(--crimson)', padding: 6, background: 'linear-gradient(135deg,var(--void),#200000)', boxShadow: '0 0 30px rgba(220,20,60,0.15)' }}>
-                                    <img src={previewImg || authUser?.profilePic || "/avatar.png"} alt="essence" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', filter: 'grayscale(0.3) contrast(1.1)' }} />
+                                    <img loading="lazy" decoding="async" src={previewImg || authUser?.profilePic || "/avatar.png"} alt="essence" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', filter: 'grayscale(0.3) contrast(1.1)' }} />
                                 </div>
                                 <label title="Change essence" style={{ position: 'absolute', bottom: 4, right: 4, width: 30, height: 30, background: isRitualMode ? 'var(--blood)' : 'rgba(139,0,0,0.25)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isRitualMode ? 'pointer' : 'not-allowed', border: '1px solid var(--crimson)', opacity: isRitualMode ? 1 : 0.4, transition: 'all 0.3s' }}>
                                     <span style={{ fontSize: 12 }}>👁️</span>
@@ -2167,7 +2206,9 @@ export function VampireSettings({
 }) {
     const [focusedTheme, setFocusedTheme] = useState(draftTheme);
     const [pendingLocal, setPendingLocal] = useState(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const setGlobalTheme = useThemeStore((s) => s.setTheme);
+    useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
 
     const handleThemeClick = (id) => {
         if (id === draftTheme) return;
@@ -2178,6 +2219,7 @@ export function VampireSettings({
         if (!pendingLocal) return;
         setGlobalTheme(pendingLocal);
         setDraftTheme(pendingLocal);
+        handleSave(pendingLocal);
         setPendingLocal(null);
     };
 
@@ -2197,7 +2239,7 @@ export function VampireSettings({
                 {/* Top Nav */}
                 <div style={{ position: "relative", zIndex: 10, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
                     <div className="nav-logo">
-                        <div className="nav-logo-icon"><img src={batLogo} alt="Orbit Bat" /></div>
+                        <div className="nav-logo-icon"><img loading="lazy" decoding="async" src={batLogo} alt="Orbit Bat" /></div>
                         ORBIT <span style={{ fontSize: 12, color: 'var(--mist)', marginLeft: 15, letterSpacing: '4px' }}>// ACCOUNT SETTINGS</span>
                     </div>
                     <div style={{ display: 'flex', gap: 12 }}>
@@ -2218,8 +2260,9 @@ export function VampireSettings({
                             { id: "appearance", label: "VISUALS", icon: "👁️" },
                             { id: "notifications", label: "ALERTS", icon: "🩸" },
                             { id: "orbit", label: "ENGINE", icon: "⛓️" },
+                            { id: "security", label: "SANCTUM", icon: "🛡️" },
                         ].map(tab => (
-                            <button key={tab.id} type="button" onClick={() => setActiveSection(tab.id)}
+                            <button key={tab.id} type="button" onClick={() => setActiveSection(activeSection === tab.id ? null : tab.id)}
                                 style={{
                                     width: "100%", textAlign: "left", padding: "16px 20px", position: "relative", zIndex: 20,
                                     background: activeSection === tab.id ? "linear-gradient(135deg, rgba(139,0,0,0.2), rgba(139,0,0,0.05))" : "transparent",
@@ -2239,6 +2282,7 @@ export function VampireSettings({
                     </div>
 
                     {/* Content */}
+                    {activeSection && (
                     <div className="card" style={{ flex: 1, padding: 40, overflowY: "auto", height: '100%', minHeight: 0 }}>
                         <h2 style={{ fontSize: 20, fontWeight: 900, color: "var(--crimson)", fontFamily: "'Cinzel', serif", marginBottom: 32, textShadow: "0 0 10px rgba(220,20,60,0.4)", letterSpacing: "4px" }}>
                             {activeSection.toUpperCase()} // PROTOCOL
@@ -2311,6 +2355,7 @@ export function VampireSettings({
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 15, marginTop: 15 }}>
                                         {Object.keys(THEME_LABELS).map(id => {
                                             const isSelected = draftTheme === id;
+                                            const isComingSoon = isMobile && id !== "light";
 
                                             // Fixed preview colors for each theme
                                             let previewPrimary = "#ef4444"; // default (crimson)
@@ -2326,16 +2371,31 @@ export function VampireSettings({
                                             return (
                                                 <button
                                                     key={id}
-                                                    onClick={() => handleThemeClick(id)}
+                                                    onClick={() => { if (!isComingSoon) handleThemeClick(id); }}
                                                     onMouseEnter={() => setFocusedTheme(id)}
                                                     onMouseLeave={() => setFocusedTheme(draftTheme)}
                                                     style={{
                                                         padding: '12px', borderRadius: '8px', border: '1px solid',
                                                         borderColor: isSelected ? 'var(--crimson)' : 'rgba(255,255,255,0.1)',
                                                         background: isSelected ? 'rgba(139,0,0,0.15)' : 'rgba(255,255,255,0.03)',
-                                                        cursor: 'pointer', transition: 'all 0.3s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10
+                                                        cursor: isComingSoon ? 'not-allowed' : 'pointer', transition: 'all 0.3s',
+                                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                                                        position: 'relative', opacity: isComingSoon ? 0.7 : 1
                                                     }}
                                                 >
+                                                    {isComingSoon && (
+                                                        <div style={{
+                                                            position: "absolute", inset: 0, zIndex: 10,
+                                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                                            background: "rgba(0,0,0,0.7)", backdropFilter: "blur(1px)", borderRadius: 8
+                                                        }}>
+                                                            <div style={{
+                                                                background: "var(--crimson)", color: "#000",
+                                                                fontSize: 8, fontWeight: 900, padding: "2px 6px", borderRadius: 4,
+                                                                letterSpacing: 1, boxShadow: "0 0 10px var(--crimson)"
+                                                            }}>COMING SOON</div>
+                                                        </div>
+                                                    )}
                                                     <div
                                                         style={{
                                                             width: '100%', height: '40px', borderRadius: '6px',
@@ -2407,7 +2467,23 @@ export function VampireSettings({
                                 </div>
                             </div>
                         )}
+
+                        {activeSection === "security" && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                                <div className="v-toggle" onClick={() => setDraftShowOnlineStatus(!draftShowOnlineStatus)} style={{ cursor: 'pointer' }}>
+                                    <div style={{ fontSize: 13, color: 'var(--mist)' }}>IDENTITY CLOAK (ONLINE STATUS)</div>
+                                    <button type="button" style={{ color: draftShowOnlineStatus ? 'var(--crimson)' : 'var(--mist)', background: 'transparent', border: 'none', fontSize: 24, cursor: 'pointer', pointerEvents: 'none' }}>
+                                        {draftShowOnlineStatus ? '◉' : '○'}
+                                    </button>
+                                </div>
+                                
+                                <div style={{ padding: '24px', background: 'rgba(16,185,129,0.02)', borderRadius: 16, border: '1px solid rgba(16,185,129,0.1)' }}>
+                                    <SecurityExplanation isDark={true} />
+                                </div>
+                            </div>
+                        )}
                     </div>
+                    )}
                 </div>
             </div>
 
@@ -2477,7 +2553,7 @@ export function VampireSettings({
    VAMPIRE SPOTIFY
 ───────────────────────────────────────────── */
 export function VampireSpotify() {
-    const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore();
+    const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore(useShallow(state => ({ spotifyLinked: state.spotifyLinked, currentTrack: state.currentTrack, isPlaying: state.isPlaying, pausePlayback: state.pausePlayback, playTrack: state.playTrack, skipNext: state.skipNext, skipPrevious: state.skipPrevious })));
     const [playing, setPlaying] = useState(isPlaying || false);
     useEffect(() => { setPlaying(isPlaying); }, [isPlaying]);
 
@@ -2534,7 +2610,7 @@ export function VampireSpotify() {
                             <>
                                 <div style={{ width: 280, height: 280, borderRadius: '50%', border: '2px solid var(--crimson)', padding: 8, background: 'linear-gradient(135deg,var(--void),#200000)', boxShadow: '0 0 40px rgba(220,20,60,0.2)', position: 'relative' }}>
                                     <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(220,20,60,0.3)' }}>
-                                        {currentTrack ? <img src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", filter: playing ? "none" : "grayscale(0.6)" }} alt="Album Art" /> : <div style={{ width: '100%', height: '100%', background: 'var(--void)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>🎵</div>}
+                                        {currentTrack ? <img loading="lazy" decoding="async" src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", filter: playing ? "none" : "grayscale(0.6)" }} alt="Album Art" /> : <div style={{ width: '100%', height: '100%', background: 'var(--void)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>🎵</div>}
                                     </div>
                                     {playing && <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: '1px solid var(--crimson)', animation: 'pulse-glow 2s infinite', pointerEvents: 'none' }} />}
                                 </div>

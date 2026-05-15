@@ -15,7 +15,7 @@ const STYLE = `
 @media (max-width: 768px) {
   .tc-desktop-only { display: none !important; }
   .tc-mobile-only { display: flex !important; }
-  .tc-container { padding: 0 12px !important; border-bottom: none !important; background: transparent !important; box-shadow: none !important; height: 56px !important; }
+  .tc-container { padding: 12px 12px 0 !important; border-bottom: none !important; background: transparent !important; box-shadow: none !important; height: 68px !important; }
   .tc-title { font-family: 'Playfair Display', serif !important; font-size: 20px !important; font-weight: 700 !important; color: #1C1C1C !important; letter-spacing: 0 !important; text-transform: none !important; font-style: italic !important; }
   .tc-sub { font-family: 'Inter', sans-serif !important; font-size: 11px !important; color: #8A8480 !important; opacity: 1 !important; font-weight: 500 !important; letter-spacing: 0 !important; }
   .tc-btn { background: transparent !important; border: none !important; color: #1C1C1C !important; }
@@ -100,6 +100,7 @@ export default function TelemeteryCapsule({
   const [latency, setLatency]     = useState(12);
   const [signalStr, setSignalStr] = useState(4);
   const [copied, setCopied]       = useState(false);
+  const [e2eeHover, setE2EEHover] = useState(false);
 
   useEffect(() => {
     injectStyle();
@@ -179,9 +180,25 @@ export default function TelemeteryCapsule({
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
             lineHeight: 1.2, fontFamily: t.font,
             textShadow: isCyber ? `0 0 12px ${t["--acc"]}` : "none",
-            maxWidth: 180,
+            maxWidth: 240,
+            display: "flex", alignItems: "center", gap: 8
           }}>
             {entityName}
+            {!isNexus && isOnline && (
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                padding: "2px 6px", borderRadius: 6,
+                background: "rgba(16, 185, 129, 0.15)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                fontSize: 9, fontWeight: 900, color: "#10b981",
+                fontFamily: isCyber ? t.fontMono : t.font, letterSpacing: 0.5,
+                textShadow: "0 0 8px rgba(16, 185, 129, 0.8)",
+                boxShadow: "0 0 10px rgba(16, 185, 129, 0.2)"
+              }}>
+                <div style={{ width: 5, height: 5, background: "#10b981", borderRadius: "50%", animation: "pdot 1.5s infinite" }} />
+                LIVE
+              </div>
+            )}
           </div>
           <div className="tc-sub" style={{
             fontSize: 11, color: t["--acc"], marginTop: 1,
@@ -235,14 +252,32 @@ export default function TelemeteryCapsule({
               </button>
             </div>
           ) : !isNexus ? (
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px",
-              background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)",
-              borderRadius: isCyber ? "2px" : "20px", fontSize: 10, fontWeight: 700, color: "#22c55e",
-              fontFamily: isCyber ? t.fontMono : t.font, textShadow: isCyber ? "0 0 6px #22c55e" : "none",
-            }}>
+            <div 
+              onMouseEnter={() => setE2EEHover(true)}
+              onMouseLeave={() => setE2EEHover(false)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px",
+                background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)",
+                borderRadius: isCyber ? "2px" : "20px", fontSize: 10, fontWeight: 700, color: "#22c55e",
+                fontFamily: isCyber ? t.fontMono : t.font, textShadow: isCyber ? "0 0 6px #22c55e" : "none",
+                cursor: "help", position: "relative"
+              }}>
               <div style={{ width: 6, height: 6, background: "#22c55e", borderRadius: "50%", animation: "pdot 1.5s infinite", flexShrink: 0 }} />
               E2EE · Direct
+
+              {e2eeHover && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 10px)", left: 0,
+                  background: "rgba(0,0,0,0.85)", backdropFilter: "blur(10px)",
+                  color: "#fff", padding: "8px 12px", borderRadius: "8px",
+                  fontSize: "10px", width: "200px", lineHeight: "1.4",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)", zIndex: 1000,
+                  pointerEvents: "none", border: "1px solid rgba(255,255,255,0.1)",
+                  textAlign: "center"
+                }}>
+                  🔒 Messages are end-to-end encrypted. Not even Orbit can read them.
+                </div>
+              )}
             </div>
           ) : null}
         </div>
@@ -257,17 +292,36 @@ export default function TelemeteryCapsule({
         <div className="tc-desktop-only" style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* E2EE badge (nexus only) */}
         {isNexus && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
-            background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)",
-            borderRadius: isCyber ? "2px" : "20px",
-            fontSize: 9, fontWeight: 700, color: "#22c55e",
-            fontFamily: isCyber ? t.fontMono : t.font,
-            textShadow: isCyber ? "0 0 6px #22c55e" : "none",
-            letterSpacing: "0.5px",
-          }}>
+          <div 
+            onMouseEnter={() => setE2EEHover(true)}
+            onMouseLeave={() => setE2EEHover(false)}
+            style={{
+              display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
+              background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)",
+              borderRadius: isCyber ? "2px" : "20px",
+              fontSize: 9, fontWeight: 700, color: "#22c55e",
+              fontFamily: isCyber ? t.fontMono : t.font,
+              textShadow: isCyber ? "0 0 6px #22c55e" : "none",
+              letterSpacing: "0.5px",
+              cursor: "help",
+              position: "relative"
+            }}>
             <div style={{ width: 5, height: 5, background: "#22c55e", borderRadius: "50%", animation: "pdot 1.5s infinite", flexShrink: 0 }} />
             E2EE
+            
+            {e2eeHover && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 10px)", right: 0,
+                background: "rgba(0,0,0,0.85)", backdropFilter: "blur(10px)",
+                color: "#fff", padding: "8px 12px", borderRadius: "8px",
+                fontSize: "10px", width: "200px", lineHeight: "1.4",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.3)", zIndex: 1000,
+                pointerEvents: "none", border: "1px solid rgba(255,255,255,0.1)",
+                textAlign: "center"
+              }}>
+                🔒 Messages are end-to-end encrypted. Not even Orbit can read them.
+              </div>
+            )}
           </div>
         )}
 

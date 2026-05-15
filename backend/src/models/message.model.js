@@ -26,18 +26,41 @@ const messageSchema = new mongoose.Schema(
     image: {
       type: String,
     },
-    encryptedContent: {
-      type: String, // Base64 encoded AES-GCM encrypted payload
+    // ── Protocol version ───────────────────────────────────────────────────────
+    v: {
+      type: Number,
+      default: null, // null = legacy, 2 = ECDH, 3 = Double Ratchet
     },
-    encryptedKeyForReceiver: {
-      type: String, // Base64 AES key encrypted with receiver's RSA pub key
+    // ── v3: Double Ratchet fields (flat wire format) ───────────────────────────
+    ciphertext: {
+      type: String, // Base64 AES-GCM ciphertext of the ratchet-encrypted payload
     },
-    encryptedKeyForSender: {
-      type: String, // Base64 AES key encrypted with sender's RSA pub key
+    dh: {
+      type: String, // Sender's current ratchet DH public key (base64 SPKI)
     },
-    iv: {
-      type: String, // Base64 initialization vector
+    n: {
+      type: Number, // Message number in current sending chain
     },
+    pn: {
+      type: Number, // Number of messages in previous sending chain (v3)
+    },
+    // v4 Nexus Sender Key — ECDSA signature over "<n>:<ciphertext>"
+    sig: {
+      type: String,
+    },
+    x3dh: {
+      identityKey:  { type: String }, // Sender's long-term IK (base64)
+      ephemeralKey: { type: String }, // Sender's ephemeral EK (base64)
+      opkId:        { type: String }, // ID of consumed one-time prekey (or null)
+    },
+    // ── v2: ECDH + HKDF + AES-GCM fields (legacy, kept for backward compat) ──
+    ephemeralPublicKey: { type: String },
+    encryptedContent:   { type: String },
+    aad: { type: String },
+    iv:  { type: String },
+    // ── v1 legacy: RSA-OAEP fields ────────────────────────────────────────────
+    encryptedKeyForReceiver: { type: String },
+    encryptedKeyForSender:   { type: String },
     isSystem: {
       type: Boolean,
       default: false,

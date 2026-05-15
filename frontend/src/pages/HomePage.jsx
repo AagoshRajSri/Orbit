@@ -83,7 +83,14 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* ── MOBILE full-screen chat overlay (< md) ── */}
+        {/* ── MOBILE: Welcome screen when no chat active (<md) ── */}
+        {!hasActiveChat && !isLgUp && (
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <NoChatSelected />
+          </div>
+        )}
+
+        {/* ── MOBILE full-screen chat overlay (<md) ── */}
         {hasActiveChat && !isLgUp && (
           <div className="mobile-chat-fullscreen bg-base-300 animate-slide-up">
             <div className="h-full w-full orbital-glass-lg flex flex-col overflow-hidden">

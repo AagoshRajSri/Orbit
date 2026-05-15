@@ -4,7 +4,7 @@ import { useSoundManager } from "../../hooks/useSoundManager";
 
 const GIPHY_API_KEY = "zO14Dh7mYh9cbPGmEltqBVynZM99ZDuY";
 
-export default function GifPicker({ onSelectGif }) {
+export default function GifPicker({ t, onSelectGif }) {
   const { play } = useSoundManager();
   const [gifs, setGifs] = useState([]);
   const [query, setQuery] = useState("");
@@ -43,13 +43,24 @@ export default function GifPicker({ onSelectGif }) {
     }, 500);
   };
 
+  const isDark = t?.id !== "premium" && t?.id !== "pastel" && t?.id !== "light";
+  const acc = t?.["--acc"] || "#7c3aed";
+  const txt = t?.["--text"] || (isDark ? "#fff" : "#111");
+  const txt2 = t?.["--text2"] || (isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)");
+  const bdr = t?.["--border"] || (isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)");
+  const bg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)";
+
   return (
-    <div className="flex flex-col w-64 h-80 bg-base-100/95 backdrop-blur-3xl rounded-2xl shadow-2xl border border-base-300/60 overflow-hidden">
-      <div className="p-5 border-b border-white/[0.03] bg-black/40 backdrop-blur-xl sticky top-0 z-10">
+    <div className="flex flex-col w-full h-full bg-transparent overflow-hidden">
+      <div 
+        className="p-4 border-b sticky top-0 z-10"
+        style={{ borderBottomColor: bdr, background: isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)" }}
+      >
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
             <Search
-              className="text-white/20 group-focus-within:text-[#5dcaa5] transition-colors duration-300"
+              style={{ color: txt2 }}
+              className="transition-colors duration-300"
               size={18}
             />
           </div>
@@ -59,11 +70,27 @@ export default function GifPicker({ onSelectGif }) {
             value={query}
             onChange={handleSearch}
             onFocus={() => play?.('hover')}
-            className="w-full bg-white/[0.02] hover:bg-white/[0.05] focus:bg-white/[0.07] outline-none rounded-2xl py-3.5 pl-14 pr-10 text-sm font-medium tracking-tight text-white/90 placeholder:text-white/10 border border-white/5 focus:border-[#5dcaa5]/40 focus:ring-4 focus:ring-[#5dcaa5]/5 transition-all duration-500 shadow-inner"
+            style={{
+              background: bg,
+              color: txt,
+              borderColor: bdr,
+              fontFamily: t?.["--font"] || t?.font || "inherit",
+            }}
+            className="w-full hover:bg-opacity-5 focus:bg-opacity-10 outline-none rounded-2xl py-3.5 pl-14 pr-10 text-sm font-medium tracking-tight transition-all duration-500 shadow-inner border"
+            onMouseEnter={e => e.currentTarget.style.borderColor = acc + "66"}
+            onMouseLeave={e => e.currentTarget.style.borderColor = bdr}
+            onFocus={e => {
+              e.currentTarget.style.borderColor = acc;
+              e.currentTarget.style.boxShadow = `0 0 10px ${acc}22`;
+            }}
+            onBlur={e => {
+              e.currentTarget.style.borderColor = bdr;
+              e.currentTarget.style.boxShadow = "none";
+            }}
           />
           {loading && (
             <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
-              <Loader2 className="animate-spin text-[#5dcaa5]/30" size={12} />
+              <Loader2 className="animate-spin" style={{ color: acc }} size={12} />
             </div>
           )}
         </div>

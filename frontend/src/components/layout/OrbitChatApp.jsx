@@ -237,7 +237,7 @@ export default function OrbitChatApp({ onClose }) {
                     >
                       <div className={`w-full h-full transition-all duration-700 ${isVisible ? "opacity-100 scale-100" : "opacity-0 scale-50 pointer-events-none"}`}>
                         <div className={`w-full h-full contact-anchor-${rIdx}`}>
-                          <img
+                          <img loading="lazy" decoding="async"
                             src={contact.avatar}
                             alt={contact.name}
                             className={`contact-avatar-img ${contact.status === "online" ? "status-glow-online" : "status-glow-offline"}`}
@@ -245,7 +245,7 @@ export default function OrbitChatApp({ onClose }) {
                           
                           <div className="node-tooltip">
                             <div className="flex items-center gap-4 mb-4">
-                              <img src={contact.avatar} className="w-12 h-12 rounded-full ring-2 ring-indigo-500/50" />
+                              <img loading="lazy" decoding="async" src={contact.avatar} className="w-12 h-12 rounded-full ring-2 ring-indigo-500/50" />
                               <div>
                                 <h4 className="font-bold text-lg leading-none">{contact.name}</h4>
                                 <span className={`text-[10px] font-black uppercase tracking-widest ${contact.status === 'online' ? 'text-emerald-400' : 'text-slate-500'}`}>
@@ -285,7 +285,7 @@ export default function OrbitChatApp({ onClose }) {
         >
           <div className="core-halo" style={{ borderColor: `${colors.halo}44` }} />
           <div className="w-20 h-20 rounded-full border-2 overflow-hidden bg-slate-900 border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.4)]">
-            <img src={MOCK_USER.avatar} className="w-full h-full object-cover" />
+            <img loading="lazy" decoding="async" src={MOCK_USER.avatar} className="w-full h-full object-cover" />
           </div>
           <div className="absolute inset-0 rounded-full animate-ping border border-indigo-500/30 opacity-20" />
         </div>
@@ -317,7 +317,7 @@ export default function OrbitChatApp({ onClose }) {
            <div className="w-full max-w-lg bg-slate-900/90 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
               <div className="relative h-48 bg-gradient-to-br from-indigo-900 to-purple-900 overflow-hidden">
                  <div className="absolute inset-0 opacity-30 mix-blend-overlay">
-                    <img src={activeContact.avatar} className="w-full h-full object-cover blur-3xl scale-150" />
+                    <img loading="lazy" decoding="async" src={activeContact.avatar} className="w-full h-full object-cover blur-3xl scale-150" />
                  </div>
                  <button onClick={closeContactOverlay} className="absolute top-6 right-6 p-2 rounded-full bg-black/20 hover:bg-black/40 text-white/70 transition-colors">
                     <X className="w-5 h-5" />
@@ -326,7 +326,7 @@ export default function OrbitChatApp({ onClose }) {
               
               <div className="relative px-8 pb-10 -mt-16">
                  <div className="w-32 h-32 rounded-[2rem] border-[6px] border-[#0f172a] overflow-hidden shadow-2xl bg-[#0f172a]">
-                    <img src={activeContact.avatar} className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={activeContact.avatar} className="w-full h-full object-cover" />
                  </div>
                  
                  <div className="mt-6">

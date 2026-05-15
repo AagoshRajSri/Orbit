@@ -763,10 +763,10 @@ export const resendVerificationEmail = async (req, res) => {
  * constellation signup or login request. Single-use, 2-min TTL.
  * Prevents replay attacks.
  */
-export const constellationChallenge = (req, res) => {
+export const constellationChallenge = async (req, res) => {
   const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
   const ua = req.headers["user-agent"] || "unknown";
-  const nonce = issueNonce(ip, ua);
+  const nonce = await issueNonce(ip, ua);
   // TTL in ms returned so client can inform the user before it expires
   res.json({ nonce, expiresInMs: 120_000 });
 };
@@ -800,7 +800,7 @@ export const constellationSignup = async (req, res) => {
   }
 
   // ── Validate nonce (replay protection) ──────────────────────────────────
-  if (!consumeNonce(nonce, ip, ua)) {
+  if (!(await consumeNonce(nonce, ip, ua))) {
     return res.status(400).json({
       message: "Invalid or expired challenge. Request a new one.",
     });
@@ -966,7 +966,7 @@ export const constellationLogin = async (req, res) => {
   }
 
   // ── Validate nonce (replay protection) ───────────────────────────────────
-  if (!consumeNonce(nonce, ip, ua)) {
+  if (!(await consumeNonce(nonce, ip, ua))) {
     return res.status(400).json({
       message: "Invalid or expired challenge. Request a new one.",
     });

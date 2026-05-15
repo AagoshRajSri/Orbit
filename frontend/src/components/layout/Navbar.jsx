@@ -144,7 +144,7 @@ const Navbar = ({ onHamburger }) => {
             ) : (
               <>
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden shadow-lg">
-                  <img src="/logo.jpg" alt="Orbit logo" className="w-8 h-8 object-contain" />
+                  <img loading="lazy" decoding="async" src="/logo.jpg" alt="Orbit logo" className="w-8 h-8 object-contain" />
                 </div>
                 <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate text-[var(--chat-text)]">Orbit</h1>
               </>

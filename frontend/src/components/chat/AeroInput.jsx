@@ -1,266 +1,331 @@
-// =============================================================================
-// AeroInput.jsx — Glassmorphic floating input with self-avatar, actions, E2EE notice
-// Ported from orbit-messaging.html .aero-wrap section.
-// =============================================================================
-import { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Smile, Send, ArrowUp } from "lucide-react";
 import { PixelAvatar } from "../avatar/PixelAvatar/PixelAvatar.jsx";
-import { Ico, I } from "./ChatCoreUI.jsx";
-
-const STYLE = `
-@media (max-width: 768px) {
-  .aero-desktop-only { display: none !important; }
-  .aero-mobile-only { display: flex !important; }
-  .aero-container { padding: 10px 16px !important; background: transparent !important; border: none !important; margin-bottom: 24px !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-  .aero-inner { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; gap: 12px !important; }
-  .aero-input-wrapper { flex: 1; border: 1px solid #EAE4D8 !important; border-radius: 24px !important; padding: 8px 16px !important; display: flex !important; align-items: center !important; background: white !important; }
-  .aero-textarea { margin-top: 2px !important; font-size: 14px !important; }
-  .aero-mic-btn { width: 44px !important; height: 44px !important; border-radius: 50% !important; background: #C9A87C !important; color: white !important; display: flex !important; align-items: center !important; justify-content: center !important; flex-shrink: 0 !important; border: none; cursor: pointer; transition: transform 0.2s; }
-  .aero-mic-btn:active { transform: scale(0.9); }
-  .aero-plus-btn { width: 28px !important; height: 28px !important; border-radius: 50% !important; border: 2px solid #8A8480 !important; color: #8A8480 !important; display: flex !important; align-items: center !important; justify-content: center !important; flex-shrink: 0 !important; background: transparent !important; cursor: pointer; }
-}
-`;
-let _injectedAero = false;
-function injectAeroStyle() {
-  if (_injectedAero) return;
-  _injectedAero = true;
-  const s = document.createElement("style");
-  s.textContent = STYLE;
-  document.head.appendChild(s);
-}
 
 export default function AeroInput({
-  t,              // ORBIT_CHAT_THEMES token object
-  value,          // controlled string
-  onChange,       // (newValue) => void
-  onSend,         // () => void
-  onTyping,       // () => void  — called on each keystroke
-  selfAnimal,     // 'dog'|'cat'|'bunny'
-  selfAvatarState,// useAvatarState .state
-  onImageAttach,  // () => void
-  onMediaToggle,  // (mode) => void
-  onVoiceToggle,  // () => void
-  isRecording,    // boolean
+  t,
+  value,
+  onChange,
+  onSend,
+  onTyping,
+  selfAnimal,
+  selfAvatarState,
+  onImageAttach,
+  onMediaToggle,
+  onVoiceToggle,
+  isRecording,
   disabled,
 }) {
-  const taRef = useRef(null);
-  const isCyber  = t.id === "cyberpunk" || t.id === "gamer";
-  const isPastel = t.id === "pastel";
+  const taRef    = useRef(null);
   const [focused, setFocused] = useState(false);
 
-  useEffect(() => {
-    injectAeroStyle();
-  }, []);
+  // ── Theme tokens ──────────────────────────────────────────────────────────
+  const acc    = t["--acc"]    || "#7c3aed";
+  const border = t["--border"] || "rgba(255,255,255,0.12)";
+  const txt    = t["--text"]   || "#ffffff";
+  const txt2   = t["--text2"]  || "rgba(255,255,255,0.5)";
+  const font   = t["--font"]   || t.font || "inherit";
 
-  // Auto-resize textarea
+  const isCyber  = t.id === "cyberpunk" || t.id === "gamer";
+  const isPastel = t.id === "pastel" || t.id === "pastel-dream";
+  const isLight  = t.id === "light" || t.id === "premium";
+  const isDark   = !isLight;
+
+  const hasText   = value.trim().length > 0;
+  const isSmall   = typeof window !== "undefined" && window.innerWidth < 400;
+
+  // Derived colors
+  const pillBg      = isLight ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.04)";
+  const pillBgHover = isLight ? "rgba(255,255,255,0.98)" : "rgba(255,255,255,0.06)";
+  const outerBg     = isLight
+    ? "rgba(240,238,232,0.85)"
+    : "rgba(12,14,20,0.7)";
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const autoResize = useCallback((el) => {
     el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 80) + "px";
+    el.style.height = Math.min(el.scrollHeight, 150) + "px";
   }, []);
 
+  // FIX 6: Throttled typing events (1.5s interval)
+  const typingThrottleRef = useRef(false);
   const handleChange = (e) => {
     onChange(e.target.value);
     autoResize(e.target);
-    onTyping?.();
+    
+    if (!typingThrottleRef.current) {
+      onTyping?.();
+      typingThrottleRef.current = true;
+      setTimeout(() => { typingThrottleRef.current = false; }, 1500);
+    }
   };
 
   const handleKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      handleSend();
     }
   };
 
   const handleSend = () => {
+    if (!value.trim() || disabled) return;
     onSend();
-    if (taRef.current) {
-      taRef.current.style.height = "auto";
-    }
+    if (taRef.current) taRef.current.style.height = "auto";
   };
 
-  const focusBorderColor = focused ? t["--acc"] : t["--border"];
-  const focusBoxShadow   = focused
-    ? isCyber
-      ? `0 0 25px ${t["--acc"]}20`
-      : isPastel
-      ? "0 4px 25px rgba(244,114,182,0.2)"
-      : `0 0 0 2px ${t["--acc"]}20`
-    : "none";
+  // ── Corner radius helpers ─────────────────────────────────────────────────
+  const btnRadius = isCyber ? "6px" : isPastel ? "50%" : "14px";
+  const pillRadius = isCyber ? "8px" : "24px";
 
   return (
-    <div className="aero-container" style={{
-      padding: "14px 18px",
-      background: t["--glass"],
-      backdropFilter: `blur(${t["--blur"]})`,
-      WebkitBackdropFilter: `blur(${t["--blur"]})`,
-      borderTop: "none",
-      flexShrink: 0, zIndex: 10,
-    }}>
-      <div className="aero-inner" style={{
-        display: "flex", alignItems: "center", gap: 10,
-        padding: "9px 12px",
-        background: t["--glass2"],
-        border: `1px solid ${focusBorderColor}`,
-        borderRadius: isCyber ? "2px" : t["--radius"],
-        transition: "border-color 0.25s, box-shadow 0.25s",
-        boxShadow: focusBoxShadow,
-      }}>
-        {/* Mobile Left: Plus icon */}
-        <div className="aero-mobile-only" style={{ display: "none" }}>
-          <button className="aero-plus-btn" onClick={onImageAttach}>
-             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          </button>
-        </div>
-
-        {/* Desktop Left: Self pixel avatar */}
-        <div className="aero-desktop-only" style={{ flexShrink: 0, display: "flex" }}>
-          <PixelAvatar
-            type={selfAnimal || "dog"}
-            state={selfAvatarState || "idle"}
-            size={30}
-            style={{
-              imageRendering: "pixelated",
-              borderRadius: isPastel ? "50%" : isCyber ? "2px" : "8px",
-              border: `2px solid ${t["--acc"]}`,
-              display: "block",
-              boxShadow: isCyber ? `0 0 10px ${t["--acc"]}` : "none",
-            }}
-          />
-        </div>
-
-        {/* Input Area */}
-        <div className="aero-input-wrapper" style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
-          <textarea
-            ref={taRef}
-            className="aero-textarea"
-            value={value}
-            onChange={handleChange}
-            onKeyDown={handleKey}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            disabled={disabled || isRecording}
-            placeholder={isRecording ? "Recording..." : "Transmit encrypted..."}
-            rows={1}
-            style={{
-              flex: 1, background: "none", border: "none", outline: "none",
-              color: t["--text"], fontFamily: isCyber ? t.fontMono : t.font,
-              fontSize: isCyber ? 13 : 14, resize: "none",
-              maxHeight: 80, overflowY: "auto", lineHeight: 1.4,
-              caretColor: t["--acc"],
-            }}
-          />
-          {/* Mobile Right inside wrapper: Emoji */}
-          <div className="aero-mobile-only" style={{ display: "none", cursor: "pointer", color: "#8A8480" }} onClick={() => onMediaToggle?.("emoji")}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-          </div>
-        </div>
-
-        {/* Desktop Right: Action buttons + Send */}
-        <div className="aero-desktop-only" style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            {[
-              { icon: <Ico d={I.emoji} size={18} stroke="currentColor" />, label: "Emoji", onClick: () => onMediaToggle?.("emoji") },
-              { icon: <Ico d={I.img} size={18} stroke="currentColor" />, label: "Image", onClick: onImageAttach },
-              { icon: <Ico d={I.attach} size={18} stroke="currentColor" />, label: "File" },
-              { icon: <Ico d={isRecording ? I.mic2 : I.mic} size={18} stroke="currentColor" />, label: "Voice", onClick: onVoiceToggle, active: isRecording },
-            ].map(({ icon, label, onClick, active }) => (
-              <ActionBtn key={label} t={t} onClick={onClick} title={label} active={active}>
-                {icon}
-              </ActionBtn>
-            ))}
-          </div>
-
-          <button
-            onClick={handleSend}
-            disabled={disabled || !value.trim()}
-            title="Send"
-            style={{
-              width: 36, height: 36,
-              borderRadius: isPastel ? "50%" : isCyber ? "2px" : t["--radius"],
-              border: "none",
-              background: isCyber
-                ? t["--acc"]
-                : `linear-gradient(135deg,${t["--acc"]},${t["--acc2"]})`,
-              cursor: value.trim() ? "pointer" : "default",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 16, color: isCyber ? "#000" : "#fff",
-              transition: "all 0.2s",
-              boxShadow: t["--shadow"],
-              opacity: !value.trim() ? 0.45 : 1,
-              flexShrink: 0,
-            }}
-            onMouseEnter={e => {
-              if (value.trim()) {
-                e.currentTarget.style.transform = "scale(1.1)";
-                e.currentTarget.style.boxShadow = isCyber
-                  ? `0 0 35px ${t["--acc"]}`
-                  : `0 0 25px ${t["--acc"]}70`;
-              }
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.boxShadow = t["--shadow"];
-            }}
-            onMouseDown={e => { e.currentTarget.style.transform = "scale(0.94)"; }}
-            onMouseUp={e => { e.currentTarget.style.transform = "scale(1.1)"; }}
-          >
-            ➤
-          </button>
-        </div>
-
-        {/* Mobile Right: Mic/Send button */}
-        <div className="aero-mobile-only" style={{ display: "none" }}>
-          {value.trim() ? (
-            <button className="aero-mic-btn" onClick={handleSend} style={{ background: '#10B981', boxShadow: '0 4px 10px rgba(16, 185, 129, 0.3)' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-            </button>
-          ) : (
-            <button className="aero-mic-btn" onClick={onVoiceToggle}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* E2EE notice */}
-      <div className="aero-desktop-only" style={{
-        display: "flex", alignItems: "center", justifyContent: "center",
-        gap: 5, fontSize: 10,
-        color: isCyber ? t["--acc"] : t["--text2"],
-        opacity: isCyber ? 0.7 : 0.55,
-        marginTop: 7,
-        fontFamily: isCyber ? t.fontMono : t.font,
-        letterSpacing: "0.3px",
-        textShadow: isCyber ? `0 0 6px ${t["--acc"]}` : "none",
-      }}>
-        🔒 Messages are end-to-end encrypted · AES-256-GCM + RSA-2048
-      </div>
-    </div>
-  );
-}
-
-function ActionBtn({ t, onClick, title, children, active }) {
-  const [hov, setHov] = useState(false);
-  const isCyber = t.id === "cyberpunk" || t.id === "gamer";
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+    <motion.div
+      initial={{ y: 16, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 300, damping: 28 }}
       style={{
-        width: 32, height: 32,
-        borderRadius: isCyber ? "2px" : `calc(${t["--radius"]} - 4px)`,
-        border: `1px solid ${active || hov ? t["--acc"] : t["--border"]}`,
-        background: active ? `${t["--acc"]}33` : hov ? t["--glass2"] : t["--glass"],
-        cursor: "pointer",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 14, transition: "all 0.2s",
-        color: active || hov ? t["--acc"] : t["--text2"],
-        transform: hov ? "scale(1.08)" : "scale(1)",
-        boxShadow: ((active || hov) && isCyber) ? `0 0 10px ${t["--acc"]}` : "none",
+        padding: "10px 16px 14px",
+        background: outerBg,
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        borderTop: `1px solid ${border}`,
+        flexShrink: 0,
+        zIndex: 10,
+        position: "relative",
       }}
     >
-      {children}
-    </button>
+      {/* ── Subtle top shimmer line ───────────────────────────────────────── */}
+      <div style={{
+        position: "absolute", top: 0, left: "10%", right: "10%", height: 1,
+        background: `linear-gradient(90deg, transparent, ${acc}55, transparent)`,
+        pointerEvents: "none",
+      }} />
+
+      <div style={{
+        display: "flex",
+        alignItems: "flex-end",
+        gap: 10,
+        maxWidth: 1200,
+        margin: "0 auto",
+        width: "100%",
+      }}>
+
+        {/* ── Attach (+) ────────────────────────────────────────────────────── */}
+        <motion.button
+          whileHover={{ scale: 1.1, rotate: 90 }}
+          whileTap={{ scale: 0.88 }}
+          onClick={onImageAttach}
+          title="Attach file"
+          style={{
+            width: 44, height: 44,
+            flexShrink: 0,
+            borderRadius: btnRadius,
+            border: `1px solid ${border}`,
+            background: focused ? `${acc}18` : (isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"),
+            color: focused ? acc : txt2,
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.25s cubic-bezier(0.16,1,0.3,1)",
+            opacity: disabled ? 0.4 : 1,
+            marginBottom: 0,
+          }}
+        >
+          <Plus size={20} strokeWidth={2.5} />
+        </motion.button>
+
+        {/* ── Main Input Capsule ────────────────────────────────────────────── */}
+        <div style={{
+          flex: 1,
+          minWidth: 0,
+          position: "relative",
+          // Glowing border via outline + box-shadow combo
+          borderRadius: pillRadius,
+          background: focused ? pillBgHover : pillBg,
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          outline: focused
+            ? `1.5px solid ${acc}`
+            : `1px solid ${border}`,
+          boxShadow: focused
+            ? `0 0 0 3px ${acc}18, 0 4px 24px rgba(0,0,0,${isDark ? "0.3" : "0.08"}), inset 0 1px 0 rgba(255,255,255,0.08)`
+            : `0 2px 12px rgba(0,0,0,${isDark ? "0.25" : "0.06"}), inset 0 1px 0 rgba(255,255,255,0.06)`,
+          transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+          overflow: "hidden",
+        }}>
+
+          {/* Inner layout */}
+          <div style={{
+            display: "flex",
+            alignItems: "flex-end",
+            padding: "6px 6px 6px 8px",
+            gap: 6,
+          }}>
+
+            {/* Avatar sigil */}
+            {!isSmall && (
+              <motion.div
+                animate={{ scale: focused ? 1.06 : 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                style={{
+                  flexShrink: 0,
+                  borderRadius: isPastel ? "50%" : isCyber ? "4px" : "10px",
+                  overflow: "hidden",
+                  border: `1.5px solid ${focused ? acc + "99" : border + "88"}`,
+                  marginBottom: 4,
+                  transition: "border-color 0.25s",
+                  boxShadow: focused ? `0 0 10px ${acc}33` : "none",
+                }}
+              >
+                <PixelAvatar
+                  type={selfAnimal || "dog"}
+                  state={selfAvatarState || "idle"}
+                  size={34}
+                />
+              </motion.div>
+            )}
+
+            {/* Textarea */}
+            <textarea
+              ref={taRef}
+              value={value}
+              onChange={handleChange}
+              onKeyDown={handleKey}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              disabled={disabled || isRecording}
+              placeholder={isRecording ? "⬤  Recording secure feed..." : "Transmit via Secure Ratchet..."}
+              rows={1}
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                padding: "12px 4px",
+                color: txt,
+                fontFamily: font,
+                fontSize: "16px",
+                fontWeight: 450,
+                outline: "none",
+                resize: "none",
+                lineHeight: "1.5",
+                maxHeight: "150px",
+                overflowY: "auto",
+                caretColor: acc,
+                // placeholder color injected via CSS class below
+              }}
+              className="aeroinput-ta"
+            />
+
+            {/* Emoji / sticker trigger */}
+            <motion.button
+              whileHover={{ scale: 1.2, rotate: -8 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => onMediaToggle?.("emoji")}
+              title="Emoji & GIFs"
+              style={{
+                background: "none",
+                border: "none",
+                color: focused ? acc + "cc" : txt2,
+                cursor: "pointer",
+                padding: "8px 6px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+                transition: "color 0.2s",
+                marginBottom: 2,
+              }}
+            >
+              <Smile size={20} strokeWidth={1.8} />
+            </motion.button>
+          </div>
+
+          {/* Animated focus underline */}
+          <AnimatePresence>
+            {focused && (
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                exit={{ scaleX: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                style={{
+                  position: "absolute",
+                  bottom: 0, left: 0, right: 0,
+                  height: 2,
+                  background: `linear-gradient(90deg, transparent, ${acc}, ${acc}aa, transparent)`,
+                  originX: 0.5,
+                  borderRadius: "0 0 4px 4px",
+                }}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* ── Send button ────────────────────────────────────────────────────── */}
+        <motion.button
+          onClick={handleSend}
+          disabled={disabled || !hasText}
+          title="Send"
+          animate={{
+            background: hasText
+              ? acc
+              : (isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"),
+            boxShadow: hasText
+              ? `0 4px 20px ${acc}66, 0 0 0 1px ${acc}`
+              : `0 0 0 1px ${border}`,
+            color: hasText
+              ? (isCyber ? "#000" : "#fff")
+              : txt2,
+          }}
+          whileHover={hasText ? { scale: 1.12, y: -1 } : {}}
+          whileTap={hasText ? { scale: 0.9 } : {}}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          style={{
+            width: 44, height: 44,
+            flexShrink: 0,
+            borderRadius: btnRadius,
+            border: "none",
+            cursor: hasText ? "pointer" : "default",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            marginBottom: 0,
+          }}
+        >
+          <AnimatePresence mode="wait">
+            {hasText ? (
+              <motion.span
+                key="arrow"
+                initial={{ scale: 0, rotate: -45, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                exit={{ scale: 0, rotate: 45, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                style={{ display: "flex" }}
+              >
+                <ArrowUp size={20} strokeWidth={2.5} />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="send"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                style={{ display: "flex" }}
+              >
+                <Send size={18} strokeWidth={1.8} />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </div>
+
+      {/* ── Placeholder color injection ───────────────────────────────────── */}
+      <style>{`
+        .aeroinput-ta::placeholder {
+          color: ${txt2};
+          opacity: 0.55;
+          font-style: italic;
+        }
+        .aeroinput-ta::-webkit-scrollbar { width: 4px; }
+        .aeroinput-ta::-webkit-scrollbar-track { background: transparent; }
+        .aeroinput-ta::-webkit-scrollbar-thumb { background: ${acc}44; border-radius: 4px; }
+      `}</style>
+    </motion.div>
   );
 }

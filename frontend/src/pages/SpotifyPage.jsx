@@ -367,7 +367,7 @@ export default function SpotifyPage() {
                 </button>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <img
+                <img loading="lazy" decoding="async"
                   src={spotifyProfile?.profileImage || `https://ui-avatars.com/api/?name=${spotifyProfile?.displayName || "U"}&background=1DB954&color=fff`}
                   alt="Profile"
                   style={{ width: 34, height: 34, borderRadius: "50%", border: `2px solid ${chrome.accent}40`, objectFit: "cover" }}

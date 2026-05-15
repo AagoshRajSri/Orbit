@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { spotifyService } from "../services/spotifyService";
+import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
@@ -18,6 +19,7 @@ import { useSpotifyStore } from "../store/useSpotifyStore";
 import { THEMES, THEME_LABELS } from "../constants";
 import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
 import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge.jsx";
+import SecurityExplanation from "../components/settings/SecurityExplanation";
 const LUXURY_COLORS = {
   canvas: "#F8F5EF",
   surface: "#FFFFFF",
@@ -601,7 +603,7 @@ const HiddenNexusGlobe = memo(({ nexus, onReveal, index, totalCount }) => {
 
 const LuxuryWrapper = memo(({ children, hiddenNexuses, onReveal, handleLogout }) => {
   const rootRef = useRef(null);
-  const { logout } = useAuthStore();
+  const { logout } = useAuthStore(useShallow(state => ({ logout: state.logout })));
   
   const onLogout = async () => {
     if (handleLogout) await handleLogout();
@@ -796,7 +798,7 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
                     <div style={{ width: 40, height: 40, borderRadius: 12, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                                             {nexus.avatar ? (
-                                              <img src={nexus.avatar} alt={nexus.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
+                                              <img loading="lazy" decoding="async" src={nexus.avatar} alt={nexus.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
                                             ) : (
                                               (() => {
                                                 const ANIMALS = ['dog', 'cat', 'bunny'];
@@ -995,7 +997,7 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
                 >
                   <div style={{ width: 40, height: 40, borderRadius: '50%', background: "transparent", display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                     {u.profilePic ? (
-                      <img src={u.profilePic} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img loading="lazy" decoding="async" src={u.profilePic} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       (() => {
                         const ANIMALS = ['dog', 'cat', 'bunny'];
@@ -1048,10 +1050,11 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
 /* ─────────────────────────────── VIEWS ─────────────────────────────── */
 
 export default function LightTheme({ children }) {
-   const { nexusActionView, setNexusActionView, selectedNexus, setSelectedNexus, selectedNexusId, nexuses } = useNexusStore();
-   const { selectedUser, setSelectedUser, users } = useChatStore();
-   const { authUser, logout } = useAuthStore();
-   const { spotifyLinked, currentTrack } = useSpotifyStore();
+   const { nexusActionView, setNexusActionView, selectedNexus, setSelectedNexus, selectedNexusId, nexuses } = useNexusStore(useShallow(state => ({ nexusActionView: state.nexusActionView, setNexusActionView: state.setNexusActionView, selectedNexus: state.selectedNexus, setSelectedNexus: state.setSelectedNexus, selectedNexusId: state.selectedNexusId, nexuses: state.nexuses })));
+   const { selectedUser, setSelectedUser, users } = useChatStore(useShallow(state => ({ selectedUser: state.selectedUser, setSelectedUser: state.setSelectedUser, users: state.users })));
+   const heroRef = useRef(null);
+   const { authUser, logout } = useAuthStore(useShallow(state => ({ authUser: state.authUser, logout: state.logout })));
+   const { spotifyLinked, currentTrack } = useSpotifyStore(useShallow(state => ({ spotifyLinked: state.spotifyLinked, currentTrack: state.currentTrack })));
    const nexusSelected = Boolean(selectedNexus || selectedNexusId);
    const navigate = useNavigate();
    const location = useLocation();
@@ -1107,7 +1110,7 @@ export default function LightTheme({ children }) {
                 title="Orbit" 
                 leftIcon={
                   <div onClick={() => navigate("/profile")} style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "1px solid #EAE4D8", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", cursor: "pointer" }}>
-                    <img src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img loading="lazy" decoding="async" src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </div>
                 }
                 rightIcon={
@@ -1119,12 +1122,73 @@ export default function LightTheme({ children }) {
               <div className="lm-mobile-scroll" style={{ display: "flex", flexDirection: "column" }}>
                 {currentTab === "home" ? (
                   <>
-                    <div style={{ marginBottom: 24 }}>
-                      <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#1C1C1C", marginBottom: 4 }}>Welcome to Orbit</h1>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B6560" }}>
+                    <div style={{ marginBottom: 12 }}>
+                      <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#1C1C1C", marginBottom: 2 }}>Welcome to Orbit</h1>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B6560", marginBottom: 14 }}>
                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E" }} />
                         Online
                       </div>
+
+                      {/* ── NEXUS & CHATS CAROUSEL ── */}
+                      <div style={{ 
+                        display: "flex", gap: 16, overflowX: "auto", paddingBottom: 12, 
+                        marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20,
+                        WebkitOverflowScrolling: "touch"
+                      }} className="minimal-scrollbar">
+                        {/* Nexus Rings */}
+                        {nexuses?.map(nexus => (
+                          <div 
+                            key={nexus._id} 
+                            onClick={() => { setSelectedNexus(nexus); setSelectedUser(null); navigate(`/nexus/${nexus._id}`); }}
+                            style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer" }}
+                          >
+                            <div style={{ 
+                              width: 64, height: 64, borderRadius: "50%", padding: 3, 
+                              background: "linear-gradient(135deg, #C9A87C, #EAE5DB)",
+                              boxShadow: "0 4px 12px rgba(201,168,124,0.2)"
+                            }}>
+                              <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {nexus.avatar ? (
+                                  <img loading="lazy" decoding="async" src={nexus.avatar} alt={nexus.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                  <PixelAvatarBadge type="dog" state="idle" size={50} showDot={false} style={{ imageRendering: "pixelated" }} />
+                                )}
+                              </div>
+                            </div>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: "#1C1C1C", maxWidth: 64, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nexus.name}</span>
+                          </div>
+                        ))}
+
+                        {/* User Rings */}
+                        {users?.filter(u => u.status === "online").map(u => (
+                          <div 
+                            key={u._id} 
+                            onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }}
+                            style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer" }}
+                          >
+                            <div style={{ 
+                              width: 64, height: 64, borderRadius: "50%", padding: 3, 
+                              background: "linear-gradient(135deg, #6DA37A, #EAF5EC)",
+                              boxShadow: "0 4px 12px rgba(109,163,122,0.2)"
+                            }}>
+                              <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {u.profilePic ? (
+                                  <img loading="lazy" decoding="async" src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                  <PixelAvatarBadge type="cat" state="idle" size={50} showDot={false} style={{ imageRendering: "pixelated" }} />
+                                )}
+                              </div>
+                            </div>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: "#1C1C1C", maxWidth: 64, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <style>{`
+                        .minimal-scrollbar::-webkit-scrollbar { height: 4px; }
+                        .minimal-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); border-radius: 10px; }
+                        .minimal-scrollbar::-webkit-scrollbar-thumb { background: rgba(201,168,124,0.3); border-radius: 10px; }
+                        .minimal-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(201,168,124,0.5); }
+                      `}</style>
                     </div>
                     
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1229,17 +1293,73 @@ export default function LightTheme({ children }) {
                 <UniversalChatContainer type="dm" />
               </div>
             ) : (
-              <div style={{ flex: 1, padding: '24px 40px', display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto' }} className="luxury-scroll">
-                <div style={{ marginBottom: 20 }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                      <div style={{ width: 40, height: 2, background: LUXURY_COLORS.goldMedium }} />
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: '#688494' }}>STATUS: ONLINE</span>
+                <div style={{ flex: 1, padding: '24px 40px', display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto' }} className="luxury-scroll">
+                  <div ref={heroRef} style={{ marginBottom: 24 }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                        <div style={{ width: 40, height: 2, background: LUXURY_COLORS.goldMedium }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: '#688494' }}>STATUS: ONLINE</span>
+                     </div>
+                     <h1 className="font-playfair" style={{ fontSize: 36, fontWeight: 700, color: "#1C2431", margin: '0 0 6px', letterSpacing: '-0.5px', textShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
+                       WELCOME TO ORBIT
+                     </h1>
+                     <p style={{ fontSize: 14, color: LUXURY_COLORS.textSecondary, marginBottom: 16 }}>Choose a pathway to begin your mission.</p>
+                  </div>
+
+                   {/* ── DESKTOP NEXUS & CHATS CAROUSEL ── */}
+                   <div style={{ 
+                     display: "flex", gap: 20, overflowX: "auto", paddingBottom: 16, marginBottom: 24,
+                     WebkitOverflowScrolling: "touch"
+                   }} className="minimal-scrollbar">
+                     {nexuses?.map(nexus => (
+                       <div 
+                         key={nexus._id} 
+                         onClick={() => { setSelectedNexus(nexus); setSelectedUser(null); navigate(`/nexus/${nexus._id}`); }}
+                         style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, cursor: "pointer", transition: "transform 0.2s" }}
+                         onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
+                         onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+                       >
+                         <div style={{ 
+                           width: 72, height: 72, borderRadius: "50%", padding: 3, 
+                           background: "linear-gradient(135deg, #C9A87C, #EAE5DB)",
+                           boxShadow: "0 6px 16px rgba(201,168,124,0.15)"
+                         }}>
+                           <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                             {nexus.avatar ? (
+                               <img loading="lazy" decoding="async" src={nexus.avatar} alt={nexus.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                             ) : (
+                               <PixelAvatarBadge type="dog" state="idle" size={56} showDot={false} style={{ imageRendering: "pixelated" }} />
+                             )}
+                           </div>
+                         </div>
+                         <span style={{ fontSize: 11, fontWeight: 700, color: "#1C1C1C", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nexus.name}</span>
+                       </div>
+                     ))}
+
+                     {users?.map(u => (
+                       <div 
+                         key={u._id} 
+                         onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }}
+                         style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, cursor: "pointer", transition: "transform 0.2s" }}
+                         onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
+                         onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+                       >
+                         <div style={{ 
+                           width: 72, height: 72, borderRadius: "50%", padding: 3, 
+                           background: "linear-gradient(135deg, #6DA37A, #EAF5EC)",
+                           boxShadow: "0 6px 16px rgba(109,163,122,0.15)"
+                         }}>
+                           <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                             {u.profilePic ? (
+                               <img loading="lazy" decoding="async" src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                             ) : (
+                               <PixelAvatarBadge type="cat" state="idle" size={56} showDot={false} style={{ imageRendering: "pixelated" }} />
+                             )}
+                           </div>
+                         </div>
+                         <span style={{ fontSize: 11, fontWeight: 700, color: "#1C1C1C", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</span>
+                       </div>
+                     ))}
                    </div>
-                   <h1 className="font-playfair" style={{ fontSize: 36, fontWeight: 700, color: "#1C2431", margin: '0 0 8px', letterSpacing: '-0.5px', textShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
-                     WELCOME TO ORBIT
-                   </h1>
-                   <p style={{ fontSize: 14, color: LUXURY_COLORS.textSecondary }}>Choose a pathway to begin your mission.</p>
-                </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: 16, flex: 1, minHeight: 0 }}>
                {/* SPOTIFY CARD */}
@@ -1353,7 +1473,7 @@ export default function LightTheme({ children }) {
 
 export function LightSpotify() {
   const navigate = useNavigate();
-  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore();
+  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore(useShallow(state => ({ spotifyLinked: state.spotifyLinked, currentTrack: state.currentTrack, isPlaying: state.isPlaying, pausePlayback: state.pausePlayback, playTrack: state.playTrack })));
 
   return (
     <LuxuryWrapper>
@@ -1423,7 +1543,7 @@ export function LightSpotify() {
 }
 
 export function LightProfile() {
-  const { authUser } = useAuthStore();
+  const { authUser } = useAuthStore(useShallow(state => ({ authUser: state.authUser })));
   const navigate = useNavigate();
 
   return (
@@ -1437,14 +1557,14 @@ export function LightProfile() {
           leftLabel="Dashboard" 
           rightIcon={
             <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', border: '1px solid #EAE4D8', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-              <img src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img loading="lazy" decoding="async" src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           }
         />
         <div className="lm-mobile-scroll" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
           <div style={{ position: 'relative', marginBottom: 24 }}>
             <div style={{ width: 140, height: 140, borderRadius: '50%', background: 'white', border: '8px solid rgba(255,255,255,0.6)', padding: 4, boxShadow: '0 8px 32px rgba(140,120,90,0.1)' }}>
-              <img src={authUser?.profilePic || "/avatar.png"} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              <img loading="lazy" decoding="async" src={authUser?.profilePic || "/avatar.png"} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             </div>
             <div style={{ position: 'absolute', bottom: 4, right: 4, width: 36, height: 36, borderRadius: '50%', background: '#C4A478', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 12px rgba(196,164,120,0.4)', border: '2px solid white' }}>
                <Edit size={16} />
@@ -1486,7 +1606,7 @@ export function LightProfile() {
          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 60 }}>
            <div style={{ position: 'relative', marginBottom: 32 }}>
              <div style={{ width: 180, height: 180, borderRadius: '50%', background: 'white', border: `4px solid ${LUXURY_COLORS.goldMedium}`, padding: 8, boxShadow: LUXURY_COLORS.shadowMedium }}>
-               <img src={authUser?.profilePic || "/avatar.png"} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+               <img loading="lazy" decoding="async" src={authUser?.profilePic || "/avatar.png"} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
              </div>
              <div style={{ position: 'absolute', bottom: 8, right: 8, width: 44, height: 44, borderRadius: '50%', background: LUXURY_COLORS.surface, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', cursor: 'pointer', border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
                 📸
@@ -1526,12 +1646,15 @@ export function LightSettings({
   isDirty, handleSave, handleReset, authUser
 }) {
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
   
   const sections = [
     { id: "profile", label: "Identity Matrix" },
     { id: "sound", label: "Acoustic Tuning" },
     { id: "appearance", label: "Visual Themes" },
     { id: "notifications", label: "Alert Systems" },
+    { id: "security", label: "Security & Privacy" },
   ];
 
   return (
@@ -1544,18 +1667,18 @@ export function LightSettings({
           onBack={() => navigate('/')} 
           rightIcon={
             <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', border: '1px solid #EAE4D8', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-              <img src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img loading="lazy" decoding="async" src={authUser?.profilePic || "/avatar.png"} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           }
         />
-        <div className="lm-mobile-scroll" style={{ padding: '24px 16px' }}>
+        <div className="lm-mobile-scroll" style={{ padding: '24px 16px', paddingBottom: '120px' }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: '#1C1C1C', marginBottom: 24 }}>Preferences</h1>
           
           <div className="lm-card" style={{ padding: '8px 16px', marginBottom: 32 }}>
             {sections.map((s, idx) => (
               <div 
                 key={s.id} 
-                onClick={() => setActiveSection(s.id)}
+                onClick={() => setActiveSection(activeSection === s.id ? null : s.id)}
                 style={{ 
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
                   padding: '16px 0', 
@@ -1569,6 +1692,7 @@ export function LightSettings({
             ))}
           </div>
 
+          {activeSection && (
           <div className="lm-card" style={{ padding: 20 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1C1C1C', marginBottom: 20 }}>Configure {sections.find(s => s.id === activeSection)?.label}</h2>
             
@@ -1633,8 +1757,22 @@ export function LightSettings({
                      "pastel-dream":       { primary: "#e060b0", bg: "#ffd4ee" },
                    };
                    const preview = THEME_PREVIEW[t] || { primary: "#CFAE84", bg: "#F7F5F0" };
+                   const isComingSoon = isMobile && t !== "light";
                    return (
-                     <div key={t} onClick={() => setDraftTheme(t)} style={{ padding: 12, borderRadius: 12, border: `2px solid ${draftTheme === t ? '#B8924A' : '#EAE4D8'}`, background: 'white', textAlign: 'center', cursor: 'pointer' }}>
+                     <div key={t} onClick={() => { if (!isComingSoon) { setDraftTheme(t); handleSave(t); } }} style={{ padding: 12, borderRadius: 12, border: `2px solid ${draftTheme === t ? '#B8924A' : '#EAE4D8'}`, background: 'white', textAlign: 'center', cursor: isComingSoon ? 'not-allowed' : 'pointer', position: 'relative', opacity: isComingSoon ? 0.7 : 1 }}>
+                        {isComingSoon && (
+                          <div style={{
+                            position: "absolute", inset: 0, zIndex: 10,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            background: "rgba(255,255,255,0.5)", backdropFilter: "blur(3px)", borderRadius: 12
+                          }}>
+                            <div style={{
+                              background: "#B8924A", color: "#fff",
+                              fontSize: 8, fontWeight: 900, padding: "2px 8px", borderRadius: 4,
+                              letterSpacing: 1, boxShadow: "0 0 10px rgba(184,146,74,0.5)"
+                            }}>COMING SOON</div>
+                          </div>
+                        )}
                         <div style={{ width: '100%', height: 40, background: preview.bg, borderRadius: 6, marginBottom: 8, display: 'flex', overflow: 'hidden', border: '1px solid #EAE4D8' }}>
                            <div style={{ flex: 1, background: preview.primary }} />
                            <div style={{ flex: 2, background: preview.bg }} />
@@ -1658,6 +1796,24 @@ export function LightSettings({
               </div>
             )}
 
+            {activeSection === "security" && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div style={{ padding: '20px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Identity Broadcast</div>
+                    <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Hides your online status from all orbits.</div>
+                  </div>
+                  <div className="lm-toggle" style={{ background: draftShowOnlineStatus ? '#B8924A' : '#E0E0E0' }} onClick={() => setDraftShowOnlineStatus(!draftShowOnlineStatus)}>
+                    <div className="lm-toggle-thumb" style={{ left: draftShowOnlineStatus ? 25 : 3 }} />
+                  </div>
+                </div>
+                
+                <div style={{ padding: '12px', background: 'rgba(16,185,129,0.03)', borderRadius: 20, border: '1px solid rgba(16,185,129,0.1)' }}>
+                  <SecurityExplanation isDark={false} />
+                </div>
+              </div>
+            )}
+
             {isDirty && (
               <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
                 <button onClick={handleReset} style={{ flex: 1, padding: 14, borderRadius: 12, border: '1px solid #EAE4D8', background: '#F8F5EE', color: '#1C1C1C', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Reset</button>
@@ -1665,6 +1821,7 @@ export function LightSettings({
               </div>
             )}
           </div>
+          )}
         </div>
         <MobileTabBar activeTab="settings" />
       </div>
@@ -1683,7 +1840,7 @@ export function LightSettings({
              {sections.map(s => (
                <button 
                  key={s.id} 
-                 onClick={() => setActiveSection(s.id)}
+                 onClick={() => setActiveSection(activeSection === s.id ? null : s.id)}
                  style={{ 
                    textAlign: 'left', padding: '14px 20px', borderRadius: 12, border: 'none', 
                    background: activeSection === s.id ? LUXURY_COLORS.goldMedium : 'transparent', 
@@ -1701,12 +1858,16 @@ export function LightSettings({
         {/* Settings Content */}
         <div className="luxury-scroll" style={{ flex: 1, padding: '50px 60px', overflowY: 'auto' }}>
            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+             {activeSection && (
+             <>
              <h3 style={{ fontSize: 20, fontWeight: 600 }}>Configure {sections.find(s => s.id === activeSection)?.label}</h3>
              
              <div style={{ display: 'flex', gap: 12 }}>
                <button onClick={handleReset} disabled={!isDirty} style={{ padding: '10px 20px', borderRadius: 8, border: `1px solid ${LUXURY_COLORS.borderSubtle}`, background: 'white', color: isDirty ? LUXURY_COLORS.textPrimary : '#D0D0D0', cursor: isDirty ? 'pointer' : 'not-allowed', fontWeight: 600, fontSize: 13 }}>Reset</button>
                <button onClick={handleSave} disabled={!isDirty} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: isDirty ? LUXURY_COLORS.textPrimary : '#E0E0E0', color: 'white', cursor: isDirty ? 'pointer' : 'not-allowed', fontWeight: 600, fontSize: 13 }}>Save Changes</button>
              </div>
+             </>
+             )}
            </div>
 
            {activeSection === "profile" && (
@@ -1734,33 +1895,47 @@ export function LightSettings({
 
 
            {activeSection === "appearance" && (() => {
-             const THEME_PREVIEW = {
-               "light":              { primary: "#3b82f6", bg: "#ffffff" },
-               "dark":               { primary: "#ef4444", bg: "#0a0a0a" },
-               "neon-cyberpunk":     { primary: "#8b5cf6", bg: "#0c0e14" },
-               "amoled-dark":        { primary: "#E8C990", bg: "#000000" },
-               "gamer-high-energy":  { primary: "#ff2d78", bg: "#080614" },
-               "pastel-dream":       { primary: "#e060b0", bg: "#ffd4ee" },
-             };
-             return (
-               <div>
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 24 }}>
-                    {THEMES.map(t => {
-                      const preview = THEME_PREVIEW[t] || { primary: "#CFAE84", bg: "#F7F5F0" };
-                      return (
-                        <div key={t} onClick={() => setDraftTheme(t)} style={{ padding: 24, borderRadius: 16, border: `2px solid ${draftTheme === t ? LUXURY_COLORS.goldMedium : LUXURY_COLORS.borderSubtle}`, background: 'white', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s', boxShadow: draftTheme === t ? LUXURY_COLORS.shadowSoft : 'none' }}>
-                           <div style={{ width: '100%', height: 60, background: preview.bg, borderRadius: 8, marginBottom: 16, display: 'flex', overflow: 'hidden', border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
-                              <div style={{ flex: 1, background: preview.primary }} />
-                              <div style={{ flex: 2, background: preview.bg }} />
-                           </div>
-                           <span style={{ fontSize: 13, fontWeight: 600 }}>{THEME_LABELS[t] || t.toUpperCase()}</span>
-                        </div>
-                      );
-                    })}
-                 </div>
-               </div>
-             );
-           })()}
+              const THEME_PREVIEW = {
+                "light":              { primary: "#3b82f6", bg: "#ffffff" },
+                "dark":               { primary: "#ef4444", bg: "#0a0a0a" },
+                "neon-cyberpunk":     { primary: "#8b5cf6", bg: "#0c0e14" },
+                "amoled-dark":        { primary: "#E8C990", bg: "#000000" },
+                "gamer-high-energy":  { primary: "#ff2d78", bg: "#080614" },
+                "pastel-dream":       { primary: "#e060b0", bg: "#ffd4ee" },
+              };
+              return (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 24 }}>
+                     {THEMES.map(t => {
+                       const preview = THEME_PREVIEW[t] || { primary: "#CFAE84", bg: "#F7F5F0" };
+                       const isComingSoon = isMobile && t !== "light";
+                       return (
+                         <div key={t} onClick={() => { if (!isComingSoon) { setDraftTheme(t); handleSave(t); } }} style={{ padding: 24, borderRadius: 16, border: `2px solid ${draftTheme === t ? LUXURY_COLORS.goldMedium : LUXURY_COLORS.borderSubtle}`, background: 'white', cursor: isComingSoon ? 'not-allowed' : 'pointer', textAlign: 'center', transition: 'all 0.2s', boxShadow: draftTheme === t ? LUXURY_COLORS.shadowSoft : 'none', position: 'relative', opacity: isComingSoon ? 0.7 : 1 }}>
+                            {isComingSoon && (
+                              <div style={{
+                                position: "absolute", inset: 0, zIndex: 10,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                background: "rgba(255,255,255,0.5)", backdropFilter: "blur(3px)", borderRadius: 16
+                              }}>
+                                <div style={{
+                                  background: LUXURY_COLORS.goldMedium, color: "#fff",
+                                  fontSize: 10, fontWeight: 900, padding: "4px 10px", borderRadius: 4,
+                                  letterSpacing: 1, boxShadow: "0 0 10px rgba(184,146,74,0.5)"
+                                }}>COMING SOON</div>
+                              </div>
+                            )}
+                            <div style={{ width: '100%', height: 60, background: preview.bg, borderRadius: 8, marginBottom: 16, display: 'flex', overflow: 'hidden', border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
+                               <div style={{ flex: 1, background: preview.primary }} />
+                               <div style={{ flex: 2, background: preview.bg }} />
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 600 }}>{THEME_LABELS[t] || t.toUpperCase()}</span>
+                         </div>
+                       );
+                     })}
+                  </div>
+                </div>
+              );
+            })()}
 
 
             {activeSection === "sound" && (
@@ -1804,6 +1979,24 @@ export function LightSettings({
                   <div onClick={() => { const v = !draftNotifications.enabled; setDraftNotifications(p => ({...p, enabled: v, desktop: v})); try { useSettingsStore.getState().updateSetting('notifications.enabled', v); } catch (_) {} }} style={{ width: 50, height: 28, borderRadius: 14, background: draftNotifications.enabled ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
                     <div style={{ position: 'absolute', top: 2, left: draftNotifications.enabled ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s' }} />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "security" && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 800 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: LUXURY_COLORS.surfaceHover, borderRadius: 12, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Broadcast Presence</div>
+                    <div style={{ fontSize: 13, color: LUXURY_COLORS.textSecondary }}>Allow others to see when you are online.</div>
+                  </div>
+                  <div onClick={() => setDraftShowOnlineStatus(!draftShowOnlineStatus)} style={{ width: 50, height: 28, borderRadius: 14, background: draftShowOnlineStatus ? LUXURY_COLORS.goldMedium : '#D0D0D0', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
+                    <div style={{ position: 'absolute', top: 2, left: draftShowOnlineStatus ? 24 : 2, width: 24, height: 24, borderRadius: '50%', background: 'white', transition: '0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }} />
+                  </div>
+                </div>
+
+                <div style={{ padding: '32px', background: 'rgba(16,185,129,0.02)', borderRadius: 24, border: '1px solid rgba(16,185,129,0.1)' }}>
+                  <SecurityExplanation isDark={false} />
                 </div>
               </div>
             )}

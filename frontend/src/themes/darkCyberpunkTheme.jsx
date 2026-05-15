@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, useCallback, useMemo, memo, Fragment } from "react";
 import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "../store/useAuthStore";
+import toast from "../lib/toast";
+import SecurityExplanation from "../components/settings/SecurityExplanation";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { THEMES, THEME_LABELS } from "../constants";
 import { useSoundManager } from "../hooks/useSoundManager";
@@ -14,9 +17,9 @@ import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBa
 import { spotifyService } from "../services/spotifyService";
 import { API_URL } from "../config";
 
-/* ─────────────────────────────────────────────
+/* 
    CONSTANTS
-───────────────────────────────────────────── */
+ */
 const C = "#00fff5";   // neon cyan
 const M = "#ff00c8";   // neon magenta
 const P = "#b026ff";   // neon purple
@@ -36,9 +39,9 @@ const METRICS = [
   { label: "NEXUS_CNT", val: "1,337", color: M },
 ];
 
-/* ─────────────────────────────────────────────
+/* 
    INLINE KEYFRAMES
-───────────────────────────────────────────── */
+ */
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
   @keyframes ncbPulse{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -82,7 +85,7 @@ const STYLES = `
     .ncb-profile-card { width: 100% !important; }
   }
 
-  /* ── Cyberpunk Chat Theme ── */
+  /*  Cyberpunk Chat Theme  */
   .neon-chat-env .nexus-chat-container {
     background: linear-gradient(180deg, #1A0033 0%, #000000 100%) !important;
     border: 1px solid rgba(255,0,255,0.3) !important;
@@ -159,11 +162,22 @@ const STYLES = `
     color: #fff !important;
     font-family: 'Rajdhani', sans-serif !important;
   }
+
+  /*  MOBILE CYBERPUNK  */
+  @media (min-width: 769px) { .ncb-mobile-only { display: none !important; } }
+  @media (max-width: 768px) { .ncb-desktop-only { display: none !important; } }
+  .ncb-mobile-canvas { display:flex; flex-direction:column; min-height:100dvh; background:#060010; position:relative; font-family:'Space Grotesk','Rajdhani',system-ui,sans-serif; }
+  .ncb-mobile-nav { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:rgba(6,0,16,0.97); border-bottom:1px solid rgba(0,255,245,0.2); flex-shrink:0; position:relative; z-index:10; }
+  .ncb-mobile-scroll { flex:1; overflow-y:auto; padding:14px 14px 90px; -webkit-overflow-scrolling:touch; }
+  .ncb-mobile-scroll::-webkit-scrollbar { display:none; }
+  .ncb-tab-bar { position:fixed; bottom:0; left:0; right:0; height:68px; background:rgba(4,0,14,0.98); border-top:1px solid rgba(0,255,245,0.2); display:flex; align-items:center; justify-content:space-around; z-index:999; backdrop-filter:blur(20px); }
+  .ncb-tab-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; flex:1; padding:6px 4px; background:none; border:none; cursor:pointer; color:rgba(0,255,245,0.3); font-family:'Orbitron',monospace; font-size:7px; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; transition:color 0.2s; -webkit-tap-highlight-color:transparent; }
+  .ncb-tab-btn.ncb-tab-active { color:#00fff5; }
 `;
 
-/* ─────────────────────────────────────────────
+/* 
    CANVAS: ORBIT CODE RAIN
-───────────────────────────────────────────── */
+ */
 const OrbitRain = memo(() => {
   const ref = useRef(null);
   useEffect(() => {
@@ -172,7 +186,7 @@ const OrbitRain = memo(() => {
     c.width = c.offsetWidth; c.height = c.offsetHeight;
     const cols = Math.floor(c.width / 16);
     const drops = Array(cols).fill(1);
-    const chars = "10ORBITНЕХУС//SYS//10101XYZ!@#$%^&*";
+    const chars = "10ORBIT//SYS//10101XYZ!@#$%^&*";
     const iv = setInterval(() => {
       ctx.fillStyle = "rgba(9,0,20,0.06)";
       ctx.fillRect(0, 0, c.width, c.height);
@@ -190,9 +204,9 @@ const OrbitRain = memo(() => {
   return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.18 }} />;
 });
 
-/* ─────────────────────────────────────────────
+/* 
    CANVAS: ORBITAL RING VISUALIZER
-───────────────────────────────────────────── */
+ */
 const OrbitalViz = memo(({ playing }) => {
   const ref = useRef(null);
   const bars = useRef(Array.from({ length: 28 }, () => 0.3 + Math.random() * 0.7));
@@ -237,9 +251,9 @@ const OrbitalViz = memo(({ playing }) => {
   return <canvas ref={ref} width={120} height={120} style={{ display: "block" }} />;
 });
 
-/* ─────────────────────────────────────────────
+/* 
    CANVAS: CONSTELLATION GRID
-───────────────────────────────────────────── */
+ */
 const ConstellationGrid = memo(() => {
   const ref = useRef(null);
   useEffect(() => {
@@ -280,9 +294,9 @@ const ConstellationGrid = memo(() => {
   return <canvas ref={ref} width={150} height={110} style={{ display: "block" }} />;
 });
 
-/* ─────────────────────────────────────────────
+/* 
    NEON CARD SHELL
-───────────────────────────────────────────── */
+ */
 const NeonCard = memo(({ color = C, children, style = {}, onClick }) => {
   const [hover, setHover] = useState(false);
   return (
@@ -307,8 +321,8 @@ const NeonCard = memo(({ color = C, children, style = {}, onClick }) => {
       }}
     >
       {/* corner accents */}
-      {[["-1px","-1px","Top","Left"],["auto","-1px","Bottom","Left"],
-        ["-1px","auto","Top","Right"],["auto","auto","Bottom","Right"]].map(([t,b,v,h],i) => (
+      {[["-1px", "-1px", "Top", "Left"], ["auto", "-1px", "Bottom", "Left"],
+      ["-1px", "auto", "Top", "Right"], ["auto", "auto", "Bottom", "Right"]].map(([t, b, v, h], i) => (
         <div key={i} style={{
           position: "absolute",
           top: t !== "auto" ? t : undefined, bottom: b !== "auto" ? b : undefined,
@@ -326,9 +340,9 @@ const NeonCard = memo(({ color = C, children, style = {}, onClick }) => {
   );
 });
 
-/* ─────────────────────────────────────────────
+/* 
    DATA STREAM OVERLAY
-───────────────────────────────────────────── */
+ */
 const DataStreams = memo(({ count = 5, color = P }) => {
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
@@ -345,14 +359,14 @@ const DataStreams = memo(({ count = 5, color = P }) => {
   );
 });
 
-/* ─────────────────────────────────────────────
+/* 
    SCAN FEED (like kill feed)
-───────────────────────────────────────────── */
+ */
 const ScanFeed = memo(() => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontSize: 8, fontWeight: 900, letterSpacing: "0.2em", color: `${C}aa`, fontFamily: "'Orbitron',monospace", marginBottom: 2 }}>
-        ◈ SCAN FEED
+        SCAN FEED
       </div>
       {SCAN_FEED.map((f, i) => (
         <div key={i} style={{
@@ -361,7 +375,7 @@ const ScanFeed = memo(() => {
           border: `1px solid ${f.mine ? f.color + "44" : "rgba(255,255,255,0.06)"}`,
         }}>
           <span style={{ fontSize: 8, fontWeight: 800, color: f.mine ? f.color : "rgba(255,255,255,0.6)", fontFamily: "'Orbitron',monospace", letterSpacing: "0.04em" }}>{f.node}</span>
-          <span style={{ fontSize: 7, color: "rgba(176,38,255,0.7)" }}>◆</span>
+          <span style={{ fontSize: 7, color: "rgba(176,38,255,0.7)" }}></span>
           <span style={{ fontSize: 8, color: "rgba(150,130,200,0.6)", fontFamily: "'Orbitron',monospace", flex: 1 }}>{f.type}</span>
           <span style={{ fontSize: 7, color: "rgba(100,100,150,0.5)", fontFamily: "'Share Tech Mono'" }}>{f.time}</span>
         </div>
@@ -370,9 +384,9 @@ const ScanFeed = memo(() => {
   );
 });
 
-/* ─────────────────────────────────────────────
+/* 
    METRIC ROW
-───────────────────────────────────────────── */
+ */
 const MetricRow = memo(() => {
   return (
     <div style={{ display: "flex", gap: 8 }}>
@@ -386,9 +400,9 @@ const MetricRow = memo(() => {
   );
 });
 
-/* ─────────────────────────────────────────────
+/* 
    TOP NAV
-───────────────────────────────────────────── */
+ */
 const TopNav = memo(({ navRef, synced, hiddenNexuses, onReveal }) => {
   const [time, setTime] = useState(() =>
     new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })
@@ -396,22 +410,22 @@ const TopNav = memo(({ navRef, synced, hiddenNexuses, onReveal }) => {
   useEffect(() => {
     const iv = setInterval(() =>
       setTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }))
-    , 1000);
+      , 1000);
     return () => clearInterval(iv);
   }, []);
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuthStore();
+  const { logout } = useAuthStore(useShallow(state => ({ logout: state.logout })));
   const { play } = useSoundManager();
 
   const navItems = [];
   if (location.pathname !== "/") {
-    navItems.push({ icon: "◀", label: "Back", path: "/", highlight: true });
+    navItems.push({ icon: "", label: "Back", path: "/", highlight: true });
   }
   navItems.push(
-    { icon: "⚙", label: "Settings", path: "/settings" },
-    { icon: "👤", label: "Profile", path: "/profile" },
-    { icon: "→", label: "Logout", action: "logout" }
+    { icon: "", label: "Settings", path: "/settings" },
+    { icon: "", label: "Profile", path: "/profile" },
+    { icon: "", label: "Logout", action: "logout" }
   );
 
   const btnStyle = (highlight) => ({
@@ -433,11 +447,11 @@ const TopNav = memo(({ navRef, synced, hiddenNexuses, onReveal }) => {
       backdropFilter: "blur(10px)",
     }}>
       {/* Logo */}
-      <div 
+      <div
         onClick={() => { play("click"); navigate("/"); }}
         style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
       >
-        <div style={{ width: 26, height: 26, borderRadius: "50%", border: `1.5px solid ${C}`, boxShadow: `0 0 10px ${C}`, display: "flex", alignItems: "center", justifyContent: "center", background: `${C}18`, fontSize: 12 }}>🌀</div>
+        <div style={{ width: 26, height: 26, borderRadius: "50%", border: `1.5px solid ${C}`, boxShadow: `0 0 10px ${C}`, display: "flex", alignItems: "center", justifyContent: "center", background: `${C}18`, fontSize: 12 }}></div>
         <span style={{ fontSize: 14, fontWeight: 900, letterSpacing: "0.2em", color: C, textShadow: `0 0 12px ${C},0 0 24px ${C}66`, fontFamily: "'Orbitron',monospace" }}>ORBIT</span>
         <span style={{ fontSize: 13, color: M, textShadow: `0 0 10px ${M}` }}>//</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.5)", fontFamily: "'Orbitron',monospace", letterSpacing: "0.1em" }}>VRC</span>
@@ -511,86 +525,86 @@ const TopNav = memo(({ navRef, synced, hiddenNexuses, onReveal }) => {
 
 
 
-// ── Hidden Nexus Crystal ──────────────────────────────────────────────────
+//  Hidden Nexus Crystal 
 const HiddenNexusCrystal = memo(({ nexus, onReveal }) => {
-    const [grabbed, setGrabbed] = useState(false);
-    const [pos, setPos] = useState({ x: 0, y: 0 });
-    const domRef = useRef(null);
-    const offsetRef = useRef({ ox: 0, oy: 0 });
-    const clickTimerRef = useRef(null);
-    const pendingRevealRef = useRef(false);
+  const [grabbed, setGrabbed] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const domRef = useRef(null);
+  const offsetRef = useRef({ ox: 0, oy: 0 });
+  const clickTimerRef = useRef(null);
+  const pendingRevealRef = useRef(false);
 
-    useEffect(() => {
-        if (!grabbed) return;
-        const onMove = (e) => {
-            setPos({ x: e.clientX - offsetRef.current.ox, y: e.clientY - offsetRef.current.oy });
-        };
-        const onUp = () => setGrabbed(false);
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
-        return () => {
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-        };
-    }, [grabbed]);
-
-    const handleMouseDown = (e) => {
-        if (e.detail === 2) {
-            e.preventDefault();
-            e.stopPropagation();
-            pendingRevealRef.current = false;
-            clearTimeout(clickTimerRef.current);
-            const rect = domRef.current.getBoundingClientRect();
-            setPos({ x: rect.left, y: rect.top });
-            offsetRef.current = { ox: e.clientX - rect.left, oy: e.clientY - rect.top };
-            setGrabbed(true);
-        }
+  useEffect(() => {
+    if (!grabbed) return;
+    const onMove = (e) => {
+      setPos({ x: e.clientX - offsetRef.current.ox, y: e.clientY - offsetRef.current.oy });
     };
-
-    const handleClick = (e) => {
-        e.stopPropagation();
-        if (grabbed) return; 
-        pendingRevealRef.current = true;
-        clearTimeout(clickTimerRef.current);
-        clickTimerRef.current = setTimeout(() => {
-            if (pendingRevealRef.current) onReveal(nexus._id);
-        }, 250);
+    const onUp = () => setGrabbed(false);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
     };
+  }, [grabbed]);
 
-    return (
-        <div
-            ref={domRef}
-            style={{
-                position: grabbed ? 'fixed' : 'relative',
-                left: grabbed ? pos.x : 'auto',
-                top: grabbed ? pos.y : 'auto',
-                zIndex: 9999,
-                cursor: grabbed ? 'grabbing' : 'pointer',
-                userSelect: 'none',
-                touchAction: 'none',
-                filter: grabbed
-                    ? `drop-shadow(0 0 15px ${P}) drop-shadow(0 0 30px ${P}88)`
-                    : `drop-shadow(0 0 8px ${P}44)`,
-                transition: grabbed ? 'none' : 'filter 0.3s',
-                fontSize: 20,
-                width: 32,
-                height: 32,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}
-            onMouseDown={handleMouseDown}
-            onClick={handleClick}
-            onDragStart={(e) => e.preventDefault()}
-        >
-            🔮
-        </div>
-    );
+  const handleMouseDown = (e) => {
+    if (e.detail === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      pendingRevealRef.current = false;
+      clearTimeout(clickTimerRef.current);
+      const rect = domRef.current.getBoundingClientRect();
+      setPos({ x: rect.left, y: rect.top });
+      offsetRef.current = { ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+      setGrabbed(true);
+    }
+  };
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (grabbed) return;
+    pendingRevealRef.current = true;
+    clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = setTimeout(() => {
+      if (pendingRevealRef.current) onReveal(nexus._id);
+    }, 250);
+  };
+
+  return (
+    <div
+      ref={domRef}
+      style={{
+        position: grabbed ? 'fixed' : 'relative',
+        left: grabbed ? pos.x : 'auto',
+        top: grabbed ? pos.y : 'auto',
+        zIndex: 9999,
+        cursor: grabbed ? 'grabbing' : 'pointer',
+        userSelect: 'none',
+        touchAction: 'none',
+        filter: grabbed
+          ? `drop-shadow(0 0 15px ${P}) drop-shadow(0 0 30px ${P}88)`
+          : `drop-shadow(0 0 8px ${P}44)`,
+        transition: grabbed ? 'none' : 'filter 0.3s',
+        fontSize: 20,
+        width: 32,
+        height: 32,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+      onMouseDown={handleMouseDown}
+      onClick={handleClick}
+      onDragStart={(e) => e.preventDefault()}
+    >
+
+    </div>
+  );
 });
 
-/* ─────────────────────────────────────────────
+/* 
    SIDEBAR
-───────────────────────────────────────────── */
+ */
 const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexuses, isNexusesLoading, setSelectedNexus, users, setSelectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) => {
   const [tab, setTab] = useState("orbits");
   const navigate = useNavigate();
@@ -667,8 +681,8 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, position: "relative", zIndex: 2 }}>
-        <button onClick={() => { play("click"); setTab("orbits"); }} style={tabStyle(tab === "orbits", M)}>⬡ ORBITS</button>
-        <button onClick={() => { play("click"); setTab("contacts"); }} style={tabStyle(tab === "contacts", C)}>👤 CONTACTS</button>
+        <button onClick={() => { play("click"); setTab("orbits"); }} style={tabStyle(tab === "orbits", M)}> ORBITS</button>
+        <button onClick={() => { play("click"); setTab("contacts"); }} style={tabStyle(tab === "contacts", C)}> CONTACTS</button>
       </div>
 
       {/* Action btns */}
@@ -693,11 +707,11 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
           ) : (
             sortedNexuses.map(n => (
               <div key={n._id}
-                onClick={() => { 
-                  play("click"); 
-                  setSelectedNexus(n); 
-                  setSelectedUser(null); 
-                  setNexusActionView(null); 
+                onClick={() => {
+                  play("click");
+                  setSelectedNexus(n);
+                  setSelectedUser(null);
+                  setNexusActionView(null);
                   navigate(`/nexus/${n._id}`);
                 }}
                 style={{ display: "flex", flexDirection: "column", padding: "8px 10px", borderRadius: 4, cursor: "pointer", transition: "all 0.2s", background: nexusColors[n._id] || `${M}08`, border: "1px solid transparent", position: "relative" }}
@@ -707,18 +721,18 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
                 <div style={{ display: "flex", alignItems: "center", gap: 9, width: "100%" }}>
                   <div style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                     {n.avatar ? (
-                      <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img loading="lazy" decoding="async" src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       (() => {
                         const ANIMALS = ['dog', 'cat', 'bunny'];
                         const animal = ANIMALS[parseInt((n._id || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
                         return (
-                          <PixelAvatarBadge 
-                            type={animal} 
-                            state="idle" 
-                            size={30} 
-                            showDot={false} 
-                            style={{ imageRendering: "pixelated" }} 
+                          <PixelAvatarBadge
+                            type={animal}
+                            state="idle"
+                            size={30}
+                            showDot={false}
+                            style={{ imageRendering: "pixelated" }}
                           />
                         );
                       })()
@@ -729,80 +743,80 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
                     <div style={{ fontSize: 8, color: `${M}66`, fontFamily: "'Share Tech Mono'" }}>NODES: {n.members?.length || 0}</div>
                   </div>
                   {nexusUnread[n._id] > 0 && (
-                     <div style={{ background: M, color: "white", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 4, boxShadow: `0 0 8px ${M}` }}>{nexusUnread[n._id]}</div>
+                    <div style={{ background: M, color: "white", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 4, boxShadow: `0 0 8px ${M}` }}>{nexusUnread[n._id]}</div>
                   )}
 
                   {pinnedNexuses.includes(n._id) && (
-                      <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}>📌</div>
+                    <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 10 }}></div>
                   )}
 
-                  <div 
-                      onClick={(e) => {
-                          e.stopPropagation();
-                          play("click");
-                          setActiveMenuId(activeMenuId === n._id ? null : n._id);
-                          setActiveColorPickerId(null);
-                      }}
-                      style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                      onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      play("click");
+                      setActiveMenuId(activeMenuId === n._id ? null : n._id);
+                      setActiveColorPickerId(null);
+                    }}
+                    style={{ fontSize: 16, padding: "0 4px", opacity: 0.7, transition: "opacity 0.2s" }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                    onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
                   >
-                      🔮
+
                   </div>
                 </div>
 
                 {/* Context Menu Inline Expansion */}
                 {activeMenuId === n._id && (
-                    <div 
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid ${M}33`, display: 'flex', flexDirection: 'column', gap: 8 }}
-                    >
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    play("click");
-                                    setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
-                                }}
-                                style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
-                            >
-                                Mark 🎨
-                            </button>
-                            <button 
-                                onClick={(e) => { play("click"); togglePin(n._id, e); }}
-                                style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
-                            >
-                                {pinnedNexuses.includes(n._id) ? "Unpin 📌" : "Pin 📌"}
-                            </button>
-                            <button 
-                                onClick={(e) => toggleHide(n, e)}
-                                style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
-                            >
-                                Hide 🔮
-                            </button>
-                        </div>
-
-                        {activeColorPickerId === n._id && (
-                            <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(0,0,0,0.5)", borderRadius: 4, border: `1px solid ${M}33`, overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
-                                {[
-                                    "transparent", // Default
-                                    "rgba(255,0,200,0.2)", // Mute Magenta
-                                    "rgba(0,255,245,0.2)", // Mute Cyan
-                                    "rgba(176,38,255,0.2)", // Mute Purple
-                                    "rgba(255,230,0,0.2)", // Mute Yellow
-                                    "rgba(255,0,0,0.2)", // Red Warning
-                                    "rgba(0,255,0,0.2)", // Green Matrix
-                                    "rgba(0,0,0,0.8)", // Void
-                                ].map(c => (
-                                    <div 
-                                        key={c}
-                                        onClick={(e) => updateColor(n._id, c, e)}
-                                        style={{ minWidth: 20, height: 20, borderRadius: '50%', background: c, border: c === "transparent" ? "1px solid rgba(255,255,255,0.2)" : `1px solid ${M}`, cursor: 'pointer', flexShrink: 0 }}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: `1px solid ${M}33`, display: 'flex', flexDirection: 'column', gap: 8 }}
+                  >
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          play("click");
+                          setActiveColorPickerId(activeColorPickerId === n._id ? null : n._id);
+                        }}
+                        style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
+                      >
+                        Mark
+                      </button>
+                      <button
+                        onClick={(e) => { play("click"); togglePin(n._id, e); }}
+                        style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
+                      >
+                        {pinnedNexuses.includes(n._id) ? "Unpin " : "Pin "}
+                      </button>
+                      <button
+                        onClick={(e) => toggleHide(n, e)}
+                        style={{ flex: 1, padding: '6px', background: `${M}22`, border: `1px solid ${M}55`, borderRadius: 4, fontSize: 10, color: C, fontFamily: "'Orbitron', monospace", cursor: 'pointer' }}
+                      >
+                        Hide
+                      </button>
                     </div>
+
+                    {activeColorPickerId === n._id && (
+                      <div style={{ display: 'flex', gap: 6, padding: '8px', background: "rgba(0,0,0,0.5)", borderRadius: 4, border: `1px solid ${M}33`, overflowX: 'auto', scrollbarWidth: 'none' }} className="custom-scrollbar">
+                        {[
+                          "transparent", // Default
+                          "rgba(255,0,200,0.2)", // Mute Magenta
+                          "rgba(0,255,245,0.2)", // Mute Cyan
+                          "rgba(176,38,255,0.2)", // Mute Purple
+                          "rgba(255,230,0,0.2)", // Mute Yellow
+                          "rgba(255,0,0,0.2)", // Red Warning
+                          "rgba(0,255,0,0.2)", // Green Matrix
+                          "rgba(0,0,0,0.8)", // Void
+                        ].map(c => (
+                          <div
+                            key={c}
+                            onClick={(e) => updateColor(n._id, c, e)}
+                            style={{ minWidth: 20, height: 20, borderRadius: '50%', background: c, border: c === "transparent" ? "1px solid rgba(255,255,255,0.2)" : `1px solid ${M}`, cursor: 'pointer', flexShrink: 0 }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))
@@ -813,11 +827,11 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
           ) : (
             users.map(u => (
               <div key={u._id}
-                onClick={() => { 
-                  play("click"); 
-                  setSelectedUser(u); 
-                  setSelectedNexus(null); 
-                  setNexusActionView(null); 
+                onClick={() => {
+                  play("click");
+                  setSelectedUser(u);
+                  setSelectedNexus(null);
+                  setNexusActionView(null);
                   navigate(`/chat/${u._id}`);
                 }}
                 style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 4, cursor: "pointer", transition: "all 0.2s" }}
@@ -826,18 +840,18 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
               >
                 <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {u.profilePic ? (
-                    <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img loading="lazy" decoding="async" src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     (() => {
                       const ANIMALS = ['dog', 'cat', 'bunny'];
                       const animal = ANIMALS[parseInt((u._id || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
                       return (
-                        <PixelAvatarBadge 
-                          type={animal} 
-                          state="idle" 
-                          size={30} 
-                          showDot={false} 
-                          style={{ imageRendering: "pixelated" }} 
+                        <PixelAvatarBadge
+                          type={animal}
+                          state="idle"
+                          size={30}
+                          showDot={false}
+                          style={{ imageRendering: "pixelated" }}
                         />
                       );
                     })()
@@ -858,7 +872,7 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 8, fontWeight: 900, letterSpacing: "0.12em", color: synced ? C : "rgba(150,150,180,0.6)", fontFamily: "'Orbitron',monospace" }}>NEXUS SYNC</div>
-            <div style={{ fontSize: 7, color: "rgba(120,120,160,0.6)", fontFamily: "'Share Tech Mono'", marginTop: 1 }}>{synced ? "ACTIVE — ALPHA LINK" : "OFFLINE"}</div>
+            <div style={{ fontSize: 7, color: "rgba(120,120,160,0.6)", fontFamily: "'Share Tech Mono'", marginTop: 1 }}>{synced ? "ACTIVE  ALPHA LINK" : "OFFLINE"}</div>
           </div>
           <div
             onClick={() => { play("click"); onToggleSync(); }}
@@ -874,7 +888,7 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
         style={{ marginTop: "auto", borderRadius: 6, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,0.4)", border: `1.5px solid ${C}33`, cursor: "not-allowed", position: "relative", zIndex: 2, flexShrink: 0, overflow: "hidden", opacity: 0.5, pointerEvents: "none" }}
       >
         <DataStreams count={3} color={C} />
-        <div style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${C}22`, background: `${C}08`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🔒</div>
+        <div style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${C}22`, background: `${C}08`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}></div>
         <div style={{ position: "relative", zIndex: 2 }}>
           <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: "0.12em", color: C, textTransform: "uppercase", opacity: 0.7, fontFamily: "'Orbitron',monospace" }}>ORBIT: COMING SOON</div>
           <div style={{ fontSize: 7.5, color: `${C}44`, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace" }}>3D SPATIAL ENGINE</div>
@@ -884,9 +898,9 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
   );
 });
 
-/* ─────────────────────────────────────────────
+/* 
    SPOTIFY / AUDIO CARD
-───────────────────────────────────────────── */
+ */
 const AudioCard = memo(() => {
   const [playing, setPlaying] = useState(true);
   const navigate = useNavigate();
@@ -894,7 +908,7 @@ const AudioCard = memo(() => {
   const spotifyLinked = useSpotifyStore(s => s.spotifyLinked);
   const currentTrack = useSpotifyStore(s => s.currentTrack);
   const isPlaying = useSpotifyStore(s => s.isPlaying);
-  const { pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore();
+  const { pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore(useShallow(state => ({ pausePlayback: state.pausePlayback, playTrack: state.playTrack, skipNext: state.skipNext, skipPrevious: state.skipPrevious })));
 
   if (!spotifyLinked) {
     return (
@@ -934,27 +948,27 @@ const AudioCard = memo(() => {
       </div>
       {/* Controls */}
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 14 }}>
-        <button onClick={() => { play("click"); skipPrevious(); }} style={{ background: "none", border: "none", cursor: "pointer", color: `${M}aa`, fontSize: 13, padding: 0 }}>⏮</button>
+        <button onClick={() => { play("click"); skipPrevious(); }} style={{ background: "none", border: "none", cursor: "pointer", color: `${M}aa`, fontSize: 13, padding: 0 }}></button>
         <button onClick={() => { play("click"); isPlaying ? pausePlayback() : playTrack(); }} style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg,${P},${M})`, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 11, boxShadow: `0 0 12px ${P}`, transition: "transform 0.15s" }}
           onMouseEnter={e => e.currentTarget.style.transform = "scale(1.15)"}
-          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>{isPlaying ? "⏸" : "▶"}</button>
-        <button onClick={() => { play("click"); skipNext(); }} style={{ background: "none", border: "none", cursor: "pointer", color: `${M}aa`, fontSize: 13, padding: 0 }}>⏭</button>
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>{isPlaying ? "" : ""}</button>
+        <button onClick={() => { play("click"); skipNext(); }} style={{ background: "none", border: "none", cursor: "pointer", color: `${M}aa`, fontSize: 13, padding: 0 }}></button>
       </div>
     </NeonCard>
   );
 });
 
-/* ─────────────────────────────────────────────
+/* 
    CHAT CARD
-───────────────────────────────────────────── */
+ */
 function ChatCard() {
   return (
     <NeonCard color={M} style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6, height: "100%", position: "relative" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 7, border: `1.5px solid ${M}88`, background: `${M}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: `0 0 8px ${M}44`, marginBottom: 8 }}>🎮</div>
+          <div style={{ width: 30, height: 30, borderRadius: 7, border: `1.5px solid ${M}88`, background: `${M}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: `0 0 8px ${M}44`, marginBottom: 8 }}></div>
           <div style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: "0.15em", color: M, textTransform: "uppercase", textShadow: `0 0 8px ${M}`, fontFamily: "'Orbitron',monospace", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-            ORBIT GAMES <span style={{ fontSize: 10 }}>🔒</span>
+            ORBIT GAMES <span style={{ fontSize: 10 }}></span>
           </div>
           <div style={{ fontSize: 9.5, color: "rgba(200,140,200,0.65)", lineHeight: 1.5 }}>Coming soon. A new way to play together.</div>
         </div>
@@ -962,14 +976,14 @@ function ChatCard() {
           <ConstellationGrid />
         </div>
       </div>
-      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: `${M}55`, fontWeight: "bold" }}>⚡</div>
+      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: `${M}55`, fontWeight: "bold" }}></div>
     </NeonCard>
   );
 }
 
-/* ─────────────────────────────────────────────
+/* 
    ANIMATED TERMINAL FEED
-───────────────────────────────────────────── */
+ */
 function TerminalFeed() {
   const [lines, setLines] = useState([
     { text: "CONSTELLATION: ACTIVE", id: 1 },
@@ -981,8 +995,8 @@ function TerminalFeed() {
   useEffect(() => {
     let count = 4;
     const sysLogs = [
-      "ESTABLISHING SECURE UPLINK...", "DECRYPTING PACKETS...", 
-      "ANOMALY DETECTED IN SECTOR 4", "REROUTING SIGNAL PATH", 
+      "ESTABLISHING SECURE UPLINK...", "DECRYPTING PACKETS...",
+      "ANOMALY DETECTED IN SECTOR 4", "REROUTING SIGNAL PATH",
       "GHOST PROXY ENGAGED...", "LATENCY STABLE AT 12ms",
       "HANDSHAKE PROTOCOL: INITIATED", "OVERRIDING SAFETY PROTOCOLS"
     ];
@@ -1017,16 +1031,16 @@ function TerminalFeed() {
   );
 }
 
-/* ─────────────────────────────────────────────
+/* 
    NOTIFICATION CARD
-───────────────────────────────────────────── */
+ */
 function NotifCard() {
   const navigate = useNavigate();
   return (
     <NeonCard color={Y} style={{ padding: "12px 14px", display: "flex", gap: 10, height: "100%", position: "relative" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, border: `1.5px solid ${Y}88`, background: `${Y}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: `0 0 8px ${Y}44` }}>🔔</div>
+          <div style={{ width: 28, height: 28, borderRadius: 7, border: `1.5px solid ${Y}88`, background: `${Y}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: `0 0 8px ${Y}44` }}></div>
           <div>
             <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: "0.15em", color: Y, textShadow: `0 0 8px ${Y}`, fontFamily: "'Orbitron',monospace" }}>GET NOTIFICATIONS</div>
             <div style={{ fontSize: 8.5, color: "rgba(200,180,80,0.55)", lineHeight: 1.4 }}>Stay updated with real-time alerts</div>
@@ -1034,20 +1048,20 @@ function NotifCard() {
         </div>
         <TerminalFeed />
       </div>
-      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: `${Y}44`, fontWeight: "bold" }}>↓</div>
+      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: `${Y}44`, fontWeight: "bold" }}></div>
     </NeonCard>
   );
 }
 
-/* ─────────────────────────────────────────────
+/* 
    CUSTOMIZE CARD
-───────────────────────────────────────────── */
+ */
 function CustomizeCard() {
   const navigate = useNavigate();
   return (
     <NeonCard color={P} style={{ padding: "12px 14px", display: "flex", gap: 8, height: "100%", position: "relative" }} onClick={() => navigate("/settings")}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
-        <div style={{ width: 28, height: 28, borderRadius: 7, border: `1.5px solid ${P}88`, background: `${P}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: `0 0 8px ${P}44` }}>⚙️</div>
+        <div style={{ width: 28, height: 28, borderRadius: 7, border: `1.5px solid ${P}88`, background: `${P}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: `0 0 8px ${P}44` }}></div>
         <div style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: "0.15em", color: P, textTransform: "uppercase", textShadow: `0 0 8px ${P}`, fontFamily: "'Orbitron',monospace" }}>CUSTOMIZE</div>
         <div style={{ fontSize: 9.5, color: "rgba(160,100,220,0.65)", lineHeight: 1.5 }}>Configure your orbit behavior and preferences</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginTop: 2 }}>
@@ -1059,14 +1073,14 @@ function CustomizeCard() {
           ))}
         </div>
       </div>
-      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: `${P}55`, fontWeight: "bold", cursor: "pointer" }}>↗</div>
+      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: `${P}55`, fontWeight: "bold", cursor: "pointer" }}></div>
     </NeonCard>
   );
 }
 
-/* ─────────────────────────────────────────────
+/* 
    STATUS BAR
-───────────────────────────────────────────── */
+ */
 function StatusBar({ synced }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -1079,16 +1093,16 @@ function StatusBar({ synced }) {
       </div>
       {synced && (
         <div style={{ marginLeft: 8, padding: "1px 8px", borderRadius: 2, background: `${C}18`, border: `1px solid ${C}66`, fontSize: 8, fontWeight: 900, color: C, fontFamily: "'Orbitron',monospace", letterSpacing: "0.15em" }}>
-          🔗 SYNC ACTIVE
+          SYNC ACTIVE
         </div>
       )}
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────
+/* 
    CIRCUIT OVERLAY
-───────────────────────────────────────────── */
+ */
 function CircuitOverlay() {
   return (
     <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.07, pointerEvents: "none" }} viewBox="0 0 790 460" preserveAspectRatio="none">
@@ -1106,49 +1120,94 @@ function CircuitOverlay() {
   );
 }
 
-/* ─────────────────────────────────────────────
+/*  MOBILE NAV (cyberpunk)  */
+const MobileCyberpunkNav = memo(() => {
+  const navigate = useNavigate();
+  const { authUser } = useAuthStore(useShallow(state => ({ authUser: state.authUser })));
+  return (
+    <div className="ncb-mobile-nav">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => navigate('/')} >
+        <div style={{ width: 24, height: 24, borderRadius: '50%', border: `1.5px solid ${C}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, background: `${C}18` }}></div>
+        <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: '0.2em', color: C, textShadow: `0 0 10px ${C}`, fontFamily: "'Orbitron',monospace" }}>ORBIT</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <span onClick={() => navigate('/settings')} style={{ cursor: 'pointer', color: `${C}99`, fontSize: 16 }}></span>
+        <div onClick={() => navigate('/profile')} style={{ width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', border: `1.5px solid ${C}44`, cursor: 'pointer' }}>
+          <img loading="lazy" decoding="async" src={authUser?.profilePic || '/avatar.png'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+/*  MOBILE TAB BAR (cyberpunk)  */
+const MobileCyberpunkTabBar = memo(({ activeTab }) => {
+  const navigate = useNavigate();
+  const TABS = [
+    { id: 'orbits', icon: '', label: 'NODES', path: '/?tab=orbits' },
+    { id: 'contacts', icon: '', label: 'USERS', path: '/?tab=contacts' },
+    { id: 'settings', icon: '', label: 'CONFIG', path: '/settings' },
+    { id: 'profile', icon: '', label: 'STATUS', path: '/profile' },
+  ];
+  return (
+    <div className="ncb-tab-bar">
+      {TABS.map(t => (
+        <button key={t.id} className={`ncb-tab-btn ${activeTab === t.id ? 'ncb-tab-active' : ''}`} onClick={() => navigate(t.path)}>
+          <span style={{ fontSize: 20 }}>{t.icon}</span>
+          <span>{t.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+});
+
+/* 
    MAIN EXPORT
-───────────────────────────────────────────── */
+ */
 export default function OrbitNeonCyberpunk({ children }) {
   const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
   const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
+  const navigate = useNavigate();
   const [synced, setSynced] = useState(true);
 
-  // ── Hidden Nexus State ──
+  //  Hidden Nexus State 
   const [hiddenNexuses, setHiddenNexuses] = useState(() => {
-      try {
-          const saved = localStorage.getItem('cyberpunk_hidden_nexuses');
-          return saved ? JSON.parse(saved) : [];
-      } catch { return []; }
+    try {
+      const saved = localStorage.getItem('cyberpunk_hidden_nexuses');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
 
   const toggleHide = (nexus, e) => {
-      if (e) e.stopPropagation();
-      const id = nexus._id;
-      const isHidden = (hiddenNexuses || []).some(h => h._id === id);
-      
-      if (!isHidden && hiddenNexuses.length >= 3) {
-          import("react-hot-toast").then(({ toast }) => toast.error("Maximum 3 hidden Nexuses allowed per theme."));
-          return;
-      }
+    if (e) e.stopPropagation();
+    const id = nexus._id;
+    const isHidden = (hiddenNexuses || []).some(h => h._id === id);
 
-      const next = isHidden
-          ? hiddenNexuses.filter(h => h._id !== id)
-          : [...hiddenNexuses, { _id: id, name: nexus.name }];
-      
-      setHiddenNexuses(next);
-      localStorage.setItem('cyberpunk_hidden_nexuses', JSON.stringify(next));
+    if (!isHidden && hiddenNexuses.length >= 3) {
+      import("react-hot-toast").then(({ toast }) => toast.error("Maximum 3 hidden Nexuses allowed per theme."));
+      return;
+    }
+
+    const next = isHidden
+      ? hiddenNexuses.filter(h => h._id !== id)
+      : [...hiddenNexuses, { _id: id, name: nexus.name }];
+
+    setHiddenNexuses(next);
+    localStorage.setItem('cyberpunk_hidden_nexuses', JSON.stringify(next));
   };
 
   const onReveal = (id) => {
-      const next = hiddenNexuses.filter(h => h._id !== id);
-      setHiddenNexuses(next);
-      localStorage.setItem('cyberpunk_hidden_nexuses', JSON.stringify(next));
+    const next = hiddenNexuses.filter(h => h._id !== id);
+    setHiddenNexuses(next);
+    localStorage.setItem('cyberpunk_hidden_nexuses', JSON.stringify(next));
   };
 
-  const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
+  const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore(useShallow(state => ({ nexusActionView: state.nexusActionView, setNexusActionView: state.setNexusActionView, nexuses: state.nexuses, setSelectedNexus: state.setSelectedNexus, isNexusesLoading: state.isNexusesLoading, nexusUnread: state.nexusUnread, selectedNexus: state.selectedNexus, selectedNexusId: state.selectedNexusId })));
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
-  const { users, selectedUser, setSelectedUser } = useChatStore();
+  const { users, selectedUser, setSelectedUser } = useChatStore(useShallow(state => ({ users: state.users, selectedUser: state.selectedUser, setSelectedUser: state.setSelectedUser })));
+  const location = useLocation();
+  const currentTab = new URLSearchParams(location.search).get('tab') || 'orbits';
+  const isMobileChat = nexusSelected || !!selectedUser || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/');
 
   // GSAP entrance animation
   useEffect(() => {
@@ -1182,118 +1241,216 @@ export default function OrbitNeonCyberpunk({ children }) {
   }, []);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#060010" }}>
-      <style>{STYLES}</style>
+    <>
+      {/*  MOBILE CANVAS  */}
+      <div className="ncb-mobile-canvas ncb-mobile-only">
+        <style>{STYLES}</style>
+        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 20% 50%,${P}44 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,${C}18 0%,transparent 50%)`, pointerEvents: 'none' }} />
+        {(isMobileChat || children) ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100dvh' }}>
+            <div className="neon-chat-env" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
+            </div>
+          </div>
+        ) : (
+          <>
+            <MobileCyberpunkNav />
+            <div className="ncb-mobile-scroll">
+              {/* orbital rings carousel */}
+              <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, marginLeft: -14, marginRight: -14, paddingLeft: 14, paddingRight: 14, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+                {nexuses?.map(n => (
+                  <div key={n._id} onClick={() => { setSelectedNexus(n); setSelectedUser(null); navigate(`/nexus/${n._id}`); }} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <div style={{ width: 62, height: 62, borderRadius: '50%', border: `2px solid ${P}`, padding: 2, background: 'rgba(0,0,0,0.4)', boxShadow: `0 0 10px ${P}44` }}>
+                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: P, fontFamily: "'Orbitron',monospace", fontWeight: 'bold' }}>{n.name[0].toUpperCase()}</div>
+                    </div>
+                    <span style={{ fontSize: 8, color: P, fontFamily: "'Orbitron',monospace", letterSpacing: '0.08em', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name.toUpperCase()}</span>
+                  </div>
+                ))}
+                {users?.map(u => (
+                  <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <div style={{ width: 62, height: 62, borderRadius: '50%', border: `2px solid ${C}`, padding: 2, background: 'rgba(0,0,0,0.4)', boxShadow: `0 0 10px ${C}44` }}>
+                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden' }}>
+                        <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 8, color: C, fontFamily: "'Orbitron',monospace", letterSpacing: '0.08em', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.username.toUpperCase()}</span>
+                  </div>
+                ))}
+              </div>
+              {/* status bar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '16px 0 12px', padding: '8px 12px', background: `${C}0e`, border: `1px solid ${C}33`, borderRadius: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: C, boxShadow: `0 0 6px ${C}`, animation: 'ncbPulse 2s infinite' }} />
+                <span style={{ fontSize: 9, fontWeight: 900, color: C, fontFamily: "'Orbitron',monospace", letterSpacing: '0.15em' }}>STATUS: {synced ? 'ONLINE' : 'OFFLINE'}</span>
+              </div>
+              {/* action cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <NeonCard color={C} style={{ padding: '16px 14px', cursor: 'pointer' }} onClick={() => navigate('/spotify')}>
+                  <div style={{ fontSize: 10, fontWeight: 900, color: C, fontFamily: "'Orbitron',monospace", letterSpacing: '0.12em', marginBottom: 6 }}> NEXUS AUDIO</div>
+                  <div style={{ fontSize: 12, color: 'rgba(140,220,220,0.6)' }}>Connect Spotify to sync your audio dimension.</div>
+                </NeonCard>
+                <NeonCard color={P} style={{ padding: '16px 14px', cursor: 'pointer' }} onClick={() => navigate('/settings')}>
+                  <div style={{ fontSize: 10, fontWeight: 900, color: P, fontFamily: "'Orbitron',monospace", letterSpacing: '0.12em', marginBottom: 6 }}> CUSTOMIZE</div>
+                  <div style={{ fontSize: 12, color: 'rgba(200,150,220,0.6)' }}>Configure themes, sounds, and orbit behavior.</div>
+                </NeonCard>
+                <NeonCard color={M} style={{ padding: '16px 14px' }}>
+                  <div style={{ fontSize: 10, fontWeight: 900, color: M, fontFamily: "'Orbitron',monospace", letterSpacing: '0.12em', marginBottom: 6 }}> ORBIT GAMES</div>
+                  <div style={{ fontSize: 12, color: 'rgba(200,140,180,0.6)' }}>Coming soon  a new way to play together.</div>
+                </NeonCard>
+              </div>
+            </div>
+            <MobileCyberpunkTabBar activeTab={currentTab} />
+          </>
+        )}
+      </div>
+      {/*  DESKTOP CANVAS  */}
+      <div className="ncb-desktop-only" style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", fontFamily: "'Space Grotesk','Rajdhani',system-ui,sans-serif", background: "#060010" }}>
+        <style>{STYLES}</style>
 
-      {/* Nebula backgrounds */}
-      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 20% 50%,${P}44 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,${C}18 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,${M}22 0%,transparent 40%)`, pointerEvents: "none" }} />
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,rgba(255,255,255,0.3) 1px,transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none", opacity: 0.12 }} />
+        {/* Nebula backgrounds */}
+        <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 20% 50%,${P}44 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,${C}18 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,${M}22 0%,transparent 40%)`, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,rgba(255,255,255,0.3) 1px,transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none", opacity: 0.12 }} />
 
-      {/* Scanlines */}
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)", mixBlendMode: "overlay" }} />
+        {/* Scanlines */}
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)", mixBlendMode: "overlay" }} />
 
-      {/* Code rain */}
-      <OrbitRain />
+        {/* Code rain */}
+        <OrbitRain />
 
-      {/* Data streams overlay */}
-      <DataStreams count={6} color={P} />
+        {/* Data streams overlay */}
+        <DataStreams count={6} color={P} />
 
-      <TopNav 
-        navRef={navRef} 
-        synced={synced} 
-        hiddenNexuses={hiddenNexuses} 
-        onReveal={onReveal} 
-      />
-
-      <div className={`ncb-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 42, left: 0, right: 0, bottom: 0, display: "flex" }}>
-        <Sidebar 
-          sidebarRef={sidebarRef} 
-          synced={synced} 
-          onToggleSync={handleToggleSync} 
-          onJoin={() => setNexusActionView("join")}
-          onNexus={() => setNexusActionView("create")}
-          nexuses={nexuses}
-          isNexusesLoading={isNexusesLoading}
-          setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
-          users={users || []}
-          setSelectedUser={setSelectedUser}
-          nexusUnread={nexusUnread || {}}
-          setNexusActionView={setNexusActionView}
+        <TopNav
+          navRef={navRef}
+          synced={synced}
           hiddenNexuses={hiddenNexuses}
-          toggleHide={toggleHide}
+          onReveal={onReveal}
         />
 
-        {/* Main content */}
-        <div className="ncb-main" style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
-          {children ? (
-            <div style={{ flex: 1, overflowY: "auto", position: "relative" }}>
-               {children}
-            </div>
-          ) : nexusActionView ? (
-            <div style={{ position: "absolute", inset: 0, zIndex: 120 }}>
-              <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
-            </div>
-          ) : nexusSelected ? (
-            <div className="neon-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-              <UniversalChatContainer type="nexus" />
-            </div>
-          ) : selectedUser ? (
-            <div className="neon-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-              <UniversalChatContainer type="dm" />
-            </div>
-          ) : (
-            <div style={{ flex: 1, padding: "12px 16px 10px 16px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", position: "relative" }}>
-              <CircuitOverlay />
+        <div className={`ncb-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 42, left: 0, right: 0, bottom: 0, display: "flex" }}>
+          <Sidebar
+            sidebarRef={sidebarRef}
+            synced={synced}
+            onToggleSync={handleToggleSync}
+            onJoin={() => setNexusActionView("join")}
+            onNexus={() => setNexusActionView("create")}
+            nexuses={nexuses}
+            isNexusesLoading={isNexusesLoading}
+            setSelectedNexus={(n) => { setSelectedNexus(n); setSelectedUser(null); }}
+            users={users || []}
+            setSelectedUser={setSelectedUser}
+            nexusUnread={nexusUnread || {}}
+            setNexusActionView={setNexusActionView}
+            hiddenNexuses={hiddenNexuses}
+            toggleHide={toggleHide}
+          />
 
-              {/* Hero area */}
-              <div ref={heroRef} className="ncb-hero" style={{ position: "relative", zIndex: 2 }}>
-                <StatusBar synced={synced} />
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
-                  <div>
-                    <h1 data-text="WELCOME TO ORBIT" className="ncb-glitch-text" style={{ margin: "0 0 2px 0", fontSize: 34, fontWeight: 900, letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1.02, color: "#fff", textShadow: `0 0 20px ${C}66,0 0 40px ${C}33`, fontFamily: "'Orbitron',monospace" }}>
-                      WELCOME TO ORBIT
-                    </h1>
-                    <p style={{ margin: 0, fontSize: 10.5, color: "rgba(140,220,220,0.55)", letterSpacing: "0.06em", fontFamily: "'Rajdhani',monospace" }}>
-                      Neon Cyberpunk Dimension Active — Initialize your pathway.
-                    </p>
-                  </div>
-                  {/* Sync CTA */}
-                  <button className="ncb-hero-btn" onClick={handleToggleSync} style={{
-                    flexShrink: 0, padding: "8px 20px", border: "none", borderRadius: 5, cursor: "pointer",
-                    background: synced ? `linear-gradient(90deg,${C},${P})` : `linear-gradient(90deg,${P}88,${M}88)`,
-                    color: "#000", fontFamily: "'Orbitron',monospace", fontSize: 13, fontWeight: 900, letterSpacing: "0.18em",
-                    boxShadow: synced ? `0 0 20px ${C},0 0 40px ${C}66` : `0 0 10px ${P}55`,
-                    transition: "all 0.25s", position: "relative", overflow: "hidden",
-                  }}>
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)", backgroundSize: "200% 100%", animation: "ncbShimmer 1.8s infinite" }} />
-                    {synced ? "🔗 SYNCHRONIZED" : "⚡ SYNC NOW"}
-                  </button>
-                </div>
+          {/* Main content */}
+          <div className="ncb-main" style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
+            {children ? (
+              <div style={{ flex: 1, overflowY: "auto", position: "relative" }}>
+                {children}
               </div>
+            ) : nexusActionView ? (
+              <div style={{ position: "absolute", inset: 0, zIndex: 120 }}>
+                <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
+              </div>
+            ) : nexusSelected ? (
+              <div className="neon-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+                <UniversalChatContainer type="nexus" />
+              </div>
+            ) : selectedUser ? (
+              <div className="neon-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+                <UniversalChatContainer type="dm" />
+              </div>
+            ) : (
+              <div style={{ flex: 1, padding: "12px 16px 10px 16px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", position: "relative" }}>
+                <CircuitOverlay />
 
-              {/* 2×2 Grid or children (settings/profile/spotify pages) */}
-              {children ? (
-                <div style={{ flex: 1, position: "relative", zIndex: 2, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-                  {children}
+                {/* Hero area */}
+                <div ref={heroRef} className="ncb-hero" style={{ position: "relative", zIndex: 2 }}>
+                  <StatusBar synced={synced} />
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
+                    <div>
+                      <h1 data-text="WELCOME TO ORBIT" className="ncb-glitch-text" style={{ margin: "0 0 2px 0", fontSize: 34, fontWeight: 900, letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1.02, color: "#fff", textShadow: `0 0 20px ${C}66,0 0 40px ${C}33`, fontFamily: "'Orbitron',monospace" }}>
+                        WELCOME TO ORBIT
+                      </h1>
+                      <p style={{ margin: 0, fontSize: 10.5, color: "rgba(140,220,220,0.55)", letterSpacing: "0.06em", fontFamily: "'Rajdhani',monospace" }}>
+                        Neon Cyberpunk Dimension Active  Initialize your pathway.
+                      </p>
+                    </div>
+                    {/* Sync CTA */}
+                    <button className="ncb-hero-btn" onClick={handleToggleSync} style={{
+                      flexShrink: 0, padding: "8px 20px", border: "none", borderRadius: 5, cursor: "pointer",
+                      background: synced ? `linear-gradient(90deg,${C},${P})` : `linear-gradient(90deg,${P}88,${M}88)`,
+                      color: "#000", fontFamily: "'Orbitron',monospace", fontSize: 13, fontWeight: 900, letterSpacing: "0.18em",
+                      boxShadow: synced ? `0 0 20px ${C},0 0 40px ${C}66` : `0 0 10px ${P}55`,
+                      transition: "all 0.25s", position: "relative", overflow: "hidden",
+                    }}>
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)", backgroundSize: "200% 100%", animation: "ncbShimmer 1.8s infinite" }} />
+                      {synced ? " SYNCHRONIZED" : " SYNC NOW"}
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <div className="ncb-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, flex: 1, position: "relative", zIndex: 2 }}>
-                  <div ref={c0} style={{ height: "100%" }}><AudioCard /></div>
-                  <div ref={c1} style={{ height: "100%" }}><ChatCard /></div>
-                  <div ref={c2} style={{ height: "100%" }}><NotifCard /></div>
-                  <div ref={c3} style={{ height: "100%" }}><CustomizeCard /></div>
+
+                {/*  NEURAL NODES (Circular Orbits)  */}
+                <div style={{
+                  display: 'flex',
+                  gap: 16,
+                  overflowX: 'auto',
+                  paddingBottom: 16,
+                  marginBottom: 4,
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  position: 'relative',
+                  zIndex: 5
+                }} className="ncb-no-scrollbar">
+                  <style>{`.ncb-no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+                  {users.map(u => (
+                    <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                      <div style={{ width: 58, height: 58, borderRadius: '50%', border: `2px solid ${C}`, padding: 2, background: 'rgba(0,0,0,0.4)', boxShadow: `0 0 10px ${C}44` }}>
+                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden' }}>
+                          <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 9, color: C, fontFamily: "'Share Tech Mono'", letterSpacing: '0.1em' }}>{u.username.toUpperCase()}</span>
+                    </div>
+                  ))}
+                  {nexuses.map(n => (
+                    <div key={n._id} onClick={() => { setSelectedNexus(n); setSelectedUser(null); navigate(`/nexus/${n._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                      <div style={{ width: 58, height: 58, borderRadius: '50%', border: `2px solid ${P}`, padding: 2, background: 'rgba(0,0,0,0.4)', boxShadow: `0 0 10px ${P}44` }}>
+                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: P, fontFamily: "'Orbitron', monospace", fontWeight: 'bold' }}>
+                          {n.name[0].toUpperCase()}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 9, color: P, fontFamily: "'Share Tech Mono'", letterSpacing: '0.1em' }}>{n.name.toUpperCase()}</span>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* 22 Grid or children (settings/profile/spotify pages) */}
+                {children ? (
+                  <div style={{ flex: 1, position: "relative", zIndex: 2, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+                    {children}
+                  </div>
+                ) : (
+                  <div className="ncb-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, flex: 1, position: "relative", zIndex: 2 }}>
+                    <div ref={c0} style={{ height: "100%" }}><AudioCard /></div>
+                    <div ref={c1} style={{ height: "100%" }}><ChatCard /></div>
+                    <div ref={c2} style={{ height: "100%" }}><NotifCard /></div>
+                    <div ref={c3} style={{ height: "100%" }}><CustomizeCard /></div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
-/* ─────────────────────────────────────────────
+/* 
    TOGGLE SWITCH (for settings panels)
-───────────────────────────────────────────── */
+ */
 function ToggleSwitch({ label, checked, onChange, color = C }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)" }}>
@@ -1305,9 +1462,6 @@ function ToggleSwitch({ label, checked, onChange, color = C }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   CYBERPUNK SETTINGS (used by SettingsPage)
-───────────────────────────────────────────── */
 export function CyberpunkSettings({
   activeSection, setActiveSection,
   draftTheme, setDraftTheme,
@@ -1317,52 +1471,54 @@ export function CyberpunkSettings({
   draftShowOnlineStatus, setDraftShowOnlineStatus,
   draftOrbitBehavior, setDraftOrbitBehavior,
   draftSoundSettings, setDraftSoundSettings,
-  isDirty, handleSave, handleReset, authUser,
+  isDirty, handleSave, handleReset, authUser
 }) {
   const [focusedTheme, setFocusedTheme] = useState(draftTheme);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
   const { play } = useSoundManager();
 
-  const sections = [
-    { id: "profile", label: "IDENTITY", icon: "👤" },
-    { id: "sound", label: "AUDIO", icon: "🔊" },
-    { id: "appearance", label: "VISUALS", icon: "🎨" },
-    { id: "notifications", label: "ALERTS", icon: "🔔" },
-    { id: "orbit", label: "ENGINE", icon: "🪐" },
-  ];
-
   return (
-    <OrbitNeonCyberpunk>
-      <div className="ncb-settings-layout" style={{ display: "flex", gap: 20, height: "100%" }}>
-        {/* Settings Nav */}
-        <NeonCard color={C} style={{ width: 260, padding: 20, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }} className="ncb-settings-nav">
-          <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: "0.25em", color: `${C}88`, fontFamily: "'Orbitron',monospace", marginBottom: 4 }}>// SYS.PREFERENCES</div>
-          {sections.map(s => (
-            <button key={s.id} onClick={() => { play("click"); setActiveSection(s.id); }} style={{ width: "100%", textAlign: "left", padding: "12px 16px", background: activeSection === s.id ? `${C}14` : "transparent", border: "1px solid", borderColor: activeSection === s.id ? C : "transparent", borderRadius: 6, color: activeSection === s.id ? "#fff" : `${C}66`, fontFamily: "'Orbitron', monospace", fontSize: 11, letterSpacing: "0.15em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 10, boxShadow: activeSection === s.id ? `0 0 10px ${C}33` : "none" }}>
-              <span style={{ fontSize: 16 }}>{s.icon}</span>{s.label}
+    <div style={{ width: "100%", height: "100%", background: "#060010", position: "relative", overflow: "hidden" }}>
+      <style>{STYLES}</style>
+      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 20% 50%,${P}44 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,${C}18 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,${M}22 0%,transparent 40%)`, pointerEvents: "none" }} />
+      <OrbitRain />
+      <div style={{ display: "flex", gap: 20, height: "100%" }}>
+        <NeonCard color={C} style={{ width: 280, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+          {[
+            { id: "profile", label: "IDENTITY", icon: "👤" },
+            { id: "sound", label: "AUDIO", icon: "🔊" },
+            { id: "appearance", label: "VISUALS", icon: "🎨" },
+            { id: "notifications", label: "ALERTS", icon: "🔔" },
+            { id: "orbit", label: "ENGINE", icon: "🪐" },
+            { id: "security", label: "CORE_CIPHER", icon: "🛡️" },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => { play("click"); setActiveSection(activeSection === tab.id ? null : tab.id); }} style={{ width: "100%", textAlign: "left", padding: "14px 18px", background: activeSection === tab.id ? `${C}22` : "transparent", border: "1px solid", borderColor: activeSection === tab.id ? C : "transparent", borderRadius: 8, color: activeSection === tab.id ? "#fff" : `${C}99`, fontFamily: "'Orbitron', monospace", fontSize: 12, letterSpacing: "0.1em", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 16 }}>{tab.icon}</span> {tab.label}
             </button>
           ))}
-          <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-            <button onClick={() => { play("click"); handleReset(); }} disabled={!isDirty} style={{ width: "100%", padding: "12px", borderRadius: 6, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: isDirty ? "#fff" : "rgba(255,255,255,0.25)", fontSize: 11, fontFamily: "'Orbitron', monospace", cursor: isDirty ? "pointer" : "default", letterSpacing: "0.1em" }}>ROLLBACK</button>
+          <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
+            <button onClick={handleReset} disabled={!isDirty} style={{ width: "100%", padding: "12px", borderRadius: 6, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, color: isDirty ? "#fff" : "rgba(255,255,255,0.2)", fontSize: 11, fontWeight: 700, fontFamily: "'Orbitron', monospace", cursor: isDirty ? "pointer" : "default", letterSpacing: "0.1em" }}>RESET</button>
             <button onClick={() => { play("click"); handleSave(); }} disabled={!isDirty} style={{ width: "100%", padding: "12px", borderRadius: 6, background: isDirty ? `linear-gradient(90deg,${C},${P})` : `${C}15`, border: `1px solid ${isDirty ? C : `${C}22`}`, color: isDirty ? "#000" : `${C}44`, fontWeight: 900, fontSize: 11, fontFamily: "'Orbitron', monospace", cursor: isDirty ? "pointer" : "default", boxShadow: isDirty ? `0 0 15px ${C}55` : "none", letterSpacing: "0.1em" }}>COMMIT</button>
           </div>
         </NeonCard>
 
-        {/* Settings Content */}
-        <NeonCard color={P} style={{ flex: 1, padding: 28, overflowY: "auto" }}>
-          <h2 style={{ fontSize: 20, fontWeight: 900, color: C, fontFamily: "'Orbitron',monospace", marginBottom: 24, textShadow: `0 0 10px ${C}`, letterSpacing: "0.15em" }}>
-            SYS_PREF // {activeSection.toUpperCase()}
-          </h2>
+        {activeSection && (
+          <NeonCard color={P} style={{ flex: 1, padding: 28, overflowY: "auto" }}>
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: C, fontFamily: "'Orbitron',monospace", marginBottom: 24, textShadow: `0 0 10px ${C}`, letterSpacing: "0.15em" }}>
+              SYS_PREF // {activeSection.toUpperCase()}
+            </h2>
 
-          {activeSection === "appearance" && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 14 }}>
-                  {THEMES.map(t => {
+            {activeSection === "appearance" && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 14 }}>
+                {THEMES.map(t => {
                     const isSelected = focusedTheme === t;
                     const isApplied = draftTheme === t;
-                    
-                    // Fixed preview colors for each theme
-                    let previewPrimary = "#8b5cf6"; // default (cyber purple)
+                    const isComingSoon = isMobile && t !== "light";
+
+                    let previewPrimary = "#8b5cf6";
                     let previewBg = "#0c0e14";
-                    
+
                     if (t === "light") { previewPrimary = "#3b82f6"; previewBg = "#ffffff"; }
                     else if (t === "dark") { previewPrimary = "#ef4444"; previewBg = "#0a0a0a"; }
                     else if (t === "neon-cyberpunk") { previewPrimary = "#8b5cf6"; previewBg = "#0c0e14"; }
@@ -1371,92 +1527,113 @@ export function CyberpunkSettings({
                     else if (t === "amoled-dark") { previewPrimary = "#E8C990"; previewBg = "#000000"; }
 
                     return (
-                        <div key={t} onClick={() => { play("click"); setFocusedTheme(t); }} style={{ padding: 14, borderRadius: 10, border: isSelected ? `2px solid ${C}` : `1px solid rgba(255,255,255,0.08)`, background: isSelected ? `${C}10` : "rgba(255,255,255,0.02)", display: "flex", flexDirection: "column", gap: 10, cursor: "pointer", transition: "all 0.2s", boxShadow: isSelected ? `0 0 15px ${C}33` : "none" }}>
-                          <div style={{ width: "100%", height: 36, borderRadius: 5, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden", display: "flex", background: previewBg }}>
-                            <div style={{ flex: 1, background: previewPrimary }} />
-                            <div style={{ flex: 1, background: previewBg }} />
+                      <div key={t} onClick={() => { if (!isComingSoon) { play("click"); setFocusedTheme(t); } }} style={{ padding: 14, borderRadius: 10, border: isSelected ? `2px solid ${C}` : `1px solid rgba(255,255,255,0.08)`, background: isSelected ? `${C}10` : "rgba(255,255,255,0.02)", display: "flex", flexDirection: "column", gap: 10, cursor: isComingSoon ? "not-allowed" : "pointer", transition: "all 0.2s", boxShadow: isSelected ? `0 0 15px ${C}33` : "none", position: "relative", opacity: isComingSoon ? 0.7 : 1 }}>
+                        {isComingSoon && (
+                          <div style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(1px)", borderRadius: 10 }}>
+                            <div style={{ background: C, color: "#000", fontSize: 8, fontWeight: 900, padding: "2px 6px", borderRadius: 4, letterSpacing: 1, boxShadow: `0 0 10px ${C}` }}>COMING SOON</div>
                           </div>
-                          <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 9, color: isSelected ? C : "rgba(255,255,255,0.4)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{THEME_LABELS[t] || t.toUpperCase()}</div>
-                            {isSelected && !isApplied && (
-                              <button onClick={e => { e.stopPropagation(); play("click"); setDraftTheme(t); }} style={{ marginTop: 6, padding: "5px 8px", width: "100%", background: C, border: "none", color: "#000", fontSize: 8, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: `0 0 8px ${C}66` }}>DEPLOY</button>
-                            )}
-                            {isApplied && <div style={{ marginTop: 6, fontSize: 9, color: C, fontWeight: 700, fontFamily: "'Orbitron', monospace" }}>✓ ACTIVE</div>}
-                          </div>
+                        )}
+                        <div style={{ width: "100%", height: 36, borderRadius: 5, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden", display: "flex", background: previewBg }}>
+                          <div style={{ flex: 1, background: previewPrimary }} />
+                          <div style={{ flex: 1, background: previewBg }} />
                         </div>
+                        <div style={{ textAlign: "center" }}>
+                          <div style={{ fontSize: 9, color: isSelected ? C : "rgba(255,255,255,0.4)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.05em" }}>{THEME_LABELS[t] || t.toUpperCase()}</div>
+                          {isSelected && !isApplied && (
+                            <button onClick={e => { e.stopPropagation(); play("click"); setDraftTheme(t); handleSave(t); }} style={{ marginTop: 6, padding: "5px 8px", width: "100%", background: C, border: "none", color: "#000", fontSize: 8, fontWeight: 900, fontFamily: "'Orbitron', monospace", cursor: "pointer", borderRadius: 4, letterSpacing: "0.1em", boxShadow: `0 0 8px ${C}66` }}>DEPLOY</button>
+                          )}
+                          {isApplied && <div style={{ marginTop: 6, fontSize: 9, color: C, fontWeight: 700, fontFamily: "'Orbitron', monospace" }}> ACTIVE</div>}
+                        </div>
+                      </div>
                     );
-                  })}
-            </div>
-          )}
-
-          {activeSection === "sound" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginBottom: 12, fontFamily: "'Orbitron', monospace", letterSpacing: "0.1em" }}>MASTER GAIN: {(draftSoundSettings.volume * 100).toFixed(0)}%</div>
-                <input type="range" min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={e => { const v = parseFloat(e.target.value); setDraftSoundSettings(p => ({ ...p, volume: v })); try { useSettingsStore.getState().updateSetting('sound.volume', v); } catch (_) {} }} style={{ width: "100%", accentColor: C }} />
+                  })
+                }
               </div>
-              <ToggleSwitch label="GLOBAL EFFECTS" checked={draftSoundSettings.effectsEnabled} onChange={v => { setDraftSoundSettings(p => ({ ...p, effectsEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.enabled', v); } catch (_) {} }} />
-              <ToggleSwitch label="TRANSMISSION PINGS" checked={draftSoundSettings.messageSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, messageSound: v })); try { useSettingsStore.getState().updateSetting('sound.notificationEnabled', v); } catch (_) {} }} />
-              <ToggleSwitch label="HAPTIC CLICKS" checked={draftSoundSettings.clickSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, clickSound: v })); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) {} }} />
+            )}
 
-            </div>
-          )}
-
-          {activeSection === "profile" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.06em", display: "block", marginBottom: 10 }}>HANDLE ALIAS</span>
-                <input type="text" value={draftDisplayName} onChange={e => setDraftDisplayName(e.target.value)} placeholder={authUser?.username || "Ghost"} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: `1px solid ${C}44`, color: C, padding: "10px 14px", borderRadius: 6, fontFamily: "'Rajdhani', monospace", fontSize: 15, outline: "none", boxShadow: `inset 0 0 10px ${C}11` }} />
+            {activeSection === "sound" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginBottom: 12, fontFamily: "'Orbitron', monospace", letterSpacing: "0.1em" }}>MASTER GAIN: {(draftSoundSettings.volume * 100).toFixed(0)}%</div>
+                  <input type="range" min="0" max="1" step="0.01" value={draftSoundSettings.volume} onChange={e => { const v = parseFloat(e.target.value); setDraftSoundSettings(p => ({ ...p, volume: v })); try { useSettingsStore.getState().updateSetting('sound.volume', v); } catch (_) { } }} style={{ width: "100%", accentColor: C }} />
+                </div>
+                <ToggleSwitch label="GLOBAL EFFECTS" checked={draftSoundSettings.effectsEnabled} onChange={v => { setDraftSoundSettings(p => ({ ...p, effectsEnabled: v })); try { useSettingsStore.getState().updateSetting('sound.enabled', v); } catch (_) { } }} />
+                <ToggleSwitch label="TRANSMISSION PINGS" checked={draftSoundSettings.messageSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, messageSound: v })); try { useSettingsStore.getState().updateSetting('sound.notificationEnabled', v); } catch (_) { } }} />
+                <ToggleSwitch label="HAPTIC CLICKS" checked={draftSoundSettings.clickSound} onChange={v => { setDraftSoundSettings(p => ({ ...p, clickSound: v })); try { useSettingsStore.getState().updateSetting('sound.clickEnabled', v); } catch (_) { } }} />
               </div>
+            )}
 
-              <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.06em", display: "block", marginBottom: 10 }}>DIRECTIVE BIO</span>
-                <textarea value={draftBio} onChange={e => setDraftBio(e.target.value)} placeholder="Initialise directive..." style={{ width: "100%", height: 80, background: "rgba(0,0,0,0.4)", border: `1px solid ${C}44`, color: C, padding: "10px 14px", borderRadius: 6, fontFamily: "'Rajdhani', monospace", fontSize: 14, outline: "none", boxShadow: `inset 0 0 10px ${C}11`, resize: "none" }} />
+            {activeSection === "profile" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.06em", display: "block", marginBottom: 10 }}>HANDLE ALIAS</span>
+                  <input type="text" value={draftDisplayName} onChange={e => setDraftDisplayName(e.target.value)} placeholder={authUser?.username || "Ghost"} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: `1px solid ${C}44`, color: C, padding: "10px 14px", borderRadius: 6, fontFamily: "'Rajdhani', monospace", fontSize: 15, outline: "none", boxShadow: `inset 0 0 10px ${C}11` }} />
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.06em", display: "block", marginBottom: 10 }}>DIRECTIVE BIO</span>
+                  <textarea value={draftBio} onChange={e => setDraftBio(e.target.value)} placeholder="Initialise directive..." style={{ width: "100%", height: 80, background: "rgba(0,0,0,0.4)", border: `1px solid ${C}44`, color: C, padding: "10px 14px", borderRadius: 6, fontFamily: "'Rajdhani', monospace", fontSize: 14, outline: "none", boxShadow: `inset 0 0 10px ${C}11`, resize: "none" }} />
+                </div>
+                <ToggleSwitch label="BROADCAST PRESENCE" checked={draftShowOnlineStatus} onChange={setDraftShowOnlineStatus} color={M} />
               </div>
-              <ToggleSwitch label="BROADCAST PRESENCE" checked={draftShowOnlineStatus} onChange={setDraftShowOnlineStatus} color={M} />
-            </div>
-          )}
+            )}
 
-          {activeSection === "notifications" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <ToggleSwitch label="DESKTOP OVERLAYS" checked={draftNotifications.desktop} onChange={v => { setDraftNotifications(p => ({ ...p, desktop: v })); try { useSettingsStore.getState().updateSetting('notifications.desktopEnabled', v); } catch (_) {} }} color={Y} />
-              <ToggleSwitch label="AUDIO CUES" checked={draftNotifications.sound} onChange={v => { setDraftNotifications(p => ({ ...p, sound: v })); try { useSettingsStore.getState().updateSetting('notifications.enabled', v); } catch (_) {} }} color={Y} />
-              <ToggleSwitch label="EMAIL DIGESTS" checked={draftNotifications.email} onChange={v => setDraftNotifications(p => ({ ...p, email: v }))} color={Y} />
-            </div>
-          )}
-
-          {activeSection === "orbit" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <ToggleSwitch label="RENDER RINGS" checked={draftOrbitBehavior.showRings} onChange={v => setDraftOrbitBehavior(p => ({ ...p, showRings: v }))} color={P} />
-              <ToggleSwitch label="MOMENTUM PAUSE" checked={draftOrbitBehavior.autoPauseOnHover} onChange={v => setDraftOrbitBehavior(p => ({ ...p, autoPauseOnHover: v }))} color={P} />
-              <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", gap: 10 }}>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.06em" }}>INTERACTION FILTER</span>
-                <select value={draftOrbitBehavior.interactionFilter} onChange={e => setDraftOrbitBehavior(p => ({ ...p, interactionFilter: e.target.value }))} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: `1px solid ${P}44`, color: P, padding: "10px 14px", borderRadius: 6, fontFamily: "'Rajdhani', monospace", fontSize: 15, outline: "none" }}>
-                  <option value="all">ALL NODES</option>
-                  <option value="active">ACTIVE NODES ONLY</option>
-                  <option value="mutual">MUTUAL ORBITS ONLY</option>
-                </select>
+            {activeSection === "notifications" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <ToggleSwitch label="DESKTOP OVERLAYS" checked={draftNotifications.desktop} onChange={v => { setDraftNotifications(p => ({ ...p, desktop: v })); try { useSettingsStore.getState().updateSetting('notifications.desktopEnabled', v); } catch (_) { } }} color={Y} />
+                <ToggleSwitch label="AUDIO CUES" checked={draftNotifications.sound} onChange={v => { setDraftNotifications(p => ({ ...p, sound: v })); try { useSettingsStore.getState().updateSetting('notifications.enabled', v); } catch (_) { } }} color={Y} />
+                <ToggleSwitch label="EMAIL DIGESTS" checked={draftNotifications.email} onChange={v => setDraftNotifications(p => ({ ...p, email: v }))} color={Y} />
               </div>
-            </div>
-          )}
-        </NeonCard>
+            )}
+
+            {activeSection === "orbit" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <ToggleSwitch label="RENDER RINGS" checked={draftOrbitBehavior.showRings} onChange={v => setDraftOrbitBehavior(p => ({ ...p, showRings: v }))} color={P} />
+                <ToggleSwitch label="MOMENTUM PAUSE" checked={draftOrbitBehavior.autoPauseOnHover} onChange={v => setDraftOrbitBehavior(p => ({ ...p, autoPauseOnHover: v }))} color={P} />
+                <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.06em" }}>INTERACTION FILTER</span>
+                  <select value={draftOrbitBehavior.interactionFilter} onChange={e => setDraftOrbitBehavior(p => ({ ...p, interactionFilter: e.target.value }))} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: `1px solid ${P}44`, color: P, padding: "10px 14px", borderRadius: 6, fontFamily: "'Rajdhani', monospace", fontSize: 15, outline: "none" }}>
+                    <option value="all">ALL NODES</option>
+                    <option value="active">ACTIVE NODES ONLY</option>
+                    <option value="mutual">MUTUAL ORBITS ONLY</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "security" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                <div style={{ background: "rgba(255,255,255,0.02)", padding: 24, borderRadius: 16, border: `1px solid ${C}22` }}>
+                  <SecurityExplanation isDark={true} />
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.01)", padding: 16, borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", fontFamily: "'Rajdhani', monospace", lineHeight: 1.6, margin: 0 }}>
+                    Orbital encryption layers are immutable. All transmissions are hardened via X3DH and Double Ratchet protocols.
+                  </p>
+                </div>
+              </div>
+            )}
+          </NeonCard>
+        )}
       </div>
-    </OrbitNeonCyberpunk>
+    </div>
   );
 }
 
-/* ─────────────────────────────────────────────
+/* 
    CYBERPUNK PROFILE
-───────────────────────────────────────────── */
+ */
 export function CyberpunkProfile() {
   const authUser = useAuthStore(s => s.authUser);
   return (
-    <OrbitNeonCyberpunk>
+    <div style={{ width: "100%", height: "100%", background: "#060010", position: "relative", overflow: "hidden" }}>
+      <style>{STYLES}</style>
+      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 20% 50%,${P}44 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,${C}18 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,${M}22 0%,transparent 40%)`, pointerEvents: "none" }} />
+      <OrbitRain />
       <div className="ncb-profile-layout" style={{ display: "flex", gap: 20, height: "100%" }}>
         <NeonCard color={M} style={{ width: 280, padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, flexShrink: 0 }} className="ncb-profile-card">
           <div style={{ position: "relative" }}>
             <div style={{ width: 120, height: 120, borderRadius: "50%", border: `2px solid ${M}`, overflow: "hidden", boxShadow: `0 0 24px ${M}66` }}>
-              <img src={authUser?.profilePic || "https://api.dicebear.com/7.x/avataaars/svg?seed=Cyber"} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
+              <img loading="lazy" decoding="async" src={authUser?.profilePic || "https://api.dicebear.com/7.x/avataaars/svg?seed=Cyber"} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
             </div>
             <div style={{ position: "absolute", bottom: 4, right: 4, width: 16, height: 16, borderRadius: "50%", border: `2px solid ${C}`, background: C, boxShadow: `0 0 8px ${C}` }} />
           </div>
@@ -1480,21 +1657,24 @@ export function CyberpunkProfile() {
           </div>
         </NeonCard>
       </div>
-    </OrbitNeonCyberpunk>
+    </div>
   );
 }
 
-/* ─────────────────────────────────────────────
+/* 
    CYBERPUNK SPOTIFY
-───────────────────────────────────────────── */
+ */
 export function CyberpunkSpotify() {
-  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore();
+  const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack } = useSpotifyStore(useShallow(state => ({ spotifyLinked: state.spotifyLinked, currentTrack: state.currentTrack, isPlaying: state.isPlaying, pausePlayback: state.pausePlayback, playTrack: state.playTrack })));
   const [playing, setPlaying] = useState(isPlaying || false);
   const { play } = useSoundManager();
   useEffect(() => { setPlaying(isPlaying); }, [isPlaying]);
 
   return (
-    <OrbitNeonCyberpunk>
+    <div style={{ width: "100%", height: "100%", background: "#060010", position: "relative", overflow: "hidden" }}>
+      <style>{STYLES}</style>
+      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 20% 50%,${P}44 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,${C}18 0%,transparent 45%),radial-gradient(ellipse at 60% 80%,${M}22 0%,transparent 40%)`, pointerEvents: "none" }} />
+      <OrbitRain />
       <NeonCard color={C} style={{ flex: 1, padding: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 28 }}>
         <h2 style={{ fontSize: 28, fontWeight: 900, color: C, fontFamily: "'Orbitron',monospace", textShadow: `0 0 20px ${C}88`, letterSpacing: "0.15em" }}>AUDIO SYNC</h2>
         {!spotifyLinked ? (
@@ -1502,7 +1682,7 @@ export function CyberpunkSpotify() {
             <div style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", fontFamily: "'Rajdhani',monospace", maxWidth: 400, lineHeight: 1.6 }}>
               Link your Spotify account to sync spatial audio across all active dimensions and orbit sessions.
             </div>
-            <button 
+            <button
               onClick={async () => {
                 try {
                   await spotifyService.initiateLogin();
@@ -1519,22 +1699,22 @@ export function CyberpunkSpotify() {
           <>
             <div style={{ width: 220, height: 220, borderRadius: 12, border: `2px solid ${C}`, overflow: "hidden", boxShadow: `0 0 40px ${C}55`, position: "relative" }}>
               <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg,${C}22,transparent)` }} />
-              {currentTrack ? <img src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Album Art" /> : <OrbitalViz playing={playing} />}
+              {currentTrack ? <img loading="lazy" decoding="async" src={currentTrack.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Album Art" /> : <OrbitalViz playing={playing} />}
             </div>
             <div style={{ textAlign: "center", minHeight: 56 }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", fontFamily: "'Rajdhani',monospace", textShadow: `0 0 10px ${C}44` }}>{currentTrack ? currentTrack.name : "Awaiting Signal..."}</div>
               <div style={{ fontSize: 14, color: `${C}cc`, marginTop: 4, fontFamily: "'Share Tech Mono'" }}>{currentTrack ? currentTrack.artist : "Unknown Frequency"}</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-              <button style={{ background: "none", border: "none", cursor: "pointer", color: `${C}88`, fontSize: 22, transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = C} onMouseLeave={e => e.currentTarget.style.color = `${C}88`}>⏮</button>
+              <button style={{ background: "none", border: "none", cursor: "pointer", color: `${C}88`, fontSize: 22, transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = C} onMouseLeave={e => e.currentTarget.style.color = `${C}88`}></button>
               <button onClick={() => playing ? pausePlayback() : playTrack()} style={{ width: 60, height: 60, borderRadius: "50%", background: `linear-gradient(135deg,${C},${P})`, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 22, boxShadow: `0 0 20px ${C}66`, transition: "transform 0.1s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
-                {playing ? "⏸" : "▶"}
+                {playing ? "" : ""}
               </button>
-              <button style={{ background: "none", border: "none", cursor: "pointer", color: `${C}88`, fontSize: 22, transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = C} onMouseLeave={e => e.currentTarget.style.color = `${C}88`}>⏭</button>
+              <button style={{ background: "none", border: "none", cursor: "pointer", color: `${C}88`, fontSize: 22, transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = C} onMouseLeave={e => e.currentTarget.style.color = `${C}88`}></button>
             </div>
           </>
         )}
       </NeonCard>
-    </OrbitNeonCyberpunk>
+    </div>
   );
 }

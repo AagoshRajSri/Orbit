@@ -106,7 +106,7 @@ export default function SpotifySessionManager() {
               >
                 <div className="flex items-center gap-2 min-w-0">
                   {p.avatar && (
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={p.avatar}
                       alt={p.name}
                       className="w-6 h-6 rounded-full"

@@ -509,7 +509,7 @@ function SpotifySidebar({ currentView, setView }) {
                   }`}
               >
                 {pl.images?.[0]?.url ? (
-                  <img src={pl.images[0].url} className="h-10 w-10 rounded-lg flex-shrink-0 object-cover shadow-lg" alt="" />
+                  <img loading="lazy" decoding="async" src={pl.images[0].url} className="h-10 w-10 rounded-lg flex-shrink-0 object-cover shadow-lg" alt="" />
                 ) : (
                   <div className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0 border border-white/5">
                     <ListMusic className="w-5 h-5 opacity-40" />
@@ -723,7 +723,7 @@ function TracksList({ title, tracks, playlistId, onTracksUpdated, headerGradient
 
                   <div className="flex items-center gap-5 min-w-0">
                     {track.album?.images?.[0]?.url && (
-                      <img src={track.album.images[0].url} className="h-12 w-12 rounded-lg shadow-xl" alt="" />
+                      <img loading="lazy" decoding="async" src={track.album.images[0].url} className="h-12 w-12 rounded-lg shadow-xl" alt="" />
                     ) || (
                         <div className="h-12 w-12 rounded-lg bg-white/5 flex items-center justify-center">
                           <Music className="w-6 h-6 text-white/10" />
@@ -786,7 +786,7 @@ function TracksList({ title, tracks, playlistId, onTracksUpdated, headerGradient
                   className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/5 transition-all text-left group"
                 >
                   <div className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-                    {pl.images?.[0]?.url ? <img src={pl.images[0].url} className="h-full w-full object-cover rounded-lg" /> : <ListMusic className="w-5 h-5" />}
+                    {pl.images?.[0]?.url ? <img loading="lazy" decoding="async" src={pl.images[0].url} className="h-full w-full object-cover rounded-lg" /> : <ListMusic className="w-5 h-5" />}
                   </div>
                   <span className="text-xs font-bold text-white/70 group-hover:text-[#1DB954] transition-colors">{pl.name}</span>
                 </button>
@@ -882,7 +882,7 @@ function NowPlayingBar() {
         {currentTrack ? (
           <>
             <div className={`h-16 w-16 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden relative flex-shrink-0 border ${isAmoled ? "border-[#4ECDC4]/20" : "border-white/10"} group`}>
-              <img src={currentTrack.imageUrl} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
+              <img loading="lazy" decoding="async" src={currentTrack.imageUrl} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all cursor-pointer backdrop-blur-sm">
                 <Maximize2 className="w-5 h-5 text-white" />
               </div>

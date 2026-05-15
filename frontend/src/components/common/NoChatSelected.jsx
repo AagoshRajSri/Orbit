@@ -1,12 +1,13 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell, Zap, MessageCircle, Settings, Music,
-  Disc, Pause, Play, SkipBack, SkipForward, Volume2, Gamepad2, Lock
+  Disc, Pause, Play, SkipBack, SkipForward, Volume2, Gamepad2, Lock,
+  Hash, ChevronRight, Plus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSpotifyStore } from "../../store/useSpotifyStore";
 import { spotifyService } from "../../services/spotifyService";
-import React, { memo, useMemo, useState, useEffect, useRef } from "react";
+import React, { memo, useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { ThemeMainContainer, ThemeCardWrapper } from "./welcome/WelcomeWrappers";
 import { useThemeStore } from "../../store/useThemeStore";
 import { TruePastelDashboard } from "./welcome/PastelDreamBoard";
@@ -18,6 +19,239 @@ import OrbitNeonCyberpunk from "../../themes/darkCyberpunkTheme";
 import { createPortal } from "react-dom";
 import { useNexusStore } from "../../store/useNexusStore";
 import NexusActionOverlay from "../nexus/NexusActionOverlay";
+import { useChatStore } from "../../store/useChatStore";
+import { useAuthStore } from "../../store/useAuthStore";
+import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
+
+// ── Quick-Access Orbital Ring ──────────────────────────────────────────────
+const ANIMALS = ['dog', 'cat', 'bunny'];
+const animalFor = (id) => ANIMALS[parseInt((id || '').toString().slice(-4) || '0', 16) % ANIMALS.length];
+
+const QuickAccessRing = memo(() => {
+  const navigate = useNavigate();
+  const { theme } = useThemeStore();
+  const nexuses = useNexusStore((s) => s.nexuses);
+  const setSelectedNexus = useNexusStore((s) => s.setSelectedNexus);
+  const nexusUnread = useNexusStore((s) => s.nexusUnread);
+  const users = useChatStore((s) => s.users);
+  const contactList = useChatStore((s) => s.contactList);
+  const setSelectedUser = useChatStore((s) => s.setSelectedUser);
+  const setSelectedNexusStore = useNexusStore((s) => s.setSelectedNexus);
+  const onlineUsers = useAuthStore((s) => s.onlineUsers);
+  const onlineSet = useMemo(() => new Set(onlineUsers.map((id) => id?.toString())), [onlineUsers]);
+
+  const accentColor = useMemo(() => {
+    if (theme === 'gamer-high-energy') return '#00ff66';
+    if (theme === 'neon-cyberpunk') return '#b026ff';
+    if (theme === 'amoled-dark') return '#00d4ff';
+    if (theme === 'light') return '#b08d57';
+    if (theme === 'pastel-dream') return '#d060a8';
+    return '#7c3aed';
+  }, [theme]);
+
+  const contacts = useMemo(() => {
+    if (!users.length) return [];
+    return contactList?.length
+      ? users.filter((u) => contactList.includes((u._id || u.id)?.toString()))
+      : users.slice(0, 8);
+  }, [users, contactList]);
+
+  const handleNexusClick = useCallback((nexus) => {
+    setSelectedNexusStore(nexus);
+    navigate(`/nexus/${nexus._id || nexus.id}`);
+  }, [setSelectedNexusStore, navigate]);
+
+  const handleUserClick = useCallback((user) => {
+    setSelectedUser(user);
+    setSelectedNexusStore(null);
+    navigate(`/chat/${user._id || user.id}`);
+  }, [setSelectedUser, setSelectedNexusStore, navigate]);
+
+  const hasItems = nexuses.length > 0 || contacts.length > 0;
+  if (!hasItems) return null;
+
+  return (
+    <div className="w-full mt-5 mb-1">
+      {/* Label */}
+      <div className="flex items-center gap-2 mb-3 px-1">
+        <div className="h-px flex-1" style={{ background: `${accentColor}40` }} />
+        <span className="text-[9px] font-black uppercase tracking-[0.3em] opacity-60"
+          style={{ color: 'var(--chat-text)' }}
+        >
+          Quick Orbit
+        </span>
+        <div className="h-px flex-1" style={{ background: `${accentColor}40` }} />
+      </div>
+
+      {/* Scrollable ring row */}
+      <div
+        className="flex gap-4 overflow-x-auto pb-2 px-1"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {/* Nexuses */}
+        {nexuses.map((nexus) => {
+          const nid = (nexus._id || nexus.id)?.toString();
+          const unread = nexusUnread[nid] || 0;
+          return (
+            <button
+              key={nid}
+              onClick={() => handleNexusClick(nexus)}
+              className="flex flex-col items-center gap-1.5 shrink-0 group"
+              title={nexus.name}
+            >
+              {/* Orbital ring wrapper */}
+              <div className="relative">
+                {/* Animated outer ring */}
+                <div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    padding: 2,
+                    background: unread > 0
+                      ? `conic-gradient(${accentColor}, ${accentColor}80, ${accentColor})`
+                      : `conic-gradient(${accentColor}40, transparent 60%, ${accentColor}40)`,
+                    borderRadius: '50%',
+                    animation: unread > 0 ? 'orbit-spin 2s linear infinite' : 'orbit-spin 8s linear infinite',
+                    WebkitMaskImage: 'radial-gradient(transparent 65%, black 66%)',
+                    maskImage: 'radial-gradient(transparent 65%, black 66%)',
+                  }}
+                />
+                {/* Avatar */}
+                <div
+                  className="relative size-14 rounded-full flex items-center justify-center overflow-hidden border-2 transition-transform group-hover:scale-105 group-active:scale-95"
+                  style={{
+                    borderColor: unread > 0 ? accentColor : `${accentColor}50`,
+                    background: 'var(--color-base-200)',
+                    boxShadow: unread > 0 ? `0 0 12px ${accentColor}60` : 'none',
+                  }}
+                >
+                  <PixelAvatarBadge
+                    type={animalFor(nid)}
+                    state="idle"
+                    size={48}
+                    showDot={false}
+                    style={{ imageRendering: 'pixelated', width: '100%', height: '100%' }}
+                  />
+                  {/* Nexus hash overlay */}
+                  <div className="absolute bottom-0 right-0 w-4 h-4 rounded-tl-lg flex items-center justify-center"
+                    style={{ background: accentColor }}
+                  >
+                    <Hash size={9} color="#000" strokeWidth={3} />
+                  </div>
+                </div>
+                {/* Unread badge */}
+                <AnimatePresence>
+                  {unread > 0 && (
+                    <motion.span
+                      key="badge"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-black flex items-center justify-center z-10 leading-none"
+                      style={{ background: accentColor, color: '#000', boxShadow: `0 0 8px ${accentColor}` }}
+                    >
+                      {unread > 99 ? '99+' : unread}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
+              {/* Name label */}
+              <span
+                className="text-[9px] font-black uppercase tracking-wider max-w-[56px] truncate text-center"
+                style={{ color: 'var(--chat-text)', opacity: 0.75 }}
+              >
+                {nexus.name}
+              </span>
+            </button>
+          );
+        })}
+
+        {/* Separator between nexus and DMs */}
+        {nexuses.length > 0 && contacts.length > 0 && (
+          <div className="w-px shrink-0 self-stretch my-2 mx-1"
+            style={{ background: `${accentColor}25` }}
+          />
+        )}
+
+        {/* Direct message contacts */}
+        {contacts.map((user) => {
+          const uid = (user._id || user.id)?.toString();
+          const isOnline = onlineSet.has(uid);
+          const unread = Number(user.unreadCount) || 0;
+          return (
+            <button
+              key={uid}
+              onClick={() => handleUserClick(user)}
+              className="flex flex-col items-center gap-1.5 shrink-0 group"
+              title={user.username}
+            >
+              <div className="relative">
+                {/* Pulse ring for online */}
+                {isOnline && (
+                  <div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background: `conic-gradient(#00ff8840, transparent 60%, #00ff8840)`,
+                      borderRadius: '50%',
+                      animation: 'orbit-spin 6s linear infinite',
+                      WebkitMaskImage: 'radial-gradient(transparent 65%, black 66%)',
+                      maskImage: 'radial-gradient(transparent 65%, black 66%)',
+                    }}
+                  />
+                )}
+                <div
+                  className="relative size-14 rounded-full flex items-center justify-center overflow-hidden border-2 transition-transform group-hover:scale-105 group-active:scale-95"
+                  style={{
+                    borderColor: isOnline ? '#00ff8880' : `${accentColor}30`,
+                    background: 'var(--color-base-200)',
+                    boxShadow: unread > 0 ? `0 0 12px ${accentColor}60` : 'none',
+                  }}
+                >
+                  <PixelAvatarBadge
+                    type={animalFor(uid)}
+                    state="idle"
+                    size={48}
+                    showDot={false}
+                    style={{ imageRendering: 'pixelated', width: '100%', height: '100%' }}
+                  />
+                  {/* Online dot */}
+                  {isOnline && (
+                    <div className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[var(--color-base-100)]" />
+                  )}
+                </div>
+                {/* Unread badge */}
+                <AnimatePresence>
+                  {unread > 0 && (
+                    <motion.span
+                      key="badge"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-black flex items-center justify-center z-10 leading-none"
+                      style={{ background: accentColor, color: '#000' }}
+                    >
+                      {unread > 99 ? '99+' : unread}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
+              <span
+                className="text-[9px] font-black uppercase tracking-wider max-w-[56px] truncate text-center"
+                style={{ color: 'var(--chat-text)', opacity: 0.75 }}
+              >
+                {user.username}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
+// ───────────────────────────────────────────────────────────────────────────
 
 const themeColorMap = {
   gamer: "#ff2d78",
@@ -247,7 +481,7 @@ const SpotifyCard = memo(() => {
 
             <div className="flex gap-4 mb-4 pointer-events-none">
               <div className="h-16 w-16 rounded-xl shadow-xl overflow-hidden flex-shrink-0 border border-[var(--chat-border)]">
-                <img src={currentTrack.imageUrl} alt="" className="h-full w-full object-cover" />
+                <img loading="lazy" decoding="async" src={currentTrack.imageUrl} alt="" className="h-full w-full object-cover" />
               </div>
               <div className="flex-1 min-w-0 flex flex-col justify-center" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
                 <h4 className="text-sm font-bold text-[var(--chat-text)] truncate leading-tight mb-1">{currentTrack.name}</h4>
@@ -366,6 +600,8 @@ const NoChatSelected = () => {
                 </div>
                 <h1 className="text-4xl font-black tracking-tight text-[var(--chat-text)] uppercase leading-none" style={{ textShadow: '0 0 20px rgba(255,255,255,0.6)' }}>Welcome to Orbit</h1>
                 <p className="text-[var(--chat-text)] opacity-80 text-xs mt-3 max-w-md font-bold">Choose a pathway to begin your mission.</p>
+                {/* ── Quick Orbit Access Ring ── */}
+                <QuickAccessRing />
               </motion.div>
 
               <motion.div variants={containerVariants} className="w-full mt-6">

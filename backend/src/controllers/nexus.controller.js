@@ -1,5 +1,7 @@
 import Nexus from "../models/nexus.model.js";
 import Message from "../models/message.model.js";
+import NexusSenderKeyDistribution from "../models/nexusSenderKeyDistribution.model.js";
+import PrekeyBundle from "../models/prekeyBundle.model.js";
 import { getIO, emitToNexus } from "../socket/socket.js";
 import { getRealId, sanitizeForOrbit } from "../lib/obfuscation.js";
 import cloudinary from "../lib/cloudinary.js";
@@ -34,13 +36,20 @@ const nexusDataSchema = z.object({
 
 const nexusMessageSchema = z
   .object({
-    text: z.string().max(2000).optional(),
-    image: z.string().max(5000).optional(), // Allow URLs (GIFs/Stickers) and base64
+    text:           z.string().max(2000).optional(),
+    image:          z.string().max(5000000).optional(),
     idempotencyKey: z.string().optional(),
+    // ── v4: Sender Key encrypted group message ──────────────────────────────
+    v:          z.number().int().min(1).max(10).optional(),
+    ciphertext: z.string().optional(), // AES-GCM encrypted payload
+    iv:         z.string().optional(), // 96-bit IV
+    n:          z.number().int().optional(), // Chain counter
+    sig:        z.string().optional(), // ECDSA signature
   })
-  .refine((data) => data.text || data.image, {
-    message: "Message must contain either text or an image",
-  });
+  .refine(
+    (data) => data.text || data.image || data.ciphertext,
+    { message: "Message must contain either text, image, or encrypted content" }
+  );
 
 export const getNexus = async (req, res) => {
   try {
@@ -443,6 +452,7 @@ export const getMyNexuses = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(parsedLimit)
       .populate("senderId", "username profilePic")
+      .maxTimeMS(5000) // FIX 17: Prevent thread stall
       .lean();
 
     messages = messages.reverse();
@@ -470,7 +480,7 @@ export const sendNexusMessage = async (req, res) => {
       });
     }
 
-    const { text, image, idempotencyKey } = parsed.data;
+    const { text, image, idempotencyKey, v, ciphertext, iv, n, sig } = parsed.data;
 
     // Idempotency check: if we already saved this message, return it immediately
     if (idempotencyKey) {
@@ -518,6 +528,12 @@ export const sendNexusMessage = async (req, res) => {
       text,
       image: imageUrl,
       idempotencyKey,
+      // v4: Sender Key encrypted group message
+      v,
+      ciphertext,
+      iv,
+      n,
+      sig,
     });
 
     await newMessage.save();
@@ -689,3 +705,150 @@ export const deleteNexus = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// ── Sender Key Distribution API ───────────────────────────────────────────────
+
+/**
+ * POST /api/nexus/:nexusId/sender-keys
+ * Alice stores her X3DH-wrapped SenderKey for each nexus member.
+ * Body: { distributions: [{ recipientId, ciphertext, iv, x3dh }] }
+ */
+export const publishSenderKeyDistributions = async (req, res) => {
+  try {
+    const { nexusId } = req.params;
+    const senderId    = req.user._id;
+    const realNexusId = getRealId(nexusId);
+
+    const schema = z.object({
+      distributions: z.array(z.object({
+        recipientId:  z.string().min(1),
+        ciphertext:   z.string().min(1),
+        iv:           z.string().min(1),
+        x3dh: z.object({
+          identityKey:  z.string(),
+          ephemeralKey: z.string(),
+          opkId:        z.string().nullable().optional(),
+        }),
+      })).min(1).max(500),
+    });
+
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        error: { code: "VALIDATION_ERROR", details: parsed.error.issues },
+      });
+    }
+
+    // Verify sender is a nexus member
+    const nexus = await Nexus.findById(realNexusId).select("members");
+    if (!nexus || !nexus.members.some((m) => m.toString() === senderId.toString())) {
+      return res.status(403).json({ success: false, error: { code: "FORBIDDEN", message: "Not a member" } });
+    }
+
+    const { distributions } = parsed.data;
+
+    // Upsert each distribution — replace on key rotation
+    const ops = distributions.map(({ recipientId, ciphertext, iv, x3dh }) => ({
+      updateOne: {
+        filter: {
+          nexusId:     realNexusId,
+          senderId,
+          recipientId: getRealId(recipientId),
+        },
+        update: { $set: { ciphertext, iv, x3dh, updatedAt: new Date() } },
+        upsert: true,
+      },
+    }));
+    await NexusSenderKeyDistribution.bulkWrite(ops);
+
+    return res.status(200).json({ success: true, count: distributions.length });
+  } catch (error) {
+    console.error("[Nexus] publishSenderKeyDistributions error:", error.message);
+    return res.status(500).json({ success: false, error: { code: "SERVER_ERROR" } });
+  }
+};
+
+/**
+ * GET /api/nexus/:nexusId/sender-keys
+ * Bob fetches all sender key distributions addressed to him for this nexus.
+ */
+export const getSenderKeyDistributions = async (req, res) => {
+  try {
+    const { nexusId } = req.params;
+    const userId      = req.user._id;
+    const realNexusId = getRealId(nexusId);
+
+    const distributions = await NexusSenderKeyDistribution.find({
+      nexusId:     realNexusId,
+      recipientId: userId,
+    }).lean();
+
+    return res.status(200).json({
+      success: true,
+      distributions: sanitizeForOrbit(distributions),
+    });
+  } catch (error) {
+    console.error("[Nexus] getSenderKeyDistributions error:", error.message);
+    return res.status(500).json({ success: false, error: { code: "SERVER_ERROR" } });
+  }
+};
+
+/**
+ * GET /api/nexus/:nexusId/member-keys
+ * Return prekey bundles for all nexus members except the caller.
+ * Used before publishing sender key distributions.
+ */
+export const getMemberPublicKeys = async (req, res) => {
+  try {
+    const { nexusId } = req.params;
+    const userId      = req.user._id;
+    const realNexusId = getRealId(nexusId);
+
+    const nexus = await Nexus.findById(realNexusId).select("members");
+    if (!nexus || !nexus.members.some((m) => m.toString() === userId.toString())) {
+      return res.status(403).json({ success: false, error: { code: "FORBIDDEN" } });
+    }
+
+    const memberIds = nexus.members
+      .map((m) => m.toString())
+      .filter((id) => id !== userId.toString());
+
+    const bundles = await PrekeyBundle.find({ userId: { $in: memberIds } })
+      .select("userId identityKey signingKey signedPrekey spkSignature oneTimePrekeys")
+      .lean();
+
+    // Pop one OPK per member atomically
+    const result = [];
+    for (const bundle of bundles) {
+      let oneTimePrekey   = null;
+      let oneTimePrekeyId = null;
+
+      if (bundle.oneTimePrekeys?.length > 0) {
+        const opk = bundle.oneTimePrekeys[0];
+        await PrekeyBundle.updateOne(
+          { userId: bundle.userId },
+          { $pull: { oneTimePrekeys: { id: opk.id } } }
+        );
+        oneTimePrekey   = opk.publicKey;
+        oneTimePrekeyId = opk.id;
+      }
+
+      result.push({
+        userId:          bundle.userId.toString(),
+        identityKey:     bundle.identityKey,
+        signingKey:      bundle.signingKey,
+        signedPrekey:    bundle.signedPrekey,
+        prekeySignature: bundle.spkSignature,
+        oneTimePrekey,
+        oneTimePrekeyId,
+      });
+    }
+
+    return res.status(200).json({ success: true, members: sanitizeForOrbit(result) });
+  } catch (error) {
+    console.error("[Nexus] getMemberPublicKeys error:", error.message);
+    return res.status(500).json({ success: false, error: { code: "SERVER_ERROR" } });
+  }
+};
+

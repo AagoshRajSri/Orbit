@@ -17,8 +17,8 @@ export const getSocket = () => {
 
   const socketConfig = {
     withCredentials: true,
-    transports: ["polling"],
-    upgrade: false,
+    transports: ["websocket", "polling"],
+    upgrade: true,
     reconnectionAttempts: 20,
     reconnectionDelay: 2000,
     reconnectionDelayMax: 10000,
@@ -42,16 +42,27 @@ export const getSocket = () => {
     connectionError = error.message;
     console.error("[Socket.IO] Connection error:", error.message);
     
-    if (error.message.includes("No identity established") || error.message.includes("Authentication rejected")) {
-      console.warn("[Socket.IO] No identity - clearing session and redirecting to login");
-      useAuthStore.getState().logout();
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+    if (error.message.includes("No identity established") || (error.message.includes("Authentication rejected") && !error.message.includes("Token expired"))) {
+      const auth = useAuthStore.getState();
+      
+      // Don't nuke the session if we're still checking it
+      if (auth.isCheckingAuth) {
+        console.warn("[Socket.IO] Identity missing but auth check in progress - waiting...");
+        return;
+      }
+
+      // Only logout if we have a user but the socket says no
+      if (auth.authUser) {
+        console.warn("[Socket.IO] No identity - clearing session and redirecting to login");
+        auth.logout();
+        if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+          window.location.href = "/login";
+        }
       }
       return;
     }
 
-    if (error.message.includes("Authentication") || error.message.includes("Token expired")) {
+    if (error.message.includes("Authentication") || error.message.includes("Token expired") || error.message.includes("rejected")) {
       console.log("[Socket.IO] Auth error detected. Attempting to trigger token refresh...");
       try {
         await axiosInstance.get("/auth/check");

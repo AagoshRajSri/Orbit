@@ -3,7 +3,43 @@ import toast from "../lib/toast";
 import { axiosInstance } from "../lib/axios.jsx";
 import { getSocket } from "../lib/socket";
 import { useAuthStore } from "./useAuthStore";
-import { normalizeId } from "../lib/idUtils";
+import { normalizeId, isMatchObj } from "../lib/idUtils";
+
+// ── Decrypt a single Nexus message (v4 Sender Key) ───────────────────────────
+const decryptSingleNexusMessage = async (m, userId) => {
+  const sIdStr = (m.senderId?._id || m.senderId?.id || m.senderId)?.toString();
+  const isSender = sIdStr === userId;
+
+  if (m.v !== 4 || !m.ciphertext) return { ...m, isMe: isSender };
+
+  // Sender's own message — skip decryption (advanced chain)
+  if (isSender) return { ...m, isMe: true };
+
+  try {
+    const { loadSenderKey, saveSenderKey } = await import("../lib/nexusKeyStore.js");
+    const { senderKeyDecrypt } = await import("../lib/nexusSenderKey.js");
+
+    const nexusId = (m.nexusId?._id || m.nexusId)?.toString();
+    const senderKey = await loadSenderKey(nexusId, sIdStr);
+
+    if (!senderKey) {
+      return { ...m, text: "🔒 [Sender key missing — sync required]", isMe: false };
+    }
+
+    const { plaintext, updatedSenderKey } = await senderKeyDecrypt(
+      senderKey,
+      m,
+      senderKey.signingPublicKey
+    );
+    await saveSenderKey(nexusId, sIdStr, updatedSenderKey);
+
+    const payload = JSON.parse(plaintext);
+    return { ...m, text: payload.text, image: payload.image, isMe: false };
+  } catch (err) {
+    console.error("[Nexus E2EE] Decrypt error:", err);
+    return { ...m, text: "🔒 [Decryption failed]", isMe: false };
+  }
+};
 
 export const useNexusStore = create((set, get) => ({
   nexuses: [],
@@ -282,6 +318,11 @@ export const useNexusStore = create((set, get) => ({
   getNexusMessages: async (nexusId) => {
     const currentMessages = get().nexusMessages;
     const currentId = get().selectedNexusId;
+    
+    // Prevent redundant fetches for the same Nexus if already loading
+    if (get().isMessagesLoading && nexusId === currentId) {
+      return;
+    }
 
     // Only wipe if we're switching to a new Nexus
     const shouldWipe = nexusId !== currentId || currentMessages.length === 0;
@@ -299,9 +340,20 @@ export const useNexusStore = create((set, get) => ({
     
     try {
       const res = await axiosInstance.get(`/nexus/${nexusId}/messages`);
+      const authUser = useAuthStore.getState().authUser;
+      const userId = authUser?._id?.toString();
+
+      // 1. Sync missing sender keys for this Nexus
+      await get().syncNexusKeys(nexusId);
+
+      // 2. Decrypt all messages
+      const decrypted = await Promise.all(
+        res.data.map(m => decryptSingleNexusMessage(m, userId))
+      );
+
       set({ 
-        nexusMessages: res.data, 
-        hasMoreNexusMessages: res.data.length === 50
+        nexusMessages: decrypted, 
+        hasMoreNexusMessages: decrypted.length === 50
       });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load messages");
@@ -353,25 +405,66 @@ export const useNexusStore = create((set, get) => ({
       return optimisticMessage;
     }
 
-    try {
-      addNexusMessage(optimisticMessage);
-      
-      const res = await axiosInstance.post(
-        `/nexus/${nexusId}/send`,
-        { ...messageData, idempotencyKey }
-      );
-      // Resolve pending state immediately with server data
-      addNexusMessage(res.data);
-      return res.data;
-    } catch (error) {
-      if (error.code === 'ERR_NETWORK' || !error.response) {
-        const { pushToQueue } = await import("../lib/offlineQueue.js");
-        await pushToQueue({ ...optimisticMessage, targetId: nexusId, type: "nexus" });
-        return optimisticMessage;
+    // 1. Instant optimistic UI update
+    addNexusMessage(optimisticMessage);
+
+    // 2. Fire-and-forget background encryption & send
+    (async () => {
+      try {
+        const authUser = useAuthStore.getState().authUser;
+        const userId = authUser?._id?.toString();
+
+        // ── Nexus E2EE logic ──────────────────────────────────────────────────
+        const { loadSenderKey, saveSenderKey } = await import("../lib/nexusKeyStore.js");
+        const { senderKeyEncrypt, generateSenderKey } = await import("../lib/nexusSenderKey.js");
+
+        let senderKey = await loadSenderKey(nexusId, userId);
+        
+        // If first message in this nexus, or key missing: generate and distribute
+        if (!senderKey) {
+          senderKey = await generateSenderKey();
+          await saveSenderKey(nexusId, userId, senderKey);
+          await get().distributeNexusKey(nexusId, senderKey);
+        }
+
+        const payload = JSON.stringify({ text: messageData.text, image: messageData.image });
+        const { ciphertext, updatedSenderKey } = await senderKeyEncrypt(senderKey, payload);
+        await saveSenderKey(nexusId, userId, updatedSenderKey);
+
+        const res = await axiosInstance.post(
+          `/nexus/${nexusId}/send`,
+          { 
+            ...messageData, 
+            ...ciphertext, // Inject v, ciphertext, iv, n, sig
+            idempotencyKey 
+          }
+        );
+        
+        // Decrypt our own outgoing message (just sets status to sent and maps IDs)
+        const finalMsg = await decryptSingleNexusMessage(res.data, userId);
+        
+        // Replace optimistic msg
+        set((state) => ({
+          nexusMessages: state.nexusMessages.map(m => 
+            m.idempotencyKey === idempotencyKey ? finalMsg : m
+          )
+        }));
+      } catch (error) {
+        if (error.code === 'ERR_NETWORK' || !error.response) {
+          const { pushToQueue } = await import("../lib/offlineQueue.js");
+          await pushToQueue({ ...optimisticMessage, targetId: nexusId, type: "nexus" });
+        } else {
+          toast.error(error.response?.data?.message || "Failed to send message");
+          set((state) => ({
+            nexusMessages: state.nexusMessages.map(m => 
+              m.idempotencyKey === idempotencyKey ? { ...m, status: "failed" } : m
+            )
+          }));
+        }
       }
-      toast.error(error.response?.data?.message || "Failed to send message");
-      throw error;
-    }
+    })();
+
+    return optimisticMessage;
   },
 
   retryNexusMessage: async (idempotencyKey) => {
@@ -388,7 +481,13 @@ export const useNexusStore = create((set, get) => ({
       await axiosInstance.post(`/nexus/${targetId}/send`, {
         text: msg.text,
         image: msg.image,
-        idempotencyKey: msg.idempotencyKey
+        idempotencyKey: msg.idempotencyKey,
+        // v4 support
+        v: msg.v,
+        ciphertext: msg.ciphertext,
+        iv: msg.iv,
+        n: msg.n,
+        sig: msg.sig,
       });
     } catch (err) {
       if (err.code === 'ERR_NETWORK' || !err.response) {
@@ -423,23 +522,27 @@ export const useNexusStore = create((set, get) => ({
   nexusTypingUsers: [],
 
   setNexusTyping: (userId, username, isTyping) => {
+    const normalizedId = userId?.toString?.();
     set((state) => {
       const existing = state.nexusTypingUsers || [];
-      const normalizedId = userId?.toString?.();
 
       if (isTyping) {
-        if (existing.some((u) => u.userId?.toString?.() === normalizedId)) {
-          return state;
-        }
+        // Quick check
+        if (existing.some((u) => u.userId === normalizedId)) return state;
+        
+        // Auto-clear timer for nexus typing
+        const timerKey = `_nexusTyping_${normalizedId}`;
+        if (state[timerKey]) clearTimeout(state[timerKey]);
+        const timer = setTimeout(() => get().setNexusTyping(normalizedId, username, false), 3500);
+
         return {
           nexusTypingUsers: [...existing, { userId: normalizedId, username }],
+          [timerKey]: timer
         };
       }
 
       return {
-        nexusTypingUsers: existing.filter(
-          (user) => user.userId?.toString?.() !== normalizedId,
-        ),
+        nexusTypingUsers: existing.filter((u) => u.userId !== normalizedId),
       };
     });
   },
@@ -502,58 +605,49 @@ export const useNexusStore = create((set, get) => ({
   },
   addNexusMessage: (message) => {
     set((state) => {
-      const { selectedNexusId, nexusMessages, nexusUnread } = state;
+      const { selectedNexusId, nexusMessages, nexusUnread, nexuses } = state;
+      const msgNexusId = message.nexusId?.toString();
+      const selNexusId = selectedNexusId?.toString();
 
-      const msgNexusId = message.nexusId;
-      const selNexusId = selectedNexusId;
-
-      // Robust matching helper for Nexus IDs — handles obfuscated vs raw IDs
-      const isNexusMatch = (idA, idB) => {
-        if (!idA || !idB) return false;
-        const a = idA.toString();
-        const b = idB.toString();
-        if (a === b) return true;
-
-        const nexuses = get().nexuses;
-        return nexuses.some(n =>
-          (n._id?.toString() === a || n.id?.toString() === a) &&
-          (n._id?.toString() === b || n.id?.toString() === b)
-        );
-      };
-
-      const belongsToCurrentNexus = !!selNexusId && isNexusMatch(msgNexusId, selNexusId);
+      // O(1) membership check if we can assume nexusId is already known
+      const belongsToCurrentNexus = !!selNexusId && msgNexusId === selNexusId;
 
       if (belongsToCurrentNexus) {
-        const messageId = normalizeId(message._id);
-        const idempotencyKey = message.idempotencyKey;
+        const authUser = useAuthStore.getState().authUser;
+        const userId = authUser?._id?.toString();
+        
+        decryptSingleNexusMessage(message, userId).then(decrypted => {
+          const messageId = decrypted._id?.toString();
+          const idempotencyKey = decrypted.idempotencyKey;
 
-        let newMessages = [...nexusMessages];
+          set(s => {
+            let newMessages = [...s.nexusMessages];
+            const existsIndex = newMessages.findLastIndex((m) => {
+              if (idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
+              if (messageId && m._id?.toString() === messageId) return true;
+              return false;
+            });
 
-        const existsIndex = newMessages.findLastIndex((m) => {
-          const mId = normalizeId(m._id);
-          if (mId && messageId && mId === messageId) return true;
-          if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
-          return false;
+            if (existsIndex === -1) {
+              newMessages.push(decrypted);
+              if (newMessages.length > 1 && 
+                  new Date(newMessages[newMessages.length - 2].createdAt).getTime() > 
+                  new Date(decrypted.createdAt).getTime()) {
+                newMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+              }
+            } else {
+              newMessages[existsIndex] = {
+                ...decrypted,
+                _id: newMessages[existsIndex]._id || decrypted._id,
+                status: "sent",
+              };
+            }
+            return { nexusMessages: newMessages };
+          });
         });
 
-        if (existsIndex === -1) {
-          newMessages.push(message);
-        } else {
-          const existingMsg = newMessages[existsIndex];
-          newMessages[existsIndex] = {
-            ...message,
-            _id: existingMsg._id || message._id,
-            status: "sent",
-          };
-        }
-
-        newMessages.sort((a, b) =>
-          new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
-        );
-
-        return { nexusMessages: newMessages };
+        return state;
       } else {
-        // Increment unread count if user isn't currently in this nexus
         const currentCount = nexusUnread[msgNexusId] || 0;
         return {
           nexusUnread: {
@@ -597,5 +691,193 @@ export const useNexusStore = create((set, get) => ({
         ),
       });
     }
+  },
+
+  // ── Nexus E2EE Key Management ─────────────────────────────────────────────────
+
+  distributeNexusKey: async (nexusId, senderKey) => {
+    try {
+      const { x3dhSender } = await import("../lib/x3dh.js");
+      const { createDistributionPayload } = await import("../lib/nexusSenderKey.js");
+      const { getKeyPair } = await import("../lib/keyStore.js");
+      const authUser = useAuthStore.getState().authUser;
+      const myId = authUser?._id?.toString();
+
+      // 1. Fetch all members' prekey bundles
+      const res = await axiosInstance.get(`/nexus/${nexusId}/member-keys`);
+      const members = res.data.members;
+
+      const myKeys = await getKeyPair(myId);
+      if (!myKeys) throw new Error("Local identity keys missing");
+
+      // 2. Create X3DH-wrapped distributions for each member
+      const payload = createDistributionPayload(senderKey, nexusId, myId);
+      const distributions = await Promise.all(members.map(async (m) => {
+        const { sessionKey, ephemeralPublicKey, oneTimePrekeyId } = await x3dhSender({
+          senderIdentityPrivateKey: myKeys.privateKey,
+          recipientBundle: m,
+        });
+
+        // Use the X3DH session key to encrypt the sender key distribution payload
+        const aesKey = await crypto.subtle.importKey(
+          "raw", sessionKey, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
+        );
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const ct = await crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          aesKey,
+          new TextEncoder().encode(payload)
+        );
+
+        const buf2b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+        return {
+          recipientId: m.userId,
+          ciphertext:  buf2b64(ct),
+          iv:          buf2b64(iv),
+          x3dh: {
+            identityKey:  await (async () => {
+              const spki = await crypto.subtle.exportKey("spki", myKeys.publicKey);
+              return btoa(String.fromCharCode(...new Uint8Array(spki)));
+            })(),
+            ephemeralKey: ephemeralPublicKey,
+            opkId:        oneTimePrekeyId,
+          }
+        };
+      }));
+
+      // 3. Publish to backend
+      await axiosInstance.post(`/nexus/${nexusId}/sender-keys`, { distributions });
+    } catch (err) {
+      console.error("[Nexus E2EE] Failed to distribute keys:", err);
+      toast.error("Group security setup failed. Your messages may not be readable by others.");
+    }
+  },
+
+  syncNexusKeys: async (nexusId) => {
+    // Basic debounce/locking to prevent spamming key sync
+    const state = get();
+    if (state._syncingKeys === nexusId) return;
+    set({ _syncingKeys: nexusId });
+
+    try {
+      const { x3dhReceiver } = await import("../lib/x3dh.js");
+      const { parseDistributionPayload } = await import("../lib/nexusSenderKey.js");
+      const { saveSenderKey, hasSenderKey } = await import("../lib/nexusKeyStore.js");
+      const { getSignedPrekey, consumeOneTimePrekey } = await import("../lib/sessionStore.js");
+      const { getKeyPair } = await import("../lib/keyStore.js");
+      const authUser = useAuthStore.getState().authUser;
+      const myId = authUser?._id?.toString();
+
+      // 1. Fetch distributions addressed to me
+      const res = await axiosInstance.get(`/nexus/${nexusId}/sender-keys`);
+      const dists = res.data.distributions;
+
+      const myKeys = await getKeyPair(myId);
+      if (!myKeys) return;
+
+      for (const d of dists) {
+        // Skip if we already have a newer or same key (unless it's a rotation)
+        // For now, we always process to ensure we're up to date
+        try {
+          const spk = await getSignedPrekey(myId);
+          const opkPriv = d.x3dh.opkId
+            ? await consumeOneTimePrekey(myId, d.x3dh.opkId)
+            : null;
+
+          const sessionKey = await x3dhReceiver({
+            recipientIdentityPrivateKey: myKeys.privateKey,
+            signedPrekeyPrivateKey:      spk.privateKey,
+            oneTimePrekeyPrivateKey:     opkPriv,
+            senderHeader: {
+              identityKey:  d.x3dh.identityKey,
+              ephemeralKey: d.x3dh.ephemeralKey,
+            },
+          });
+
+          const aesKey = await crypto.subtle.importKey(
+            "raw", sessionKey, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
+          );
+          const b64toBuf = (b64) => {
+            const bin = atob(b64);
+            const buf = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            return buf.buffer;
+          };
+
+          const plainBuf = await crypto.subtle.decrypt(
+            { name: "AES-GCM", iv: new Uint8Array(b64toBuf(d.iv)) },
+            aesKey,
+            b64toBuf(d.ciphertext)
+          );
+
+          const payload = new TextDecoder().decode(plainBuf);
+          const senderKey = parseDistributionPayload(payload);
+          
+          await saveSenderKey(nexusId, d.senderId, senderKey);
+        } catch (decErr) {
+          console.warn("[Nexus E2EE] Failed to decrypt distribution from", d.senderId, decErr);
+        }
+      }
+    } catch (err) {
+      console.error("[Nexus E2EE] Sync error:", err);
+    } finally {
+      set({ _syncingKeys: null });
+    }
+  },
+
+  rotateNexusKey: async (nexusId) => {
+    try {
+      const { clearNexusSenderKeys } = await import("../lib/nexusKeyStore.js");
+      const authUser = useAuthStore.getState().authUser;
+      const myId = authUser?._id?.toString();
+
+      // Clear our own sender key for this nexus
+      await clearNexusSenderKeys(nexusId);
+      console.info(`[Nexus E2EE] Rotated key for Nexus ${nexusId} due to membership change`);
+    } catch (err) {
+      console.error("[Nexus E2EE] Rotation error:", err);
+    }
+  },
+
+  addNexusMember: (nexusId, user) => {
+    set((state) => {
+      const nexuses = state.nexuses.map((n) => {
+        if (n._id?.toString() === nexusId?.toString()) {
+          const exists = n.members?.some(m => (m._id || m).toString() === (user._id || user).toString());
+          if (exists) return n;
+          return { ...n, members: [...(n.members || []), user] };
+        }
+        return n;
+      });
+      
+      const selectedNexus = state.selectedNexus?._id?.toString() === nexusId?.toString()
+        ? { ...state.selectedNexus, members: [...(state.selectedNexus.members || []), user] }
+        : state.selectedNexus;
+
+      return { nexuses, selectedNexus };
+    });
+    
+    // Member joined -> Rotate key (future secrecy)
+    get().rotateNexusKey(nexusId);
+  },
+
+  removeNexusMemberSocket: (nexusId, userId) => {
+    set((state) => {
+      const nexuses = state.nexuses.map((n) => {
+        if (n._id?.toString() === nexusId?.toString()) {
+          return { ...n, members: (n.members || []).filter(m => (m._id || m).toString() !== userId?.toString()) };
+        }
+        return n;
+      });
+
+      const selectedNexus = state.selectedNexus?._id?.toString() === nexusId?.toString()
+        ? { ...state.selectedNexus, members: (state.selectedNexus.members || []).filter(m => (m._id || m).toString() !== userId?.toString()) }
+        : state.selectedNexus;
+
+      return { nexuses, selectedNexus };
+    });
+
+    // Member left -> Rotate key (post-compromise security)
+    get().rotateNexusKey(nexusId);
   },
 }));

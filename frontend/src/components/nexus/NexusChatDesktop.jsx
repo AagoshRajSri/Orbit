@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import MessageStatusRing from "../chat/MessageStatusRing";
+import EmojiPicker, { Theme, EmojiStyle } from "emoji-picker-react";
+import GifPicker from "../chat/GifPicker.jsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FONTS (add to index.html):
@@ -1003,32 +1005,177 @@ function InfoPanel({t,group,setGroup,onClose,addToast}) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  EMOJI / GIF / STICKER PLACEHOLDER PANEL
+//  EMOJI / GIF / STICKER MEDIA PANEL  — Discord / Instagram floating picker
 // ══════════════════════════════════════════════════════════════════════════════
-function MediaPanel({t,mode,onClose,onSelectEmoji}) {
+function MediaPanel({ t, mode: initialMode, onClose, onSelectEmoji }) {
+  const isDark = t.id !== "premium" && t.id !== "pastel" && t.id !== "light";
+  const [mode, setMode] = useState(initialMode || "emoji");
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+
+  useEffect(() => {
+    if (initialMode) setMode(initialMode);
+  }, [initialMode]);
+
+  const acc  = t["--acc"]    || "#7c3aed";
+  const txt  = t["--text"]   || (isDark ? "#fff" : "#111");
+  const txt2 = t["--text2"]  || (isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)");
+  const bdr  = t["--border"] || (isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)");
+  const bg   = isDark ? "rgba(18, 20, 30, 0.98)" : "rgba(255, 255, 255, 0.98)";
+  const font = t["--font"] || t.font || "inherit";
+
+  const TABS = [
+    { id: "emoji",   icon: "😊",  label: "Emoji"    },
+    { id: "gif",     icon: "GIF", label: "GIFs",  isText: true },
+    { id: "sticker", icon: "🎭",  label: "Stickers" },
+  ];
+
   return (
-    <div style={{position:"absolute",bottom:"100%",left:0,right:0,background:t.emojiPnl,border:`1px solid ${t.border}`,borderRadius:"16px 16px 0 0",zIndex:40,maxHeight:300,overflow:"hidden",boxShadow:`0 -8px 32px rgba(0,0,0,.4)`,animation:"fadeUp .2s ease"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px 8px",borderBottom:`1px solid ${t.border}`}}>
-        <span style={{color:t.txt,fontSize:13,fontWeight:700,fontFamily:t.font,letterSpacing:".04em"}}>
-          {mode==="emoji"?"😄 Emoji Picker":mode==="gif"?"🎬 GIF Search":"🎭 Sticker Pack"}
-        </span>
-        <button onClick={onClose} style={{background:"none",border:"none",color:t.txt2,cursor:"pointer",display:"flex"}}><Ico d={I.x} size={16} stroke={t.txt2}/></button>
+    <div style={{
+      width:  isMobile ? "100%" : 352,
+      height: isMobile ? "52vh" : 430,
+      background: bg,
+      backdropFilter: "blur(24px)",
+      WebkitBackdropFilter: "blur(24px)",
+      border: `1px solid ${bdr}`,
+      borderRadius: isMobile ? "20px 20px 0 0" : 14,
+      boxShadow: isDark
+        ? "0 -2px 0 rgba(255,255,255,0.05), 0 8px 40px rgba(0,0,0,0.6), 0 24px 80px rgba(0,0,0,0.4)"
+        : "0 -2px 0 rgba(255,255,255,0.8), 0 8px 40px rgba(0,0,0,0.12), 0 24px 80px rgba(0,0,0,0.08)",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      animation: isMobile
+        ? "slideUp .28s cubic-bezier(0.16, 1, 0.3, 1)"
+        : "floatIn .22s cubic-bezier(0.16, 1, 0.3, 1)",
+    }}>
+
+      {/* ── Tab Bar ─────────────────────────────────────────────────────────── */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "6px 8px 0",
+        gap: 2,
+        flexShrink: 0,
+        borderBottom: `1px solid ${bdr}`,
+      }}>
+        {TABS.map(tab => {
+          const active = mode === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setMode(tab.id)}
+              title={tab.label}
+              style={{
+                padding: "8px 14px",
+                border: "none",
+                borderRadius: "8px 8px 0 0",
+                background: active ? (isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)") : "transparent",
+                color: active ? acc : txt2,
+                fontWeight: active ? 700 : 500,
+                fontSize: tab.isText ? 12 : 20,
+                letterSpacing: tab.isText ? "0.06em" : "normal",
+                cursor: "pointer",
+                transition: "all 0.15s",
+                fontFamily: font,
+                position: "relative",
+                lineHeight: 1,
+              }}
+            >
+              {tab.icon}
+              {active && (
+                <div style={{
+                  position: "absolute",
+                  bottom: -1,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: "60%",
+                  height: 2,
+                  borderRadius: 2,
+                  background: acc,
+                }} />
+              )}
+            </button>
+          );
+        })}
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={onClose}
+          title="Close"
+          style={{
+            width: 30, height: 30,
+            border: "none",
+            borderRadius: 8,
+            background: "transparent",
+            color: txt2,
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 16,
+            transition: "all 0.15s",
+            flexShrink: 0,
+            marginBottom: 4,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.07)"; e.currentTarget.style.color = txt; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = txt2; }}
+        >
+          ✕
+        </button>
       </div>
-      {/* ─── PLACEHOLDER: drop in react-emoji-picker, giphy-react, etc ─── */}
-      <div style={{height:230,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,color:t.txt2}}>
-        <div style={{fontSize:40}}>{mode==="emoji"?"😄":mode==="gif"?"🎬":"🎭"}</div>
-        <div style={{fontSize:14,fontFamily:t.font,fontWeight:600,color:t.txt}}>{mode==="emoji"?"Emoji Picker":"gif"===mode?"GIF Search":"Sticker Pack"}</div>
-        <div style={{fontSize:11,fontFamily:t.font,color:t.txt3,textAlign:"center",maxWidth:220,lineHeight:1.6}}>
-          Plug in your <code style={{color:t.acc,background:t.acc+"18",padding:"1px 6px",borderRadius:4,fontSize:10}}>react-emoji</code> / <code style={{color:t.acc,background:t.acc+"18",padding:"1px 6px",borderRadius:4,fontSize:10}}>@giphy/react</code> component here
-        </div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center",marginTop:4}}>
-          {["😀","😂","🥰","🔥","💎","⚡","🎮","🌸","👑","🩸"].map(e=>(
-            <span key={e} onClick={()=>{onSelectEmoji(e);}} style={{fontSize:22,cursor:"pointer",padding:6,borderRadius:8,transition:"background .15s"}}
-              onMouseEnter={el=>el.currentTarget.style.background=t.glow2}
-              onMouseLeave={el=>el.currentTarget.style.background="transparent"}>{e}</span>
-          ))}
-        </div>
+
+      {/* ── Content Area ────────────────────────────────────────────────────── */}
+      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+        {mode === "emoji" && (
+          <EmojiPicker
+            theme={isDark ? Theme.DARK : Theme.LIGHT}
+            emojiStyle={EmojiStyle.APPLE}
+            onEmojiClick={(emojiData) => onSelectEmoji(emojiData.emoji)}
+            width="100%"
+            height="100%"
+            lazyLoadEmojis={true}
+            searchPlaceHolder="Search emojis..."
+            style={{
+              "--epr-bg-color": "transparent",
+              "--epr-category-label-bg-color": isDark ? "rgba(18,20,30,0.9)" : "rgba(255,255,255,0.9)",
+              "--epr-picker-border-color": "transparent",
+              "--epr-search-border-color": bdr,
+              "--epr-search-bg-color": isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
+              "--epr-hover-bg-color": isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+              "--epr-text-color": txt,
+              "--epr-active-skin-tone-indicator-border-color": acc,
+              "--epr-highlight-color": acc,
+              border: "none",
+              fontFamily: font,
+            }}
+          />
+        )}
+
+        {mode === "gif" && (
+          <GifPicker t={t} onSelectGif={(gifUrl) => { onSelectEmoji(gifUrl); onClose(); }} />
+        )}
+
+        {mode === "sticker" && (
+          <div style={{
+            height: "100%",
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            gap: 10,
+          }}>
+            <div style={{ fontSize: 52 }}>🎭</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: txt, fontFamily: font }}>Stickers</div>
+            <div style={{ fontSize: 12, color: txt2, fontFamily: font }}>Coming soon!</div>
+          </div>
+        )}
       </div>
+
+      <style>{`
+        @keyframes floatIn {
+          from { opacity: 0; transform: scale(0.95) translateY(8px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);   }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+      `}</style>
     </div>
   );
 }

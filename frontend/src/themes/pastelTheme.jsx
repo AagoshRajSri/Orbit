@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useMemo, memo } from "react";
+import { performanceDetector } from "../lib/performanceDetection";
 import { THEMES, THEME_LABELS } from "../constants";
 import UniversalChatContainer from "../components/chat/UniversalChatContainer";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
 import { useSpotifyStore } from "../store/useSpotifyStore";
+import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "../store/useAuthStore";
 import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
 import { useSoundManager } from "../hooks/useSoundManager";
@@ -42,7 +44,7 @@ const FLOATIES = [
 ];
 
 /* ── tiny sparkle burst that fires on click ── */
-const SparkleClick = memo(() => {
+const SparkleClick = memo(function SparkleClick() {
   const [sparks, setSparks] = useState([]);
   useEffect(() => {
     const handler = (e) => {
@@ -76,7 +78,7 @@ const SparkleClick = memo(() => {
   );
 });
 
-const BgClouds = memo(() => {
+const BgClouds = memo(function BgClouds() {
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
       {/* Grain texture overlay */}
@@ -95,7 +97,7 @@ const BgClouds = memo(() => {
   );
 });
 
-const Floaties = memo(() => {
+const Floaties = memo(function Floaties() {
   return (
     <AnimLayer category="atmospheric">
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
@@ -114,7 +116,7 @@ const Floaties = memo(() => {
 });
 
 /* ── ribbon badge in top-right of a card ── */
-const CuteBadge = memo(({ label, color }) => {
+const CuteBadge = memo(function CuteBadge({ label, color }) {
   return (
     <div style={{
       position: "absolute", top: 10, right: 10,
@@ -128,7 +130,7 @@ const CuteBadge = memo(({ label, color }) => {
   );
 });
 
-const BarbieTrainAnimation = memo(() => {
+const BarbieTrainAnimation = memo(function BarbieTrainAnimation() {
   return (
     <AnimLayer category="atmospheric">
       <svg width="100%" height="100%" viewBox="0 0 8000 220" preserveAspectRatio="xMinYMid slice" role="img" xmlns="http://www.w3.org/2000/svg">
@@ -460,9 +462,8 @@ const BarbieTrainAnimation = memo(() => {
   );
 });
 
-const TopNav = memo(({ navRef, handleLogout, loggingOut, authUser, hiddenNexuses, onReveal }) => {
+const TopNav = memo(function TopNav({ navRef, handleLogout, loggingOut, authUser, hiddenNexuses, onReveal }) {
   const navigate = useNavigate();
-
   const navBtnBase = {
     display: "flex", alignItems: "center", gap: 5,
     background: "rgba(255,255,255,0.4)",
@@ -528,7 +529,7 @@ const TopNav = memo(({ navRef, handleLogout, loggingOut, authUser, hiddenNexuses
               flexShrink: 0,
             }}>
               {authUser?.profilePic
-                ? <img src={authUser.profilePic} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img loading="lazy" decoding="async" src={authUser.profilePic} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : (authUser?.username?.[0]?.toUpperCase() || "✿")
               }
             </div>
@@ -553,9 +554,11 @@ const TopNav = memo(({ navRef, handleLogout, loggingOut, authUser, hiddenNexuses
 
       {/* ── Center: Barbie Train Animation + Hidden Sparks ── */}
       <div style={{ flex: 1, margin: "0 20px", height: "100%", position: "relative", overflow: "hidden", display: "flex", alignItems: "center" }}>
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.9 }}>
-          <BarbieTrainAnimation />
-        </div>
+        {performanceDetector.detect().tier !== 'low' && (
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.9 }}>
+            <BarbieTrainAnimation />
+          </div>
+        )}
         <div style={{ position: "relative", zIndex: 5, display: "flex", gap: 50, marginLeft: 140, pointerEvents: "none" }}>
           {(hiddenNexuses || []).map(nexus => (
             <div key={nexus._id} style={{ pointerEvents: "auto" }}>
@@ -644,7 +647,7 @@ const TopNav = memo(({ navRef, handleLogout, loggingOut, authUser, hiddenNexuses
 
 
 // ── Hidden Nexus Sparkle ──────────────────────────────────────────────────
-const HiddenNexusSparkle = memo(({ nexus, onReveal }) => {
+const HiddenNexusSparkle = memo(function HiddenNexusSparkle({ nexus, onReveal }) {
     const [grabbed, setGrabbed] = useState(false);
     const [pos, setPos] = useState({ x: 0, y: 0 });
     const domRef = useRef(null);
@@ -722,7 +725,7 @@ const HiddenNexusSparkle = memo(({ nexus, onReveal }) => {
 });
 
 /* ── cute online status pill ── */
-const StatusPill = memo(() => {
+const StatusPill = memo(function StatusPill() {
   return (
     <div style={{
       display: "inline-flex", alignItems: "center", gap: 5,
@@ -738,7 +741,7 @@ const StatusPill = memo(() => {
   );
 });
 
-const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, selectedNexus, users, setSelectedUser, selectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) => {
+const Sidebar = memo(function PastelSidebar({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus, selectedNexus, users, setSelectedUser, selectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) {
   const [activeTab, setActiveTab] = useState("orbits");
   const { play } = useSoundManager();
   const navigate = useNavigate();
@@ -869,7 +872,7 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
                 <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
                   <div style={{ width: 28, height: 28, borderRadius: "50%", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                     {n.avatar ? (
-                      <img src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img loading="lazy" decoding="async" src={n.avatar} alt={n.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       (() => {
                         const ANIMALS = ['dog', 'cat', 'bunny'];
@@ -982,7 +985,7 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}
               >
                 <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#fff", border: "1.5px solid #bce4f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0, overflow: "hidden" }}>
-                  {u.profilePic ? <img src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "#80b8e8", fontWeight: 800 }}>{u.username?.[0]?.toUpperCase()}</span>}
+                  {u.profilePic ? <img loading="lazy" decoding="async" src={u.profilePic} alt={u.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "#80b8e8", fontWeight: 800 }}>{u.username?.[0]?.toUpperCase()}</span>}
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#80b8e8" }}>{u.username}</div>
               </div>
@@ -1005,7 +1008,7 @@ const Sidebar = memo(({ sidebarRef, nexuses, isNexusesLoading, setSelectedNexus,
   );
 });
 
-const SpotifyCard = memo(({ cardRef }) => {
+const SpotifyCard = memo(function SpotifyCard({ cardRef }) {
   const { 
     spotifyLinked, currentTrack, isPlaying, 
     pausePlayback, playTrack, skipNext, skipPrevious,
@@ -1144,7 +1147,7 @@ const SpotifyCard = memo(({ cardRef }) => {
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 56, height: 56, borderRadius: 12, flexShrink: 0, overflow: "hidden", boxShadow: "0 3px 10px rgba(0,0,0,0.18)", border: "1px solid rgba(60,180,120,0.2)" }}>
                 {currentTrack?.imageUrl ? (
-                  <img src={currentTrack.imageUrl} alt="Album Art" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img loading="lazy" decoding="async" src={currentTrack.imageUrl} alt="Album Art" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
                   <svg width="56" height="56" viewBox="0 0 56 56">
                     <rect width="56" height="56" fill="#9a8899" />
@@ -1259,7 +1262,7 @@ const CARDS = [
   },
 ];
 
-const FeatureCard = memo(({ cfg, cardRef }) => {
+const FeatureCard = memo(function FeatureCard({ cfg, cardRef }) {
   return (
     <div onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))} ref={cardRef} style={{
       background: cfg.bg, border: cfg.border, borderRadius: 20,
@@ -1283,7 +1286,7 @@ const FeatureCard = memo(({ cfg, cardRef }) => {
 });
 
 /* ── animated title with shimmer ── */
-const HeroTitle = memo(() => {
+const HeroTitle = memo(function HeroTitle() {
   return (
     <h1 style={{
       margin: "0 0 5px 0", fontSize: 38, fontWeight: 600,
@@ -1303,16 +1306,59 @@ const HeroTitle = memo(() => {
 });
 
 import { gsap } from "gsap";
+import SecurityExplanation from "../components/settings/SecurityExplanation";
+
+/* ── MOBILE NAV (pastel) ── */
+const MobilePastelNav = memo(function MobilePastelNav() {
+  const navigate = useNavigate();
+  const { authUser } = useAuthStore(useShallow(state => ({ authUser: state.authUser })));
+  return (
+    <div style={{ height:52, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', background:'rgba(255,255,255,0.8)', borderBottom:'2px solid rgba(255,183,178,0.3)', backdropFilter:'blur(10px)', position:'relative', zIndex:10 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+        <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg, #ff9fd0, #90c8f8)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🌸</div>
+        <span style={{ fontSize:16, fontWeight:900, color:'#ff479c', fontFamily:"'Nunito', sans-serif" }}>Orbit</span>
+      </div>
+      <div onClick={() => navigate('/profile')} style={{ width:32, height:32, borderRadius:'50%', border:'2px solid #ffb7b2', overflow:'hidden', cursor:'pointer' }}>
+        <img loading="lazy" decoding="async" src={authUser?.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${authUser?.username}`} alt="me" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+      </div>
+    </div>
+  );
+});
+
+/* ── MOBILE TAB BAR (pastel) ── */
+const MobilePastelTabBar = memo(function MobilePastelTabBar({ activeTab }) {
+  const navigate = useNavigate();
+  const tabs = [
+    { id:'orbits', label:'ORBITS', icon:'🪐', path:'/' },
+    { id:'chat', label:'CHAT', icon:'💬', path:'/chat' },
+    { id:'spotify', label:'MUSIC', icon:'🎵', path:'/spotify' },
+    { id:'settings', label:'MAGIC', icon:'✨', path:'/settings' }
+  ];
+  return (
+    <div className="pt-tab-bar">
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => navigate(t.path)} className={`pt-tab-btn ${activeTab === t.id ? 'pt-tab-active' : ''}`}>
+          <span style={{ fontSize:20 }}>{t.icon}</span>
+          <span>{t.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+});
 
 export default function PastelApp({ children }) {
   const navRef = useRef(null), sidebarRef = useRef(null), heroRef = useRef(null);
+  const navigate = useNavigate();
   const c0 = useRef(null), c1 = useRef(null), c2 = useRef(null), c3 = useRef(null);
-  const { authUser, logout } = useAuthStore();
+  const { authUser, logout } = useAuthStore(useShallow(state => ({ authUser: state.authUser, logout: state.logout })));
   const [loggingOut, setLoggingOut] = useState(false);
-  const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore();
+  const { nexusActionView, setNexusActionView, nexuses, setSelectedNexus, isNexusesLoading, nexusUnread, selectedNexus, selectedNexusId } = useNexusStore(useShallow(state => ({ nexusActionView: state.nexusActionView, setNexusActionView: state.setNexusActionView, nexuses: state.nexuses, setSelectedNexus: state.setSelectedNexus, isNexusesLoading: state.isNexusesLoading, nexusUnread: state.nexusUnread, selectedNexus: state.selectedNexus, selectedNexusId: state.selectedNexusId })));
   const nexusSelected = Boolean(selectedNexus || selectedNexusId);
-  const { users, selectedUser, setSelectedUser } = useChatStore();
+  const { users, selectedUser, setSelectedUser } = useChatStore(useShallow(state => ({ users: state.users, selectedUser: state.selectedUser, setSelectedUser: state.setSelectedUser })));
   const [mounted, setMounted] = useState(false);
+  const location = useLocation();
+  const currentTab = new URLSearchParams(location.search).get('tab') || 'orbits';
+  const isMobileChat = nexusSelected || !!selectedUser || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/');
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -1381,23 +1427,15 @@ export default function PastelApp({ children }) {
   }, []);
 
   return (
-    <div style={{
-      position: "relative", width: "100%", height: "100vh", overflow: "hidden",
-      fontFamily: "'DM Sans', 'Nunito', system-ui, sans-serif",
-      background: "#F7E8F0",
-      cursor: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='3' fill='%23C8A9D4' opacity='0.8'/%3E%3C/svg%3E\") 12 12, auto",
-    }}>
+    <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap');
         @keyframes starPulse {
           0%,100%{ opacity:0.45; transform:scale(1) rotate(0deg); }
           50%{ opacity:0.9; transform:scale(1.18) rotate(14deg); }
         }
         @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.38;} }
-        @keyframes shimmer {
-          0%{ left:-60%; }
-          100%{ left:130%; }
-        }
+        @keyframes shimmer { 0%{ left:-60%; } 100%{ left:130%; } }
         @keyframes sparkFly {
           0%  { transform:translate(0,0) scale(1); opacity:1; }
           100%{ transform:translate(var(--dx),var(--dy)) scale(0); opacity:0; }
@@ -1406,16 +1444,24 @@ export default function PastelApp({ children }) {
           0%,100%{ transform:translateY(0); }
           50%{ transform:translateY(-6px); }
         }
-        *{ box-sizing:border-box; }
-        button:focus{ outline:none; }
-        ::-webkit-scrollbar{ width:4px; }
-        ::-webkit-scrollbar-thumb{ background:rgba(200,169,212,0.4); border-radius:99px; }
-
+        @keyframes peekTop {
+          0%, 100% { transform: translateY(15px) rotate(10deg); opacity: 0.9; }
+          50% { transform: translateY(-5px) rotate(-5deg); opacity: 1; }
+        }
+        @keyframes peekBottom {
+          0%, 100% { transform: translateY(-15px) rotate(-10deg); opacity: 0.9; }
+          50% { transform: translateY(5px) rotate(5deg); opacity: 1; }
+        }
+        @keyframes peekRight {
+          0%, 100% { transform: translateX(-15px) rotate(-90deg); opacity: 0.9; }
+          50% { transform: translateX(5px) rotate(-85deg); opacity: 1; }
+        }
+        
         /* ── Pastel Dream Chat Theme ── */
         .pastel-chat-env .nexus-chat-container {
           background: rgba(255,255,255,0.6) !important;
           backdrop-filter: blur(20px) !important;
-          border-radius: 30px !important; /* heavy border radius */
+          border-radius: 30px !important;
           overflow: hidden !important;
           border: 1px solid rgba(255,255,255,0.8) !important;
           box-shadow: 0 10px 40px rgba(255,150,200,0.1) !important;
@@ -1430,254 +1476,159 @@ export default function PastelApp({ children }) {
           background: rgba(255,255,255,0.4) !important; 
           border-bottom: 1px solid rgba(255,183,178,0.4) !important;
           backdrop-filter: blur(14px) !important;
-          color: #8b5a2b !important; /* Coffee brown */
-        }
-        .pastel-chat-env .nexus-chat-header .nxc-name { color: #8b5a2b !important; font-weight: 800 !important; }
-        .pastel-chat-env .nxc-utility-group, .pastel-chat-env .nxc-telemetry-capsule {
-          background: transparent !important; border: none !important; box-shadow: none !important;
           color: #8b5a2b !important;
         }
-        /* Claymorphic Buttons */
-        .pastel-chat-env .nxc-hbtn, .pastel-chat-env .nxc-aero-btn {
-          background: rgba(255,255,255,0.85) !important;
-          border-radius: 50% !important;
-          box-shadow: 4px 4px 10px rgba(255,183,178,0.3), -4px -4px 10px rgba(255,255,255,0.8), inset 2px 2px 4px rgba(255,255,255,1), inset -2px -2px 4px rgba(255,183,178,0.15) !important;
-          color: #8b5a2b !important; 
-          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-        }
-        .pastel-chat-env .nxc-hbtn:hover, .pastel-chat-env .nxc-aero-btn:hover {
-          transform: scale(1.15) !important; /* Popping */
-          box-shadow: 6px 6px 12px rgba(255,183,178,0.35), -6px -6px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,1), inset -2px -2px 4px rgba(255,183,178,0.15) !important;
-        }
-        .pastel-chat-env .nxc-signal-bars .nxc-bar,
-        .pastel-chat-env .text-[#5dcaa5] {
-          background-color: #8b5a2b !important; /* Using coffee brown to keep grounded */
-          color: #8b5a2b !important;
-          text-shadow: none !important;
-        }
-        .pastel-chat-env .bg-white\\/20 { display: none !important; } /* Clear out white line dividers from general utility group layout */
+        .pastel-chat-env .msg-bubble-mine { background: rgba(255,255,255,0.8) !important; border: 1px solid rgba(255,183,178,0.6) !important; color: #8b5a2b !important; }
+        .pastel-chat-env .msg-bubble-other { background: rgba(255,255,255,0.5) !important; border: 1px solid rgba(255,255,255,0.8) !important; color: #8b5a2b !important; }
+
+        /* Responsive Canvas Overrides */
+        @media (min-width: 769px) { .pt-mobile-only { display: none !important; } }
+        @media (max-width: 768px) { .pt-desktop-only { display: none !important; } }
         
-        .pastel-chat-env .nxi-shell {
-          background: rgba(255,255,255,0.4) !important;
-          border-top: 1px solid rgba(255,183,178,0.4) !important;
-          backdrop-filter: blur(14px) !important;
-        }
-        .pastel-chat-env .nxi-textarea {
-          background: rgba(255,255,255,0.6) !important;
-          border: 1px solid rgba(255,183,178,0.5) !important;
-          color: #8b5a2b !important;
-          border-radius: 18px !important;
-        }
-        .pastel-chat-env .nxi-textarea:focus {
-          border-color: #ffb7b2 !important; box-shadow: 0 0 10px rgba(255,183,178,0.5) !important;
-        }
-        .pastel-chat-env .nxi-send.ready {
-          background: rgba(255,255,255,0.85) !important;
-          color: #8b5a2b !important;
-          box-shadow: 4px 4px 10px rgba(255,183,178,0.3), inset 2px 2px 4px rgba(255,255,255,1) !important;
-          border-radius: 50% !important;
-        }
-        .pastel-chat-env .nxi-tool-btn, .pastel-chat-env .nxi-mic { color: #8b5a2b !important; }
-
-        /* Bubbles */
-        .pastel-chat-env .msg-bubble-mine { 
-          background: rgba(255,255,255,0.8) !important; 
-          border: 1px solid rgba(255,183,178,0.6) !important; 
-          color: #8b5a2b !important;
-          box-shadow: 4px 4px 10px rgba(255,183,178,0.2) !important;
-        }
-        .pastel-chat-env .msg-bubble-other { 
-          background: rgba(255,255,255,0.5) !important; 
-          border: 1px solid rgba(255,255,255,0.8) !important; 
-          color: #8b5a2b !important;
-        }
-
-        /* Responsive Overrides */
-        @media (max-width: 768px) {
-          .pastel-main-container { flex-direction: column !important; }
-          .pastel-main-container.chat-inactive { overflow-y: auto; }
-          .pastel-sidebar { width: 100% !important; max-width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(255,183,178,0.4); flex: none !important; }
-          .pastel-sidebar.chat-active { display: none !important; }
-          .pastel-chat-wrapper { min-height: 600px; }
-        }
+        .pt-mobile-canvas { display: flex; flex-direction: column; min-height: 100dvh; background: #fffafc; position: relative; font-family: 'Nunito', sans-serif; overflow: hidden; }
+        .pt-mobile-scroll { flex: 1; overflow-y: auto; padding: 14px 14px 90px; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; scrollbar-width: none; }
+        .pt-mobile-scroll::-webkit-scrollbar { display: none; }
+        .pt-tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 68px; background: rgba(255,255,255,0.9); border-top: 2px solid rgba(255,183,178,0.2); display: flex; align-items: center; justify-content: space-around; z-index: 999; backdrop-filter: blur(20px); }
+        .pt-tab-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; flex: 1; padding: 6px 4px; background: none; border: none; cursor: pointer; color: rgba(208,96,168,0.3); font-family: 'Nunito', sans-serif; font-size: 8px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+        .pt-tab-btn.pt-tab-active { color: #d060a8; transform: translateY(-3px); }
       `}</style>
 
-
-      <style>{`
-        @keyframes float {
-          0%,100%{ transform:translateY(0); }
-          50%{ transform:translateY(-6px); }
-        }
-        *{ box-sizing:border-box; }
-        button:focus{ outline:none; }
-        ::-webkit-scrollbar{ width:4px; }
-        ::-webkit-scrollbar-thumb{ background:rgba(200,169,212,0.4); border-radius:99px; }
-
-        /* ── Pastel Dream Chat Theme ── */
-        .pastel-chat-env .nexus-chat-container {
-          background: rgba(255,255,255,0.6) !important;
-          backdrop-filter: blur(20px) !important;
-          border-radius: 30px !important; /* heavy border radius */
-          overflow: hidden !important;
-          border: 1px solid rgba(255,255,255,0.8) !important;
-          box-shadow: 0 10px 40px rgba(255,150,200,0.1) !important;
-        }
-        .pastel-chat-env .nxc-messages {
-          background-color: transparent !important;
-          background-image: 
-            radial-gradient(circle at 10% 20%, rgba(200, 180, 255, 0.4) 0%, transparent 60%),
-            radial-gradient(circle at 90% 80%, rgba(180, 255, 200, 0.4) 0%, transparent 60%) !important;
-        }
-        .pastel-chat-env .nexus-chat-header { 
-          background: rgba(255,255,255,0.4) !important; 
-          border-bottom: 1px solid rgba(255,183,178,0.4) !important;
-          backdrop-filter: blur(14px) !important;
-          color: #8b5a2b !important; /* Coffee brown */
-        }
-        .pastel-chat-env .nexus-chat-header .nxc-name { color: #8b5a2b !important; font-weight: 800 !important; }
-        .pastel-chat-env .nxc-utility-group, .pastel-chat-env .nxc-telemetry-capsule {
-          background: transparent !important; border: none !important; box-shadow: none !important;
-          color: #8b5a2b !important;
-        }
-        /* Claymorphic Buttons */
-        .pastel-chat-env .nxc-hbtn, .pastel-chat-env .nxc-aero-btn {
-          background: rgba(255,255,255,0.85) !important;
-          border-radius: 50% !important;
-          box-shadow: 4px 4px 10px rgba(255,183,178,0.3), -4px -4px 10px rgba(255,255,255,0.8), inset 2px 2px 4px rgba(255,255,255,1), inset -4px -4px 4px rgba(255,183,178,0.15) !important;
-          color: #8b5a2b !important; 
-          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-        }
-        .pastel-chat-env .nxc-hbtn:hover, .pastel-chat-env .nxc-aero-btn:hover {
-          transform: scale(1.15) !important; /* Popping */
-          box-shadow: 6px 6px 12px rgba(255,183,178,0.35), -6px -6px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,1), inset -2px -2px 4px rgba(255,183,178,0.15) !important;
-        }
-        .pastel-chat-env .nxc-signal-bars .nxc-bar,
-        .pastel-chat-env .text-[#5dcaa5] {
-          background-color: #8b5a2b !important; /* Using coffee brown to keep grounded */
-          color: #8b5a2b !important;
-          text-shadow: none !important;
-        }
-        .pastel-chat-env .bg-white\\/20 { display: none !important; } /* Clear out white line dividers from general utility group layout */
-        
-        .pastel-chat-env .nxi-shell {
-          background: rgba(255,255,255,0.4) !important;
-          border-top: 1px solid rgba(255,183,178,0.4) !important;
-          backdrop-filter: blur(14px) !important;
-        }
-        .pastel-chat-env .nxi-textarea {
-          background: rgba(255,255,255,0.6) !important;
-          border: 1px solid rgba(255,183,178,0.5) !important;
-          color: #8b5a2b !important;
-          border-radius: 18px !important;
-        }
-        .pastel-chat-env .nxi-textarea:focus {
-          border-color: #ffb7b2 !important; box-shadow: 0 0 10px rgba(255,183,178,0.5) !important;
-        }
-        .pastel-chat-env .nxi-send.ready {
-          background: rgba(255,255,255,0.85) !important;
-          color: #8b5a2b !important;
-          box-shadow: 4px 4px 10px rgba(255,183,178,0.3), inset 2px 2px 4px rgba(255,255,255,1) !important;
-          border-radius: 50% !important;
-        }
-        .pastel-chat-env .nxi-tool-btn, .pastel-chat-env .nxi-mic { color: #8b5a2b !important; }
-
-        /* Bubbles */
-        .pastel-chat-env .msg-bubble-mine { 
-          background: rgba(255,255,255,0.8) !important; 
-          border: 1px solid rgba(255,183,178,0.6) !important; 
-          color: #8b5a2b !important;
-          box-shadow: 4px 4px 10px rgba(255,183,178,0.2) !important;
-        }
-        .pastel-chat-env .msg-bubble-other { 
-          background: rgba(255,255,255,0.5) !important; 
-          border: 1px solid rgba(255,255,255,0.8) !important; 
-          color: #8b5a2b !important;
-        }
-
-        /* Responsive Overrides */
-        @media (max-width: 768px) {
-          .pastel-main-container { flex-direction: column !important; }
-          .pastel-main-container.chat-inactive { overflow-y: auto; }
-          .pastel-sidebar { width: 100% !important; max-width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(255,183,178,0.4); flex: none !important; }
-          .pastel-sidebar.chat-active { display: none !important; }
-          .pastel-chat-wrapper { min-height: 600px; }
-        }
-      `}</style>
-
-      <SparkleClick />
-      <BgClouds />
-      <Floaties />
-      <TopNav navRef={navRef} authUser={authUser} handleLogout={handleLogout} loggingOut={loggingOut} hiddenNexuses={hiddenNexuses} onReveal={onReveal} />
-
-      <div className={`pastel-main-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 50, left: 0, right: 0, bottom: 0, display: "flex" }}>
-        <Sidebar
-          sidebarRef={sidebarRef}
-          nexuses={nexuses}
-          isNexusesLoading={isNexusesLoading}
-          setSelectedNexus={setSelectedNexus}
-          selectedNexus={selectedNexus}
-          users={users || []}
-          setSelectedUser={setSelectedUser}
-          selectedUser={selectedUser}
-          nexusUnread={nexusUnread || {}}
-          setNexusActionView={setNexusActionView}
-          hiddenNexuses={hiddenNexuses}
-          toggleHide={toggleHide}
-        />
-
-        <div className="pastel-chat-wrapper" style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-          {nexusActionView && (
-            <div style={{ position: "absolute", inset: 0, zIndex: 100 }}>
-              <NexusActionOverlay
-                mode={nexusActionView}
-                onClose={() => setNexusActionView(null)}
-                inline={true}
-              />
+      {/* ── MOBILE CANVAS ── */}
+      <div className="pt-mobile-canvas pt-mobile-only">
+        <BgClouds />
+        <Floaties />
+        <SparkleClick />
+        {isMobileChat || children ? (
+          <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100dvh' }}>
+            <div className="pastel-chat-env" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+              {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
             </div>
-          )}
-          <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-            {children ? children : nexusActionView ? (
+          </div>
+        ) : (
+          <>
+            <MobilePastelNav />
+            <div className="pt-mobile-scroll">
+              <div style={{ display:'flex', gap:16, overflowX:'auto', paddingBottom:16, marginLeft:-14, marginRight:-14, paddingLeft:14, paddingRight:14, WebkitOverflowScrolling:'touch', scrollbarWidth:'none' }}>
+                {nexuses?.map(n => (
+                  <div key={n._id} onClick={() => { setSelectedNexus(n); setSelectedUser(null); navigate(`/nexus/${n._id}`); }} style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer' }}>
+                    <div style={{ width:64, height:64, borderRadius:'50%', background: 'linear-gradient(135deg, #B2CEFE, #E2F0CB)', padding: 3, boxShadow: '0 4px 12px rgba(178,206,254,0.3)' }}>
+                      <div style={{ width:'100%', height:'100%', borderRadius:'50%', overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, color:'#7fa3e8', fontWeight:900 }}>{n.name[0].toUpperCase()}</div>
+                    </div>
+                    <span style={{ fontSize:10, color:'#7fa3e8', fontWeight:900, maxWidth:64, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{n.name}</span>
+                  </div>
+                ))}
+                {users?.map(u => (
+                  <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer' }}>
+                    <div style={{ width:64, height:64, borderRadius:'50%', background: 'linear-gradient(135deg, #FFB7B2, #FFDAC1)', padding: 3, boxShadow: '0 4px 12px rgba(255,183,178,0.3)' }}>
+                      <div style={{ width:'100%', height:'100%', borderRadius:'50%', overflow:'hidden', background:'#fff' }}>
+                        <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} alt={u.username} />
+                      </div>
+                    </div>
+                    <span style={{ fontSize:10, color:'#aa6496', fontWeight:900, maxWidth:64, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{u.username}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:10, margin:'16px 0 12px', padding:'12px 16px', background:`rgba(255,255,255,0.7)`, border:`2px solid rgba(255,183,178,0.4)`, borderRadius:18 }}>
+                <div style={{ fontSize: 18, animation: 'float 2s infinite ease-in-out' }}>🪄</div>
+                <span style={{ fontSize:12, fontWeight:900, color:'#d060a8', letterSpacing:'0.02em' }}>CURRENT MAGIC: 100% 🌸</span>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                <div style={{ background:'rgba(255,255,255,0.7)', borderRadius:25, padding:18, border:'2px solid rgba(255,183,178,0.3)' }} onClick={() => navigate('/spotify')}>
+                  <div style={{ fontSize:12, fontWeight:900, color:'#aa6496' }}>🎵 DREAMY AUDIO</div>
+                  <div style={{ fontSize:13, color:'rgba(170,100,150,0.7)', fontWeight:700 }}>Listen to magical tunes together.</div>
+                </div>
+                <div style={{ background:'rgba(255,255,255,0.7)', borderRadius:25, padding:18, border:'2px solid rgba(255,183,178,0.3)' }} onClick={() => navigate('/settings')}>
+                  <div style={{ fontSize:12, fontWeight:900, color:'#aa6496' }}>🎀 AESTHETICS</div>
+                  <div style={{ fontSize:13, color:'rgba(170,100,150,0.7)', fontWeight:700 }}>Customize your dreamworld.</div>
+                </div>
+              </div>
+            </div>
+            <MobilePastelTabBar activeTab={currentTab} />
+          </>
+        )}
+      </div>
+
+      {/* ── DESKTOP CANVAS ── */}
+      <div className="pt-desktop-only" style={{ position: "relative", width: "100%", height: "100vh", background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", overflow: "hidden", fontFamily: "'Nunito', sans-serif" }}>
+        <BgClouds />
+        <Floaties />
+        <SparkleClick />
+        <TopNav navRef={navRef} authUser={authUser} handleLogout={handleLogout} loggingOut={loggingOut} hiddenNexuses={hiddenNexuses} onReveal={onReveal} />
+
+        <div style={{ display:'flex', height:'100%', paddingTop:50 }}>
+          <Sidebar
+            sidebarRef={sidebarRef} nexuses={nexuses} isNexusesLoading={isNexusesLoading}
+            setSelectedNexus={setSelectedNexus} selectedNexus={selectedNexus}
+            users={users || []} setSelectedUser={setSelectedUser} selectedUser={selectedUser}
+            nexusUnread={nexusUnread || {}} setNexusActionView={setNexusActionView}
+            hiddenNexuses={hiddenNexuses} toggleHide={toggleHide}
+          />
+
+          <div className="pastel-chat-wrapper" style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+            {nexusActionView && (
               <div style={{ position: "absolute", inset: 0, zIndex: 100 }}>
                 <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
               </div>
-            ) : nexusSelected ? (
-              <div className="pastel-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-                <UniversalChatContainer key={selectedNexus?._id || selectedNexusId} type="nexus" />
-              </div>
-            ) : selectedUser ? (
-              <div className="pastel-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
-                <UniversalChatContainer key={selectedUser?._id} type="dm" />
-              </div>
-            ) : (
-              <div style={{ padding: "20px 26px 18px 26px", height: "100%", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
-                {/* Hero */}
-                <div ref={heroRef}>
-                  <StatusPill />
-                  <HeroTitle />
-                  <p style={{ margin: 0, fontSize: 11.5, color: "rgba(170,100,150,0.7)", letterSpacing: "0.02em" }}>
-                    Choose a pathway to begin your mission. ✨
-                  </p>
-                </div>
-
-                {/* Grid */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, flex: 1 }}>
-                  <SpotifyCard cardRef={c0} />
-                  <FeatureCard cfg={CARDS[0]} cardRef={c1} />
-                  <FeatureCard cfg={CARDS[1]} cardRef={c2} />
-                  <FeatureCard cfg={CARDS[2]} cardRef={c3} />
-                </div>
-              </div>
             )}
+            <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
+              {children ? children : nexusActionView ? (
+                <div style={{ position: "absolute", inset: 0, zIndex: 100 }}>
+                  <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
+                </div>
+              ) : nexusSelected ? (
+                <div className="pastel-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+                  <UniversalChatContainer key={selectedNexus?._id || selectedNexusId} type="nexus" />
+                </div>
+              ) : selectedUser ? (
+                <div className="pastel-chat-env" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column" }}>
+                  <UniversalChatContainer key={selectedUser?._id} type="dm" />
+                </div>
+              ) : (
+                <div style={{ padding: "20px 26px 18px 26px", height: "100%", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
+                  <div ref={heroRef}>
+                    <StatusPill />
+                    <HeroTitle />
+                    <p style={{ margin: 0, fontSize: 11.5, color: "rgba(170,100,150,0.7)", letterSpacing: "0.02em" }}>Choose a pathway to begin your mission. ✨</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, scrollbarWidth: 'none' }}>
+                    {users.map(u => (
+                      <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 }}>
+                        <div style={{ width: 62, height: 62, borderRadius: '50%', background: 'linear-gradient(135deg, #FFB7B2, #FFDAC1)', padding: 3 }}>
+                          <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#fff' }}>
+                            <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 10, color: '#aa6496', fontWeight: 800 }}>{u.username}</span>
+                      </div>
+                    ))}
+                    {nexuses.map(n => (
+                      <div key={n._id} onClick={() => { setSelectedNexus(n); setSelectedUser(null); navigate(`/nexus/${n._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 }}>
+                        <div style={{ width: 62, height: 62, borderRadius: '50%', background: 'linear-gradient(135deg, #B2CEFE, #E2F0CB)', padding: 3 }}>
+                          <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#7fa3e8', fontWeight: 900 }}>{n.name[0].toUpperCase()}</div>
+                        </div>
+                        <span style={{ fontSize: 10, color: '#7fa3e8', fontWeight: 800 }}>{n.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, flex: 1 }}>
+                    <SpotifyCard cardRef={c0} />
+                    <FeatureCard cfg={CARDS[0]} cardRef={c1} />
+                    <FeatureCard cfg={CARDS[1]} cardRef={c2} />
+                    <FeatureCard cfg={CARDS[2]} cardRef={c3} />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
 export function PastelProfile() {
   const navigate = useNavigate();
-  const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
+  const { authUser, isUpdatingProfile, updateProfile } = useAuthStore(useShallow(state => ({ authUser: state.authUser, isUpdatingProfile: state.isUpdatingProfile, updateProfile: state.updateProfile })));
 
   const [profileDraft, setProfileDraft] = useState({
     username: "",
@@ -1790,7 +1741,7 @@ export function PastelProfile() {
 
               <div style={{ position: "relative", marginBottom: 20 }}>
                 <div style={{ width: 190, height: 190, borderRadius: "50%", background: "linear-gradient(135deg, #fff, #fdebf3)", padding: 8, animation: isEditing ? "none" : "avatarPulse 3s infinite" }}>
-                  <img src={profileDraft.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(244,114,182,0.2)" }} />
+                  <img loading="lazy" decoding="async" src={profileDraft.profilePic || "/avatar.png"} alt="Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(244,114,182,0.2)" }} />
                 </div>
                 <label style={{ position: "absolute", bottom: 8, right: 8, background: "linear-gradient(135deg, #f472b6, #c084fc)", color: "#fff", width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: isEditing ? "pointer" : "not-allowed", opacity: isEditing ? 1 : 0.6, border: "4px solid #fff", boxShadow: "0 4px 15px rgba(244,114,182,0.5)", fontSize: 22, transition: "transform 0.2s" }} onMouseEnter={e => { if (isEditing) e.currentTarget.style.transform = "scale(1.1) rotate(10deg)" }} onMouseLeave={e => { if (isEditing) e.currentTarget.style.transform = "scale(1) rotate(0deg)" }}>
                   📸
@@ -1904,7 +1855,9 @@ export function PastelSettings({
   draftSoundSettings, setDraftSoundSettings,
   isDirty, handleSave, handleReset, authUser, navigate
 }) {
-
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : true);
+  useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
+ 
   const tabs = [
     { id: "profile", label: "Identity", icon: "🌸" },
     { id: "sound", label: "Acoustics", icon: "🎵" },
@@ -1966,13 +1919,14 @@ export function PastelSettings({
             <div style={{ width: 300, background: "linear-gradient(180deg, rgba(255,240,245,0.6) 0%, rgba(245,230,255,0.6) 100%)", padding: "40px 30px", display: "flex", flexDirection: "column", gap: 12, borderRight: "3px solid rgba(255,255,255,0.7)" }}>
               <h2 style={{ fontSize: 26, fontWeight: 900, color: "#d060a8", paddingLeft: 12, marginBottom: 20 }}>Settings 🎀</h2>
               {tabs.map(t => (
-                <button key={t.id} onClick={() => setActiveSection(t.id)} style={{ padding: "16px 20px", background: activeSection === t.id ? "rgba(255,255,255,0.9)" : "transparent", border: "none", borderRadius: 20, color: activeSection === t.id ? "#a855f7" : "#d060a8", fontSize: 16, fontWeight: 800, textAlign: "left", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", transition: "all 0.2s", boxShadow: activeSection === t.id ? "0 4px 15px rgba(200,150,180,0.2)" : "none" }}>
+                <button key={t.id} onClick={() => setActiveSection(activeSection === t.id ? null : t.id)} style={{ padding: "16px 20px", background: activeSection === t.id ? "rgba(255,255,255,0.9)" : "transparent", border: "none", borderRadius: 20, color: activeSection === t.id ? "#a855f7" : "#d060a8", fontSize: 16, fontWeight: 800, textAlign: "left", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", transition: "all 0.2s", boxShadow: activeSection === t.id ? "0 4px 15px rgba(200,150,180,0.2)" : "none" }}>
                   <span style={{ fontSize: 22 }}>{t.icon}</span> {t.label}
                 </button>
               ))}
             </div>
 
             {/* Content Area */}
+            {activeSection && (
             <div style={{ flex: 1, padding: "50px 60px", overflowY: "auto", position: "relative" }}>
               <h2 style={{ fontSize: 36, fontWeight: 900, color: "#a855f7", marginBottom: 30, textShadow: "0 2px 10px rgba(168,85,247,0.2)" }}>
                 {tabs.find(t => t.id === activeSection)?.label}
@@ -2008,12 +1962,63 @@ export function PastelSettings({
                 <div>
                   <label style={{ display: "block", fontSize: 14, fontWeight: 900, color: "#d060a8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 20 }}>Select Your World</label>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                    {THEMES.map(th => (
-                      <div key={th} onClick={() => setDraftTheme(th)} style={{ padding: "20px", background: draftTheme === th ? "linear-gradient(135deg, #f472b6, #c084fc)" : "rgba(255,255,255,0.6)", borderRadius: 25, border: draftTheme === th ? "none" : "3px solid rgba(244,114,182,0.3)", color: draftTheme === th ? "#fff" : "#a855f7", fontSize: 16, fontWeight: 800, cursor: "pointer", transition: "all 0.2s", boxShadow: draftTheme === th ? "0 8px 20px rgba(192,132,252,0.4)" : "none", textAlign: "center" }}>
-                        {THEME_LABELS[th] || th}
-                      </div>
-                    ))}
+                    {THEMES.map(th => {
+                        const isComingSoon = isMobile && th !== "light";
+                        return (
+                          <div 
+                            key={th} 
+                            onClick={() => { 
+                              if (isComingSoon) return;
+                              setDraftTheme(th); 
+                              handleSave(th); 
+                            }} 
+                            style={{ 
+                              position: "relative",
+                              padding: "20px", 
+                              background: draftTheme === th ? "linear-gradient(135deg, #f472b6, #c084fc)" : "rgba(255,255,255,0.6)", 
+                              borderRadius: 25, 
+                              border: draftTheme === th ? "none" : "3px solid rgba(244,114,182,0.3)", 
+                              color: draftTheme === th ? "#fff" : "#a855f7", 
+                              fontSize: 16, 
+                              fontWeight: 800, 
+                              cursor: isComingSoon ? "not-allowed" : "pointer", 
+                              transition: "all 0.2s", 
+                              boxShadow: draftTheme === th ? "0 8px 20px rgba(192,132,252,0.4)" : "none", 
+                              textAlign: "center",
+                              overflow: "hidden"
+                            }}
+                          >
+                            {isComingSoon && (
+                              <div style={{
+                                position: "absolute",
+                                inset: 0,
+                                background: "rgba(255, 255, 255, 0.4)",
+                                backdropFilter: "blur(4px)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                zIndex: 10
+                              }}>
+                                <span style={{ 
+                                  background: "rgba(255, 255, 255, 0.9)", 
+                                  padding: "4px 10px", 
+                                  borderRadius: 12, 
+                                  fontSize: 10, 
+                                  color: "#d060a8", 
+                                  fontWeight: 900,
+                                  boxShadow: "0 2px 10px rgba(208, 96, 168, 0.2)"
+                                }}>
+                                  COMING SOON
+                                </span>
+                              </div>
+                            )}
+                            {THEME_LABELS[th] || th}
+                          </div>
+                        );
+                      })
+                    }
                   </div>
+
                 </div>
               )}
 
@@ -2067,19 +2072,19 @@ export function PastelSettings({
               {/* SECURITY */}
               {activeSection === "security" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                   <div style={{ background: "rgba(255,255,255,0.6)", padding: "24px", borderRadius: 30, border: "3px solid rgba(244,114,182,0.2)" }}>
+                    <SecurityExplanation isDark={false} />
+                  </div>
+                  
                   <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 30px", background: "rgba(255,255,255,0.6)", borderRadius: 25, border: "3px solid rgba(244,114,182,0.2)", cursor: "pointer" }}>
                     <div style={{ color: "#d060a8", fontWeight: 800, fontSize: 17 }}>Show Online Status 🟢</div>
                     <input type="checkbox" checked={draftShowOnlineStatus} onChange={e => setDraftShowOnlineStatus(e.target.checked)} style={{ width: 26, height: 26, accentColor: "#f472b6", cursor: "pointer" }} />
                   </label>
-                  <div style={{ marginTop: 20 }}>
-                    <button style={{ padding: "18px 40px", background: "rgba(255,100,150,0.1)", border: "3px solid #ff7799", borderRadius: 30, color: "#ff7799", fontWeight: 900, fontSize: 16, cursor: "not-allowed", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,100,150,0.2)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,100,150,0.1)"}>
-                      CHANGE PASSWORD 🔒 (SOON)
-                    </button>
-                  </div>
                 </div>
               )}
 
             </div>
+            )}
           </div>
         </div>
       </div>

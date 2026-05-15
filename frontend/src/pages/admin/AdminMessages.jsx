@@ -37,7 +37,7 @@ export default function AdminMessages() {
                 <tr key={msg._id} className={msg.isDeleted ? "row-deleted" : ""}>
                   <td>
                     <div className="user-cell">
-                      <img className="user-avatar" src={msg.senderId?.profilePic || "/avatar.png"} alt="" />
+                      <img loading="lazy" decoding="async" className="user-avatar" src={msg.senderId?.profilePic || "/avatar.png"} alt="" />
                       <span className="user-cell-name">{msg.senderId?.username ?? "Unknown"}</span>
                     </div>
                   </td>

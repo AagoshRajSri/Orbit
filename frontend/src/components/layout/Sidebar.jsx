@@ -1,4 +1,4 @@
-import { useEffect, useState, memo, useRef } from "react";
+import { useEffect, useState, memo, useRef, useCallback, useMemo } from "react";
 import { useChatStore } from "../../store/useChatStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useNexusStore } from "../../store/useNexusStore";
@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useThemeStore } from "../../store/useThemeStore";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 
-const AddContactAction = memo(({ users, contactList, addContact }) => {
+const AddContactAction = memo(function AddContactAction({ users, contactList, addContact }) {
   const [username, setUsername] = useState("");
 
   const handleAdd = () => {
@@ -67,6 +67,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   const selectedUser = useChatStore((state) => state.selectedUser);
   const setSelectedUser = useChatStore((state) => state.setSelectedUser);
   const isUsersLoading = useChatStore((state) => state.isUsersLoading);
+  const prefetchMessages = useChatStore((state) => state.prefetchMessages);
 
   const getNexuses = useNexusStore((state) => state.getNexuses);
   const nexuses = useNexusStore((state) => state.nexuses);
@@ -81,7 +82,8 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   const [activeTab, setActiveTab] = useState(mobileInitialTab || "nexus");
   const [aliasEditingUserId, setAliasEditingUserId] = useState(null);
   const [aliasInputValue, setAliasInputValue] = useState("");
-  const onlineSet = new Set(onlineUsers.map((id) => id?.toString()));
+  // FIX 10: Memoize onlineSet so its reference is stable when onlineUsers array hasn't changed
+  const onlineSet = useMemo(() => new Set(onlineUsers.map((id) => id?.toString())), [onlineUsers]);
   const fetchedRef = useRef(false);
   const { play } = useSoundManager();
   const { theme } = useThemeStore();
@@ -103,32 +105,38 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
     }
   }, []); // Empty dependency array - fetch only once on mount
 
-  const visibleUsers = users.filter((user) => {
+  // FIX 10: Memoize derived user lists — prevent recomputation on every render
+  const contactSet = useMemo(() => new Set(contactList || []), [contactList]);
+  
+  const visibleUsers = useMemo(() => users.filter((user) => {
     const id = user._id?.toString?.();
-    return contactList?.length ? contactList.includes(id) : true;
-  });
+    return contactList?.length ? contactSet.has(id) : true;
+  }), [users, contactSet, contactList?.length]);
 
-  const filteredUsers = visibleUsers.filter((user) => {
+  const filteredUsers = useMemo(() => visibleUsers.filter((user) => {
     const id = user._id?.toString?.();
-    if (showOnlineOnly) {
-      return onlineSet.has(id);
-    }
+    if (showOnlineOnly) return onlineSet.has(id);
     return true;
-  });
+  }), [visibleUsers, showOnlineOnly, onlineSet]);
 
-  const handleUserSelect = (user) => {
+  // FIX 10: Stable callback references — prevent React.memo'd children from re-rendering
+  const handleUserSelect = useCallback((user) => {
     setSelectedUser(user);
     setSelectedNexus(null);
     navigate(`/chat/${user._id || user.id}`);
-    onMobileSelect?.(); // close drawer on mobile
-  };
+    onMobileSelect?.();
+  }, [setSelectedUser, setSelectedNexus, navigate, onMobileSelect]);
 
-  const handleNexusSelect = (nexus) => {
+  const handleNexusSelect = useCallback((nexus) => {
     setSelectedNexus(nexus);
     setSelectedUser(null);
     navigate(`/nexus/${nexus._id || nexus.id}`);
-    onMobileSelect?.(); // close drawer on mobile
-  };
+    onMobileSelect?.();
+  }, [setSelectedNexus, setSelectedUser, navigate, onMobileSelect]);
+
+  const handleOnlineFilterChange = useCallback((e) => {
+    setShowOnlineOnly(e.target.checked);
+  }, []);
 
   if (isUsersLoading || isNexusesLoading) return <SidebarSkeleton />;
 
@@ -247,7 +255,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                 <input
                   type="checkbox"
                   checked={showOnlineOnly}
-                  onChange={(e) => setShowOnlineOnly(e.target.checked)}
+                  onChange={handleOnlineFilterChange}
                   className="checkbox checkbox-xs"
                 />
                 <span className="text-xs text-base-content/70">
@@ -268,14 +276,19 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
 
         <AnimatePresence mode="popLayout" initial={false}>
           {activeTab === "contacts" &&
-            filteredUsers.map((user) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            filteredUsers.map((user) => {
+              // FIX 9: Removed `layout` prop — it caused framer-motion to measure & animate
+              // ALL N items whenever ANY item changes (e.g. a user coming online). O(n) work → O(1).
+              // Enter/exit animations are kept for genuine list membership changes only.
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.15 }}
                 key={user.id || user._id}
                 onClick={() => handleUserSelect(user)}
+                onMouseEnter={() => prefetchMessages((user.id || user._id)?.toString())}
                 role="button"
                 tabIndex={0}
                 className={`
@@ -293,7 +306,6 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                       : "bg-transparent border-transparent hover:bg-[var(--bg-elevation-1)] hover:border-[var(--border-default)]" 
                   }
                   `}
-                style={{ backfaceVisibility: "hidden" }}
               >
                 <div className="relative shrink-0">
                   <div
@@ -319,11 +331,14 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                     );
                   })()}
                   {onlineSet.has(user._id?.toString()) && (
-                    <motion.span
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-400 rounded-full border-[3px] border-base-300 z-20"
-                    />
+                    <div className="absolute -bottom-1 -right-1 flex items-center justify-center z-20">
+                      <motion.span
+                        animate={{ scale: [1, 2.5], opacity: [0.8, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                        className="absolute w-3 h-3 bg-emerald-400 rounded-full"
+                      />
+                      <span className="relative w-3.5 h-3.5 bg-emerald-500 rounded-full border-[2.5px] border-base-300 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                    </div>
                   )}
                 </div>
 
@@ -355,10 +370,16 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                             <span className="size-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
                             typing…
                           </span>
-                        ) : (user.lastMessage ||
-                          (onlineSet.has(user._id?.toString())
-                            ? "Ready for signal"
-                            : "Offline"))}
+                        ) : (
+                          onlineSet.has(user._id?.toString()) ? (
+                            <span className="flex items-center gap-1.5 text-emerald-500 font-black tracking-wide drop-shadow-[0_0_3px_rgba(16,185,129,0.5)]">
+                              <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                              ONLINE
+                            </span>
+                          ) : (
+                            user.lastMessage || "Offline"
+                          )
+                        )}
                       </span>
                     )}
                   </div>
@@ -428,7 +449,8 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                   )}
                 </AnimatePresence>
               </motion.div>
-            ))}
+            );
+          })}
 
           {activeTab === "nexus" &&
             nexuses.map((nexus) => {
@@ -437,13 +459,14 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
               const isSelected = (selectedNexus?.id || selectedNexus?._id) === (nexus.id || nexus._id);
               const hasUnread = unread > 0 && !isSelected;
 
+              // FIX 9: No `layout` prop — avoids O(n) layout measurement per state change
               return (
                 <motion.div
-                  layout
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  key={nexus.id || nexus._id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.15 }}
+                key={nexus.id || nexus._id}
                   onClick={() => handleNexusSelect(nexus)}
                   role="button"
                   tabIndex={0}
@@ -463,7 +486,6 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                           ? "bg-transparent border-transparent hover:bg-white/60 hover:border-[#b08d57]/20"
                           : "bg-transparent border-transparent hover:bg-[var(--bg-elevation-1)] hover:border-[var(--border-default)]",
                   ].join(" ")}
-                  style={{ backfaceVisibility: "hidden" }}
                 >
                   {/* Avatar with optional unread badge */}
                   <div className="shrink-0 relative">
@@ -672,4 +694,4 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
     </aside>
   );
 };
-export default Sidebar;
+export default memo(Sidebar);

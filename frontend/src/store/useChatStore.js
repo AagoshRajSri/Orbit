@@ -4,29 +4,19 @@ import { axiosInstance } from "../lib/axios.jsx";
 import { useAuthStore } from "./useAuthStore";
 import { normalizeId, isMatchObj } from "../lib/idUtils";
 
-const decryptMessagesList = async (messages) => {
-  const { e2eeKeys, authUser } = useAuthStore.getState();
-  if (!e2eeKeys || !messages || !messages.length) return messages;
-  
-  const { decryptMessage } = await import("../lib/e2ee.js");
-  const authUserId = authUser?._id?.toString();
+import { e2eeService } from "../lib/E2EEService";
 
-  return await Promise.all(messages.map(async (m) => {
-    const sIdStr  = (m.senderId?._id || m.senderId?.id || m.senderId)?.toString();
-    const isSender = sIdStr === authUserId;
-    
-    if (m.encryptedContent) {
-      const decrypted = await decryptMessage(m, e2eeKeys.privateKey, isSender);
-      if (decrypted) {
-        return { ...m, text: decrypted.text, image: decrypted.image, isMe: isSender };
-      }
-    }
-    return { ...m, isMe: isSender };
-  }));
+const decryptMessagesList = async (messages) => {
+  if (!messages || !messages.length) return messages;
+  return Promise.all(messages.map((m) => e2eeService.decryptIncoming(m)));
 };
+
+const prefetchCache = new Set();
+const prefetchExpirations = new Map();
 
 export const useChatStore = create((set, get) => ({
   messages: [],
+  messageCache: {}, // { [userId]: { messages, hasMore } }
   hasMoreMessages: true,
   users: [],
   contactList: [],
@@ -62,24 +52,53 @@ export const useChatStore = create((set, get) => ({
   },
 
   getMessages: async (userId) => {
-    const currentMessages = get().messages;
-    const currentId = get().selectedConversationId;
-
-    // Only wipe if we're switching to a new user
-    const shouldWipe = userId !== currentId || currentMessages.length === 0;
-
-    if (shouldWipe) {
-      set({ isMessagesLoading: true, messages: [], hasMoreMessages: true });
-    } else {
-      set({ isMessagesLoading: true });
+    if (prefetchExpirations.has(userId)) {
+      clearTimeout(prefetchExpirations.get(userId));
+      prefetchExpirations.delete(userId);
     }
+
+    const currentId = get().selectedConversationId;
+    const cache = get().messageCache[userId];
+
+    // 1. Instant Cache Hit (Optimistic Load)
+    if (cache) {
+      set({ 
+        messages: cache.messages, 
+        hasMoreMessages: cache.hasMore,
+        isMessagesLoading: false
+      });
+      // Fire background sync silently
+      try {
+        const res = await axiosInstance.get(`/message/${userId}`);
+        const decrypted = await decryptMessagesList(res.data);
+        set((state) => ({ 
+          messages: currentId === userId ? decrypted : state.messages, 
+          hasMoreMessages: currentId === userId ? res.data.length === 50 : state.hasMoreMessages,
+          messageCache: {
+            ...state.messageCache,
+            [userId]: { messages: decrypted, hasMore: res.data.length === 50 }
+          }
+        }));
+      } catch (e) {
+        console.error("[Sync] Background sync failed:", e.message);
+      }
+      return;
+    }
+
+    // 2. Cold Start (No Cache)
+    set({ isMessagesLoading: true, messages: [], hasMoreMessages: true });
+    
     try {
       const res = await axiosInstance.get(`/message/${userId}`);
       const decrypted = await decryptMessagesList(res.data);
-      set({ 
+      set((state) => ({ 
         messages: decrypted, 
-        hasMoreMessages: res.data.length === 50 
-      });
+        hasMoreMessages: res.data.length === 50,
+        messageCache: {
+          ...state.messageCache,
+          [userId]: { messages: decrypted, hasMore: res.data.length === 50 }
+        }
+      }));
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load messages");
     } finally {
@@ -97,10 +116,18 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get(`/message/${userId}?cursor=${cursor}`);
       const decrypted = await decryptMessagesList(res.data);
       
-      set((state) => ({ 
-        messages: [...decrypted, ...state.messages],
-        hasMoreMessages: res.data.length === 50
-      }));
+      set((state) => {
+        const newMessages = [...decrypted, ...state.messages];
+        const newHasMore = res.data.length === 50;
+        return { 
+          messages: newMessages,
+          hasMoreMessages: newHasMore,
+          messageCache: {
+            ...state.messageCache,
+            [userId]: { messages: newMessages, hasMore: newHasMore }
+          }
+        };
+      });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load older messages");
     } finally {
@@ -108,14 +135,48 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  prefetchMessages: async (userId) => {
+    const cache = get().messageCache[userId];
+    if (cache || prefetchCache.has(userId)) return; // Already cached or fetching
+    
+    prefetchCache.add(userId);
+    try {
+      const res = await axiosInstance.get(`/message/${userId}`);
+      const decrypted = await decryptMessagesList(res.data);
+      set((state) => ({ 
+        messageCache: {
+          ...state.messageCache,
+          [userId]: { messages: decrypted, hasMore: res.data.length === 50 }
+        }
+      }));
+
+      // Expire unused prefetches after 60 seconds
+      prefetchExpirations.set(userId, setTimeout(() => {
+        const state = useChatStore.getState();
+        if (state.selectedConversationId !== userId) {
+          useChatStore.setState((s) => {
+            const newCache = { ...s.messageCache };
+            delete newCache[userId];
+            return { messageCache: newCache };
+          });
+        }
+        prefetchCache.delete(userId);
+        prefetchExpirations.delete(userId);
+      }, 60000));
+    } catch (e) {
+      // Fail silently on prefetch
+      prefetchCache.delete(userId);
+    }
+  },
+
   sendMessage: async (userId, text, image) => {
     const { addMessage } = get();
     const idempotencyKey = crypto.randomUUID();
     
-    // Optimistic payload construction
     const authUser = useAuthStore.getState().authUser;
+
     const optimisticMessage = {
-      _id: idempotencyKey, // Temporary ID matching idempotency
+      _id: idempotencyKey,
       senderId: authUser,
       receiverId: { _id: userId },
       text,
@@ -125,7 +186,6 @@ export const useChatStore = create((set, get) => ({
       status: "pending",
     };
 
-    // If natively offline, drop straight into IndexedDB Queue
     if (!navigator.onLine) {
       const { pushToQueue } = await import("../lib/offlineQueue.js");
       await pushToQueue({ ...optimisticMessage, targetId: userId, type: "direct" });
@@ -133,47 +193,48 @@ export const useChatStore = create((set, get) => ({
       return optimisticMessage;
     }
 
-    try {
-      // Show immediately in UI with pending state
-      await addMessage(optimisticMessage);
+    // 1. Instant optimistic UI update
+    addMessage(optimisticMessage);
 
-      let payload = { text, image, idempotencyKey };
-
-      const e2eeKeys = useAuthStore.getState().e2eeKeys;
-      const targetUser = get().users.find(u => u._id === userId || u.id === userId);
-
-      if (e2eeKeys && targetUser && targetUser.publicKey) {
-        try {
-          const { encryptMessage } = await import("../lib/e2ee.js");
-          const encrypted = await encryptMessage(
-            { text, image },
-            e2eeKeys.publicKey,
-            targetUser.publicKey
-          );
-          payload = {
-            idempotencyKey,
-            ...encrypted
-          };
-        } catch (encErr) {
-          console.error("Encryption failed, falling back to plaintext", encErr);
+    // Update cache proactively
+    set((state) => ({
+      messageCache: {
+        ...state.messageCache,
+        [userId]: { 
+          messages: [...(state.messageCache[userId]?.messages || []), optimisticMessage],
+          hasMore: state.messageCache[userId]?.hasMore || false
         }
       }
+    }));
 
-      const res = await axiosInstance.post(`/message/send/${userId}`, payload);
+    // 2. Fire-and-forget background encryption & send
+    (async () => {
+      try {
+        const encryptedWire = await e2eeService.encryptOutgoing(userId, text, image);
+        const res = await axiosInstance.post(`/message/send/${userId}`, {
+          idempotencyKey,
+          ...encryptedWire,
+        });
 
-      // Await so the optimistic message is correctly resolved to "sent" before any other state update
-      await addMessage(res.data);
-      return res.data;
-    } catch (error) {
-      // Network drop exactly mid-flight
-      if (error.code === 'ERR_NETWORK' || !error.response) {
-        const { pushToQueue } = await import("../lib/offlineQueue.js");
-        await pushToQueue({ ...optimisticMessage, targetId: userId, type: "direct" });
-        return optimisticMessage;
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m.idempotencyKey === idempotencyKey 
+              ? { ...m, _id: res.data._id, status: "sent", text, image } 
+              : m
+          ),
+        }));
+      } catch (error) {
+        console.error("[E2EE] Ratchet encryption/send failed:", error);
+        toast.error(`Message failed: ${error.message}`);
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m.idempotencyKey === idempotencyKey ? { ...m, status: "failed" } : m
+          ),
+        }));
       }
-      toast.error(error.response?.data?.message || "Failed to send message");
-      throw error;
-    }
+    })();
+
+    return optimisticMessage;
   },
 
   syncOfflineQueue: async () => {
@@ -182,47 +243,39 @@ export const useChatStore = create((set, get) => ({
     const queue = await getQueue();
     if (queue.length === 0) return;
 
-    // To prevent multi-tab conflict, basic lock
     if (localStorage.getItem("orbit_sync_lock") === "1") return;
     localStorage.setItem("orbit_sync_lock", "1");
 
     try {
       for (const msg of queue) {
-        // Ensure idempotency Key exists
         if (!msg.idempotencyKey) continue;
         
-        // Update local state to "sending" (Optional visual cue)
         set((state) => ({
           messages: state.messages.map(m => m.idempotencyKey === msg.idempotencyKey ? { ...m, status: "sending" } : m)
         }));
 
         try {
           if (msg.type === "direct") {
-             const targetId = msg.targetId || (msg.receiverId?._id) || msg.receiverId;
-             await axiosInstance.post(`/message/send/${targetId}`, {
-               text: msg.text,
-               image: msg.image,
-               idempotencyKey: msg.idempotencyKey
-             });
+            const targetId = (msg.targetId || msg.receiverId?._id || msg.receiverId).toString();
+            const encryptedWire = await e2eeService.encryptOutgoing(targetId, msg.text, msg.image);
+
+            await axiosInstance.post(`/message/send/${targetId}`, {
+              idempotencyKey: msg.idempotencyKey,
+              ...encryptedWire,
+            });
+
           } else if (msg.type === "nexus") {
-             const targetId = msg.targetId || (msg.nexusId?._id) || msg.nexusId;
-             await axiosInstance.post(`/nexus/${targetId}/send`, {
-               text: msg.text,
-               image: msg.image,
-               idempotencyKey: msg.idempotencyKey
-             });
-             // Import useNexusStore dynamically to strictly avoid loop issues if any
-             const { useNexusStore } = await import("./useNexusStore.js");
-             useNexusStore.setState((state) => ({
-                nexusMessages: state.nexusMessages.map(m => m.idempotencyKey === msg.idempotencyKey ? { ...m, status: "sending" } : m)
-             }));
+            const targetId = msg.targetId || (msg.nexusId?._id) || msg.nexusId;
+            await axiosInstance.post(`/nexus/${targetId}/send`, {
+              text: msg.text,
+              image: msg.image,
+              idempotencyKey: msg.idempotencyKey
+            });
           }
-          // Remove from local IndexedDB
           await removeFromQueue(msg.idempotencyKey);
         } catch (err) {
-          // If server rejects (4xx) not network error, still drop it
           if (err.response && err.response.status >= 400 && err.response.status < 500) {
-             await removeFromQueue(msg.idempotencyKey);
+            await removeFromQueue(msg.idempotencyKey);
           }
         }
       }
@@ -236,56 +289,39 @@ export const useChatStore = create((set, get) => ({
     const msg = state.messages.find(m => m.idempotencyKey === idempotencyKey);
     if (!msg) return;
 
-    // Flip UI instantly to sending
+    const authUser = useAuthStore.getState().authUser;
+
+    // Mark as sending again
     set((s) => ({
       messages: s.messages.map(m => m.idempotencyKey === idempotencyKey ? { ...m, status: "sending" } : m)
     }));
 
-    // It might be a direct message. Currently, retryMessage is only called on the current active chat via UI anyway.
-    const targetId = msg.receiverId?._id || msg.receiverId;
+    const targetId = (msg.receiverId?._id || msg.receiverId || "").toString();
 
-    let payload = {
-      text: msg.text,
-      image: msg.image,
-      idempotencyKey: msg.idempotencyKey
-    };
-
-    // Re-encrypt if E2EE keys are available
-    const e2eeKeys = useAuthStore.getState().e2eeKeys;
-    const targetUser = state.users.find(u => u._id === targetId || u.id === targetId);
-
-    if (e2eeKeys && targetUser && targetUser.publicKey) {
+    // Fire-and-forget background retry
+    (async () => {
       try {
-        const { encryptMessage } = await import("../lib/e2ee.js");
-        const encrypted = await encryptMessage(
-          { text: msg.text, image: msg.image },
-          e2eeKeys.publicKey,
-          targetUser.publicKey
-        );
-        payload = { ...payload, ...encrypted };
-      } catch (encErr) {
-        console.error("[Retry] Encryption failed:", encErr);
+        const encryptedWire = await e2eeService.encryptOutgoing(targetId, msg.text, msg.image);
+        await axiosInstance.post(`/message/send/${targetId}`, {
+          idempotencyKey,
+          ...encryptedWire,
+        });
+      } catch (error) {
+        console.error("[Retry][E2EE] Retry failed:", error);
+        if (error.code === 'ERR_NETWORK' || !error.response) {
+          const { pushToQueue } = await import("../lib/offlineQueue.js");
+          await pushToQueue({ ...msg, targetId: targetId, type: "direct", status: "pending" });
+          set((s) => ({
+            messages: s.messages.map(m => m.idempotencyKey === idempotencyKey ? { ...m, status: "pending" } : m)
+          }));
+        } else {
+          toast.error(`Retry failed: ${error.message}`);
+          set((s) => ({
+            messages: s.messages.map(m => m.idempotencyKey === idempotencyKey ? { ...m, status: "failed" } : m)
+          }));
+        }
       }
-    }
-
-    try {
-      await axiosInstance.post(`/message/send/${targetId}`, payload);
-      // The socket ack will override this, but we optimistically clear it
-    } catch (err) {
-      if (err.code === 'ERR_NETWORK' || !err.response) {
-        // Drop it back into the offline queue!
-        const { pushToQueue } = await import("../lib/offlineQueue.js");
-        await pushToQueue({ ...msg, targetId: targetId, type: "direct", status: "pending" });
-        set((s) => ({
-          messages: s.messages.map(m => m.idempotencyKey === idempotencyKey ? { ...m, status: "pending" } : m)
-        }));
-      } else {
-        // Standard fail
-        set((s) => ({
-          messages: s.messages.map(m => m.idempotencyKey === idempotencyKey ? { ...m, status: "failed" } : m)
-        }));
-      }
-    }
+    })();
   },
 
   addMessage: async (message) => {
@@ -295,61 +331,93 @@ export const useChatStore = create((set, get) => ({
       const currentSelectedId = state.selectedConversationId
         || normalizeId(state.selectedUser);
 
+      const msgSenderId = normalizeId(decryptedMsg.senderId);
+      const msgReceiverId = normalizeId(decryptedMsg.receiverId);
+      
       const belongsToCurrentChat = !!currentSelectedId && (
-        isMatchObj(currentSelectedId, decryptedMsg.senderId, state.users) ||
-        isMatchObj(currentSelectedId, decryptedMsg.receiverId, state.users)
+        currentSelectedId === msgSenderId ||
+        currentSelectedId === msgReceiverId
       );
       
-      if (!belongsToCurrentChat) {
-        console.log(`[ChatStore] Message ignored: current selection ${currentSelectedId} does not match sender ${normalizeId(decryptedMsg.senderId)} or receiver ${normalizeId(decryptedMsg.receiverId)}`);
+      let newMessages = [...state.messages];
+      const cache = { ...state.messageCache };
+      const authUser = useAuthStore.getState().authUser;
+      const myId = authUser?._id?.toString();
+      const partnerId = msgSenderId === myId ? msgReceiverId : msgSenderId;
+
+      if (partnerId) {
+        const bucket = cache[partnerId] || { messages: [], hasMore: false };
+        const msgId = decryptedMsg._id?.toString();
+        const idempotencyKey = decryptedMsg.idempotencyKey;
+
+        // Optimized deduplication using findLastIndex but with earlier exit
+        const existsIndex = bucket.messages.findLastIndex((m) => {
+          if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
+          if (m._id && msgId && m._id.toString() === msgId) return true;
+          return false;
+        });
+
+        if (existsIndex === -1) {
+          bucket.messages = [...bucket.messages, decryptedMsg];
+          // Only sort if timestamps are out of order (rare for append)
+          if (bucket.messages.length > 1 && 
+              new Date(bucket.messages[bucket.messages.length - 2].createdAt).getTime() > 
+              new Date(decryptedMsg.createdAt).getTime()) {
+            bucket.messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          }
+        } else {
+          bucket.messages[existsIndex] = {
+            ...decryptedMsg,
+            _id: decryptedMsg._id || bucket.messages[existsIndex]._id,
+            status: "sent",
+          };
+        }
+        cache[partnerId] = { ...bucket };
       }
 
-      let newMessages = [...state.messages];
-      const users = [...state.users];
-
       if (belongsToCurrentChat) {
-        const messageId = normalizeId(decryptedMsg);
+        const msgId = decryptedMsg._id?.toString();
         const idempotencyKey = decryptedMsg.idempotencyKey;
 
         const existsIndex = newMessages.findLastIndex((m) => {
-          const mId = normalizeId(m);
-          if (mId && messageId && mId === messageId) return true;
           if (m.idempotencyKey && idempotencyKey && m.idempotencyKey === idempotencyKey) return true;
+          if (m._id && msgId && m._id.toString() === msgId) return true;
           return false;
         });
 
         if (existsIndex === -1) {
           newMessages.push(decryptedMsg);
+          if (newMessages.length > 1 && 
+              new Date(newMessages[newMessages.length - 2].createdAt).getTime() > 
+              new Date(decryptedMsg.createdAt).getTime()) {
+            newMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          }
         } else {
-          const existingMsg = newMessages[existsIndex];
           newMessages[existsIndex] = {
             ...decryptedMsg,
-            _id: decryptedMsg._id || existingMsg._id,
+            _id: decryptedMsg._id || newMessages[existsIndex]._id,
             status: "sent",
           };
         }
-
-        newMessages.sort((a, b) =>
-          new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
-        );
       }
 
       // Update sidebar preview / unread badge
-      const updatedUsers = users.map((user) => {
-        if (isMatchObj(user._id || user.id, decryptedMsg.senderId, state.users)) {
+      const updatedUsers = state.users.map((user) => {
+        const uId = user._id?.toString();
+        if (uId === msgSenderId) {
           return {
             ...user,
-            lastMessage: message.text || "Shared an image",
+            lastMessage: decryptedMsg.text || "Shared an image",
             unreadCount: !belongsToCurrentChat ? (user.unreadCount || 0) + 1 : 0,
           };
         }
-        if (isMatchObj(user._id || user.id, decryptedMsg.receiverId)) {
+        if (uId === msgReceiverId) {
           return { ...user, lastMessage: "You sent a message" };
         }
         return user;
       });
 
-      return { messages: newMessages, users: updatedUsers };
+      return { messages: newMessages, users: updatedUsers, messageCache: cache };
     });
   },
 
@@ -376,35 +444,49 @@ export const useChatStore = create((set, get) => ({
   },
 
   setUserTyping: (userId, isTyping) => {
-    // Self-cleaning typing state: auto-clear after 3.5s if stop event is missed
+    const uIdStr = userId?.toString();
     if (isTyping) {
-      const existingTimeout = get()[`_typingTimer_${userId}`];
+      const existingTimeout = get()[`_typingTimer_${uIdStr}`];
       if (existingTimeout) clearTimeout(existingTimeout);
       
       const timer = setTimeout(() => {
-        get().setUserTyping(userId, false);
+        get().setUserTyping(uIdStr, false);
       }, 3500);
       
-      set({ [`_typingTimer_${userId}`]: timer });
+      set({ [`_typingTimer_${uIdStr}`]: timer });
+    } else {
+      const existingTimeout = get()[`_typingTimer_${uIdStr}`];
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+        set({ [`_typingTimer_${uIdStr}`]: null });
+      }
     }
 
     set((state) => {
+      const isSelected = state.selectedUser?._id?.toString() === uIdStr;
+      
       const users = state.users.map((user) =>
-        user._id?.toString() === userId?.toString()
+        user._id?.toString() === uIdStr
           ? { ...user, isTyping }
           : user,
       );
 
-      const selectedUser =
-        state.selectedUser?._id?.toString() === userId?.toString()
-          ? { ...state.selectedUser, isTyping }
-          : state.selectedUser;
-
-      return { users, selectedUser };
+      return { 
+        users, 
+        selectedUser: isSelected ? { ...state.selectedUser, isTyping } : state.selectedUser 
+      };
     });
   },
 
   clearUserTyping: () => {
+    // Clear all timers
+    const state = get();
+    Object.keys(state).forEach(key => {
+      if (key.startsWith('_typingTimer_') && state[key]) {
+        clearTimeout(state[key]);
+      }
+    });
+
     set((state) => ({
       users: state.users.map((user) => ({ ...user, isTyping: false })),
       selectedUser: state.selectedUser ? { ...state.selectedUser, isTyping: false } : null,

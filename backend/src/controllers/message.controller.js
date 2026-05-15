@@ -10,16 +10,32 @@ import { z } from "zod";
 const messageSchema = z
   .object({
     text: z.string().max(2000).optional(),
-    image: z.string().max(5000000).optional(), // Base64 can be very large
+    image: z.string().max(5000000).optional(),
     idempotencyKey: z.string().optional(),
+    // ── v3: Double Ratchet fields ───────────────────────────────────────────────
+    v: z.number().int().min(1).max(10).optional(),
+    ciphertext: z.string().optional(),  // AES-GCM encrypted payload
+    dh: z.string().optional(),          // Sender's ratchet DH pub key (base64)
+    n:  z.number().int().optional(),    // Message counter
+    pn: z.number().int().optional(),    // Previous chain length
+    iv: z.string().optional(),          // AES-GCM IV (also used by v2)
+    x3dh: z.object({
+      identityKey:  z.string(),
+      ephemeralKey: z.string(),
+      opkId: z.string().nullable().optional(),
+    }).optional(),
+    // ── v2: ECDH + HKDF + AES-GCM fields ─────────────────────────────────
+    ephemeralPublicKey: z.string().max(1024).optional(),
     encryptedContent: z.string().optional(),
+    aad: z.string().max(512).optional(),
+    // ── v1 legacy: RSA-OAEP fields ───────────────────────────────────────────
     encryptedKeyForReceiver: z.string().optional(),
     encryptedKeyForSender: z.string().optional(),
-    iv: z.string().optional(),
   })
-  .refine((data) => data.text || data.image || data.encryptedContent, {
-    message: "Message must contain text, image, or encrypted content",
-  });
+  .refine(
+    (data) => data.text || data.image || data.encryptedContent || data.ciphertext,
+    { message: "Message must contain text, image, or encrypted content" }
+  );
 
 export const getUsersForSidebar = async (req, res) => {
   try {
@@ -45,7 +61,8 @@ export const getUsersForSidebar = async (req, res) => {
     const users = await User.find(query)
       .select("-password")
       .sort({ createdAt: -1 })
-      .limit(parsedLimit + 1);
+      .limit(parsedLimit + 1)
+      .maxTimeMS(5000); // FIX 17: Prevent long-running query stall
 
     const hasMore = users.length > parsedLimit;
     const results = hasMore ? users.slice(0, parsedLimit) : users;
@@ -97,6 +114,7 @@ export const getMessage = async (req, res) => {
       .limit(parsedLimit)
       .populate("senderId", "username profilePic")
       .populate("receiverId", "username profilePic")
+      .maxTimeMS(5000) // FIX 17: Prevent thread stall
       .lean();
 
     messages = messages.reverse();
@@ -130,7 +148,15 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    const { text, image, idempotencyKey, encryptedContent, encryptedKeyForReceiver, encryptedKeyForSender, iv } = parsed.data;
+    const {
+      text, image, idempotencyKey,
+      // v3: Double Ratchet (flat wire format matching doubleRatchet.js output)
+      v, ciphertext, dh, n, pn, x3dh,
+      // v2: ECDH-based E2EE
+      ephemeralPublicKey, encryptedContent, aad, iv,
+      // v1 legacy
+      encryptedKeyForReceiver, encryptedKeyForSender,
+    } = parsed.data;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
     const realReceiverId = getRealId(receiverId);
@@ -157,19 +183,23 @@ export const sendMessage = async (req, res) => {
 
     let imageUrl = image;
     if (image && image.startsWith("data:")) {
-      // Validate MIME type strictly
-      if (!image.match(/^data:image\/(jpeg|png|webp);base64,/)) {
-        return res.status(400).json({ message: "Invalid image type. Only JPEG, PNG, or WEBP allowed." });
+      // Relaxed validation: allow image/ types OR application/octet-stream (encrypted blobs)
+      if (!image.match(/^data:(image\/(jpeg|png|webp)|application\/octet-stream);base64,/)) {
+        return res.status(400).json({ message: "Invalid media type." });
       }
 
       try {
+        const isEncrypted = image.startsWith("data:application/octet-stream");
         const uploadResponse = await cloudinary.uploader.upload(image, {
           folder: "orbit_chats",
-          transformation: [
-            { width: 1200, crop: "limit" },
-            { quality: "auto" },
-            { fetch_format: "auto" }
-          ]
+          // DO NOT transform encrypted blobs! It will corrupt the cipher.
+          ...(isEncrypted ? { resource_type: "raw" } : {
+            transformation: [
+              { width: 1200, crop: "limit" },
+              { quality: "auto" },
+              { fetch_format: "auto" }
+            ]
+          })
         });
         imageUrl = uploadResponse.secure_url;
       } catch (uploadError) {
@@ -191,10 +221,21 @@ export const sendMessage = async (req, res) => {
       text,
       image: imageUrl,
       idempotencyKey,
+      // v3: Double Ratchet
+      v,
+      ciphertext,
+      dh,
+      n,
+      pn,
+      x3dh,
+      // v2: ECDH-based E2EE
+      ephemeralPublicKey,
       encryptedContent,
+      aad,
+      iv,
+      // v1 legacy
       encryptedKeyForReceiver,
       encryptedKeyForSender,
-      iv,
     });
 
     await newMessage.save();

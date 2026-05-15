@@ -257,7 +257,7 @@ const ProfilePage = () => {
                       ? "bg-gradient-to-br from-[#b08d57] to-[#8c7055]"
                       : "bg-primary"
                   }`} />
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={profileDraft.profilePic || "/avatar.png"}
                     alt="Profile"
                     className={`size-32 rounded-3xl object-cover relative z-10 border-4 ${

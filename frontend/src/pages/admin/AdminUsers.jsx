@@ -72,7 +72,7 @@ export default function AdminUsers() {
                 <tr key={user._id} className={user.isDeleted ? "row-deleted" : ""}>
                   <td>
                     <div className="user-cell">
-                      <img className="user-avatar" src={user.profilePic || "/avatar.png"} alt="" />
+                      <img loading="lazy" decoding="async" className="user-avatar" src={user.profilePic || "/avatar.png"} alt="" />
                       <div>
                         <div className="user-cell-name">{user.username}</div>
                         <div className="user-cell-sub">{user.email}</div>
