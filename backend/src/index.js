@@ -143,6 +143,8 @@ app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ limit: "5mb", extended: true }));
 app.use(hpp());
 app.use(cookieParser());
+import { csrfMiddleware } from "./middleware/csrf.middleware.js";
+app.use(csrfMiddleware);
 app.use(threatDetectionMiddleware);
 
 import { resolveOrbitIds } from "./lib/idResolver.middleware.js";
@@ -257,6 +259,8 @@ const validateEnv = () => {
     "CLOUDINARY_CLOUD_NAME",
     "CLOUDINARY_API_KEY",
     "CLOUDINARY_SECRET_KEY",
+    "OBFUSCATION_SECRET",
+    "TOKEN_ENCRYPTION_SECRET",
   ];
   const optional = [
     "CONSTELLATION_PEPPER",
