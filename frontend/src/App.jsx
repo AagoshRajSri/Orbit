@@ -478,16 +478,7 @@ const AppContent = () => {
         socket.emit("joinNexusRoom", nexus._id);
         useNexusStore.getState().syncNexusKeys(nexus._id);
       },
-      "sender-key-distribution-requested": async ({ nexusId }) => {
-        const { loadSenderKey } = await import("./lib/nexusKeyStore.js");
-        const authUser = useAuthStore.getState().authUser;
-        const myId = authUser?._id?.toString();
-        const senderKey = await loadSenderKey(nexusId, myId);
-        if (senderKey) {
-          console.log("[E2EE] Responding to sender key distribution request for nexus", nexusId);
-          useNexusStore.getState().distributeNexusKey(nexusId, senderKey);
-        }
-      },
+
       userTyping: ({ from, isTyping }) => {
         setUserTyping(from, isTyping);
       },
