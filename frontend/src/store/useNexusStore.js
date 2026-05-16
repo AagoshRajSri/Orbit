@@ -674,7 +674,10 @@ export const useNexusStore = create((set, get) => ({
               }
             } else {
               newMessages[existsIndex] = {
+                ...newMessages[existsIndex],
                 ...decrypted,
+                text: decrypted.text || newMessages[existsIndex].text,
+                image: decrypted.image || newMessages[existsIndex].image,
                 _id: newMessages[existsIndex]._id || decrypted._id,
                 status: "sent",
               };

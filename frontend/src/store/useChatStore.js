@@ -386,7 +386,10 @@ export const useChatStore = create((set, get) => ({
           }
         } else {
           bucketMessages[existsIndex] = {
+            ...bucketMessages[existsIndex],
             ...decryptedMsg,
+            text: decryptedMsg.text || bucketMessages[existsIndex].text,
+            image: decryptedMsg.image || bucketMessages[existsIndex].image,
             _id: decryptedMsg._id || bucketMessages[existsIndex]._id,
             status: "sent",
           };
@@ -414,7 +417,10 @@ export const useChatStore = create((set, get) => ({
           }
         } else {
           newMessages[existsIndex] = {
+            ...newMessages[existsIndex],
             ...decryptedMsg,
+            text: decryptedMsg.text || newMessages[existsIndex].text,
+            image: decryptedMsg.image || newMessages[existsIndex].image,
             _id: decryptedMsg._id || newMessages[existsIndex]._id,
             status: "sent",
           };
