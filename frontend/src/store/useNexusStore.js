@@ -16,8 +16,8 @@ const decryptSingleNexusMessage = async (m, userId) => {
 
   if (m.v !== 4 || !m.ciphertext) return { ...m, isMe: isSender };
 
-  // Sender's own message — skip decryption (advanced chain)
-  if (isSender) return { ...m, isMe: true };
+  // Previously we skipped decryption for isMe, but this broke history loading 
+  // since the server strips plaintext. Now we always attempt decryption.
 
   try {
     const { loadSenderKey, saveSenderKey } = await import("../lib/nexusKeyStore.js");
@@ -35,7 +35,7 @@ const decryptSingleNexusMessage = async (m, userId) => {
           socket.emit("request-sender-key-distribution", { nexusId, targetUserId: sIdStr });
         }
       }
-      return { ...m, text: "🔒 [Sender key missing — sync required]", isMe: false };
+      return { ...m, text: "🔒 [Sender key missing — sync required]", isMe: isSender };
     }
 
     const { plaintext, updatedSenderKey } = await senderKeyDecrypt(
@@ -46,10 +46,10 @@ const decryptSingleNexusMessage = async (m, userId) => {
     await saveSenderKey(nexusId, sIdStr, updatedSenderKey);
 
     const payload = JSON.parse(plaintext);
-    return { ...m, text: payload.text, image: payload.image, isMe: false };
+    return { ...m, text: payload.text, image: payload.image, isMe: isSender };
   } catch (err) {
     console.error("[Nexus E2EE] Decrypt error:", err);
-    return { ...m, text: "🔒 [Decryption failed]", isMe: false };
+    return { ...m, text: "🔒 [Decryption failed]", isMe: isSender };
   }
 };
 

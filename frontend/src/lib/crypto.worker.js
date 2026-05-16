@@ -170,7 +170,7 @@ self.addEventListener("message", async (e) => {
         self.postMessage({ 
           id, 
           success: true, 
-          result: { ...message, text: decryptedPayload.text, image: imageUrl, isMe: false } 
+          result: { ...message, text: decryptedPayload.text, image: imageUrl, isMe } 
         }, transferList);
         return;
       }
