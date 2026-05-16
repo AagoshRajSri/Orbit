@@ -7,8 +7,9 @@ import { normalizeId, isMatchObj } from "../lib/idUtils";
 
 // ── Decrypt a single Nexus message (v4 Sender Key) ───────────────────────────
 const decryptSingleNexusMessage = async (m, userId) => {
-  const sIdStr = (m.senderId?._id || m.senderId?.id || m.senderId)?.toString();
-  const isSender = sIdStr === userId;
+  // Use .id to prefer the obfuscated ID when loading the key
+  const sIdStr = (m.senderId?.id || m.senderId?._id || m.senderId)?.toString();
+  const isSender = isMatchObj(userId, m.senderId);
 
   if (m.v !== 4 || !m.ciphertext) return { ...m, isMe: isSender };
 

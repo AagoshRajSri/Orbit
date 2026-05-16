@@ -91,7 +91,14 @@ export const sanitizeForOrbit = (obj) => {
     
     // Obfuscate related fields and recurse into nested objects
     for (const key in newObj) {
-      const val = newObj[key];
+      let val = newObj[key];
+      
+      // If val is an ObjectId, convert it to a string first so it can be obfuscated
+      if (val !== null && typeof val === 'object' && val.constructor && val.constructor.name === 'ObjectId') {
+        val = val.toString();
+        newObj[key] = val;
+      }
+
       if (key.endsWith('Id') && typeof val === 'string' && val.length > 20 && !val.startsWith("orb_")) {
         newObj[key] = obfuscateId(val);
       } else if (val !== null && typeof val === 'object' && key !== '_id' && key !== 'id') {
