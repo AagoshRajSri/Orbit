@@ -371,6 +371,10 @@ export const useNexusStore = create((set, get) => ({
     try {
       const cursor = nexusMessages[0].createdAt;
       const res = await axiosInstance.get(`/nexus/${nexusId}/messages?cursor=${cursor}`);
+
+      // Sync missing sender keys before decrypting older messages
+      await get().syncNexusKeys(nexusId);
+
       const authUser = useAuthStore.getState().authUser;
       const userId = authUser?._id?.toString();
       const decrypted = await Promise.all(
@@ -611,7 +615,12 @@ export const useNexusStore = create((set, get) => ({
       return { nexuses: [nexus, ...state.nexuses] };
     });
   },
-  addNexusMessage: (message) => {
+  addNexusMessage: async (message) => {
+    const msgNexusId = message.nexusId?.toString();
+
+    // Sync sender keys before decryption so real-time messages don't fail
+    await get().syncNexusKeys(msgNexusId);
+
     set((state) => {
       const { selectedNexusId, selectedNexus, nexusMessages, nexusUnread, nexuses } = state;
       const msgNexusId = message.nexusId?.toString();
