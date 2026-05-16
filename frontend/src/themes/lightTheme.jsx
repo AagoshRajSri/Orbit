@@ -1108,6 +1108,11 @@ export default function LightTheme({ children }) {
      >
        {/* MOBILE DASHBOARD */}
        <div className="lm-mobile-canvas lm-mobile-only">
+          {nexusActionView && (
+            <div style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 1000, overflowY: 'auto' }}>
+               <NexusActionOverlay mode={nexusActionView} onClose={() => setNexusActionView(null)} inline={true} />
+            </div>
+          )}
          {(nexusSelected || selectedUser || children || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/')) ? (
            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: 'white' }}>
              {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
