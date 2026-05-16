@@ -78,7 +78,12 @@ export const sanitizeForOrbit = (obj) => {
   }
 
   // Handle ObjectIds directly to prevent spreading their internal buffers
-  if (obj !== null && typeof obj === 'object' && obj.constructor && obj.constructor.name === 'ObjectId') {
+  if (obj !== null && typeof obj === 'object' && (
+    (obj.constructor && (obj.constructor.name === 'ObjectId' || obj.constructor.name === 'ObjectID')) ||
+    obj._bsontype === 'ObjectId' || 
+    obj._bsontype === 'ObjectID' ||
+    typeof obj.toHexString === 'function'
+  )) {
     return obfuscateId(obj.toString());
   }
 
@@ -99,7 +104,12 @@ export const sanitizeForOrbit = (obj) => {
       let val = newObj[key];
       
       // If val is an ObjectId, convert it to a string first so it can be obfuscated
-      if (val !== null && typeof val === 'object' && val.constructor && val.constructor.name === 'ObjectId') {
+      if (val !== null && typeof val === 'object' && (
+        (val.constructor && (val.constructor.name === 'ObjectId' || val.constructor.name === 'ObjectID')) ||
+        val._bsontype === 'ObjectId' || 
+        val._bsontype === 'ObjectID' ||
+        typeof val.toHexString === 'function'
+      )) {
         val = val.toString();
         newObj[key] = val;
       }
