@@ -27,7 +27,7 @@
 
 Orbit reimagines digital identity and connection. From drawing your own **Constellation** to authenticate, to syncing **Spotify** playback in real-time across a **Nexus** (group), every interaction is fluid, animated, and secured.
 
-### ✦ 15+ Dynamic Themes
+### ✦ 3+ Dynamic Themes
 Choose your aesthetic. Orbit features a library of fully-animated, immersive themes:
 - **Amoled & Dark Cyberpunk**: Viewport-locked, high-contrast designs for the night.
 - **Pastel Dream & Light**: Clean, airy, and glassmorphic layouts.
