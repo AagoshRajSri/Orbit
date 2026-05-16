@@ -684,8 +684,16 @@ const MobileTabBar = memo(({ activeTab }) => {
 const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, selectedUser, setSelectedUser, setNexusActionView, toggleHide, hiddenNexuses, forcedTab }) => {
   const navigate = useNavigate();
   const [internalTab, setInternalTab] = useState('orbits');
-  const tab = forcedTab || internalTab;
-  const setTab = forcedTab ? (t) => navigate(`/?tab=${t}`) : setInternalTab;
+
+  // Sync internal state when bottom nav (forcedTab) changes
+  useEffect(() => {
+    if (forcedTab) {
+      setInternalTab(forcedTab === 'home' ? 'orbits' : forcedTab);
+    }
+  }, [forcedTab]);
+
+  const tab = internalTab;
+  const setTab = setInternalTab;
 
   const [pinnedNexuses, setPinnedNexuses] = useState(() => {
     return JSON.parse(localStorage.getItem('luxury_pinned_nexuses') || '[]');

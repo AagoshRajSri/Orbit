@@ -784,9 +784,24 @@ export const getSenderKeyDistributions = async (req, res) => {
       recipientId: userId,
     }).lean();
 
+    // Preserve raw x3dh.opkId — it's a UUID key identifier, not a DB ObjectId
+    const rawOpkIds = new Map();
+    for (const d of distributions) {
+      if (d.x3dh?.opkId) rawOpkIds.set(d._id.toString(), d.x3dh.opkId);
+    }
+
+    const sanitized = sanitizeForOrbit(distributions);
+
+    for (const d of sanitized) {
+      const id = d._id?.toString() || d.id;
+      if (id && rawOpkIds.has(id) && d.x3dh) {
+        d.x3dh.opkId = rawOpkIds.get(id);
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      distributions: sanitizeForOrbit(distributions),
+      distributions: sanitized,
     });
   } catch (error) {
     console.error("[Nexus] getSenderKeyDistributions error:", error.message);
@@ -820,6 +835,7 @@ export const getMemberPublicKeys = async (req, res) => {
 
     // Pop one OPK per member atomically
     const result = [];
+    const rawOpkIds = new Map(); // preserve original OPK IDs — sanitizeForOrbit
     for (const bundle of bundles) {
       let oneTimePrekey   = null;
       let oneTimePrekeyId = null;
@@ -843,9 +859,19 @@ export const getMemberPublicKeys = async (req, res) => {
         oneTimePrekey,
         oneTimePrekeyId,
       });
+      if (oneTimePrekeyId) rawOpkIds.set(bundle.userId.toString(), oneTimePrekeyId);
     }
 
-    return res.status(200).json({ success: true, members: sanitizeForOrbit(result) });
+    const sanitized = sanitizeForOrbit(result);
+
+    // Restore original oneTimePrekeyId — it's an internal key identifier,
+    // not a database ObjectId, so sanitizeForOrbit must not obfuscate it.
+    for (const member of sanitized) {
+      const original = rawOpkIds.get(member.userId);
+      if (original) member.oneTimePrekeyId = original;
+    }
+
+    return res.status(200).json({ success: true, members: sanitized });
   } catch (error) {
     console.error("[Nexus] getMemberPublicKeys error:", error.message);
     return res.status(500).json({ success: false, error: { code: "SERVER_ERROR" } });

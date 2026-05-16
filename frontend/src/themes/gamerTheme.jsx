@@ -544,7 +544,7 @@ const Scanlines = memo(() => {
 /* ─────────────────────────────────────────────
    TOP NAV
 ───────────────────────────────────────────── */
-const TopNav = memo(({ navRef, killCount, setSelectedNexus, setSelectedUser, logout, hiddenNexuses, onReveal }) => {
+const TopNav = memo(({ navRef, locked, killCount, setSelectedNexus, setSelectedUser, logout, hiddenNexuses, onReveal, currentTab }) => {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }));
   useEffect(() => { const iv = setInterval(() => setTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })), 1000); return () => clearInterval(iv); }, []);
   const navigate = useNavigate();
@@ -568,7 +568,7 @@ const TopNav = memo(({ navRef, killCount, setSelectedNexus, setSelectedUser, log
 
   return (
     <div ref={navRef} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 48, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", zIndex: 40, background: "rgba(4,2,18,0.95)", borderBottom: "2px solid rgba(0,245,212,0.3)", backdropFilter: "blur(12px)", boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={() => navigate(currentTab === 'orbits' ? '/' : `/${currentTab}`)}>
         <div style={{ width: 30, height: 30, borderRadius: "50%", border: "2px solid #ff2d78", boxShadow: "0 0 10px #ff2d78", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,45,120,0.15)", fontSize: 14 }}>🌀</div>
         <span style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.2em", color: "#00f5d4", textShadow: "0 0 10px #00f5d4", fontFamily: "'Orbitron',monospace" }}>ORBIT</span>
         
@@ -1332,11 +1332,11 @@ function StatusBar({ locked }) {
 }
 
 /* ── MOBILE COMPONENTS ── */
-const MobileGamerNav = memo(() => {
+const MobileGamerNav = memo(({ currentTab }) => {
   const navigate = useNavigate();
   return (
     <div className="gm-mobile-nav">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate(currentTab === 'orbits' ? '/' : `/${currentTab}`)}>
         <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,245,212,0.1)', border: '1.5px solid #00f5d4', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(0,245,212,0.4)' }}>
           <span style={{ fontSize: 16 }}>🌀</span>
         </div>
@@ -1460,7 +1460,22 @@ export default function OrbitGrind({ children }) {
   }, []);
 
   const location = useLocation();
-  const currentTab = new URLSearchParams(location.search).get('tab') || 'orbits';
+  const currentTab = useMemo(() => {
+    const tabParam = new URLSearchParams(location.search).get('tab');
+    if (tabParam) return tabParam;
+    
+    const path = location.pathname;
+    if (path.includes('/contacts') || path.includes('/chat/')) return 'contacts';
+    if (path.includes('/nexus/')) return 'orbits';
+    if (path.includes('/spotify')) return 'spotify';
+    if (path.includes('/profile')) return 'profile';
+    return 'orbits';
+  }, [location]);
+
+  const getHomePath = useCallback(() => {
+    if (currentTab === 'orbits') return '/';
+    return `/${currentTab}`;
+  }, [currentTab]);
   const isMobileChat = nexusSelected || !!selectedUser || location.pathname.includes('/chat/') || location.pathname.includes('/nexus/');
 
   return (
@@ -1476,12 +1491,12 @@ export default function OrbitGrind({ children }) {
       {(isMobileChat || children) ? (
         <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100dvh' }}>
           <div className="gamer-chat-env" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" /> : <UniversalChatContainer type="dm" />)}
+            {children || (location.pathname.includes('/nexus/') ? <UniversalChatContainer type="nexus" onMobileBack={() => navigate(getHomePath())} /> : <UniversalChatContainer type="dm" onMobileBack={() => navigate(getHomePath())} />)}
           </div>
         </div>
       ) : (
         <>
-          <MobileGamerNav />
+          <MobileGamerNav currentTab={currentTab} />
           <div className="gm-mobile-scroll">
             {/* Squad Nodes Carousel */}
             <div style={{ display:'flex', gap:16, overflowX:'auto', paddingBottom:16, marginLeft:-14, marginRight:-14, paddingLeft:14, paddingRight:14, WebkitOverflowScrolling:'touch', scrollbarWidth:'none' }}>
@@ -1648,8 +1663,8 @@ export default function OrbitGrind({ children }) {
         setSelectedNexus={setSelectedNexus}
         setSelectedUser={setSelectedUser}
         logout={logout}
-        hiddenNexuses={hiddenNexuses}
         onReveal={onReveal}
+        currentTab={currentTab}
       />
 
       <div className={`gamer-container ${nexusSelected || selectedUser ? 'chat-active' : 'chat-inactive'}`} style={{ position: "absolute", top: 48, left: 0, right: 0, bottom: 0, display: "flex" }}>
