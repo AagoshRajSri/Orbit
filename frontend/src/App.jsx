@@ -476,6 +476,17 @@ const AppContent = () => {
       nexusJoined: (nexus) => {
         addNexus(nexus);
         socket.emit("joinNexusRoom", nexus._id);
+        useNexusStore.getState().syncNexusKeys(nexus._id);
+      },
+      "sender-key-distribution-requested": async ({ nexusId }) => {
+        const { loadSenderKey } = await import("./lib/nexusKeyStore.js");
+        const authUser = useAuthStore.getState().authUser;
+        const myId = authUser?._id?.toString();
+        const senderKey = await loadSenderKey(nexusId, myId);
+        if (senderKey) {
+          console.log("[E2EE] Responding to sender key distribution request for nexus", nexusId);
+          useNexusStore.getState().distributeNexusKey(nexusId, senderKey);
+        }
       },
       userTyping: ({ from, isTyping }) => {
         setUserTyping(from, isTyping);
@@ -514,6 +525,23 @@ const AppContent = () => {
       },
       nexusMessageSeen: ({ messageId, nexusId, seenAt }) => {
         useNexusStore.getState().markNexusMessageSeen(nexusId, messageId, seenAt);
+      },
+      "sender-key-distribution-requested": async ({ nexusId }) => {
+        try {
+          const nexusStore = useNexusStore.getState();
+          const { loadSenderKey } = await import("./lib/nexusKeyStore.js");
+          const authUser = useAuthStore.getState().authUser;
+          const myId = authUser?._id?.toString();
+          if (!myId) return;
+
+          const senderKey = await loadSenderKey(nexusId, myId);
+          if (senderKey) {
+            await nexusStore.distributeNexusKey(nexusId, senderKey);
+            console.log("[Nexus E2EE] Re-distributed sender key for nexus", nexusId);
+          }
+        } catch (err) {
+          console.error("[Nexus E2EE] Failed to re-distribute sender key:", err);
+        }
       },
       disconnect: (reason) => {
         console.log("[Socket] Disconnected:", reason);

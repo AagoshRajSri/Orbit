@@ -5,6 +5,9 @@ import { getSocket } from "../lib/socket";
 import { useAuthStore } from "./useAuthStore";
 import { normalizeId, isMatchObj } from "../lib/idUtils";
 
+// Track re-distribution requests sent per session to avoid spamming
+const requestedKeyResends = new Set();
+
 // ── Decrypt a single Nexus message (v4 Sender Key) ───────────────────────────
 const decryptSingleNexusMessage = async (m, userId) => {
   // Use .id to prefer the obfuscated ID when loading the key
@@ -24,6 +27,14 @@ const decryptSingleNexusMessage = async (m, userId) => {
     const senderKey = await loadSenderKey(nexusId, sIdStr);
 
     if (!senderKey) {
+      const pairKey = `${nexusId}:${sIdStr}`;
+      if (!requestedKeyResends.has(pairKey)) {
+        requestedKeyResends.add(pairKey);
+        const socket = getSocket();
+        if (socket?.connected) {
+          socket.emit("request-sender-key-distribution", { nexusId, targetUserId: sIdStr });
+        }
+      }
       return { ...m, text: "🔒 [Sender key missing — sync required]", isMe: false };
     }
 
@@ -837,8 +848,19 @@ export const useNexusStore = create((set, get) => ({
             opkPriv = await consumeOneTimePrekey(myId, opkId);
             if (!opkPriv) {
               // OPK consumed or rotated during re-login — can't decrypt this distribution.
-              // The sender will need to re-distribute when they send the next message.
-              console.warn("[Nexus E2EE] OPK", opkId, "not found (consumed or rotated), skipping distribution from", d.senderId);
+              // Request the sender to re-distribute their key with fresh OPKs.
+              const pairKey = `${nexusId}:${d.senderId}`;
+              if (!requestedKeyResends.has(pairKey)) {
+                requestedKeyResends.add(pairKey);
+                const socket = getSocket();
+                if (socket?.connected) {
+                  socket.emit("request-sender-key-distribution", {
+                    nexusId,
+                    targetUserId: d.senderId,
+                  });
+                }
+                console.warn("[Nexus E2EE] Requested sender key re-distribution from", d.senderId);
+              }
               continue;
             }
           }

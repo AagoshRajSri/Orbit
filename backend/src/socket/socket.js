@@ -392,6 +392,23 @@ export const initializeSocketIO = (io) => {
       }
     });
 
+    socket.on("request-sender-key-distribution", async ({ nexusId, targetUserId }) => {
+      try {
+        const realNexusId = getRealId(nexusId);
+        const nexus = await Nexus.findById(realNexusId);
+        if (!nexus || !nexus.members.some(m => m.toString() === socket.userId)) {
+          console.warn(`[Socket] Non-member ${socket.userId} tried to request sender key for ${realNexusId}`);
+          return;
+        }
+        if (!targetUserId || !nexus.members.some(m => m.toString() === targetUserId)) {
+          return;
+        }
+        emitToUser(targetUserId, "sender-key-distribution-requested", { nexusId });
+      } catch (e) {
+        console.error("[Socket] sender-key-distribution error:", e);
+      }
+    });
+
     socket.on("leaveNexusRoom", async (nexusId) => {
       try {
         const realNexusId = getRealId(nexusId);

@@ -77,6 +77,11 @@ export const sanitizeForOrbit = (obj) => {
     return obj;
   }
 
+  // Handle ObjectIds directly to prevent spreading their internal buffers
+  if (obj !== null && typeof obj === 'object' && obj.constructor && obj.constructor.name === 'ObjectId') {
+    return obfuscateId(obj.toString());
+  }
+
   if (obj !== null && typeof obj === 'object') {
     // If it's a Mongoose document, convert to object first
     const newObj = obj.toObject ? obj.toObject() : { ...obj };
@@ -99,7 +104,8 @@ export const sanitizeForOrbit = (obj) => {
         newObj[key] = val;
       }
 
-      if (key.endsWith('Id') && typeof val === 'string' && val.length > 20 && !val.startsWith("orb_")) {
+      const EXCLUDED_IDS = ['opkId', 'oneTimePrekeyId', 'signedPrekeyId', 'idempotencyKey'];
+      if (key.endsWith('Id') && typeof val === 'string' && val.length > 20 && !val.startsWith("orb_") && !EXCLUDED_IDS.includes(key)) {
         newObj[key] = obfuscateId(val);
       } else if (val !== null && typeof val === 'object' && key !== '_id' && key !== 'id') {
         newObj[key] = sanitizeForOrbit(val);

@@ -801,8 +801,9 @@ export const getSenderKeyDistributions = async (req, res) => {
 
     for (const d of sanitized) {
       const id = d._id?.toString() || d.id;
-      if (id && rawOpkIds.has(id) && d.x3dh) {
-        d.x3dh.opkId = rawOpkIds.get(id);
+      const realId = getRealId(id);
+      if (realId && rawOpkIds.has(realId) && d.x3dh) {
+        d.x3dh.opkId = rawOpkIds.get(realId);
       }
     }
 
@@ -874,7 +875,8 @@ export const getMemberPublicKeys = async (req, res) => {
     // Restore original oneTimePrekeyId — it's an internal key identifier,
     // not a database ObjectId, so sanitizeForOrbit must not obfuscate it.
     for (const member of sanitized) {
-      const original = rawOpkIds.get(member.userId);
+      const realId = getRealId(member.userId);
+      const original = rawOpkIds.get(realId);
       if (original) member.oneTimePrekeyId = original;
     }
 
