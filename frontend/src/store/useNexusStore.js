@@ -441,21 +441,25 @@ export const useNexusStore = create((set, get) => ({
         const { ciphertext, updatedSenderKey } = await senderKeyEncrypt(senderKey, payload);
         await saveSenderKey(nexusId, userId, updatedSenderKey);
 
+        const apiPayload = { ...ciphertext, idempotencyKey };
+        // Only include plaintext if we somehow failed to encrypt (fallback)
+        if (!ciphertext || !ciphertext.ciphertext) {
+          apiPayload.text = messageData.text;
+          apiPayload.image = messageData.image;
+        }
+
         const res = await axiosInstance.post(
           `/nexus/${nexusId}/send`,
-          Object.fromEntries(
-            Object.entries({ ...messageData, ...ciphertext, idempotencyKey })
-              .filter(([, v]) => v != null)
-          )
+          Object.fromEntries(Object.entries(apiPayload).filter(([, v]) => v != null))
         );
         
         // Decrypt our own outgoing message (just sets status to sent and maps IDs)
         const finalMsg = await decryptSingleNexusMessage(res.data, userId);
         
-        // Replace optimistic msg
+        // Replace optimistic msg but preserve local plaintext since server no longer returns it
         set((state) => ({
           nexusMessages: state.nexusMessages.map(m => 
-            m.idempotencyKey === idempotencyKey ? finalMsg : m
+            m.idempotencyKey === idempotencyKey ? { ...finalMsg, text: m.text, image: m.image } : m
           )
         }));
       } catch (error) {
@@ -487,19 +491,23 @@ export const useNexusStore = create((set, get) => ({
 
     try {
       const targetId = msg.nexusId?._id || msg.nexusId;
+      const retryPayload = {
+        idempotencyKey: msg.idempotencyKey,
+        v: msg.v,
+        ciphertext: msg.ciphertext,
+        iv: msg.iv,
+        n: msg.n,
+        sig: msg.sig,
+      };
+      
+      // Fallback to sending plaintext only if not encrypted
+      if (!msg.ciphertext) {
+        retryPayload.text = msg.text;
+        retryPayload.image = msg.image;
+      }
+
       await axiosInstance.post(`/nexus/${targetId}/send`,
-        Object.fromEntries(
-          Object.entries({
-            text: msg.text,
-            image: msg.image,
-            idempotencyKey: msg.idempotencyKey,
-            v: msg.v,
-            ciphertext: msg.ciphertext,
-            iv: msg.iv,
-            n: msg.n,
-            sig: msg.sig,
-          }).filter(([, v]) => v != null)
-        )
+        Object.fromEntries(Object.entries(retryPayload).filter(([, v]) => v != null))
       );
     } catch (err) {
       if (err.code === 'ERR_NETWORK') {

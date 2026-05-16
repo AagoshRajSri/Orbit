@@ -408,6 +408,10 @@ const AppContent = () => {
     }
 
     if (nexusState.selectedNexusId) {
+      // Always sync nexus keys on reconnect to prevent decryption failures 
+      // if someone rotated their key while we were disconnected
+      nexusState.syncNexusKeys(nexusState.selectedNexusId);
+      
       if (nexusState.nexusMessages.length === 0) {
         nexusState.getNexusMessages(nexusState.selectedNexusId);
       }

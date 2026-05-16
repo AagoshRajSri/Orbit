@@ -480,16 +480,23 @@ export const sendNexusMessage = async (req, res) => {
       });
     }
 
-    const { text, image, idempotencyKey, v, ciphertext, iv, n, sig } = parsed.data;
+    let { text, image, idempotencyKey, v, ciphertext, iv, n, sig } = parsed.data;
+
+    // SECURITY BOUNDARY: Never accept plaintext alongside ciphertext
+    // If a client (or attacker) sends both, force E2EE compliance by stripping plaintext
+    if (ciphertext) {
+      text = undefined;
+      image = undefined;
+    }
 
     // Idempotency check: if we already saved this message, return it immediately
     if (idempotencyKey) {
-      const existing = await Message.findOne({ idempotencyKey }).populate(
+      const existing = await Message.findOne({ idempotencyKey, senderId }).populate(
         "senderId",
         "username profilePic"
       );
       if (existing) {
-        return res.status(200).json(existing);
+        return res.status(200).json(sanitizeForOrbit(existing));
       }
     }
 

@@ -148,7 +148,7 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    const {
+    let {
       text, image, idempotencyKey,
       // v3: Double Ratchet (flat wire format matching doubleRatchet.js output)
       v, ciphertext, dh, n, pn, x3dh,
@@ -157,13 +157,20 @@ export const sendMessage = async (req, res) => {
       // v1 legacy
       encryptedKeyForReceiver, encryptedKeyForSender,
     } = parsed.data;
+
+    // SECURITY BOUNDARY: Never accept plaintext alongside ciphertext
+    if (ciphertext || encryptedContent || encryptedKeyForReceiver) {
+      text = undefined;
+      image = undefined;
+    }
+
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
     const realReceiverId = getRealId(receiverId);
 
     // Idempotency check: if we already saved this message, return it immediately
     if (idempotencyKey) {
-      const existing = await Message.findOne({ idempotencyKey })
+      const existing = await Message.findOne({ idempotencyKey, senderId })
         .populate("senderId", "username profilePic")
         .populate("receiverId", "username profilePic")
         .lean();
@@ -177,7 +184,7 @@ export const sendMessage = async (req, res) => {
         } catch (e) {
           console.warn("Socket.IO replay emission failed:", e.message);
         }
-        return res.status(200).json(existing);
+        return res.status(200).json(sanitizeForOrbit(existing));
       }
     }
 
@@ -363,6 +370,10 @@ export const updateMessage = async (req, res) => {
 
     if (message.senderId.toString() !== userId.toString()) {
       return res.status(403).json({ success: false, error: { code: "FORBIDDEN", message: "Unauthorized" } });
+    }
+
+    if (message.ciphertext || message.encryptedContent || message.v) {
+      return res.status(400).json({ success: false, error: { code: "BAD_REQUEST", message: "Cannot edit an encrypted message in plaintext." } });
     }
 
     message.text = sanitizedText;

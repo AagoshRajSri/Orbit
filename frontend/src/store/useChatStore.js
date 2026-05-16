@@ -266,10 +266,28 @@ export const useChatStore = create((set, get) => ({
 
           } else if (msg.type === "nexus") {
             const targetId = msg.targetId || (msg.nexusId?._id) || msg.nexusId;
+            
+            // Re-run the nexus encryption logic
+            const { loadSenderKey, saveSenderKey } = await import("../lib/nexusKeyStore.js");
+            const { senderKeyEncrypt, generateSenderKey } = await import("../lib/nexusSenderKey.js");
+            const { useNexusStore } = await import("./useNexusStore.js");
+            const authUser = useAuthStore.getState().authUser;
+            const senderIdStr = authUser?._id?.toString();
+            
+            let senderKey = await loadSenderKey(targetId, senderIdStr);
+            if (!senderKey) {
+              senderKey = await generateSenderKey();
+              await saveSenderKey(targetId, senderIdStr, senderKey);
+              await useNexusStore.getState().distributeNexusKey(targetId, senderKey);
+            }
+            
+            const payload = JSON.stringify({ text: msg.text, image: msg.image });
+            const { ciphertext, updatedSenderKey } = await senderKeyEncrypt(senderKey, payload);
+            await saveSenderKey(targetId, senderIdStr, updatedSenderKey);
+            
             await axiosInstance.post(`/nexus/${targetId}/send`, {
-              text: msg.text,
-              image: msg.image,
-              idempotencyKey: msg.idempotencyKey
+              idempotencyKey: msg.idempotencyKey,
+              ...ciphertext
             });
           }
           await removeFromQueue(msg.idempotencyKey);
