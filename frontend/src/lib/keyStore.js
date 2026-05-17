@@ -13,7 +13,7 @@
  */
 
 const DB_NAME = "orbit-keystore";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "keys";
 
 let _db = null;
@@ -30,6 +30,12 @@ const openDB = () => {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: "id" });
       }
+      if (!db.objectStoreNames.contains("sender-keys")) {
+        db.createObjectStore("sender-keys", { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains("key-pairs")) {
+        db.createObjectStore("key-pairs", { keyPath: "id" });
+      }
     };
 
     req.onsuccess = (e) => {
@@ -37,9 +43,22 @@ const openDB = () => {
       resolve(_db);
     };
 
-    req.onerror = (e) => {
-      console.error("[KeyStore] Failed to open IndexedDB:", e.target.error);
-      reject(e.target.error);
+    req.onerror = (event) => {
+      const error = event.target?.error || event;
+      console.error("[KeyStore] Database connection failed:", error);
+      
+      if (error && (error.name === "VersionError" || error.message?.includes("version"))) {
+        console.warn("[KeyStore] Critical schema/version drift detected. Executing defensive local storage wipe...");
+        try {
+          // Force purge the conflicting local database container
+          indexedDB.deleteDatabase(DB_NAME);
+          // Immediately flush current window execution context to build clean state from scratch
+          window.location.reload();
+        } catch (wipeError) {
+          console.error("[KeyStore] Failed to automate recovery layout purge:", wipeError);
+        }
+      }
+      reject(error);
     };
   });
 };

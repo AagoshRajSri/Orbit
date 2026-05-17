@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo, memo } from "react";
 import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
+import toast from "../lib/toast";
 import { 
   Globe, Settings, User, LogOut, Music, Bell, Shield, Layers, 
   Coffee, Play, SkipForward, SkipBack, MessageCircle, Maximize2, 
@@ -684,6 +685,22 @@ const MobileTabBar = memo(({ activeTab }) => {
 const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, selectedUser, setSelectedUser, setNexusActionView, toggleHide, hiddenNexuses, forcedTab }) => {
   const navigate = useNavigate();
   const [internalTab, setInternalTab] = useState('orbits');
+  const [newContactName, setNewContactName] = useState("");
+  const addContact = useChatStore(state => state.addContact);
+
+  const handleAddContact = async () => {
+    const trimmed = newContactName.trim();
+    if (!trimmed) {
+      toast.error("Please enter a username");
+      return;
+    }
+    try {
+      await addContact(trimmed);
+      setNewContactName("");
+    } catch (err) {
+      // handled in store
+    }
+  };
 
   // Sync internal state when bottom nav (forcedTab) changes
   useEffect(() => {
@@ -771,6 +788,34 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
             </button>
             <button className="luxury-button btn-gold" onClick={() => setNexusActionView("create")} style={{ flex: 1 }}>
                + NEXUS
+            </button>
+          </div>
+        )}
+        {tab === 'contacts' && (
+          <div style={{ display: 'flex', gap: 8, background: '#F8F5EE', padding: '4px 6px', borderRadius: 16, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
+            <input 
+              type="text" 
+              placeholder="Username..." 
+              value={newContactName}
+              onChange={(e) => setNewContactName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                padding: '6px 8px',
+                fontSize: 12,
+                fontFamily: "'Inter', sans-serif",
+                color: LUXURY_COLORS.textPrimary
+              }}
+            />
+            <button 
+              onClick={handleAddContact}
+              className="luxury-button btn-gold" 
+              style={{ padding: '6px 12px', fontSize: 10, borderRadius: 12, height: 'auto', minHeight: 0 }}
+            >
+               + ADD
             </button>
           </div>
         )}
@@ -1656,7 +1701,8 @@ export function LightSettings({
   draftShowOnlineStatus, setDraftShowOnlineStatus,
   draftOrbitBehavior, setDraftOrbitBehavior,
   draftSoundSettings, setDraftSoundSettings,
-  isDirty, handleSave, handleReset, authUser
+  isDirty, handleSave, handleReset, authUser,
+  onLogout, onDeleteAccount
 }) {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -1835,6 +1881,23 @@ export function LightSettings({
             )}
           </div>
           )}
+          {/* Mobile Danger Zone (Logout / Delete Account) */}
+          <div className="lm-card" style={{ padding: '8px 16px', marginTop: 24, border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.02)' }}>
+            <div 
+              onClick={onLogout}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #EAE4D8', cursor: 'pointer' }}
+            >
+              <div style={{ fontSize: 15, fontWeight: 600, color: '#DC2626' }}>Log Out</div>
+              <span style={{ fontSize: 16 }}>⏻</span>
+            </div>
+            <div 
+              onClick={onDeleteAccount}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', cursor: 'pointer' }}
+            >
+              <div style={{ fontSize: 15, fontWeight: 600, color: '#DC2626' }}>Delete Account</div>
+              <span style={{ fontSize: 16 }}>🗑️</span>
+            </div>
+          </div>
         </div>
         <MobileTabBar activeTab="settings" />
       </div>

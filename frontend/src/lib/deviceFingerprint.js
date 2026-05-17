@@ -37,7 +37,20 @@ const openDB = () => {
       }
     };
     req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
-    req.onerror   = (e) => reject(e.target.error);
+    req.onerror   = (event) => {
+      const error = event.target?.error || event;
+      console.error("[DeviceRegistry] Database connection failed:", error);
+      if (error && (error.name === "VersionError" || error.message?.includes("version"))) {
+        console.warn("[DeviceRegistry] Critical schema/version drift detected. Executing defensive local storage wipe...");
+        try {
+          indexedDB.deleteDatabase(DB_NAME);
+          window.location.reload();
+        } catch (wipeError) {
+          console.error("[DeviceRegistry] Failed to automate recovery layout purge:", wipeError);
+        }
+      }
+      reject(error);
+    };
   });
 };
 

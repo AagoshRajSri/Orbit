@@ -19,7 +19,10 @@ export const pushToQueue = async (message) => {
     const tx = db.transaction("messages", "readwrite");
     const store = tx.objectStore("messages");
     store.put(message);
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      window.dispatchEvent(new CustomEvent('orbit:offline-queue-changed'));
+      resolve();
+    };
     tx.onerror = () => reject(tx.error);
   });
 };
@@ -46,7 +49,10 @@ export const removeFromQueue = async (idempotencyKey) => {
     const tx = db.transaction("messages", "readwrite");
     const store = tx.objectStore("messages");
     store.delete(idempotencyKey);
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      window.dispatchEvent(new CustomEvent('orbit:offline-queue-changed'));
+      resolve();
+    };
     tx.onerror = () => reject(tx.error);
   });
 };

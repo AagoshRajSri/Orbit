@@ -6,8 +6,31 @@ import { axiosInstance } from "./axios.jsx";
 let socket = null;
 let connectionState = "disconnected";
 let connectionError = null;
+let isConnectionBlockedByGate = false;
+
+// Subscribe to Zustand auth store changes
+useAuthStore.subscribe((state) => {
+  if (state.authUser) {
+    if (isConnectionBlockedByGate) {
+      console.log("[Socket.IO] Session verified. Clearing listener gate.");
+      isConnectionBlockedByGate = false;
+    }
+  }
+});
 
 export const getSocket = () => {
+  if (isConnectionBlockedByGate) {
+    console.warn("[Socket.IO] Connection blocked by listener gate. Awaiting successful authentication...");
+    return new Proxy({}, {
+      get: (target, prop) => {
+        if (prop === "on" || prop === "off" || prop === "emit") {
+          return () => {};
+        }
+        return undefined;
+      }
+    });
+  }
+
   if (socket) return socket;
 
   const authState = useAuthStore.getState();
@@ -42,22 +65,26 @@ export const getSocket = () => {
     connectionError = error.message;
     console.error("[Socket.IO] Connection error:", error.message);
     
-    if (error.message.includes("No identity established") || (error.message.includes("Authentication rejected") && !error.message.includes("Token expired"))) {
+    if (
+      error.message.includes("No identity established") || 
+      error.message.includes("Access Denied") || 
+      (error.message.includes("Authentication rejected") && !error.message.includes("Token expired"))
+    ) {
       const auth = useAuthStore.getState();
       
-      // Don't nuke the session if we're still checking it
       if (auth.isCheckingAuth) {
         console.warn("[Socket.IO] Identity missing but auth check in progress - waiting...");
         return;
       }
 
-      // Only logout if we have a user but the socket says no
-      if (auth.authUser) {
-        console.warn("[Socket.IO] No identity - clearing session and redirecting to login");
-        auth.logout();
-        if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
-          window.location.href = "/login";
-        }
+      console.warn("[Socket.IO] Authentication rejected or No identity. Wiping credentials and locking gate.");
+      isConnectionBlockedByGate = true;
+      disconnectSocket();
+      
+      useAuthStore.setState({ socketToken: null, sessionId: null, authUser: null });
+      
+      if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+        window.location.href = "/login";
       }
       return;
     }
@@ -69,6 +96,16 @@ export const getSocket = () => {
       } catch (err) {
         console.warn("[Socket.IO] Token refresh triggered by socket failed.");
       }
+    }
+  });
+
+  socket.on("Access Denied", () => {
+    console.warn("[Socket.IO] Received Access Denied event from backend. Wiping credentials and locking gate.");
+    isConnectionBlockedByGate = true;
+    disconnectSocket();
+    useAuthStore.setState({ socketToken: null, sessionId: null, authUser: null });
+    if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+      window.location.href = "/login";
     }
   });
 
@@ -88,6 +125,10 @@ export const disconnectSocket = () => {
 };
 
 export const updateSocketToken = (newToken) => {
+  if (isConnectionBlockedByGate) {
+    console.warn("[Socket.IO] updateSocketToken ignored because connection is blocked by gate.");
+    return;
+  }
   if (!socket) return;
 
   socket.auth = { token: newToken };
@@ -100,6 +141,10 @@ export const updateSocketToken = (newToken) => {
 };
 
 export const reconnectSocket = () => {
+  if (isConnectionBlockedByGate) {
+    console.warn("[Socket.IO] reconnectSocket ignored because connection is blocked by gate.");
+    return null;
+  }
   const authState = useAuthStore.getState();
   const token = authState.socketToken;
 

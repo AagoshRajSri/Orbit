@@ -9,8 +9,8 @@ import { z } from "zod";
 
 const messageSchema = z
   .object({
-    text: z.string().max(2000).optional(),
-    image: z.string().max(5000000).optional(),
+    text: z.string().max(2000).nullable().optional(),
+    image: z.string().max(5000000).nullable().optional(),
     idempotencyKey: z.string().optional(),
     // ── v3: Double Ratchet fields ───────────────────────────────────────────────
     v: z.number().int().min(1).max(10).optional(),

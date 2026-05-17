@@ -29,29 +29,61 @@ export const useChatStore = create((set, get) => ({
   selectedConversationType: null, // "direct" or "nexus" (though only "direct" here)
 
   getUsers: async () => {
+    const authStore = useAuthStore.getState();
+    if (!authStore.authUser || authStore.isCheckingAuth) return;
     set({ isUsersLoading: true });
     try {
+      // 1. Fetch contacts list and aliases from the database
+      const contactsRes = await axiosInstance.get("/auth/contacts");
+      const dbContacts = contactsRes.data.contacts || [];
+      const dbContactIds = contactsRes.data.contactIds || [];
+      const dbAliases = contactsRes.data.aliases || {};
+
+      // 2. Fetch sidebar/all users
       const res = await axiosInstance.get("/message/users");
-      const users = res.data.data || [];
-      const userIds = users.map((user) => user._id.toString());
+      const allUsers = res.data.data || [];
+
+      // Combine both lists to ensure any contact in db is also in state.users
+      const usersMap = new Map();
+      allUsers.forEach(u => usersMap.set(u._id.toString(), u));
+      dbContacts.forEach(u => {
+        if (!usersMap.has(u._id.toString())) {
+          usersMap.set(u._id.toString(), u);
+        }
+      });
+      const combinedUsers = Array.from(usersMap.values());
+
       set((state) => ({
-        users: users.map(u => {
+        users: combinedUsers.map(u => {
           const existing = state.users.find(eu => eu._id === u._id);
-          // Prefer server unreadCount if available, else keep existing local count
           return { ...u, unreadCount: u.unreadCount !== undefined ? u.unreadCount : (existing?.unreadCount || 0) };
         }),
-        contactList: state.contactList?.length ? state.contactList : userIds,
-        // preserve existing alias map
-        contactAliases: state.contactAliases || {},
+        contactList: dbContactIds,
+        contactAliases: dbAliases,
       }));
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load users");
+      console.error("[getUsers] failed:", error.message);
+      // Fallback if not loaded
+      try {
+        const res = await axiosInstance.get("/message/users");
+        const allUsers = res.data.data || [];
+        set({
+          users: allUsers,
+          contactList: allUsers.map(u => u._id.toString()),
+          contactAliases: {},
+        });
+      } catch (e) {
+        toast.error(error.response?.data?.message || "Failed to load contacts");
+      }
     } finally {
       set({ isUsersLoading: false });
     }
   },
 
   getMessages: async (userId) => {
+    const authStore = useAuthStore.getState();
+    if (!authStore.authUser || authStore.isCheckingAuth) return;
+    
     if (prefetchExpirations.has(userId)) {
       clearTimeout(prefetchExpirations.get(userId));
       prefetchExpirations.delete(userId);
@@ -107,6 +139,9 @@ export const useChatStore = create((set, get) => ({
   },
 
   loadMoreMessages: async (userId) => {
+    const authStore = useAuthStore.getState();
+    if (!authStore.authUser || authStore.isCheckingAuth) return;
+    
     const { messages, isLoadingMoreParams, hasMoreMessages } = get();
     if (isLoadingMoreParams || !hasMoreMessages || messages.length === 0) return;
 
@@ -210,7 +245,7 @@ export const useChatStore = create((set, get) => ({
     // 2. Fire-and-forget background encryption & send
     (async () => {
       try {
-        const encryptedWire = await e2eeService.encryptOutgoing(userId, text, image);
+        const encryptedWire = await e2eeService.encryptOutgoing(userId, text, image, idempotencyKey);
         const res = await axiosInstance.post(`/message/send/${userId}`, {
           idempotencyKey,
           ...encryptedWire,
@@ -257,12 +292,21 @@ export const useChatStore = create((set, get) => ({
         try {
           if (msg.type === "direct") {
             const targetId = (msg.targetId || msg.receiverId?._id || msg.receiverId).toString();
-            const encryptedWire = await e2eeService.encryptOutgoing(targetId, msg.text, msg.image);
+            const encryptedWire = await e2eeService.encryptOutgoing(targetId, msg.text, msg.image, msg.idempotencyKey);
 
-            await axiosInstance.post(`/message/send/${targetId}`, {
+            const res = await axiosInstance.post(`/message/send/${targetId}`, {
               idempotencyKey: msg.idempotencyKey,
               ...encryptedWire,
             });
+
+            // Update UI status to sent and preserve plaintext
+            set((state) => ({
+              messages: state.messages.map((m) =>
+                m.idempotencyKey === msg.idempotencyKey
+                  ? { ...m, _id: res.data._id, status: "sent", text: msg.text, image: msg.image }
+                  : m
+              ),
+            }));
 
           } else if (msg.type === "nexus") {
             const targetId = msg.targetId || (msg.nexusId?._id) || msg.nexusId;
@@ -270,7 +314,7 @@ export const useChatStore = create((set, get) => ({
             // Re-run the nexus encryption logic
             const { loadSenderKey, saveSenderKey } = await import("../lib/nexusKeyStore.js");
             const { senderKeyEncrypt, generateSenderKey } = await import("../lib/nexusSenderKey.js");
-            const { useNexusStore } = await import("./useNexusStore.js");
+            const { useNexusStore: nexusStoreModule } = await import("./useNexusStore.js");
             const authUser = useAuthStore.getState().authUser;
             const senderIdStr = authUser?._id?.toString();
             
@@ -278,17 +322,26 @@ export const useChatStore = create((set, get) => ({
             if (!senderKey) {
               senderKey = await generateSenderKey();
               await saveSenderKey(targetId, senderIdStr, senderKey);
-              await useNexusStore.getState().distributeNexusKey(targetId, senderKey);
+              await nexusStoreModule.getState().distributeNexusKey(targetId, senderKey);
             }
             
             const payload = JSON.stringify({ text: msg.text, image: msg.image });
             const { ciphertext, updatedSenderKey } = await senderKeyEncrypt(senderKey, payload);
             await saveSenderKey(targetId, senderIdStr, updatedSenderKey);
             
-            await axiosInstance.post(`/nexus/${targetId}/send`, {
+            const res = await axiosInstance.post(`/nexus/${targetId}/send`, {
               idempotencyKey: msg.idempotencyKey,
               ...ciphertext
             });
+
+            // Update UI status to sent and preserve plaintext in useNexusStore
+            nexusStoreModule.setState((state) => ({
+              nexusMessages: state.nexusMessages.map((m) =>
+                m.idempotencyKey === msg.idempotencyKey
+                  ? { ...m, _id: res.data._id, status: "sent", text: msg.text, image: msg.image }
+                  : m
+              ),
+            }));
           }
           await removeFromQueue(msg.idempotencyKey);
         } catch (err) {
@@ -319,11 +372,19 @@ export const useChatStore = create((set, get) => ({
     // Fire-and-forget background retry
     (async () => {
       try {
-        const encryptedWire = await e2eeService.encryptOutgoing(targetId, msg.text, msg.image);
-        await axiosInstance.post(`/message/send/${targetId}`, {
+        const encryptedWire = await e2eeService.encryptOutgoing(targetId, msg.text, msg.image, idempotencyKey);
+        const res = await axiosInstance.post(`/message/send/${targetId}`, {
           idempotencyKey,
           ...encryptedWire,
         });
+
+        set((s) => ({
+          messages: s.messages.map((m) =>
+            m.idempotencyKey === idempotencyKey
+              ? { ...m, _id: res.data._id, status: "sent", text: msg.text, image: msg.image }
+              : m
+          ),
+        }));
       } catch (error) {
         console.error("[Retry][E2EE] Retry failed:", error);
         if (error.code === 'ERR_NETWORK') {
@@ -519,24 +580,73 @@ export const useChatStore = create((set, get) => ({
     }));
   },
 
-  addContact: (userId) =>
-    set((state) => ({
-      contactList: state.contactList.includes(userId)
-        ? state.contactList
-        : [...state.contactList, userId],
-    })),
+  addContact: async (userIdOrUsername) => {
+    try {
+      const isId = userIdOrUsername.startsWith("orb_") || userIdOrUsername.length === 24;
+      const payload = isId ? { contactId: userIdOrUsername } : { username: userIdOrUsername };
 
-  removeContact: (userId) =>
-    set((state) => ({
-      contactList: state.contactList.filter(
-        (id) => id.toString() !== userId.toString(),
-      ),
-    })),
+      const res = await axiosInstance.post("/auth/contacts", payload);
+      
+      const updatedContacts = res.data.contacts || [];
+      const updatedAliases = res.data.aliases || {};
+      const updatedIds = updatedContacts.map(c => c._id.toString());
 
-  renameContact: (userId, alias) =>
-    set((state) => ({
-      contactAliases: { ...state.contactAliases, [userId.toString()]: alias },
-    })),
+      set((state) => {
+        const usersMap = new Map();
+        state.users.forEach(u => usersMap.set(u._id.toString(), u));
+        updatedContacts.forEach(u => {
+          if (!usersMap.has(u._id.toString())) {
+            usersMap.set(u._id.toString(), u);
+          }
+        });
+
+        return {
+          users: Array.from(usersMap.values()),
+          contactList: updatedIds,
+          contactAliases: updatedAliases,
+        };
+      });
+
+      toast.success("Contact added");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add contact");
+      throw error;
+    }
+  },
+
+  removeContact: async (userId) => {
+    try {
+      const res = await axiosInstance.delete(`/auth/contacts/${userId}`);
+      const updatedContacts = res.data.contacts || [];
+      const updatedAliases = res.data.aliases || {};
+      const updatedIds = updatedContacts.map(c => c._id.toString());
+
+      set((state) => ({
+        contactList: updatedIds,
+        contactAliases: updatedAliases,
+      }));
+      toast.success("Contact removed");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to remove contact");
+    }
+  },
+
+  renameContact: async (userId, alias) => {
+    try {
+      const res = await axiosInstance.put(`/auth/contacts/${userId}`, { alias });
+      const updatedContacts = res.data.contacts || [];
+      const updatedAliases = res.data.aliases || {};
+      const updatedIds = updatedContacts.map(c => c._id.toString());
+
+      set((state) => ({
+        contactList: updatedIds,
+        contactAliases: updatedAliases,
+      }));
+      toast.success("Alias updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update alias");
+    }
+  },
 
   setContactList: (contactList) => set({ contactList }),
 

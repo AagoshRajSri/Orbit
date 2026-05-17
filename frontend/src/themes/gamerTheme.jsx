@@ -928,6 +928,22 @@ const GamingHeroAnimation = memo(() => {
 const Sidebar = memo(({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nexuses, isNexusesLoading, selectedNexus, selectedNexusId, setSelectedNexus, users, selectedUser, selectedUserId, setSelectedUser, nexusUnread, setNexusActionView, hiddenNexuses, toggleHide }) => {
   const navigate = useNavigate();
   const [tab, setTab] = useState("orbits");
+  const [newContactName, setNewContactName] = useState("");
+  const addContact = useChatStore(state => state.addContact);
+
+  const handleAddContact = async () => {
+    const trimmed = newContactName.trim();
+    if (!trimmed) {
+      toast.error("Please enter a username");
+      return;
+    }
+    try {
+      await addContact(trimmed);
+      setNewContactName("");
+    } catch (err) {
+      // Handled
+    }
+  };
 
   const [pinnedNexuses, setPinnedNexuses] = useState(() => {
     return JSON.parse(localStorage.getItem('gamer_pinned_nexuses') || '[]');
@@ -992,8 +1008,52 @@ const Sidebar = memo(({ sidebarRef, locked, onToggleLocked, onJoin, onNexus, nex
 
       {/* Action Hub */}
       <div style={{ display: "flex", gap: 8, position: "relative", zIndex: 2 }}>
-        <button onClick={onJoin} style={{ flex: 1, border: "1.5px solid rgba(0,245,212,0.4)", borderRadius: 4, padding: "7px 0", fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: "rgba(0,245,212,0.1)", color: "#00f5d4", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,245,212,0.2)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(0,245,212,0.1)"}>JOIN</button>
-        <button onClick={onNexus} style={{ flex: 1, border: "1.5px solid rgba(255,45,120,0.5)", borderRadius: 4, padding: "7px 0", fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: "rgba(255,45,120,0.15)", color: "#ff2d78", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,45,120,0.25)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,45,120,0.15)"}>+ NEXUS</button>
+        {tab === "orbits" ? (
+          <>
+            <button onClick={onJoin} style={{ flex: 1, border: "1.5px solid rgba(0,245,212,0.4)", borderRadius: 4, padding: "7px 0", fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: "rgba(0,245,212,0.1)", color: "#00f5d4", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,245,212,0.2)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(0,245,212,0.1)"}>JOIN</button>
+            <button onClick={onNexus} style={{ flex: 1, border: "1.5px solid rgba(255,45,120,0.5)", borderRadius: 4, padding: "7px 0", fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: "rgba(255,45,120,0.15)", color: "#ff2d78", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,45,120,0.25)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,45,120,0.15)"}>+ NEXUS</button>
+          </>
+        ) : (
+          <div style={{ display: "flex", gap: 8, width: "100%" }}>
+            <input 
+              type="text" 
+              placeholder="ADD CONTACT..." 
+              value={newContactName}
+              onChange={(e) => setNewContactName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+              style={{
+                flex: 1,
+                background: "rgba(4,2,18,0.9)",
+                border: "1.5px solid #00f5d4",
+                borderRadius: 4,
+                padding: "6px 10px",
+                fontSize: 10,
+                fontWeight: "bold",
+                fontFamily: "'Orbitron', monospace",
+                color: "#00f5d4",
+                outline: "none",
+                boxShadow: "inset 0 0 8px rgba(0,245,212,0.2)"
+              }}
+            />
+            <button 
+              onClick={handleAddContact}
+              style={{
+                border: "1.5px solid #ff2d78",
+                borderRadius: 4,
+                padding: "6px 12px",
+                fontSize: 10,
+                fontWeight: 900,
+                fontFamily: "'Orbitron', monospace",
+                background: "rgba(255,45,120,0.2)",
+                color: "#ff2d78",
+                cursor: "pointer",
+                boxShadow: "0 0 10px rgba(255,45,120,0.3)"
+              }}
+            >
+              + ADD
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Nexus / Contact List */}
@@ -1799,7 +1859,8 @@ export function GamerSettings({
   draftShowOnlineStatus, setDraftShowOnlineStatus,
   draftOrbitBehavior, setDraftOrbitBehavior,
   draftSoundSettings, setDraftSoundSettings,
-  isDirty, handleSave, handleReset, authUser
+  isDirty, handleSave, handleReset, authUser,
+  onLogout, onDeleteAccount
 }) {
   const [focusedTheme, setFocusedTheme] = useState(draftTheme);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -1830,6 +1891,17 @@ export function GamerSettings({
             <button onClick={handleReset} disabled={!isDirty} style={{ width: "100%", padding: "14px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: isDirty ? "#fff" : "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 700, fontFamily: "'Orbitron', monospace", cursor: isDirty ? "pointer" : "default", letterSpacing: "0.1em" }}>RESET</button>
             <button onClick={handleSave} disabled={!isDirty} style={{ width: "100%", padding: "14px", borderRadius: 8, background: isDirty ? "#00cfff" : "rgba(0,207,255,0.1)", border: isDirty ? "1px solid #00cfff" : "1px solid rgba(0,207,255,0.2)", color: isDirty ? "#000" : "rgba(0,207,255,0.4)", fontWeight: 900, fontSize: 12, fontFamily: "'Orbitron', monospace", cursor: isDirty ? "pointer" : "default", boxShadow: isDirty ? "0 0 15px rgba(0,207,255,0.4)" : "none", letterSpacing: "0.1em" }}>COMMIT</button>
           </div>
+          {isMobile && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, border: "1px solid rgba(255, 45, 120, 0.4)", padding: 16, borderRadius: 8, background: "rgba(255, 45, 120, 0.05)" }}>
+              <div style={{ fontSize: 10, color: "#ff2d78", fontWeight: "bold", fontFamily: "'Orbitron', monospace", letterSpacing: "0.15em", textAlign: "center" }}>⚠️ DANGER NODE</div>
+              <button onClick={onLogout} style={{ width: "100%", padding: "10px", borderRadius: 6, background: "rgba(255,45,120,0.1)", border: "1px solid rgba(255,45,120,0.3)", color: "#ff2d78", fontFamily: "'Orbitron', monospace", fontSize: 10, letterSpacing: "0.1em", cursor: "pointer" }}>
+                ABORT_MISSION
+              </button>
+              <button onClick={onDeleteAccount} style={{ width: "100%", padding: "10px", borderRadius: 6, background: "#ff2d78", border: "none", color: "#fff", fontFamily: "'Orbitron', monospace", fontSize: 10, fontWeight: "bold", letterSpacing: "0.1em", cursor: "pointer" }}>
+                TERMINATE_PROFILE
+              </button>
+            </div>
+          )}
         </NeonCard>
 
         {/* Content Area */}

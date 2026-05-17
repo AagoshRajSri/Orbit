@@ -5,6 +5,7 @@ import UniversalChatContainer from "../components/chat/UniversalChatContainer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore } from "../store/useChatStore";
+import toast from "../lib/toast";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "../store/useAuthStore";
@@ -745,6 +746,22 @@ const Sidebar = memo(function PastelSidebar({ sidebarRef, nexuses, isNexusesLoad
   const [activeTab, setActiveTab] = useState("orbits");
   const { play } = useSoundManager();
   const navigate = useNavigate();
+  const [newContactName, setNewContactName] = useState("");
+  const addContact = useChatStore(state => state.addContact);
+
+  const handleAddContact = async () => {
+    const trimmed = newContactName.trim();
+    if (!trimmed) {
+      toast.error("Please enter a username");
+      return;
+    }
+    try {
+      await addContact(trimmed);
+      setNewContactName("");
+    } catch (err) {
+      // Handled
+    }
+  };
 
   const [pinnedNexuses, setPinnedNexuses] = useState(() => {
     return JSON.parse(localStorage.getItem('pastel_pinned_nexuses') || '[]');
@@ -824,22 +841,64 @@ const Sidebar = memo(function PastelSidebar({ sidebarRef, nexuses, isNexusesLoad
       </div>
 
       <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
-        <button
-          onClick={() => setNexusActionView("join")}
-          style={{
-            flex: 1, border: "none", borderRadius: 14, padding: "8px 0",
-            fontSize: 11, fontWeight: 900, letterSpacing: "0.08em",
-            background: "#ffe4f2", color: "#e8338a", cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(255,180,220,0.2)"
-          }}># JOIN</button>
-        <button
-          onClick={() => setNexusActionView("create")}
-          style={{
-            flex: 1, border: "none", borderRadius: 14, padding: "8px 0",
-            fontSize: 11, fontWeight: 900, letterSpacing: "0.08em",
-            background: "linear-gradient(90deg, #ff9fd0, #c890f8)",
-            color: "white", cursor: "pointer", boxShadow: "0 4px 15px rgba(255,130,200,0.3)"
-          }}>+ NEXUS ✨</button>
+        {activeTab === "orbits" ? (
+          <>
+            <button
+              onClick={() => setNexusActionView("join")}
+              style={{
+                flex: 1, border: "none", borderRadius: 14, padding: "8px 0",
+                fontSize: 11, fontWeight: 900, letterSpacing: "0.08em",
+                background: "#ffe4f2", color: "#e8338a", cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(255,180,220,0.2)"
+              }}># JOIN</button>
+            <button
+              onClick={() => setNexusActionView("create")}
+              style={{
+                flex: 1, border: "none", borderRadius: 14, padding: "8px 0",
+                fontSize: 11, fontWeight: 900, letterSpacing: "0.08em",
+                background: "linear-gradient(90deg, #ff9fd0, #c890f8)",
+                color: "white", cursor: "pointer", boxShadow: "0 4px 15px rgba(255,130,200,0.3)"
+              }}>+ NEXUS ✨</button>
+          </>
+        ) : (
+          <div style={{ display: "flex", gap: 6, width: "100%" }}>
+            <input 
+              type="text" 
+              placeholder="Bloom new contact..." 
+              value={newContactName}
+              onChange={(e) => setNewContactName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+              style={{
+                flex: 1,
+                background: "rgba(255, 255, 255, 0.7)",
+                border: "1.5px solid #ffb4dc",
+                borderRadius: 14,
+                padding: "8px 12px",
+                fontSize: 11,
+                fontWeight: "bold",
+                color: "#8B6B8A",
+                outline: "none",
+                boxShadow: "0 2px 8px rgba(255, 180, 220, 0.15)"
+              }}
+            />
+            <button 
+              onClick={handleAddContact}
+              style={{
+                border: "none",
+                borderRadius: 14,
+                padding: "8px 16px",
+                fontSize: 11,
+                fontWeight: 900,
+                background: "linear-gradient(90deg, #ff9fd0, #c890f8)",
+                color: "white",
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(255,130,200,0.3)"
+              }}
+            >
+              + ADD
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Center Empty State */}
@@ -1853,7 +1912,8 @@ export function PastelSettings({
   draftShowOnlineStatus, setDraftShowOnlineStatus,
   draftOrbitBehavior, setDraftOrbitBehavior,
   draftSoundSettings, setDraftSoundSettings,
-  isDirty, handleSave, handleReset, authUser, navigate
+  isDirty, handleSave, handleReset, authUser, navigate,
+  onLogout, onDeleteAccount
 }) {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : true);
   useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
@@ -1923,6 +1983,17 @@ export function PastelSettings({
                   <span style={{ fontSize: 22 }}>{t.icon}</span> {t.label}
                 </button>
               ))}
+              {isMobile && (
+                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10, padding: 12, border: '2px dashed rgba(255, 100, 150, 0.3)', borderRadius: 20, background: 'rgba(255, 255, 255, 0.4)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 900, color: '#d060a8', textAlign: 'center' }}>⚠️ DANGER ZONE</div>
+                  <button onClick={onLogout} style={{ width: '100%', padding: '10px', background: 'rgba(255, 255, 255, 0.8)', border: '2px solid #ffb7b2', borderRadius: 15, color: '#d060a8', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
+                    LOG OUT ☁️
+                  </button>
+                  <button onClick={onDeleteAccount} style={{ width: '100%', padding: '10px', background: '#ffb7b2', border: 'none', borderRadius: 15, color: '#fff', fontWeight: 900, fontSize: 12, cursor: 'pointer' }}>
+                    DELETE ACCOUNT 🌸
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Content Area */}

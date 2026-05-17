@@ -736,11 +736,13 @@ export const publishSenderKeyDistributions = async (req, res) => {
           ephemeralKey: z.string(),
           opkId:        z.string().nullable().optional(),
         }),
-      })).min(1).max(500),
+      })).min(0).max(500),
     });
 
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
+      console.error("[Nexus Zod Error] Details:", JSON.stringify(parsed.error.issues, null, 2));
+      console.error("[Nexus Zod Error] Body received:", JSON.stringify(req.body, null, 2));
       return res.status(400).json({
         success: false,
         error: { code: "VALIDATION_ERROR", details: parsed.error.issues },
@@ -753,7 +755,10 @@ export const publishSenderKeyDistributions = async (req, res) => {
       return res.status(403).json({ success: false, error: { code: "FORBIDDEN", message: "Not a member" } });
     }
 
-    const { distributions } = parsed.data;
+    const { distributions = [] } = parsed.data;
+    if (distributions.length === 0) {
+      return res.status(200).json({ success: true, count: 0 });
+    }
 
     // Upsert each distribution — replace on key rotation
     const ops = distributions.map(({ recipientId, ciphertext, iv, x3dh }) => ({

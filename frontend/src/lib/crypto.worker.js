@@ -9,6 +9,7 @@ import {
 } from "./doubleRatchet.js";
 import { encryptMedia, decryptMedia } from "./mediaEncryption.js";
 import { API_URL } from "../config.js";
+import { saveLocalMessage, loadLocalMessage } from "./localMessageStore.js";
 
 // Utility to handle fetch with credentials
 const fetchBundle = async (recipientId) => {
@@ -35,7 +36,7 @@ self.addEventListener("message", async (e) => {
   
   try {
     if (type === "ENCRYPT_OUTGOING") {
-      const { authUserId, e2eePublicKey, recipientId, text, mediaArrayBuffer } = payload;
+      const { authUserId, e2eePublicKey, recipientId, text, mediaArrayBuffer, idempotencyKey } = payload;
       
       // 2. Strict Payload Type Validation
       if (
@@ -89,6 +90,11 @@ self.addEventListener("message", async (e) => {
       const { ciphertext: ratchetCipher, updatedSession } = await ratchetEncrypt(session, payloadObj);
       await saveSession(recipientId, updatedSession);
 
+      // Cache the plaintext locally mapped to idempotencyKey
+      if (idempotencyKey) {
+        await saveLocalMessage(null, text, mediaArrayBuffer, idempotencyKey);
+      }
+
       const result = {
         v: 3,
         ...ratchetCipher,
@@ -118,6 +124,36 @@ self.addEventListener("message", async (e) => {
       const senderId = (message.senderId?._id || message.senderId?.id || message.senderId)?.toString();
       const isMe = senderId === authUserId;
 
+      // 1. Try local plaintext cache lookup (heals lock icon / decryption failures and handles sender sent message history)
+      const cached = await loadLocalMessage(message._id, message.idempotencyKey);
+      if (cached) {
+        // If loaded by idempotencyKey but message._id wasn't cached yet, bind it now
+        if (message._id && message.idempotencyKey && cached.id !== message._id.toString()) {
+          await saveLocalMessage(message._id, cached.text, cached.image, message.idempotencyKey);
+        }
+        
+        let imageUrl = cached.image;
+        if (imageUrl instanceof ArrayBuffer) {
+          const blob = new Blob([imageUrl]);
+          imageUrl = URL.createObjectURL(blob);
+        } else if (imageUrl && typeof imageUrl === "object" && imageUrl.mediaKey) {
+          // Decrypt media on the fly using cached keys
+          try {
+            imageUrl = await decryptMedia(imageUrl.encryptedUrl, imageUrl.mediaKey, imageUrl.mediaIv);
+          } catch (err) {
+            console.error("[CryptoWorker] Failed to decrypt cached media:", err);
+            imageUrl = null;
+          }
+        }
+        
+        self.postMessage({
+          id,
+          success: true,
+          result: { ...message, text: cached.text, image: imageUrl, isMe }
+        });
+        return;
+      }
+
       if (!message.ciphertext && !message.encryptedContent) {
         self.postMessage({ id, success: true, result: { ...message, isMe } });
         return;
@@ -125,29 +161,43 @@ self.addEventListener("message", async (e) => {
 
       if (message.v === 3) {
         if (isMe) {
-          self.postMessage({ id, success: true, result: { ...message, isMe: true } });
+          self.postMessage({ 
+            id, 
+            success: true, 
+            result: { ...message, text: "🔒 [Plaintext not available on this device]", isMe: true } 
+          });
           return;
         }
 
         let session = await loadSession(senderId);
 
-        if (!session && message.x3dh) {
-          const spk = await getSignedPrekey(authUserId);
-          const opkPriv = message.x3dh.opkId
-            ? await consumeOneTimePrekey(authUserId, message.x3dh.opkId)
-            : null;
+        // If the message contains an X3DH header, it means the sender initiated
+        // a new session (e.g. because they reinstalled the app, cleared site data,
+        // or rotated their identity keys). We must discard our old session and
+        // establish a new receiver session using the X3DH parameters, otherwise
+        // we will fail to decrypt all future messages.
+        if (message.x3dh) {
+          const isNewInitiation = !session || session.lastX3dhEphemeralKey !== message.x3dh.ephemeralKey;
+          
+          if (isNewInitiation) {
+            const spk = await getSignedPrekey(authUserId);
+            const opkPriv = message.x3dh.opkId
+              ? await consumeOneTimePrekey(authUserId, message.x3dh.opkId)
+              : null;
 
-          if (spk) {
-            const SK = await x3dhReceiver({
-              recipientIdentityPrivateKey: keyPair.privateKey,
-              signedPrekeyPrivateKey: spk.privateKey,
-              oneTimePrekeyPrivateKey: opkPriv,
-              senderHeader: {
-                identityKey: message.x3dh.identityKey,
-                ephemeralKey: message.x3dh.ephemeralKey,
-              },
-            });
-            session = await initReceiverSession(SK, spk.privateKey, spk.publicKey);
+            if (spk) {
+              const SK = await x3dhReceiver({
+                recipientIdentityPrivateKey: keyPair.privateKey,
+                signedPrekeyPrivateKey: spk.privateKey,
+                oneTimePrekeyPrivateKey: opkPriv,
+                senderHeader: {
+                  identityKey: message.x3dh.identityKey,
+                  ephemeralKey: message.x3dh.ephemeralKey,
+                },
+              });
+              session = await initReceiverSession(SK, spk.privateKey, spk.publicKey);
+              session.lastX3dhEphemeralKey = message.x3dh.ephemeralKey;
+            }
           }
         }
 
@@ -162,6 +212,12 @@ self.addEventListener("message", async (e) => {
         if (decryptedPayload.mediaKey && decryptedPayload.mediaIv && message.image) {
           imageUrl = await decryptMedia(message.image, decryptedPayload.mediaKey, decryptedPayload.mediaIv);
         }
+
+        // Cache the decrypted plaintext locally so we never fail to decrypt it on reload
+        const cacheMedia = decryptedPayload.mediaKey 
+          ? { mediaKey: decryptedPayload.mediaKey, mediaIv: decryptedPayload.mediaIv, encryptedUrl: message.image } 
+          : null;
+        await saveLocalMessage(message._id, decryptedPayload.text, cacheMedia, message.idempotencyKey);
 
         const transferList = [];
         // `imageUrl` might be a blob url or an ArrayBuffer? Actually, let's see decryptMedia: it probably returns a blob URL if it was decrypted to a Blob. Wait, if it returns a blob URL we can't transfer it. Let's just transfer if it's an ArrayBuffer.
@@ -179,6 +235,11 @@ self.addEventListener("message", async (e) => {
       if (message.v === 2 || message.ephemeralPublicKey) {
         const { decryptMessage } = await import("./e2ee.js");
         const decrypted = await decryptMessage(message, keyPair.privateKey);
+        
+        if (decrypted) {
+          await saveLocalMessage(message._id, decrypted.text, decrypted.image, message.idempotencyKey);
+        }
+
         self.postMessage({ 
           id, 
           success: true, 

@@ -412,8 +412,8 @@ const AppContent = () => {
   }, [flushBuffers]);
 
   const syncConversationData = useCallback(() => {
-    const authUser = useAuthStore.getState().authUser;
-    if (!authUser) return;
+    const authStore = useAuthStore.getState();
+    if (!authStore.authUser || authStore.isCheckingAuth) return;
 
     const chatState = useChatStore.getState();
     const nexusState = useNexusStore.getState();

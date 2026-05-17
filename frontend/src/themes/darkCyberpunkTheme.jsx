@@ -609,6 +609,22 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
   const [tab, setTab] = useState("orbits");
   const navigate = useNavigate();
   const { play } = useSoundManager();
+  const [newContactName, setNewContactName] = useState("");
+  const addContact = useChatStore(state => state.addContact);
+
+  const handleAddContact = async () => {
+    const trimmed = newContactName.trim();
+    if (!trimmed) {
+      toast.error("Please enter a username");
+      return;
+    }
+    try {
+      await addContact(trimmed);
+      setNewContactName("");
+    } catch (err) {
+      // Handled
+    }
+  };
 
   const [pinnedNexuses, setPinnedNexuses] = useState(() => {
     return JSON.parse(localStorage.getItem('cyberpunk_pinned_nexuses') || '[]');
@@ -687,8 +703,53 @@ const Sidebar = memo(({ sidebarRef, synced, onToggleSync, onJoin, onNexus, nexus
 
       {/* Action btns */}
       <div style={{ display: "flex", gap: 4, position: "relative", zIndex: 2 }}>
-        <button onClick={() => { play("click"); onJoin(); }} style={{ flex: 1, border: `1px solid ${C}55`, borderRadius: 3, padding: "5px 0", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: `${C}0e`, color: "#60d8cc", cursor: "pointer" }}>JOIN</button>
-        <button onClick={() => { play("click"); onNexus(); }} style={{ flex: 1, border: `1px solid ${P}88`, borderRadius: 3, padding: "5px 0", fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: `linear-gradient(90deg,${P}22,${C}11)`, color: P, cursor: "pointer", boxShadow: `0 0 8px ${P}44` }}>+ NEXUS</button>
+        {tab === "orbits" ? (
+          <>
+            <button onClick={() => { play("click"); onJoin(); }} style={{ flex: 1, border: `1px solid ${C}55`, borderRadius: 3, padding: "5px 0", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: `${C}0e`, color: "#60d8cc", cursor: "pointer" }}>JOIN</button>
+            <button onClick={() => { play("click"); onNexus(); }} style={{ flex: 1, border: `1px solid ${P}88`, borderRadius: 3, padding: "5px 0", fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", fontFamily: "'Orbitron',monospace", background: `linear-gradient(90deg,${P}22,${C}11)`, color: P, cursor: "pointer", boxShadow: `0 0 8px ${P}44` }}>+ NEXUS</button>
+          </>
+        ) : (
+          <div style={{ display: "flex", gap: 6, width: "100%" }}>
+            <input 
+              type="text" 
+              placeholder="ADD CONTACT..." 
+              value={newContactName}
+              onChange={(e) => setNewContactName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+              style={{
+                flex: 1,
+                background: "rgba(10,0,20,0.6)",
+                border: `1px solid ${C}55`,
+                borderRadius: 3,
+                padding: "6px 8px",
+                fontSize: 10,
+                fontWeight: "bold",
+                fontFamily: "'Orbitron', monospace",
+                color: C,
+                outline: "none",
+                boxShadow: `inset 0 0 6px ${C}22`
+              }}
+            />
+            <button 
+              onClick={handleAddContact}
+              style={{
+                border: `1px solid ${M}88`,
+                borderRadius: 3,
+                padding: "6px 12px",
+                fontSize: 10,
+                fontWeight: 900,
+                letterSpacing: "0.08em",
+                fontFamily: "'Orbitron', monospace",
+                background: `${M}22`,
+                color: M,
+                cursor: "pointer",
+                boxShadow: `0 0 8px ${M}44`
+              }}
+            >
+              + ADD
+            </button>
+          </div>
+        )}
       </div>
 
       {/* List */}
@@ -1471,7 +1532,8 @@ export function CyberpunkSettings({
   draftShowOnlineStatus, setDraftShowOnlineStatus,
   draftOrbitBehavior, setDraftOrbitBehavior,
   draftSoundSettings, setDraftSoundSettings,
-  isDirty, handleSave, handleReset, authUser
+  isDirty, handleSave, handleReset, authUser,
+  onLogout, onDeleteAccount
 }) {
   const [focusedTheme, setFocusedTheme] = useState(draftTheme);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -1501,6 +1563,17 @@ export function CyberpunkSettings({
             <button onClick={handleReset} disabled={!isDirty} style={{ width: "100%", padding: "12px", borderRadius: 6, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, color: isDirty ? "#fff" : "rgba(255,255,255,0.2)", fontSize: 11, fontWeight: 700, fontFamily: "'Orbitron', monospace", cursor: isDirty ? "pointer" : "default", letterSpacing: "0.1em" }}>RESET</button>
             <button onClick={() => { play("click"); handleSave(); }} disabled={!isDirty} style={{ width: "100%", padding: "12px", borderRadius: 6, background: isDirty ? `linear-gradient(90deg,${C},${P})` : `${C}15`, border: `1px solid ${isDirty ? C : `${C}22`}`, color: isDirty ? "#000" : `${C}44`, fontWeight: 900, fontSize: 11, fontFamily: "'Orbitron', monospace", cursor: isDirty ? "pointer" : "default", boxShadow: isDirty ? `0 0 15px ${C}55` : "none", letterSpacing: "0.1em" }}>COMMIT</button>
           </div>
+          {isMobile && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, border: `1px solid ${P}44`, padding: 16, borderRadius: 8, background: "rgba(255, 0, 120, 0.05)" }}>
+              <div style={{ fontSize: 10, color: P, fontWeight: "bold", fontFamily: "'Orbitron', monospace", letterSpacing: "0.15em", textAlign: "center" }}>⚠️ DANGER SIGNAL</div>
+              <button onClick={onLogout} style={{ width: "100%", padding: "10px", borderRadius: 6, background: "rgba(255, 0, 120, 0.1)", border: `1px solid ${P}33`, color: P, fontFamily: "'Orbitron', monospace", fontSize: 10, letterSpacing: "0.1em", cursor: "pointer" }}>
+                ABORT_CONNECTION
+              </button>
+              <button onClick={onDeleteAccount} style={{ width: "100%", padding: "10px", borderRadius: 6, background: P, border: "none", color: "#fff", fontFamily: "'Orbitron', monospace", fontSize: 10, fontWeight: "bold", letterSpacing: "0.1em", cursor: "pointer" }}>
+                TERMINATE_IDENTITY
+              </button>
+            </div>
+          )}
         </NeonCard>
 
         {activeSection && (

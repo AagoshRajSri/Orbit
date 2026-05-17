@@ -15,6 +15,8 @@ import {
   Compass,
   Music,
   Activity,
+  LogOut,
+  Trash2,
 } from "lucide-react";
 import AnimationSettingsPanel from "../components/effects/AnimationSettingsPanel";
 import { useSoundManager } from "../hooks/useSoundManager";
@@ -105,6 +107,8 @@ const ToggleRow = ({
 const SettingsPage = () => {
   const navigate = useNavigate();
   const authUser = useAuthStore((s) => s.authUser);
+  const logout = useAuthStore((s) => s.logout);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const { theme: currentTheme, setTheme } = useThemeStore();
 
   const navItems = useMemo(
@@ -146,6 +150,12 @@ const SettingsPage = () => {
         icon: Shield,
         color: "text-red-400",
       },
+      {
+        key: "account",
+        label: "Account",
+        icon: LogOut,
+        color: "text-rose-500",
+      },
     ],
     [],
   );
@@ -154,6 +164,36 @@ const SettingsPage = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmationVal, setDeleteConfirmationVal] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (err) {
+      toast.error("Logout failed");
+    }
+  };
+
+  const handleDeleteAccountSubmit = async (e) => {
+    e.preventDefault();
+    if (!deleteConfirmationVal.trim()) {
+      toast.error("Confirmation is required");
+      return;
+    }
+    setIsDeleting(true);
+    const res = await deleteAccount(deleteConfirmationVal);
+    setIsDeleting(false);
+    if (res?.success) {
+      setIsDeleteModalOpen(false);
+      setDeleteConfirmationVal("");
+      navigate("/login");
+    }
+  };
 
   // Draft vs saved state (to power the sticky Save/Reset UX)
   const [savedDisplayName, setSavedDisplayName] = useState("");
@@ -431,93 +471,190 @@ const SettingsPage = () => {
 
   const isPastel = currentTheme === "pastel-dream";
 
+  const renderDeleteModal = () => {
+    if (!isDeleteModalOpen) return null;
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 99999,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)',
+        padding: 16
+      }}>
+        <div style={{
+          background: '#0a0a0c', border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: 20, width: '100%', maxWidth: 450, padding: 28,
+          boxShadow: '0 0 40px rgba(239, 68, 68, 0.15)',
+          fontFamily: "'Inter', sans-serif"
+        }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#ef4444', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            ⚠️ DANGER ZONE
+          </h2>
+          <p style={{ fontSize: 14, color: 'rgba(255, 255, 255, 0.8)', lineHeight: 1.6, marginBottom: 20 }}>
+            Are you absolutely sure you want to delete your account? This will permanently purge your identity, messages, group memberships, and cryptographic keys from our servers. This action is <strong>irreversible</strong>.
+          </p>
+          <form onSubmit={handleDeleteAccountSubmit}>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 8, letterSpacing: 1 }}>
+                CONFIRMATION CREDENTIAL
+              </label>
+              <input
+                type="password"
+                placeholder="Enter password or type 'CONFIRM'"
+                value={deleteConfirmationVal}
+                onChange={(e) => setDeleteConfirmationVal(e.target.value)}
+                required
+                style={{
+                  width: '100%', background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 10,
+                  padding: '12px 16px', color: '#fff', fontSize: 14, outline: 'none',
+                  transition: 'all 0.3s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ef4444'}
+                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => { setIsDeleteModalOpen(false); setDeleteConfirmationVal(""); }}
+                style={{
+                  padding: '10px 18px', background: 'transparent',
+                  border: '1px solid rgba(255, 255, 255, 0.15)', color: 'rgba(255, 255, 255, 0.7)',
+                  borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 600
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isDeleting}
+                style={{
+                  padding: '10px 20px', background: '#ef4444', border: 'none',
+                  color: 'white', borderRadius: 10, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 700,
+                  boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)'
+                }}
+              >
+                {isDeleting ? 'Purging...' : 'Delete Permanently'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   // Delegate rendering for high-fidelity themes
   if (currentTheme === "dark") {
     return (
-      <VampireSettings 
-        activeSection={activeSection} setActiveSection={setActiveSection}
-        draftTheme={draftTheme} setDraftTheme={setDraftTheme}
-        draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
-        draftBio={draftBio} setDraftBio={setDraftBio}
-        draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
-        draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
-        draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
-        draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
-        isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser} navigate={navigate}
-      />
+      <>
+        <VampireSettings 
+          activeSection={activeSection} setActiveSection={setActiveSection}
+          draftTheme={draftTheme} setDraftTheme={setDraftTheme}
+          draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
+          draftBio={draftBio} setDraftBio={setDraftBio}
+          draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
+          draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
+          draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
+          draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
+          isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser} navigate={navigate}
+          onLogout={handleLogout} onDeleteAccount={() => setIsDeleteModalOpen(true)}
+        />
+        {renderDeleteModal()}
+      </>
     );
   }
   if (currentTheme === "pastel-dream") {
     return (
-      <PastelSettings 
-        activeSection={activeSection} setActiveSection={setActiveSection}
-        draftTheme={draftTheme} setDraftTheme={setDraftTheme}
-        draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
-        draftBio={draftBio} setDraftBio={setDraftBio}
-        draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
-        draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
-        draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
-        draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
-        isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser} navigate={navigate}
-      />
+      <>
+        <PastelSettings 
+          activeSection={activeSection} setActiveSection={setActiveSection}
+          draftTheme={draftTheme} setDraftTheme={setDraftTheme}
+          draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
+          draftBio={draftBio} setDraftBio={setDraftBio}
+          draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
+          draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
+          draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
+          draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
+          isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser} navigate={navigate}
+          onLogout={handleLogout} onDeleteAccount={() => setIsDeleteModalOpen(true)}
+        />
+        {renderDeleteModal()}
+      </>
     );
   }
   if (currentTheme === "amoled-dark") {
     return (
-      <AmoledSettings 
-        activeSection={activeSection} setActiveSection={setActiveSection}
-        draftTheme={draftTheme} setDraftTheme={setDraftTheme}
-        draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
-        draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
-        draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
-        draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
-        draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
-        isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser}
-      />
+      <>
+        <AmoledSettings 
+          activeSection={activeSection} setActiveSection={setActiveSection}
+          draftTheme={draftTheme} setDraftTheme={setDraftTheme}
+          draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
+          draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
+          draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
+          draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
+          draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
+          isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser}
+          onLogout={handleLogout} onDeleteAccount={() => setIsDeleteModalOpen(true)}
+        />
+        {renderDeleteModal()}
+      </>
     );
   }
   if (currentTheme === "gamer-high-energy") {
     return (
-      <GamerSettings 
-        activeSection={activeSection} setActiveSection={setActiveSection}
-        draftTheme={draftTheme} setDraftTheme={setDraftTheme}
-        draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
-        draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
-        draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
-        draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
-        draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
-        isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser}
-      />
+      <>
+        <GamerSettings 
+          activeSection={activeSection} setActiveSection={setActiveSection}
+          draftTheme={draftTheme} setDraftTheme={setDraftTheme}
+          draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
+          draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
+          draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
+          draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
+          draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
+          isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser}
+          onLogout={handleLogout} onDeleteAccount={() => setIsDeleteModalOpen(true)}
+        />
+        {renderDeleteModal()}
+      </>
     );
   }
   if (currentTheme === "light") {
     return (
-      <LightSettings 
-        activeSection={activeSection} setActiveSection={setActiveSection}
-        draftTheme={draftTheme} setDraftTheme={setDraftTheme}
-        draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
-        draftBio={draftBio} setDraftBio={setDraftBio}
-        draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
-        draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
-        draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
-        draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
-        isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser}
-      />
+      <>
+        <LightSettings 
+          activeSection={activeSection} setActiveSection={setActiveSection}
+          draftTheme={draftTheme} setDraftTheme={setDraftTheme}
+          draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
+          draftBio={draftBio} setDraftBio={setDraftBio}
+          draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
+          draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
+          draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
+          draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
+          isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser}
+          onLogout={handleLogout} onDeleteAccount={() => setIsDeleteModalOpen(true)}
+        />
+        {renderDeleteModal()}
+      </>
     );
   }
   if (currentTheme === "neon-cyberpunk") {
     return (
-      <CyberpunkSettings 
-        activeSection={activeSection} setActiveSection={setActiveSection}
-        draftTheme={draftTheme} setDraftTheme={setDraftTheme}
-        draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
-        draftBio={draftBio} setDraftBio={setDraftBio}
-        draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
-        draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
-        draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
-        draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
-        isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser}
-      />
+      <>
+        <CyberpunkSettings 
+          activeSection={activeSection} setActiveSection={setActiveSection}
+          draftTheme={draftTheme} setDraftTheme={setDraftTheme}
+          draftDisplayName={draftDisplayName} setDraftDisplayName={setDraftDisplayName}
+          draftBio={draftBio} setDraftBio={setDraftBio}
+          draftNotifications={draftNotifications} setDraftNotifications={setDraftNotifications}
+          draftShowOnlineStatus={draftShowOnlineStatus} setDraftShowOnlineStatus={setDraftShowOnlineStatus}
+          draftOrbitBehavior={draftOrbitBehavior} setDraftOrbitBehavior={setDraftOrbitBehavior}
+          draftSoundSettings={draftSoundSettings} setDraftSoundSettings={setDraftSoundSettings}
+          isDirty={isDirty} handleSave={handleSave} handleReset={handleReset} authUser={authUser}
+          onLogout={handleLogout} onDeleteAccount={() => setIsDeleteModalOpen(true)}
+        />
+        {renderDeleteModal()}
+      </>
     );
   }
 
@@ -1238,6 +1375,38 @@ const SettingsPage = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* ACCOUNT */}
+                  {activeSection === "account" && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-lg font-bold">Account</h3>
+                        <p className="text-sm text-base-content/65 mt-1">Manage your session and account deletion.</p>
+                      </div>
+                      <div className="rounded-2xl border border-base-300/60 bg-base-100/60 backdrop-blur-md p-5 flex flex-col gap-3">
+                        <div>
+                          <div className="text-sm font-semibold">Sign Out</div>
+                          <div className="text-xs text-base-content/65 mt-1">End your current session on this device.</div>
+                        </div>
+                        <button className="btn btn-outline btn-error btn-sm w-full gap-2" onClick={handleLogout} type="button">
+                          <LogOut className="size-4" /> Log Out
+                        </button>
+                      </div>
+                      <div className="rounded-2xl border border-red-500/20 bg-red-500/5 backdrop-blur-md p-5 flex flex-col gap-3">
+                        <div>
+                          <div className="text-sm font-bold text-red-400 flex items-center gap-2">
+                            <Trash2 className="size-4" /> Danger Zone
+                          </div>
+                          <div className="text-xs text-base-content/65 mt-1">
+                            Permanently delete your account, messages, cryptographic keys, and all associated data. This is <strong>irreversible</strong>.
+                          </div>
+                        </div>
+                        <button className="btn btn-error btn-sm w-full gap-2" onClick={() => setIsDeleteModalOpen(true)} type="button">
+                          <Trash2 className="size-4" /> Delete My Account
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Sticky Save Bar */}
@@ -1274,6 +1443,15 @@ const SettingsPage = () => {
                       </div>
                     </div>
                   )}
+                  {/* Mobile-only pinned logout + delete bar */}
+                  <div className="lg:hidden border-t border-base-300/40 bg-base-100/90 backdrop-blur-md px-4 py-3 flex gap-2">
+                    <button className="flex-1 btn btn-outline btn-sm gap-2" onClick={handleLogout} type="button">
+                      <LogOut className="size-4" /> Log Out
+                    </button>
+                    <button className="flex-1 btn btn-error btn-outline btn-sm gap-2" onClick={() => setIsDeleteModalOpen(true)} type="button">
+                      <Trash2 className="size-4" /> Delete Account
+                    </button>
+                  </div>
                 </div>
               </section>
             </div>
@@ -1375,6 +1553,7 @@ const SettingsPage = () => {
             </div>
           </div>
         )}
+        {renderDeleteModal()}
       </div>
     </OrbitalPageWrapper>
   );

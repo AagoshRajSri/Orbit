@@ -436,6 +436,23 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
   const orbits = ["# NEXUS PRIME", "# DARKWEB", "# CONSTELLATION", "# SHADOW OPS"];
   const contacts = [["CIPHER", "⚡", "#C6A06E"], ["NOVA", "◈", "#4ECDC4"], ["PHANTOM", "☽", "#9B59B6"], ["AXIOM", "▲", "#E74C3C"]];
 
+  const [newContactName, setNewContactName] = useState("");
+  const addContact = useChatStore(state => state.addContact);
+
+  const handleAddContact = async () => {
+    const trimmed = newContactName.trim();
+    if (!trimmed) {
+      toast.error("Please enter a username");
+      return;
+    }
+    try {
+      await addContact(trimmed);
+      setNewContactName("");
+    } catch (err) {
+      // Handled
+    }
+  };
+
   const [pinnedNexuses, setPinnedNexuses] = useState(() => {
     return JSON.parse(localStorage.getItem('amoled_pinned_nexuses') || '[]');
   });
@@ -505,12 +522,54 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          {[["+ JOIN ENGINE", "gold", onJoin], ["✦ NEXUS HUB", "teal", onNexus]].map(([l, c, handler]) => (
-            <button key={l} onClick={handler} style={{
-              flex: 1, padding: "8px 6px", borderRadius: 7, fontSize: 9.5, letterSpacing: 1.8, cursor: "pointer", fontFamily: "Orbitron,sans-serif",
-              background: c === "teal" ? "rgba(78,205,196,.1)" : "rgba(198,160,110,.1)", border: `1px solid ${c === "teal" ? "rgba(78,205,196,.4)" : "rgba(198,160,110,.4)"}`, color: c === "teal" ? "#4ECDC4" : "#C6A06E", transition: "all .2s"
-            }}>{l}</button>
-          ))}
+          {activeTab === "orbits" ? (
+            [["+ JOIN ENGINE", "gold", onJoin], ["✦ NEXUS HUB", "teal", onNexus]].map(([l, c, handler]) => (
+              <button key={l} onClick={handler} style={{
+                flex: 1, padding: "8px 6px", borderRadius: 7, fontSize: 9.5, letterSpacing: 1.8, cursor: "pointer", fontFamily: "Orbitron,sans-serif",
+                background: c === "teal" ? "rgba(78,205,196,.1)" : "rgba(198,160,110,.1)", border: `1px solid ${c === "teal" ? "rgba(78,205,196,.4)" : "rgba(198,160,110,.4)"}`, color: c === "teal" ? "#4ECDC4" : "#C6A06E", transition: "all .2s"
+              }}>{l}</button>
+            ))
+          ) : (
+            <div style={{ display: "flex", gap: 8, width: "100%" }}>
+              <input 
+                type="text" 
+                placeholder="ADD NEURAL CONTACT..." 
+                value={newContactName}
+                onChange={(e) => setNewContactName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+                style={{
+                  flex: 1,
+                  background: "rgba(0,0,0,0.8)",
+                  border: "1.5px solid rgba(198,160,110,0.5)",
+                  borderRadius: 7,
+                  padding: "6px 10px",
+                  fontSize: 10,
+                  fontWeight: "bold",
+                  fontFamily: "'Orbitron', sans-serif",
+                  color: "#C6A06E",
+                  outline: "none",
+                  boxShadow: "inset 0 0 10px rgba(198,160,110,0.15)"
+                }}
+              />
+              <button 
+                onClick={handleAddContact}
+                style={{
+                  border: "1.5px solid #4ECDC4",
+                  borderRadius: 7,
+                  padding: "6px 12px",
+                  fontSize: 10,
+                  fontWeight: 900,
+                  fontFamily: "'Orbitron', sans-serif",
+                  background: "rgba(78,205,196,0.2)",
+                  color: "#4ECDC4",
+                  cursor: "pointer",
+                  boxShadow: "0 0 15px rgba(78,205,196,0.3)"
+                }}
+              >
+                + ADD
+              </button>
+            </div>
+          )}
         </div>
       </div>
       {/* List */}
@@ -1195,7 +1254,8 @@ export function AmoledSettings({
   draftShowOnlineStatus, setDraftShowOnlineStatus,
   draftOrbitBehavior, setDraftOrbitBehavior,
   draftSoundSettings, setDraftSoundSettings,
-  isDirty, handleSave, handleReset, authUser
+  isDirty, handleSave, handleReset, authUser,
+  onLogout, onDeleteAccount
 }) {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -1233,7 +1293,7 @@ export function AmoledSettings({
             <button onClick={handleSave} disabled={!isDirty} style={{ padding: "8px 16px", background: isDirty ? "rgba(78,205,196,.1)" : "rgba(78,205,196,.02)", border: isDirty ? "1px solid #4ECDC4" : "1px solid rgba(78,205,196,.2)", color: isDirty ? "#4ECDC4" : "rgba(78,205,196,.4)", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: isDirty ? "pointer" : "default", boxShadow: isDirty ? "0 0 10px rgba(78,205,196,.2)" : "none" }}>
               COMMIT CHANGES
             </button>
-            <button onClick={useAuthStore.getState().logout} style={{ padding: "8px 16px", background: "rgba(255,85,85,.05)", border: "1px solid rgba(255,85,85,.3)", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer" }}>
+            <button onClick={onLogout} style={{ padding: "8px 16px", background: "rgba(255,85,85,.05)", border: "1px solid rgba(255,85,85,.3)", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer" }}>
               LOGOUT
             </button>
           </div>
@@ -1407,8 +1467,21 @@ export function AmoledSettings({
           </div>
           )}
         </div>
+        </div>
+        {isMobile && (
+          <div className="oa-card" style={{ width: "100%", padding: "20px", display: "flex", flexDirection: "column", gap: 12, border: "1px solid rgba(255, 85, 85, 0.3)", background: "rgba(255, 85, 85, 0.02)", marginTop: 24, zIndex: 10, position: 'relative' }}>
+            <div className="oa-orbitron" style={{ fontSize: 11, color: "#FF5555", letterSpacing: 2, marginBottom: 4 }}>⚠️ DANGER NODE</div>
+            <div style={{ display: 'flex', gap: 12, width: '100%', flexWrap: 'wrap' }}>
+              <button onClick={onLogout} style={{ flex: 1, minWidth: 120, padding: "12px", background: "rgba(255,85,85,.05)", border: "1px solid rgba(255,85,85,.3)", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer" }}>
+                LOGOUT FROM TERMINAL
+              </button>
+              <button onClick={onDeleteAccount} style={{ flex: 1, minWidth: 120, padding: "12px", background: "rgba(255,85,85,.15)", border: "1px solid #FF5555", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer", fontWeight: "bold" }}>
+                DELETE CORE IDENTITY
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
   );
 }
 
@@ -1488,7 +1561,7 @@ export function AmoledProfile() {
           <button onClick={() => navigate("/")} style={{ background: "transparent", color: "rgba(198,160,110,.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'Share Tech Mono', monospace", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.6)"}>
             ← RETURN TO ORBIT
           </button>
-          <button onClick={useAuthStore.getState().logout} style={{ padding: "8px 16px", background: "rgba(255,85,85,.05)", border: "1px solid rgba(255,85,85,.3)", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer" }}>
+          <button onClick={async () => { await useAuthStore.getState().logout(); navigate("/login"); }} style={{ padding: "8px 16px", background: "rgba(255,85,85,.05)", border: "1px solid rgba(255,85,85,.3)", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer" }}>
             LOGOUT
           </button>
         </div>
@@ -1552,6 +1625,7 @@ export function AmoledProfile() {
    AMOLED SPOTIFY
 ───────────────────────────────────────────── */
 export function AmoledSpotify() {
+  const navigate = useNavigate();
   const { spotifyLinked, currentTrack, isPlaying, pausePlayback, playTrack, skipNext, skipPrevious } = useSpotifyStore(useShallow(state => ({ spotifyLinked: state.spotifyLinked, currentTrack: state.currentTrack, isPlaying: state.isPlaying, pausePlayback: state.pausePlayback, playTrack: state.playTrack, skipNext: state.skipNext, skipPrevious: state.skipPrevious })));
   const [playing, setPlaying] = useState(isPlaying || false);
   useEffect(() => { setPlaying(isPlaying); }, [isPlaying]);
@@ -1565,7 +1639,7 @@ export function AmoledSpotify() {
           <button onClick={() => window.location.href = "/"} style={{ background: "transparent", color: "rgba(198,160,110,.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'Share Tech Mono', monospace", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "#C6A06E"} onMouseLeave={e => e.currentTarget.style.color = "rgba(198,160,110,.6)"}>
             ← RETURN TO ORBIT
           </button>
-          <button onClick={useAuthStore.getState().logout} style={{ padding: "8px 16px", background: "rgba(255,85,85,.05)", border: "1px solid rgba(255,85,85,.3)", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer" }}>
+          <button onClick={async () => { await useAuthStore.getState().logout(); navigate("/login"); }} style={{ padding: "8px 16px", background: "rgba(255,85,85,.05)", border: "1px solid rgba(255,85,85,.3)", color: "#FF5555", borderRadius: 6, fontFamily: "Orbitron, sans-serif", fontSize: 10, letterSpacing: 1.5, cursor: "pointer" }}>
             LOGOUT
           </button>
         </div>

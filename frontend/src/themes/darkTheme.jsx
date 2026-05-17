@@ -1140,6 +1140,23 @@ const VampireSidebar = memo(({
     togglePin, updateColor, users, selectedUser, navigate, pinnedNexuses,
     hiddenNexuses, toggleHide
 }) => {
+    const [newContactName, setNewContactName] = useState("");
+    const addContact = useChatStore(state => state.addContact);
+
+    const handleAddContact = async () => {
+        const trimmed = newContactName.trim();
+        if (!trimmed) {
+            toast.error("Please enter a username");
+            return;
+        }
+        try {
+            await addContact(trimmed);
+            setNewContactName("");
+        } catch (err) {
+            // Handled
+        }
+    };
+
     return (
         <aside className="sidebar" ref={sidebarRef}>
             <div className="sidebar-tabs">
@@ -1158,16 +1175,58 @@ const VampireSidebar = memo(({
             </div>
 
             <div className="sidebar-actions">
-                <button className="action-btn join" onClick={() => {
-                    setSelectedNexus(null);
-                    setSelectedUser(null);
-                    setNexusActionView("join");
-                }}># JOIN</button>
-                <button className="action-btn nexus" onClick={() => {
-                    setSelectedNexus(null);
-                    setSelectedUser(null);
-                    setNexusActionView("create");
-                }}>+ NEXUS</button>
+                {activeTab === "orbits" ? (
+                    <>
+                        <button className="action-btn join" onClick={() => {
+                            setSelectedNexus(null);
+                            setSelectedUser(null);
+                            setNexusActionView("join");
+                        }}># JOIN</button>
+                        <button className="action-btn nexus" onClick={() => {
+                            setSelectedNexus(null);
+                            setSelectedUser(null);
+                            setNexusActionView("create");
+                        }}>+ NEXUS</button>
+                    </>
+                ) : (
+                    <div style={{ display: "flex", gap: 8, width: "100%", padding: "0 4px" }}>
+                        <input 
+                            type="text" 
+                            placeholder="Add username..." 
+                            value={newContactName}
+                            onChange={(e) => setNewContactName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+                            style={{
+                                flex: 1,
+                                background: "rgba(10,10,16,0.8)",
+                                border: "1px solid rgba(139,0,0,0.3)",
+                                padding: "6px 10px",
+                                fontSize: "11px",
+                                fontFamily: "'Cinzel', serif",
+                                color: "#F0E6D3",
+                                outline: "none",
+                                borderRadius: "4px"
+                            }}
+                        />
+                        <button 
+                            onClick={handleAddContact}
+                            style={{
+                                background: "rgba(139,0,0,0.25)",
+                                border: "1px solid rgba(220,20,60,0.5)",
+                                color: "#dc143c",
+                                padding: "6px 10px",
+                                fontSize: "10px",
+                                fontFamily: "'Cinzel', serif",
+                                fontWeight: "bold",
+                                letterSpacing: "1px",
+                                cursor: "pointer",
+                                borderRadius: "4px"
+                            }}
+                        >
+                            + ADD
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className="sidebar-list custom-scrollbar" style={{ flex: 1, overflowY: 'auto' }}>
@@ -2202,7 +2261,8 @@ export function VampireSettings({
     draftShowOnlineStatus, setDraftShowOnlineStatus,
     draftOrbitBehavior, setDraftOrbitBehavior,
     draftSoundSettings, setDraftSoundSettings,
-    isDirty, handleSave, handleReset, authUser, navigate
+    isDirty, handleSave, handleReset, authUser, navigate,
+    onLogout, onDeleteAccount
 }) {
     const [focusedTheme, setFocusedTheme] = useState(draftTheme);
     const [pendingLocal, setPendingLocal] = useState(null);
@@ -2485,6 +2545,19 @@ export function VampireSettings({
                     </div>
                     )}
                 </div>
+                {isMobile && (
+                    <div className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 12, border: "1px solid rgba(139,0,0,0.5)", background: "rgba(139,0,0,0.05)", marginTop: 24, zIndex: 10 }}>
+                        <div style={{ fontSize: 11, color: 'var(--crimson)', fontWeight: 'bold', letterSpacing: '2px', fontFamily: "'Cinzel', serif" }}>⚠️ DANGER DOMAIN</div>
+                        <div style={{ display: 'flex', gap: 12, width: '100%', flexWrap: 'wrap' }}>
+                            <button onClick={onLogout} style={{ flex: 1, padding: "12px", background: "rgba(139,0,0,0.1)", border: "1px solid rgba(139,0,0,0.3)", color: "var(--bone)", borderRadius: 4, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: '1.5px', cursor: "pointer" }}>
+                                SEVER CONNECTION
+                            </button>
+                            <button onClick={onDeleteAccount} style={{ flex: 1, padding: "12px", background: "var(--crimson)", border: "none", color: "var(--ivory)", borderRadius: 4, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: '1.5px', cursor: "pointer", fontWeight: "bold" }}>
+                                PURGE EXISTENCE
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Gothic Theme Confirm Modal via Portal */}

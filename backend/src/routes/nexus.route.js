@@ -21,20 +21,28 @@ import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
+const isDev = process.env.NODE_ENV === "development" || !process.env.NODE_ENV;
+
 const nexusWriteLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 30,
+  max: isDev ? 10000 : 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: "RATE_LIMIT", message: "Too many nexus write requests. Please slow down." } },
+  handler: (req, res, next, options) => {
+    res.status(429).json({ message: options.message?.error?.message || "Too many requests. Please slow down." });
+  }
 });
 
 const nexusSendLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 60,
+  max: isDev ? 10000 : 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: "RATE_LIMIT", message: "Too many messages. Please slow down." } },
+  handler: (req, res, next, options) => {
+    res.status(429).json({ message: options.message?.error?.message || "Too many requests. Please slow down." });
+  }
 });
 
 router.use(protectRoute);

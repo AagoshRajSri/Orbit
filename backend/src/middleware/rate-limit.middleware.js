@@ -5,6 +5,8 @@ import { redisClient, isRedisAvailable } from "../lib/redis.js";
 const standardHeaders = true;
 const legacyHeaders = false;
 
+const isDev = process.env.NODE_ENV === "development" || !process.env.NODE_ENV;
+
 /**
  * Wrapper to dynamically create and apply Redis-backed rate limiters
  * AFTER the Redis connection status is resolved. Gracefully falls back
@@ -12,6 +14,19 @@ const legacyHeaders = false;
  */
 const createLimiter = (inputOptions) => {
   const { name, ...options } = inputOptions;
+
+  if (isDev) {
+    options.max = 10000;
+  }
+
+  options.handler = (req, res, next, rateLimitOptions) => {
+    res.status(rateLimitOptions.statusCode).json({
+      message: typeof rateLimitOptions.message === "string"
+        ? rateLimitOptions.message
+        : (rateLimitOptions.message?.message || rateLimitOptions.message?.error?.message || "Too many requests. Please slow down.")
+    });
+  };
+
   let redisLimiter = null;
   const memoryLimiter = rateLimit(options); // Default in-memory fallback
 

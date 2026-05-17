@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell, Zap, MessageCircle, Settings, Music,
   Disc, Pause, Play, SkipBack, SkipForward, Volume2, Gamepad2, Lock,
-  Hash, ChevronRight, Plus
+  Hash, ChevronRight, Plus, UserPlus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSpotifyStore } from "../../store/useSpotifyStore";
@@ -22,6 +22,7 @@ import NexusActionOverlay from "../nexus/NexusActionOverlay";
 import { useChatStore } from "../../store/useChatStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
+import toast from "../../lib/toast";
 
 // ── Quick-Access Orbital Ring ──────────────────────────────────────────────
 const ANIMALS = ['dog', 'cat', 'bunny'];
@@ -51,9 +52,7 @@ const QuickAccessRing = memo(() => {
 
   const contacts = useMemo(() => {
     if (!users.length) return [];
-    return contactList?.length
-      ? users.filter((u) => contactList.includes((u._id || u.id)?.toString()))
-      : users.slice(0, 8);
+    return users.filter((u) => contactList?.includes((u._id || u.id)?.toString()));
   }, [users, contactList]);
 
   const handleNexusClick = useCallback((nexus) => {
@@ -521,6 +520,42 @@ const SpotifyCard = memo(() => {
 const NoChatSelected = () => {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
+  const addContact = useChatStore((s) => s.addContact);
+  const users = useChatStore((s) => s.users);
+  const contactList = useChatStore((s) => s.contactList);
+
+  const [showAddContactModal, setShowAddContactModal] = useState(false);
+  const [newContactUsername, setNewContactUsername] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddContactSubmit = async (e) => {
+    e.preventDefault();
+    const trimmed = newContactUsername.trim();
+    if (!trimmed) {
+      toast.error("Please enter a username");
+      return;
+    }
+
+    const candidate = users.find(
+      (u) => u.username.toLowerCase() === trimmed.toLowerCase(),
+    );
+
+    if (candidate && contactList?.includes(candidate._id.toString())) {
+      toast.error("Contact already in list");
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      await addContact(trimmed);
+      setNewContactUsername("");
+      setShowAddContactModal(false);
+    } catch (err) {
+      // Handled in store
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
   const infoBoxes = useMemo(() => [
     {
@@ -533,9 +568,10 @@ const NoChatSelected = () => {
     },
     {
       id: 3,
-      icon: Bell,
-      title: "Get Notifications",
-      description: "Stay updated with real-time alerts and messages",
+      icon: UserPlus,
+      title: "Add Contact",
+      description: "Connect instantly with a friend by their username or ID",
+      action: () => setShowAddContactModal(true),
       colors: { gamer: "#ff7a00", pastel: "rgba(255,204,136,0.3)", default: "#fb923c" }
     },
     {
@@ -547,7 +583,6 @@ const NoChatSelected = () => {
       colors: { gamer: "#00cfff", pastel: "rgba(136,255,204,0.2)", default: "#0ea5e9" }
     },
   ], [navigate]);
-
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -562,8 +597,147 @@ const NoChatSelected = () => {
 
   const { nexusActionView, setNexusActionView } = useNexusStore();
 
+  const accentColor = useMemo(() => {
+    if (theme === 'gamer-high-energy') return '#00ff66';
+    if (theme === 'neon-cyberpunk') return '#b026ff';
+    if (theme === 'amoled-dark') return '#00d4ff';
+    if (theme === 'light') return '#b08d57';
+    if (theme === 'pastel-dream') return '#d060a8';
+    return '#7c3aed';
+  }, [theme]);
+
   if (theme === "pastel-dream") {
-    return <TruePastelDashboard />;
+    return (
+      <div className="w-full h-full p-0 bg-transparent overflow-auto relative">
+        <TruePastelDashboard onAddContact={() => setShowAddContactModal(true)} />
+        <AnimatePresence>
+          {showAddContactModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowAddContactModal(false)}
+                className="absolute inset-0 bg-black/60 backdrop-blur-md"
+              />
+
+              {/* Modal Body */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-md p-6 rounded-2xl border overflow-hidden shadow-2xl z-10"
+                style={{
+                  background: "linear-gradient(135deg, #ffdcf3 0%, #fef4f9 100%)",
+                  borderColor: "rgba(255, 142, 200, 0.4)",
+                  color: "#ff479c",
+                  boxShadow: "0 20px 40px rgba(255, 150, 200, 0.2)",
+                }}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowAddContactModal(false)}
+                  className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-[var(--chat-text)]/10 transition-colors"
+                  style={{ color: "#ff85cc" }}
+                >
+                  <Plus className="size-5 rotate-45" />
+                </button>
+
+                <div className="relative z-10 flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="p-2.5 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: "rgba(255, 71, 156, 0.1)",
+                        color: "#ff479c",
+                        border: "1.5px solid rgba(255, 71, 156, 0.3)",
+                      }}
+                    >
+                      <UserPlus className="size-5" />
+                    </div>
+                    <div>
+                      <h2
+                        className="text-lg font-black uppercase tracking-wider"
+                        style={{
+                          fontFamily: "'Nunito', sans-serif",
+                        }}
+                      >
+                        Add Contact 🎀
+                      </h2>
+                      <p className="text-xs text-[#e8338a] font-medium">
+                        Enter username to expand your pastel orbit!
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleAddContactSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label
+                        className="text-[10px] font-black uppercase tracking-widest text-[#ff85cc]"
+                        style={{
+                          fontFamily: "'Nunito', sans-serif",
+                        }}
+                      >
+                        NEURAL USERNAME
+                      </label>
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="e.g. sweet_cipher"
+                        value={newContactUsername}
+                        onChange={(e) => setNewContactUsername(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border outline-none font-bold text-sm transition-all duration-300"
+                        style={{
+                          background: "#ffffff",
+                          borderColor: "rgba(255, 142, 200, 0.4)",
+                          color: "#9c27b0",
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = "#ff479c";
+                          e.currentTarget.style.boxShadow = "0 0 10px rgba(255, 71, 156, 0.3)";
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = "rgba(255, 142, 200, 0.4)";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddContactModal(false)}
+                        className="px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
+                        style={{
+                          color: "#ff85cc",
+                          background: "transparent",
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isAdding}
+                        className="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                        style={{
+                          background: isAdding ? "rgba(255, 142, 200, 0.2)" : "linear-gradient(135deg, #ff479c, #e860ff)",
+                          color: "#ffffff",
+                          boxShadow: isAdding ? "none" : "0 4px 15px rgba(255, 71, 156, 0.4)",
+                          cursor: isAdding ? "default" : "pointer",
+                        }}
+                      >
+                        {isAdding ? "CONNECTING..." : "ADD CONTACT"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
   }
 
   // All other themes (gamer, amoled, dark, neon) use the default dashboard content 
@@ -614,7 +788,7 @@ const NoChatSelected = () => {
                         <ThemeCardWrapper 
                           themeColorMap={{ gamer: box.colors.gamer, pastel: box.colors.pastel, default: box.colors.default }}
                           onClick={box.action}
-                          className="flex flex-col h-full min-h-[160px] p-6 relative justify-between overflow-hidden"
+                          className="flex flex-col h-full min-h-[160px] p-6 relative justify-between overflow-hidden cursor-pointer"
                         >
                           <div className="relative z-10 flex items-center justify-between mb-4">
                             <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${theme === "light" ? "bg-[var(--chat-primary)]/10" : "bg-[var(--chat-text)]/10"} shadow-inner relative z-10`}>
@@ -660,6 +834,154 @@ const NoChatSelected = () => {
           </ThemeMainContainer>
         </motion.div>
       )}
+
+      {/* Elegant Theme-Aware Add Contact Modal */}
+      <AnimatePresence>
+        {showAddContactModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddContactModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md p-6 rounded-2xl border overflow-hidden shadow-2xl z-10"
+              style={
+                theme === "light"
+                  ? {
+                      background: "linear-gradient(135deg, #fcfbf7 0%, #f7f3e8 100%)",
+                      borderColor: "rgba(176,141,87,0.3)",
+                      color: "#5c4a2a",
+                      boxShadow: "0 20px 40px rgba(176,141,87,0.15)",
+                    }
+                  : {
+                      background: "rgba(10, 10, 15, 0.95)",
+                      borderColor: `${accentColor}33`,
+                      color: "var(--chat-text)",
+                      boxShadow: `0 0 30px ${accentColor}15`,
+                    }
+              }
+            >
+              {/* Starry highlight overlay for dark theme */}
+              {theme !== "light" && <StarryBackground />}
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowAddContactModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-[var(--chat-text)]/10 transition-colors"
+                style={{ color: "var(--chat-muted)" }}
+              >
+                <Plus className="size-5 rotate-45" />
+              </button>
+
+              <div className="relative z-10 flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="p-2.5 rounded-xl flex items-center justify-center"
+                    style={{
+                      background: `${accentColor}15`,
+                      color: accentColor,
+                      border: `1.5px solid ${accentColor}30`,
+                    }}
+                  >
+                    <UserPlus className="size-5" />
+                  </div>
+                  <div>
+                    <h2
+                      className="text-lg font-black uppercase tracking-wider"
+                      style={{
+                        fontFamily: theme === "light" ? "'Josefin Sans', sans-serif" : "'Orbitron', sans-serif",
+                      }}
+                    >
+                      Add Contact
+                    </h2>
+                    <p className="text-xs text-[var(--chat-muted)] font-medium">
+                      Enter username to expand your orbit network.
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleAddContactSubmit} className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      className="text-[10px] font-black uppercase tracking-widest text-[var(--chat-muted)]"
+                      style={{
+                        fontFamily: theme === "light" ? "'Josefin Sans', sans-serif" : "'Share Tech Mono', sans-serif",
+                      }}
+                    >
+                      NEURAL USERNAME
+                    </label>
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="e.g. cipher_one"
+                      value={newContactUsername}
+                      onChange={(e) => setNewContactUsername(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border outline-none font-bold text-sm transition-all duration-300"
+                      style={
+                        theme === "light"
+                          ? {
+                              background: "#ffffff",
+                              borderColor: "rgba(176,141,87,0.3)",
+                              color: "#5c4a2a",
+                            }
+                          : {
+                              background: "rgba(0, 0, 0, 0.6)",
+                              borderColor: `${accentColor}40`,
+                              color: "var(--chat-text)",
+                            }
+                      }
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = accentColor;
+                        e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}30`;
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = theme === "light" ? "rgba(176,141,87,0.3)" : `${accentColor}40`;
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddContactModal(false)}
+                      className="px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
+                      style={{
+                        color: "var(--chat-muted)",
+                        background: "transparent",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isAdding}
+                      className="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                      style={{
+                        background: isAdding ? "rgba(var(--chat-muted-rgb), 0.2)" : accentColor,
+                        color: theme === "light" ? "#fcfbf7" : "#000",
+                        boxShadow: isAdding ? "none" : `0 4px 15px ${accentColor}40`,
+                        cursor: isAdding ? "default" : "pointer",
+                      }}
+                    >
+                      {isAdding ? "CONNECTING..." : "ADD CONTACT"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

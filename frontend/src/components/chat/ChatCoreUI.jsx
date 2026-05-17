@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import MessageStatusRing from "./MessageStatusRing";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
+import { AnimatedMessage } from "../../orbit/AnimatedMessage";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FONTS (add to index.html):
@@ -539,12 +540,13 @@ const GLOWS = {
 // ══════════════════════════════════════════════════════════════════════════════
 //  MESSAGE BUBBLE
 // ══════════════════════════════════════════════════════════════════════════════
-export const MsgBubble = memo(function MsgBubble({msg,t,onReact,isMe}) {
+export const MsgBubble = memo(function MsgBubble({msg,t,onReact,isMe,isNew=false}) {
   const [hov,setHov]=useState(false);
   const [showPicker, setShowPicker] = useState(false);
   
   return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start",marginBottom:8,animation:"fadeUp .28s ease", position: "relative"}}>
+    <AnimatedMessage id={msg.id} isMine={isMe} isNew={isNew}>
+    <div style={{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start",marginBottom:8, position: "relative"}}>
       {!isMe&&<div style={{fontSize:11,color:t.txt2,marginBottom:4,marginLeft:14,fontFamily:t.font,fontWeight:600,letterSpacing:".04em"}}>{msg.from}</div>}
       <div 
         onMouseEnter={()=>{setHov(true)}} 
@@ -608,6 +610,7 @@ export const MsgBubble = memo(function MsgBubble({msg,t,onReact,isMe}) {
         </span>
       ))}
     </div>
+    </AnimatedMessage>
   );
 });
 

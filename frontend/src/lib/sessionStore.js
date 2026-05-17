@@ -9,7 +9,7 @@
  * MKSKIPPED is a plain object { "dh:n": base64_key }.
  */
 
-const DB_NAME    = "orbit-sessions";
+const DB_NAME = "orbit-sessions";
 const DB_VERSION = 1;
 const STORE_NAME = "ratchet-sessions";
 
@@ -32,7 +32,20 @@ const openDB = () => {
       }
     };
     req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
-    req.onerror   = (e) => reject(e.target.error);
+    req.onerror = (event) => {
+      const error = event.target?.error || event;
+      console.error("[SessionStore] Database connection failed:", error);
+      if (error && (error.name === "VersionError" || error.message?.includes("version"))) {
+        console.warn("[SessionStore] Critical schema/version drift detected. Executing defensive local storage wipe...");
+        try {
+          indexedDB.deleteDatabase(DB_NAME);
+          window.location.reload();
+        } catch (wipeError) {
+          console.error("[SessionStore] Failed to automate recovery layout purge:", wipeError);
+        }
+      }
+      reject(error);
+    };
   });
 };
 
@@ -43,7 +56,7 @@ const tx = async (storeName, mode, fn) => {
     const store = transaction.objectStore(storeName);
     const req = fn(store);
     req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
+    req.onerror = () => reject(req.error);
   });
 };
 
@@ -86,7 +99,7 @@ export const loadSession = async (conversationId) => {
     );
     if (!record) return null;
     const { conversationId: _id, updatedAt: _ts, ...session } = record;
-    
+
     // Warm up the cache
     sessionCache.set(conversationId, session);
     return session;

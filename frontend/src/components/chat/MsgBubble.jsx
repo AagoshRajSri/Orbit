@@ -5,6 +5,7 @@
 import { useState, memo, useCallback, useEffect, useMemo } from "react";
 import { PixelAvatar } from "../avatar/PixelAvatar/PixelAvatar.jsx";
 import MessageStatusRing from "./MessageStatusRing.jsx";
+import { AnimatedMessage } from "../../orbit/AnimatedMessage";
 
 export function SafeImage({ src, alt, style }) {
   const [url, setUrl] = useState(null);
@@ -249,6 +250,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
   }
 
   return (
+    <AnimatedMessage id={msgId} isMine={mine} isNew={!!isLatest}>
     <div
       id={`msg-${msgId}`}
       style={{
@@ -256,11 +258,8 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
         alignItems: "flex-end",
         gap: 8, 
         flexDirection: mine ? "row-reverse" : "row",
-        // Balance the layout: add margin on the aligned side to match the avatar space on the other side
         paddingRight: mine ? 40 : 0, 
         paddingLeft: mine ? 0 : 4,
-        // FIX 4: Only animate the latest message
-        animation: isLatest ? "fadeUpMsg 0.25s ease-out" : "none",
         marginBottom: 2,
         width: "100%",
         boxSizing: "border-box",
@@ -387,5 +386,6 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
         <ReactionStrip reactions={localReactions} onReact={handleReact} t={t} />
       </div>
     </div>
+    </AnimatedMessage>
   );
 });

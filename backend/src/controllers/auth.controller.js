@@ -370,7 +370,11 @@ export const addContact = async (req, res) => {
     const userId = req.user._id;
 
     const contactSchema = z.object({
-      contactId: z.string().min(1, "Contact ID is required"),
+      contactId: z.string().optional(),
+      username: z.string().optional(),
+    }).refine(data => data.contactId || data.username, {
+      message: "Either contactId or username must be provided",
+      path: ["contactId"],
     });
 
     const parsed = contactSchema.safeParse(req.body);
@@ -381,20 +385,28 @@ export const addContact = async (req, res) => {
       });
     }
 
-    const { contactId } = parsed.data;
+    const { contactId, username } = parsed.data;
 
-    if (contactId === userId.toString()) {
+    let targetUser = null;
+    if (contactId) {
+      targetUser = await User.findById(contactId);
+    } else if (username) {
+      targetUser = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, "i") } });
+    }
+
+    if (!targetUser) return res.status(404).json({ message: "User not found" });
+
+    const targetUserIdStr = targetUser._id.toString();
+
+    if (targetUserIdStr === userId.toString()) {
       return res
         .status(400)
         .json({ message: "Cannot add yourself as a contact" });
     }
 
-    const targetUser = await User.findById(contactId);
-    if (!targetUser) return res.status(404).json({ message: "User not found" });
-
     const user = await User.findById(userId);
-    if (!user.contacts.includes(contactId)) {
-      user.contacts.push(contactId);
+    if (!user.contacts.includes(targetUserIdStr)) {
+      user.contacts.push(targetUserIdStr);
       await user.save();
     }
 
@@ -488,14 +500,90 @@ export const renameContact = async (req, res) => {
 export const deleteAccount = async (req, res) => {
   try {
     const userId = req.user._id;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ message: "Confirmation is required to delete your account." });
+    }
+
+    const user = await User.findById(userId).select("+password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    const isConstellationUser = await ConstellationProfile.findOne({ userId });
+
+    if (!isMatch) {
+      if (isConstellationUser && password.trim() === "CONFIRM") {
+        // Constellation users don't have conventional password; let them type 'CONFIRM'
+      } else {
+        return res.status(400).json({ 
+          message: isConstellationUser 
+            ? "Invalid confirmation. Please type 'CONFIRM' exactly." 
+            : "Incorrect password. Please try again." 
+        });
+      }
+    }
+
+    // Dynamically load all related models to perform a complete, deep purge
+    const Nexus = (await import("../models/nexus.model.js")).default;
+    const Message = (await import("../models/message.model.js")).default;
+    const DeviceRegistry = (await import("../models/deviceRegistry.model.js")).default;
+    const PrekeyBundle = (await import("../models/prekeyBundle.model.js")).default;
+    const SpotifyCredential = (await import("../models/spotifyCredential.model.js")).default;
+    const SpotifySession = (await import("../models/spotifySession.model.js")).default;
+
+    // 1. Remove from all Nexus memberships and admin arrays
+    await Nexus.updateMany(
+      { $or: [{ members: userId }, { admins: userId }] },
+      { $pull: { members: userId, admins: userId } }
+    );
+
+    // 2. Remove from other users' contacts list
+    await User.updateMany(
+      { contacts: userId },
+      { $pull: { contacts: userId } }
+    );
+
+    // 3. Clear all direct and nexus messages sent by the user
+    await Message.deleteMany({ senderId: userId });
+
+    // 4. Wipe constellation profiles
+    await ConstellationProfile.deleteMany({ userId });
+
+    // 5. Revoke registered devices
+    await DeviceRegistry.deleteMany({ userId });
+
+    // 6. Delete cryptographic prekeys
+    await PrekeyBundle.deleteMany({ userId });
+
+    // 7. Expire other active session tokens
+    await Session.deleteMany({ userId });
+
+    // 8. Wipe third-party integrations
+    await SpotifyCredential.deleteMany({ userId });
+    await SpotifySession.deleteMany({ $or: [{ hostId: userId }, { guests: userId }] });
+
+    // 9. Wipe the main User record itself
     await User.findByIdAndDelete(userId);
+
+    // 10. Audit log the deletion event
+    await securityService.logAuditEvent(
+      null,
+      "ACCOUNT_DELETED_PERMANENTLY",
+      req,
+      { userId: userId.toString() },
+      0
+    );
 
     res.clearCookie("jwt", {
       httpOnly: true,
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       secure: process.env.NODE_ENV === "production",
     });
-    res.status(200).json({ message: "Account deleted successfully" });
+
+    res.status(200).json({ message: "Account completely deleted." });
   } catch (error) {
     console.error("Error in deleteAccount controller:", error);
     res.status(500).json({

@@ -25,7 +25,20 @@ const openDB = () => {
       }
     };
     req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
-    req.onerror   = (e) => reject(e.target.error);
+    req.onerror   = (event) => {
+      const error = event.target?.error || event;
+      console.error("[NexusKeyStore] Database connection failed:", error);
+      if (error && (error.name === "VersionError" || error.message?.includes("version"))) {
+        console.warn("[NexusKeyStore] Critical schema/version drift detected. Executing defensive local storage wipe...");
+        try {
+          indexedDB.deleteDatabase(DB_NAME);
+          window.location.reload();
+        } catch (wipeError) {
+          console.error("[NexusKeyStore] Failed to automate recovery layout purge:", wipeError);
+        }
+      }
+      reject(error);
+    };
   });
 };
 
@@ -49,15 +62,47 @@ const makeKey = (nexusId, senderId) => `${nexusId}::${senderId}`;
  * @param {object} senderKey  - { chainKey, n, signingPublicKey, signingPrivateKey? }
  */
 export const saveSenderKey = async (nexusId, senderId, senderKey) => {
-  await tx("readwrite", (store) =>
-    store.put({
-      id: makeKey(nexusId, senderId),
-      nexusId,
-      senderId,
-      ...senderKey,
-      updatedAt: Date.now(),
-    })
-  );
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    const key = makeKey(nexusId, senderId);
+    
+    const getReq = store.get(key);
+    getReq.onsuccess = () => {
+      const existing = getReq.result;
+      let previousKeys = [];
+      
+      if (existing) {
+        previousKeys = existing.previousKeys || [];
+        
+        // If the signing public key has changed, archive the old active key
+        if (existing.signingPublicKey && existing.signingPublicKey !== senderKey.signingPublicKey) {
+          const archiveItem = {
+            chainKey:          existing.chainKey,
+            n:                 existing.n,
+            signingPublicKey:  existing.signingPublicKey,
+            signingPrivateKey: existing.signingPrivateKey,
+            messageKeys:       existing.messageKeys,
+            archivedAt:        Date.now(),
+          };
+          previousKeys = [...previousKeys, archiveItem];
+        }
+      }
+      
+      const putReq = store.put({
+        id: key,
+        nexusId,
+        senderId,
+        ...senderKey,
+        previousKeys,
+        updatedAt: Date.now(),
+      });
+      putReq.onsuccess = () => resolve();
+      putReq.onerror = () => reject(putReq.error);
+    };
+    getReq.onerror = () => reject(getReq.error);
+  });
 };
 
 /**
@@ -103,7 +148,35 @@ export const clearNexusSenderKeys = async (nexusId) => {
     req.onsuccess = (e) => {
       const cursor = e.target.result;
       if (cursor) {
-        if (cursor.value.nexusId === nexusId) cursor.delete();
+        const record = cursor.value;
+        if (record.nexusId === nexusId) {
+          // Archive the current active key before clearing
+          let previousKeys = record.previousKeys || [];
+          if (record.signingPublicKey) {
+            const archiveItem = {
+              chainKey:          record.chainKey,
+              n:                 record.n,
+              signingPublicKey:  record.signingPublicKey,
+              signingPrivateKey: record.signingPrivateKey,
+              messageKeys:       record.messageKeys,
+              archivedAt:        Date.now(),
+            };
+            // Prevent duplicates in archive
+            if (!previousKeys.some(k => k.signingPublicKey === record.signingPublicKey)) {
+              previousKeys = [...previousKeys, archiveItem];
+            }
+          }
+          
+          // Put back a record with active key cleared but previousKeys preserved!
+          const updatedRecord = {
+            id: record.id,
+            nexusId: record.nexusId,
+            senderId: record.senderId,
+            previousKeys,
+            updatedAt: Date.now()
+          };
+          cursor.update(updatedRecord);
+        }
         cursor.continue();
       } else {
         resolve();

@@ -379,12 +379,12 @@ export const PASTEL_CARDS = [
   {
     bg:"linear-gradient(135deg, rgba(255,225,198,0.85) 0%, rgba(255,238,215,0.78) 100%)",
     border:"1px solid rgba(245,192,152,0.55)",
-    iconBg:"rgba(230,138,88,0.2)", accent:"#d07840",
-    icon:"🔔", title:"GET NOTIFICATIONS",
-    desc:"Stay updated with real-time alerts and messages",
+    iconBg:"rgba(255,142,180,0.2)", accent:"#e8338a",
+    icon:"💖", title:"ADD CONTACT",
+    desc:"Connect instantly with a friend by their username or ID",
     bottomIcon:"↓", line:"rgba(232,188,158,0.38)",
     badge:null,
-    route: "/settings"
+    route: null
   },
   {
     bg:"linear-gradient(135deg, rgba(192,235,215,0.85) 0%, rgba(210,248,228,0.78) 100%)",
@@ -398,7 +398,7 @@ export const PASTEL_CARDS = [
   },
 ];
 
-export function TruePastelDashboard() {
+export function TruePastelDashboard({ onAddContact }) {
   const navigate = useNavigate();
   const { nexusActionView, setNexusActionView } = useNexusStore();
 
@@ -483,7 +483,7 @@ export function TruePastelDashboard() {
             </div>
             <div className="relative flex flex-col">
               <SittingBird color="#c890f8" style={{ position:"absolute", top:-30, left:"40%", zIndex:20 }} />
-              <TruePastelFeatureCard onClick={() => navigate("/settings")} cfg={PASTEL_CARDS[1]} />
+              <TruePastelFeatureCard onClick={onAddContact} cfg={PASTEL_CARDS[1]} />
             </div>
             <div className="relative flex flex-col">
               <SittingBird color="#90c8f8" style={{ position:"absolute", top:-35, right:40, zIndex:20, transform:"scaleX(-1)" }} />

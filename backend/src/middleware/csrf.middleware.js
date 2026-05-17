@@ -29,6 +29,9 @@ const CSRF_EXEMPT_PATHS = new Set([
   "/api/auth/verify-email",
   "/api/auth/resend-verification",
   "/api/admin/login",       // Separate admin auth flow
+  "/api/prekeys/bundle",
+  "/api/prekeys/replenish",
+  "/api/prekeys/hybrid-bundle",
 ]);
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);

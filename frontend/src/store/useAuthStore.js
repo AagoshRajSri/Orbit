@@ -21,6 +21,7 @@ export const useAuthStore = create(
       // Only the base64 public key is kept in state (for sharing with contacts).
       // The private key lives exclusively in IndexedDB as a non-extractable CryptoKey.
       e2eePublicKey: null, // base64 SPKI public key — safe to share
+      e2eeInitializationFailed: false,
 
       initE2EE: async () => {
         const userId = get().authUser?._id?.toString();
@@ -82,6 +83,8 @@ export const useAuthStore = create(
           }
 
           // ── 4. Publish bundle to server ───────────────────────────────────────────────
+          const authStoreState = get();
+          if (!authStoreState.authUser || authStoreState.isCheckingAuth) return;
           await axiosInstance.post("/prekeys/bundle", {
             identityKey:    identityKeyB64,
             signingKey:     signingKeyB64,
@@ -123,6 +126,8 @@ export const useAuthStore = create(
 
               // Publish the hybrid public keys to the prekey server
               // The backend stores these alongside the classical X3DH bundle
+              const authStoreState = get();
+              if (!authStoreState.authUser || authStoreState.isCheckingAuth) return;
               await axiosInstance.post("/prekeys/hybrid-bundle", {
                 classicalPublicKey: hybridBundle.classicalPublicKey,
                 kyberPublicKey:     hybridBundle.kyberPublicKey,
@@ -137,6 +142,7 @@ export const useAuthStore = create(
 
         } catch (error) {
           console.error("[E2EE] Failed to initialize prekey bundle:", error);
+          set({ e2eeInitializationFailed: true });
         }
       },
 
@@ -145,6 +151,8 @@ export const useAuthStore = create(
         const userId = get().authUser?._id?.toString();
         if (!userId) return;
         try {
+          const authStoreState = get();
+          if (!authStoreState.authUser || authStoreState.isCheckingAuth) return;
           const res = await axiosInstance.get("/prekeys/status");
           if (!res.data.hasBundle || res.data.lowWaterMark) {
             console.log("[E2EE] Low OPK count — replenishing prekeys...");
@@ -169,8 +177,6 @@ export const useAuthStore = create(
             sessionId: serverSessionId || currentSessionId || crypto.randomUUID(),
             ...(serverSocketToken && { socketToken: serverSocketToken })
           });
-          
-          // Force socket update if we recovered the token
           if (serverSocketToken) {
             import("../lib/socket.js").then(({ updateSocketToken }) => {
               if (updateSocketToken) updateSocketToken(serverSocketToken);
@@ -183,6 +189,15 @@ export const useAuthStore = create(
           console.error("[checkAuth] Server error status:", error.response?.status);
           console.error("[checkAuth] Server error details:", error.response?.data);
           
+          const isRateLimit = error.response?.status === 429;
+          if (isRateLimit) {
+            console.warn("[checkAuth] Too Many Requests (429) detected. Delaying retry via backup timer...");
+            setTimeout(() => {
+              get().checkAuth();
+            }, 5000);
+            return;
+          }
+
           const isAuthError = error.response?.status === 401 || error.response?.status === 404;
           const isNetworkError = error.code === "ERR_NETWORK" || !error.response;
           
@@ -195,6 +210,9 @@ export const useAuthStore = create(
               console.warn("[checkAuth] Wiping auth user due to auth error");
               set({ authUser: null, sessionId: null, socketToken: null });
               delete axiosInstance.defaults.headers.common["X-Auth-Token"];
+              import("../lib/socket.js").then(({ disconnectSocket }) => {
+                if (disconnectSocket) disconnectSocket();
+              });
             } else {
               console.warn("[checkAuth] Ignoring 401 because token changed (likely logged in while checking)");
             }
@@ -393,13 +411,17 @@ export const useAuthStore = create(
         }
       },
 
-      deleteAccount: async () => {
+      deleteAccount: async (password) => {
         try {
-          await axiosInstance.delete("/auth/delete-account");
-          set({ authUser: null, sessionId: null });
+          await axiosInstance.delete("/auth/delete-account", { data: { password } });
+          set({ authUser: null, sessionId: null, socketToken: null, e2eePublicKey: null });
+          get().refreshSocketToken();
           toast.success("Account deleted successfully");
+          return { success: true };
         } catch (error) {
-          toast.error("Could not delete account.");
+          const backendMsg = error.response?.data?.message || "Could not delete account.";
+          toast.error(backendMsg);
+          return { success: false, message: backendMsg };
         }
       },
       verifyEmail: async (email, code) => {
@@ -499,6 +521,12 @@ export const useAuthStore = create(
           set({ appConfig: res.data.config });
         } catch (error) {
           console.error("[fetchAppConfig] Error:", error);
+          if (error.response?.status === 429) {
+            console.warn("[fetchAppConfig] Rate limited (429). Retrying in 5 seconds...");
+            setTimeout(() => {
+              get().fetchAppConfig();
+            }, 5000);
+          }
         }
       },
     }),

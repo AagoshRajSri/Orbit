@@ -45,15 +45,46 @@ const decryptSingleNexusMessage = async (m, userId) => {
       return { ...m, text: "🔒 [Sender key missing — sync required]", isMe: isSender };
     }
 
-    const { plaintext, updatedSenderKey } = await senderKeyDecrypt(
-      senderKey,
-      m,
-      senderKey.signingPublicKey
-    );
-    await saveSenderKey(nexusId, sIdStr, updatedSenderKey);
+    try {
+      const { plaintext, updatedSenderKey } = await senderKeyDecrypt(
+        senderKey,
+        m,
+        senderKey.signingPublicKey
+      );
+      await saveSenderKey(nexusId, sIdStr, updatedSenderKey);
 
-    const payload = JSON.parse(plaintext);
-    return { ...m, text: payload.text, image: payload.image, isMe: isSender };
+      const payload = JSON.parse(plaintext);
+      return { ...m, text: payload.text, image: payload.image, isMe: isSender };
+    } catch (err) {
+      // If active key decryption fails, attempt to decrypt using legacy keys from previousKeys
+      if (Array.isArray(senderKey.previousKeys) && senderKey.previousKeys.length > 0) {
+        for (let i = 0; i < senderKey.previousKeys.length; i++) {
+          try {
+            const archivedKey = senderKey.previousKeys[i];
+            const { plaintext, updatedSenderKey: updatedArchivedKey } = await senderKeyDecrypt(
+              archivedKey,
+              m,
+              archivedKey.signingPublicKey
+            );
+            
+            // Success! Update the specific archived key in previousKeys and save the store
+            const updatedPreviousKeys = [...senderKey.previousKeys];
+            updatedPreviousKeys[i] = updatedArchivedKey;
+            await saveSenderKey(nexusId, sIdStr, {
+              ...senderKey,
+              previousKeys: updatedPreviousKeys
+            });
+
+            const payload = JSON.parse(plaintext);
+            return { ...m, text: payload.text, image: payload.image, isMe: isSender, decrypted: true };
+          } catch (archErr) {
+            // Keep trying other legacy keys
+          }
+        }
+      }
+      // Re-throw the original error if all legacy attempts fail
+      throw err;
+    }
   } catch (err) {
     console.error("[Nexus E2EE] Decrypt error:", err);
     return { ...m, text: "🔒 [Decryption failed]", isMe: isSender };
@@ -358,8 +389,10 @@ export const useNexusStore = create((set, get) => ({
     }
     
     try {
+      const authStore = useAuthStore.getState();
+      if (!authStore.authUser || authStore.isCheckingAuth) return;
       const res = await axiosInstance.get(`/nexus/${nexusId}/messages`);
-      const authUser = useAuthStore.getState().authUser;
+      const authUser = authStore.authUser;
       const userId = authUser?._id?.toString();
 
       // 1. Sync missing sender keys for this Nexus
@@ -394,7 +427,9 @@ export const useNexusStore = create((set, get) => ({
       // Sync missing sender keys before decrypting older messages
       await get().syncNexusKeys(nexusId);
 
-      const authUser = useAuthStore.getState().authUser;
+      const authStore = useAuthStore.getState();
+      if (!authStore.authUser || authStore.isCheckingAuth) return;
+      const authUser = authStore.authUser;
       const userId = authUser?._id?.toString();
       const decrypted = [];
       for (const m of res.data) {
@@ -527,9 +562,17 @@ export const useNexusStore = create((set, get) => ({
         retryPayload.image = msg.image;
       }
 
-      await axiosInstance.post(`/nexus/${targetId}/send`,
+      const res = await axiosInstance.post(`/nexus/${targetId}/send`,
         Object.fromEntries(Object.entries(retryPayload).filter(([, v]) => v != null))
       );
+
+      set((s) => ({
+        nexusMessages: s.nexusMessages.map((m) =>
+          m.idempotencyKey === idempotencyKey
+            ? { ...m, _id: res.data._id, status: "sent", text: msg.text, image: msg.image }
+            : m
+        ),
+      }));
     } catch (err) {
       if (err.code === 'ERR_NETWORK') {
         const { pushToQueue } = await import("../lib/offlineQueue.js");
@@ -761,12 +804,18 @@ export const useNexusStore = create((set, get) => ({
         const { x3dhSender } = await import("../lib/x3dh.js");
         const { createDistributionPayload } = await import("../lib/nexusSenderKey.js");
         const { getKeyPair } = await import("../lib/keyStore.js");
-        const authUser = useAuthStore.getState().authUser;
-        const myId = authUser?._id?.toString();
+        const authStore = useAuthStore.getState();
+        if (!authStore.authUser || authStore.isCheckingAuth) return;
+        const myId = authStore.authUser._id?.toString();
 
         // 1. Fetch all members' prekey bundles
         const res = await axiosInstance.get(`/nexus/${nexusId}/member-keys`);
-        const members = res.data.members;
+        const members = res.data.members || [];
+
+        if (members.length === 0) {
+          console.info(`[Nexus E2EE] No other members in Nexus ${nexusId} to distribute keys to.`);
+          return;
+        }
 
         let myKeys = await getKeyPair(myId);
         if (!myKeys) {
@@ -844,16 +893,32 @@ export const useNexusStore = create((set, get) => ({
         const { saveSenderKey, hasSenderKey, loadSenderKey } = await import("../lib/nexusKeyStore.js");
         const { getSignedPrekey, consumeOneTimePrekey } = await import("../lib/sessionStore.js");
         const { getKeyPair } = await import("../lib/keyStore.js");
-        const authUser = useAuthStore.getState().authUser;
-        const myId = authUser?._id?.toString();
+        const authStore = useAuthStore.getState();
+        if (!authStore.authUser || authStore.isCheckingAuth) return;
+        const myId = authStore.authUser._id?.toString();
 
         // 1. Fetch distributions addressed to me
         const res = await axiosInstance.get(`/nexus/${nexusId}/sender-keys`);
         const dists = res.data?.distributions;
         if (!Array.isArray(dists)) return;
 
-        const myKeys = await getKeyPair(myId);
-        if (!myKeys) return;
+        let myKeys = await getKeyPair(myId);
+        if (!myKeys) {
+          console.warn("[Nexus E2EE] Identity keys not found in syncNexusKeys, waiting for initE2EE...");
+          for (let i = 0; i < 10; i++) {
+            if (useAuthStore.getState().e2eeInitializationFailed) {
+              console.error("[Nexus E2EE] E2EE initialization failed globally, aborting sync immediately.");
+              break;
+            }
+            await new Promise(r => setTimeout(r, 500));
+            myKeys = await getKeyPair(myId);
+            if (myKeys) break;
+          }
+        }
+        if (!myKeys) {
+          console.error("[Nexus E2EE] Identity keys still missing after wait, aborting sync.");
+          return;
+        }
 
         // Keep track of successful decryptions to trigger in-memory re-decryption
         let decryptedAny = false;
@@ -872,7 +937,19 @@ export const useNexusStore = create((set, get) => ({
           }
 
           try {
-            const spk = await getSignedPrekey(myId);
+            let spk = await getSignedPrekey(myId);
+            if (!spk) {
+              console.warn("[Nexus E2EE] Signed prekey not found, waiting for initE2EE...");
+              for (let i = 0; i < 10; i++) {
+                if (useAuthStore.getState().e2eeInitializationFailed) {
+                  console.error("[Nexus E2EE] E2EE initialization failed globally, aborting SPK wait immediately.");
+                  break;
+                }
+                await new Promise(r => setTimeout(r, 500));
+                spk = await getSignedPrekey(myId);
+                if (spk) break;
+              }
+            }
             if (!spk) {
               console.warn("[Nexus E2EE] No signed prekey found, skipping distribution from", d.senderId);
               continue;
@@ -939,21 +1016,47 @@ export const useNexusStore = create((set, get) => ({
             decryptedAny = true;
           } catch (decErr) {
             console.warn("[Nexus E2EE] Failed to decrypt distribution from", d.senderId, decErr);
+            // On decryption failure (e.g. key/SPK mismatch), request the sender to re-distribute their key with our current active SPK/OPKs
+            const pairKey = `${nexusId}:${d.senderId}`;
+            const lastReq = requestedKeyResends.get(pairKey) || 0;
+            if (Date.now() - lastReq > 5000) {
+              requestedKeyResends.set(pairKey, Date.now());
+              const socket = getSocket();
+              if (socket?.connected) {
+                socket.emit("request-sender-key-distribution", {
+                  nexusId,
+                  targetUserId: d.senderId,
+                });
+              }
+              console.warn("[Nexus E2EE] Requested sender key re-distribution due to decryption failure from", d.senderId);
+            }
           }
         }
 
-        if (decryptedAny) {
+        if (decryptedAny && nexusId === get().selectedNexusId) {
           const myId = useAuthStore.getState().authUser?._id?.toString();
           const currentMessages = get().nexusMessages;
-          const updated = [];
-          for (const m of currentMessages) {
-            if (m.text === "🔒 [Sender key missing — sync required]") {
-              updated.push(await decryptSingleNexusMessage(m, myId));
-            } else {
-              updated.push(m);
-            }
-          }
-          set({ nexusMessages: updated });
+
+          const sweptMessages = await Promise.all(
+            currentMessages.map(async (msg) => {
+              if (
+                msg.text === "🔒 [Sender key missing — sync required]" || 
+                msg.text === "🔒 [Decryption failed]"
+              ) {
+                try {
+                  // Re-attempt decryption dynamically with the newly acquired/healed keys
+                  const decryptedMsg = await decryptSingleNexusMessage(msg, myId);
+                  return { ...msg, text: decryptedMsg.text, decrypted: true };
+                } catch (e) {
+                  return msg; // Keep placeholder if key still isn't the correct match
+                }
+              }
+              return msg;
+            })
+          );
+
+          // Atomically push the swept array back to state to force-trigger UI refresh
+          set({ nexusMessages: sweptMessages });
         }
       } catch (err) {
         console.error("[Nexus E2EE] Sync error:", err);
@@ -981,10 +1084,15 @@ export const useNexusStore = create((set, get) => ({
   },
 
   addNexusMember: (nexusId, user) => {
+    if (!user) return;
     set((state) => {
       const nexuses = state.nexuses.map((n) => {
         if (n._id?.toString() === nexusId?.toString()) {
-          const exists = n.members?.some(m => (m._id || m).toString() === (user._id || user).toString());
+          const exists = n.members?.some(m => {
+            const mId = m?._id || m;
+            const uId = user?._id || user;
+            return mId && uId && mId.toString() === uId.toString();
+          });
           if (exists) return n;
           return { ...n, members: [...(n.members || []), user] };
         }

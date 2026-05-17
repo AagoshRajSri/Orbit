@@ -52,7 +52,7 @@ class E2EEService {
   /**
    * Encrypts an outgoing message payload using the worker.
    */
-  async encryptOutgoing(recipientId, text, media = null) {
+  async encryptOutgoing(recipientId, text, media = null, idempotencyKey = null) {
     const authUser = useAuthStore.getState().authUser;
     const authUserId = authUser?._id?.toString();
     const e2eePublicKey = useAuthStore.getState().e2eePublicKey;
@@ -66,7 +66,8 @@ class E2EEService {
       e2eePublicKey,
       recipientId,
       text,
-      mediaArrayBuffer
+      mediaArrayBuffer,
+      idempotencyKey
     }, mediaArrayBuffer ? [mediaArrayBuffer] : []);
   }
 
