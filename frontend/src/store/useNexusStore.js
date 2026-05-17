@@ -361,10 +361,11 @@ export const useNexusStore = create((set, get) => ({
       // 1. Sync missing sender keys for this Nexus
       await get().syncNexusKeys(nexusId);
 
-      // 2. Decrypt all messages
-      const decrypted = await Promise.all(
-        res.data.map(m => decryptSingleNexusMessage(m, userId))
-      );
+      // 2. Decrypt all messages sequentially to prevent SenderKey chain race conditions
+      const decrypted = [];
+      for (const m of res.data) {
+        decrypted.push(await decryptSingleNexusMessage(m, userId));
+      }
 
       set({ 
         nexusMessages: decrypted, 
@@ -391,9 +392,10 @@ export const useNexusStore = create((set, get) => ({
 
       const authUser = useAuthStore.getState().authUser;
       const userId = authUser?._id?.toString();
-      const decrypted = await Promise.all(
-        res.data.map(m => decryptSingleNexusMessage(m, userId))
-      );
+      const decrypted = [];
+      for (const m of res.data) {
+        decrypted.push(await decryptSingleNexusMessage(m, userId));
+      }
       
       set((state) => ({ 
         nexusMessages: [...decrypted, ...state.nexusMessages],
@@ -926,14 +928,14 @@ export const useNexusStore = create((set, get) => ({
         if (decryptedAny) {
           const myId = useAuthStore.getState().authUser?._id?.toString();
           const currentMessages = get().nexusMessages;
-          const updated = await Promise.all(
-            currentMessages.map(async (m) => {
-              if (m.text === "🔒 [Sender key missing — sync required]") {
-                return decryptSingleNexusMessage(m, myId);
-              }
-              return m;
-            })
-          );
+          const updated = [];
+          for (const m of currentMessages) {
+            if (m.text === "🔒 [Sender key missing — sync required]") {
+              updated.push(await decryptSingleNexusMessage(m, myId));
+            } else {
+              updated.push(m);
+            }
+          }
           set({ nexusMessages: updated });
         }
       } catch (err) {

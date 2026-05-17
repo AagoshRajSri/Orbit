@@ -140,7 +140,13 @@ export const senderKeyEncrypt = async (senderKey, plaintext) => {
     new TextEncoder().encode(`${n}:${ctB64}`)
   );
 
-  const updatedSenderKey = { ...senderKey, chainKey: newChainKey, n };
+  const messageKeys = senderKey.messageKeys || {};
+  const updatedSenderKey = { 
+    ...senderKey, 
+    chainKey: newChainKey, 
+    n,
+    messageKeys: { ...messageKeys, [n]: buf2b64(messageKey) }
+  };
 
   return {
     ciphertext: { v: 4, ciphertext: ctB64, iv: ivB64, n, sig: buf2b64(sigBuf) },
@@ -175,18 +181,31 @@ export const senderKeyDecrypt = async (senderKey, msg, signingPublicKeyB64) => {
   if (!valid) throw new Error("[SenderKey] Signature verification failed — message may be forged");
 
   // ── 2. Advance chain to targetN ─────────────────────────────────────────────
-  let { chainKey, n: currentN } = senderKey;
-
-  if (targetN <= currentN) {
-    throw new Error(`[SenderKey] Message ${targetN} already consumed (chain at ${currentN})`);
-  }
+  let { chainKey, n: currentN, messageKeys = {} } = senderKey;
 
   let messageKey;
-  while (currentN < targetN) {
-    const { newChainKey, messageKey: mk } = await advanceChain(chainKey);
-    chainKey = newChainKey;
-    currentN++;
-    if (currentN === targetN) messageKey = mk;
+  let updatedMessageKeys = { ...messageKeys };
+
+  if (targetN <= currentN) {
+    if (updatedMessageKeys[targetN]) {
+      messageKey = b64toBuf(updatedMessageKeys[targetN]);
+    } else {
+      throw new Error(`[SenderKey] Message ${targetN} already consumed (chain at ${currentN}) and key lost`);
+    }
+  } else {
+    while (currentN < targetN) {
+      const { newChainKey, messageKey: mk } = await advanceChain(chainKey);
+      chainKey = newChainKey;
+      currentN++;
+      if (currentN === targetN) {
+        messageKey = mk;
+      } else {
+        // Cache skipped keys just in case they arrive out of order
+        updatedMessageKeys[currentN] = buf2b64(mk);
+      }
+    }
+    // Cache the target message key so we can decrypt it again later (e.g. page refresh)
+    updatedMessageKeys[targetN] = buf2b64(messageKey);
   }
 
   // ── 3. AES-GCM decrypt ──────────────────────────────────────────────────────
@@ -199,8 +218,15 @@ export const senderKeyDecrypt = async (senderKey, msg, signingPublicKeyB64) => {
     b64toBuf(ctB64)
   );
 
+  // Keep cache bounded to 2000 keys to avoid blowing up IndexedDB
+  const cachedKeys = Object.keys(updatedMessageKeys).map(Number).sort((a,b) => a-b);
+  if (cachedKeys.length > 2000) {
+    const keysToRemove = cachedKeys.slice(0, cachedKeys.length - 2000);
+    for (const k of keysToRemove) delete updatedMessageKeys[k];
+  }
+
   return {
     plaintext: new TextDecoder().decode(plainBuf),
-    updatedSenderKey: { ...senderKey, chainKey, n: currentN },
+    updatedSenderKey: { ...senderKey, chainKey, n: currentN, messageKeys: updatedMessageKeys },
   };
 };

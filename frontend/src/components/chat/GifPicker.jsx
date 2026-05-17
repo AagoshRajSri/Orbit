@@ -69,7 +69,11 @@ export default function GifPicker({ t, onSelectGif }) {
             placeholder="Explore the visual archive..."
             value={query}
             onChange={handleSearch}
-            onFocus={() => play?.('hover')}
+            onFocus={e => {
+              play?.('hover');
+              e.currentTarget.style.borderColor = acc;
+              e.currentTarget.style.boxShadow = `0 0 10px ${acc}22`;
+            }}
             style={{
               background: bg,
               color: txt,
@@ -79,10 +83,6 @@ export default function GifPicker({ t, onSelectGif }) {
             className="w-full hover:bg-opacity-5 focus:bg-opacity-10 outline-none rounded-2xl py-3.5 pl-14 pr-10 text-sm font-medium tracking-tight transition-all duration-500 shadow-inner border"
             onMouseEnter={e => e.currentTarget.style.borderColor = acc + "66"}
             onMouseLeave={e => e.currentTarget.style.borderColor = bdr}
-            onFocus={e => {
-              e.currentTarget.style.borderColor = acc;
-              e.currentTarget.style.boxShadow = `0 0 10px ${acc}22`;
-            }}
             onBlur={e => {
               e.currentTarget.style.borderColor = bdr;
               e.currentTarget.style.boxShadow = "none";
