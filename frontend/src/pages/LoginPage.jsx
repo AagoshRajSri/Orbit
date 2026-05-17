@@ -5,310 +5,232 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useSoundManager } from "../hooks/useSoundManager";
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-.lp-page {
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #080514;
-  position: relative;
-  overflow: hidden;
-  font-family: 'Inter', sans-serif;
-  padding: 16px;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+*{box-sizing:border-box;}
+.lp-root{
+  height:100%; min-height:100dvh;
+  background:#05070f;
+  display:flex; flex-direction:column;
+  overflow-y:auto; overflow-x:hidden;
+  position:relative;
+  font-family:'Inter',sans-serif;
 }
-
-/* ── Animated background glows ── */
-.lp-glow-1 {
-  position: fixed; pointer-events: none;
-  width: 420px; height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,58,237,0.28) 0%, transparent 65%);
-  top: -120px; left: -80px;
-  animation: lpFloat1 8s ease-in-out infinite;
+/* Left accent rail */
+.lp-rail{
+  position:fixed; left:0; top:0; bottom:0; width:3px; z-index:10;
+  background:linear-gradient(180deg,transparent 0%,#7c3aed 25%,#38bdf8 55%,#7c3aed 80%,transparent 100%);
+  animation:railPulse 4s ease-in-out infinite;
 }
-.lp-glow-2 {
-  position: fixed; pointer-events: none;
-  width: 360px; height: 360px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(56,189,248,0.18) 0%, transparent 65%);
-  bottom: -80px; right: -60px;
-  animation: lpFloat2 11s ease-in-out infinite;
+@keyframes railPulse{0%,100%{opacity:.4} 50%{opacity:1}}
+/* Subtle grid */
+.lp-grid{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:linear-gradient(rgba(124,58,237,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,.04) 1px,transparent 1px);
+  background-size:54px 54px;
 }
-.lp-glow-3 {
-  position: fixed; pointer-events: none;
-  width: 200px; height: 200px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(236,72,153,0.14) 0%, transparent 65%);
-  top: 50%; right: 10%;
-  animation: lpFloat3 14s ease-in-out infinite;
+/* Scan line */
+.lp-scan{
+  position:fixed; left:0; right:0; height:80px; pointer-events:none; z-index:1;
+  background:linear-gradient(180deg,transparent,rgba(124,58,237,.05),transparent);
+  animation:scan 12s linear infinite;
 }
-@keyframes lpFloat1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(30px,40px) scale(1.08)} }
-@keyframes lpFloat2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-20px,-30px) scale(1.06)} }
-@keyframes lpFloat3 { 0%,100%{transform:translate(0,-50%) scale(1)} 50%{transform:translate(-15px,calc(-50% + 20px)) scale(1.12)} }
-
-/* Grid lines overlay */
-.lp-grid {
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    linear-gradient(rgba(124,58,237,0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124,58,237,0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
+@keyframes scan{0%{transform:translateY(-80px)} 100%{transform:translateY(100vh)}}
+/* Ambient glows */
+.lp-g1{position:fixed;top:-80px;right:-40px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(56,189,248,.12) 0%,transparent 70%);pointer-events:none;z-index:0;}
+.lp-g2{position:fixed;bottom:-80px;left:20px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.1) 0%,transparent 70%);pointer-events:none;z-index:0;}
+/* Content */
+.lp-body{
+  position:relative; z-index:2;
+  flex:1; display:flex; flex-direction:column;
+  padding:28px 28px 24px 36px;
 }
-
-/* ── Card ── */
-.lp-card {
-  position: relative; z-index: 2;
-  width: 100%; max-width: 420px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.09);
-  border-radius: 24px;
-  padding: 36px 32px 30px;
-  backdrop-filter: blur(28px);
-  box-shadow:
-    0 0 0 1px rgba(124,58,237,0.12),
-    0 32px 80px rgba(0,0,0,0.55),
-    inset 0 1px 0 rgba(255,255,255,0.07);
+/* Header */
+.lp-top{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:36px;}
+.lp-brand{display:flex;align-items:center;gap:10px;}
+.lp-orb{
+  width:32px;height:32px;border-radius:50%;
+  border:1.5px solid rgba(124,58,237,.5);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
 }
-
-/* Card top edge glow */
-.lp-card::before {
-  content: '';
-  position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(124,58,237,0.8), rgba(56,189,248,0.6), transparent);
-  border-radius: 99px;
+.lp-orb-inner{width:8px;height:8px;border-radius:50%;background:#7c3aed;box-shadow:0 0 12px #7c3aed;}
+.lp-orb::after{
+  content:'';position:absolute;width:5px;height:5px;border-radius:50%;
+  background:#38bdf8;box-shadow:0 0 8px #38bdf8;
+  top:-3px;left:50%;transform:translateX(-50%);
+  animation:orbRing 2.4s linear infinite;transform-origin:50% calc(100% + 13px);
 }
-
-/* ── Logo ── */
-.lp-logo {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 28px;
+@keyframes orbRing{to{transform:translateX(-50%) rotate(360deg);}}
+.lp-name-col{display:flex;flex-direction:column;gap:1px;}
+.lp-name{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.8);}
+.lp-sub{font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,255,255,.2);letter-spacing:.14em;text-transform:uppercase;}
+.lp-status{
+  display:flex;align-items:center;gap:5px;
+  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(52,211,153,.7);
 }
-.lp-logo-icon {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: linear-gradient(135deg, #7c3aed, #3b82f6);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 0 20px rgba(124,58,237,0.5);
+.lp-ping{
+  width:5px;height:5px;border-radius:50%;background:#34d399;box-shadow:0 0 7px #34d399;
+  animation:ping 2.2s ease-in-out infinite;
 }
-.lp-logo-ring {
-  width: 18px; height: 18px; border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.9);
-  position: relative;
+@keyframes ping{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.8)}}
+/* Hero */
+.lp-hero{flex-shrink:0;margin-bottom:44px;}
+.lp-eyebrow{
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;
 }
-.lp-logo-ring::before {
-  content: '';
-  position: absolute; top: -2px; left: 50%; transform: translateX(-50%);
-  width: 5px; height: 5px; border-radius: 50%;
-  background: white; box-shadow: 0 0 6px white;
-  animation: lpOrbit 2.5s linear infinite;
-  transform-origin: 50% calc(100% + 7px);
+.lp-eyebrow-line{height:1px;width:24px;background:linear-gradient(90deg,#7c3aed,transparent);}
+.lp-eyebrow-text{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:rgba(124,58,237,.65);}
+.lp-h1{
+  font-size:clamp(36px,7vw,54px);font-weight:800;color:#fff;
+  letter-spacing:-1.5px;line-height:1;margin:0 0 4px;
 }
-@keyframes lpOrbit { to { transform: translateX(-50%) rotate(360deg); } }
-.lp-logo-text {
-  display: flex; flex-direction: column;
+.lp-h1 span{
+  display:block;font-style:italic;
+  -webkit-text-stroke:1.5px rgba(255,255,255,.35);
+  color:transparent;
 }
-.lp-logo-name {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 18px; font-weight: 700; letter-spacing: 0.04em;
-  color: #fff; line-height: 1;
+/* Form */
+.lp-form{flex-shrink:0;}
+.lp-field{
+  position:relative;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  margin-bottom:32px;
+  padding-bottom:2px;
+  transition:border-color .25s;
 }
-.lp-logo-sub {
-  font-size: 10px; color: rgba(255,255,255,0.3);
-  letter-spacing: 0.08em; margin-top: 2px;
+.lp-field:focus-within{border-bottom-color:transparent;}
+.lp-field::after{
+  content:'';position:absolute;bottom:-1px;left:0;
+  width:0;height:2px;
+  background:linear-gradient(90deg,#7c3aed,#38bdf8);
+  transition:width .4s cubic-bezier(.4,0,.2,1);
 }
-.lp-status {
-  margin-left: auto;
-  display: flex; align-items: center; gap: 5px;
-  font-size: 10px; font-weight: 500; letter-spacing: 0.06em;
-  color: rgba(52,211,153,0.85);
-  background: rgba(52,211,153,0.08);
-  border: 1px solid rgba(52,211,153,0.18);
-  border-radius: 99px;
-  padding: 4px 10px;
+.lp-field:focus-within::after{width:100%;}
+.lp-fmeta{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
 }
-.lp-status-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 6px #34d399;
-  animation: lpPing 2s ease-in-out infinite;
+.lp-fid{
+  font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:rgba(124,58,237,.55);
 }
-@keyframes lpPing { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.6)} }
-
-/* ── Heading ── */
-.lp-heading {
-  margin-bottom: 28px;
+.lp-fname{
+  font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(255,255,255,.2);
 }
-.lp-heading h1 {
-  font-size: 28px; font-weight: 800; color: #fff;
-  letter-spacing: -0.5px; line-height: 1.15;
-  background: linear-gradient(135deg, #fff 0%, rgba(196,181,253,0.9) 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+.lp-fmeta a{
+  font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;
+  color:rgba(124,58,237,.6);text-decoration:none;text-transform:uppercase;
+  transition:color .2s;
 }
-.lp-heading p {
-  font-size: 13px; color: rgba(255,255,255,0.38);
-  margin-top: 5px; letter-spacing: 0.01em;
+.lp-fmeta a:hover{color:#a78bfa;}
+.lp-frow{display:flex;align-items:center;gap:10px;padding-bottom:8px;}
+.lp-fico{
+  color:rgba(255,255,255,.18);flex-shrink:0;display:flex;align-items:center;
+  transition:color .25s;
 }
-
-/* ── Inputs ── */
-.lp-field-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-.lp-field-wrap { position: relative; }
-.lp-field-label {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: rgba(255,255,255,0.35);
-  margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between;
+.lp-field:focus-within .lp-fico{color:rgba(124,58,237,.6);}
+.lp-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:#f0f4ff;font-family:'Inter',sans-serif;
+  font-size:17px;font-weight:400;caret-color:#7c3aed;padding:0;
 }
-.lp-field-label a {
-  color: rgba(167,139,250,0.75); text-decoration: none;
-  font-size: 11px; text-transform: none; letter-spacing: 0; font-weight: 500;
-  transition: color 0.2s;
+.lp-input::placeholder{color:rgba(255,255,255,.09);}
+.lp-eye{background:none;border:none;padding:4px;cursor:pointer;color:rgba(255,255,255,.18);display:flex;align-items:center;transition:color .2s;}
+.lp-eye:hover{color:rgba(255,255,255,.5);}
+/* Unique arrow-shaped submit */
+.lp-submit-wrap{margin-bottom:20px;}
+.lp-submit{
+  position:relative;width:100%;height:54px;border:none;cursor:pointer;
+  background:linear-gradient(90deg,#7c3aed 0%,#4f46e5 55%,#3b82f6 100%);
+  clip-path:polygon(0 0,calc(100% - 22px) 0,100% 50%,calc(100% - 22px) 100%,0 100%);
+  display:flex;align-items:center;
+  padding:0 50px 0 24px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#fff;
+  transition:transform .2s,box-shadow .3s;
+  box-shadow:0 0 36px rgba(124,58,237,.4);
 }
-.lp-field-label a:hover { color: #a78bfa; }
-.lp-field-input-wrap {
-  position: relative; display: flex; align-items: center;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px;
-  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
-  overflow: hidden;
+.lp-submit:not(:disabled):hover{
+  transform:translateX(4px);
+  box-shadow:0 0 56px rgba(124,58,237,.6);
 }
-.lp-field-input-wrap:focus-within {
-  border-color: rgba(124,58,237,0.6);
-  background: rgba(124,58,237,0.06);
-  box-shadow: 0 0 0 3px rgba(124,58,237,0.12), 0 0 24px rgba(124,58,237,0.1);
+.lp-submit:disabled{opacity:.4;cursor:not-allowed;}
+.lp-submit-inner{display:flex;align-items:center;gap:10px;}
+/* Alt methods */
+.lp-or{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+  font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.14em;
+  color:rgba(255,255,255,.18);text-transform:uppercase;
 }
-.lp-field-ico {
-  padding: 0 0 0 16px; color: rgba(255,255,255,0.2);
-  display: flex; align-items: center; flex-shrink: 0;
-  transition: color 0.25s;
+.lp-or::before,.lp-or::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07);}
+.lp-alts{display:flex;gap:10px;margin-bottom:0;}
+.lp-alt{
+  flex:1;display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;
+  border:1px solid rgba(255,255,255,.07);
+  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;
+  color:rgba(255,255,255,.2);cursor:not-allowed;
+  background:rgba(255,255,255,.018);
 }
-.lp-field-input-wrap:focus-within .lp-field-ico { color: rgba(167,139,250,0.7); }
-.lp-input {
-  flex: 1; background: transparent; border: none; outline: none;
-  color: #f0f4ff; font-family: 'Inter', sans-serif;
-  font-size: 15px; font-weight: 400;
-  padding: 14px 16px 14px 12px;
-  caret-color: #a78bfa;
+.lp-alt-badge{
+  font-size:7px;padding:2px 5px;
+  background:rgba(124,58,237,.12);color:rgba(167,139,250,.55);
+  border:1px solid rgba(124,58,237,.2);
 }
-.lp-input::placeholder { color: rgba(255,255,255,0.16); }
-.lp-eye-btn {
-  background: none; border: none; padding: 0 16px; cursor: pointer;
-  color: rgba(255,255,255,0.2); display: flex; align-items: center;
-  transition: color 0.2s; height: 100%;
+/* Footer */
+.lp-foot{
+  margin-top:auto;padding-top:20px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;
+  border-top:1px solid rgba(255,255,255,.05);
+  flex-shrink:0;
 }
-.lp-eye-btn:hover { color: rgba(255,255,255,0.55); }
-
-/* ── Submit button ── */
-.lp-submit {
-  width: 100%; padding: 15px;
-  border: none; border-radius: 14px; cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-size: 15px; font-weight: 700;
-  letter-spacing: 0.02em; color: #fff;
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #3b82f6 100%);
-  position: relative; overflow: hidden;
-  transition: opacity 0.25s, transform 0.2s, box-shadow 0.3s;
-  box-shadow: 0 0 30px rgba(124,58,237,0.4), 0 8px 24px rgba(0,0,0,0.3);
-  margin-bottom: 14px;
+.lp-foot-txt{font-size:12px;color:rgba(255,255,255,.3);}
+.lp-foot-txt a{color:#7c3aed;text-decoration:none;font-weight:600;transition:color .2s;}
+.lp-foot-txt a:hover{color:#a78bfa;}
+.lp-admin{
+  display:flex;align-items:center;gap:5px;
+  font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(255,255,255,.18);text-decoration:none;
+  padding:5px 10px;border:1px solid rgba(255,255,255,.07);transition:all .2s;
 }
-.lp-submit:not(:disabled):hover {
-  box-shadow: 0 0 45px rgba(124,58,237,0.55), 0 8px 24px rgba(0,0,0,0.3);
-  transform: translateY(-1px);
+.lp-admin:hover{color:rgba(239,68,68,.65);border-color:rgba(239,68,68,.2);}
+/* Spinner */
+.lp-spin{
+  width:14px;height:14px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.25);border-top-color:#fff;
+  animation:spin .7s linear infinite;display:inline-block;flex-shrink:0;
 }
-.lp-submit:not(:disabled):active { transform: translateY(0); }
-.lp-submit:disabled { opacity: 0.45; cursor: not-allowed; }
-/* Shimmer */
-.lp-submit::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
-  transform: translateX(-100%);
-  transition: transform 0.6s;
+@keyframes spin{to{transform:rotate(360deg);}}
+/* Decorative coord readout top-right */
+.lp-coord{
+  position:fixed;top:14px;right:20px;
+  font-family:'JetBrains Mono',monospace;font-size:7px;
+  color:rgba(255,255,255,.1);letter-spacing:.1em;
+  pointer-events:none;z-index:3;
+  display:flex;flex-direction:column;align-items:flex-end;gap:2px;
 }
-.lp-submit:not(:disabled):hover::after { transform: translateX(100%); }
-.lp-submit-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
-
-/* ── Alt methods ── */
-.lp-divider {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 11px; color: rgba(255,255,255,0.2);
-  letter-spacing: 0.06em; margin-bottom: 14px;
-}
-.lp-divider::before, .lp-divider::after {
-  content: ''; flex: 1; height: 1px;
-  background: rgba(255,255,255,0.08);
-}
-.lp-alt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.lp-alt-btn {
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 11px 8px;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  background: rgba(255,255,255,0.03);
-  font-size: 12px; font-weight: 500;
-  color: rgba(255,255,255,0.3);
-  cursor: not-allowed;
-  position: relative; overflow: hidden;
-}
-.lp-alt-badge {
-  font-size: 9px; padding: 1px 5px;
-  background: rgba(124,58,237,0.2);
-  border: 1px solid rgba(124,58,237,0.3);
-  border-radius: 99px; color: rgba(167,139,250,0.7);
-}
-
-/* ── Footer ── */
-.lp-footer {
-  margin-top: 22px; padding-top: 18px;
-  border-top: 1px solid rgba(255,255,255,0.07);
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 8px;
-}
-.lp-footer-txt { font-size: 13px; color: rgba(255,255,255,0.35); }
-.lp-footer-txt a {
-  color: #a78bfa; text-decoration: none; font-weight: 600; transition: color 0.2s;
-}
-.lp-footer-txt a:hover { color: #c4b5fd; }
-.lp-admin-link {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11px; letter-spacing: 0.05em;
-  color: rgba(255,255,255,0.2); text-decoration: none;
-  padding: 5px 10px; border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 8px; transition: all 0.2s;
-}
-.lp-admin-link:hover { color: rgba(239,68,68,0.7); border-color: rgba(239,68,68,0.2); }
-
-/* ── Spinner ── */
-.lp-spinner {
-  width: 16px; height: 16px; border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.25);
-  border-top-color: #fff;
-  animation: lpSpin 0.7s linear infinite; display: inline-block;
-}
-@keyframes lpSpin { to { transform: rotate(360deg); } }
 `;
 
 const IcoMail = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
     <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
   </svg>
 );
 const IcoLock = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
     <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
   </svg>
 );
 const IcoShield = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
   </svg>
 );
 const IcoArrow = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
     <path d="M5 12h14M13 6l6 6-6 6"/>
   </svg>
 );
@@ -330,93 +252,103 @@ export default function LoginPage() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="lp-page">
-        {/* Background elements */}
-        <div className="lp-glow-1" />
-        <div className="lp-glow-2" />
-        <div className="lp-glow-3" />
+      <div className="lp-root">
+        <div className="lp-rail" />
         <div className="lp-grid" />
+        <div className="lp-scan" />
+        <div className="lp-g1" />
+        <div className="lp-g2" />
+        <div className="lp-coord">
+          <span>LAT 28.6139 · LNG 77.2088</span>
+          <span>NODE_ALPHA · SECURE</span>
+        </div>
 
-        <div className="lp-card">
-          {/* Logo row */}
-          <div className="lp-logo">
-            <div className="lp-logo-icon">
-              <div className="lp-logo-ring" />
-            </div>
-            <div className="lp-logo-text">
-              <span className="lp-logo-name">Orbit</span>
-              <span className="lp-logo-sub">ENCRYPTED · E2E</span>
+        <div className="lp-body">
+          {/* Header */}
+          <div className="lp-top">
+            <div className="lp-brand">
+              <div className="lp-orb">
+                <div className="lp-orb-inner" />
+              </div>
+              <div className="lp-name-col">
+                <span className="lp-name">Orbit</span>
+                <span className="lp-sub">Encrypted · E2EE</span>
+              </div>
             </div>
             <div className="lp-status">
-              <div className="lp-status-dot" />
-              LIVE
+              <div className="lp-ping" />
+              Node Online
             </div>
           </div>
 
-          {/* Heading */}
-          <div className="lp-heading">
-            <h1>Welcome back.</h1>
-            <p>Sign in to your encrypted account</p>
+          {/* Hero */}
+          <div className="lp-hero">
+            <div className="lp-eyebrow">
+              <div className="lp-eyebrow-line" />
+              <span className="lp-eyebrow-text">Authentication Protocol</span>
+            </div>
+            <h1 className="lp-h1">
+              Welcome<span>back.</span>
+            </h1>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit}>
-            <div className="lp-field-group">
-              <div className="lp-field-wrap">
-                <div className="lp-field-label">Email address</div>
-                <div className="lp-field-input-wrap">
-                  <span className="lp-field-ico"><IcoMail /></span>
-                  <input
-                    className="lp-input" type="email" placeholder="you@orbit.network"
-                    value={form.email}
-                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                    autoComplete="email" required
-                  />
-                </div>
+          <form className="lp-form" onSubmit={handleSubmit}>
+            <div className="lp-field">
+              <div className="lp-fmeta">
+                <span className="lp-fid">01 ──</span>
+                <span className="lp-fname">Email Address</span>
               </div>
-
-              <div className="lp-field-wrap">
-                <div className="lp-field-label">
-                  <span>Password</span>
-                  <Link to="/forgot-password">Forgot password?</Link>
-                </div>
-                <div className="lp-field-input-wrap">
-                  <span className="lp-field-ico"><IcoLock /></span>
-                  <input
-                    className="lp-input" type={showPw ? "text" : "password"} placeholder="Enter your password"
-                    value={form.password}
-                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                    autoComplete="current-password" required
-                  />
-                  <button type="button" className="lp-eye-btn" onClick={() => { play?.("click"); setShowPw(p => !p); }}>
-                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                </div>
+              <div className="lp-frow">
+                <span className="lp-fico"><IcoMail /></span>
+                <input className="lp-input" type="email" placeholder="you@orbit.network"
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  autoComplete="email" required />
               </div>
             </div>
 
-            <button type="submit" className="lp-submit" disabled={isLoggingIn}>
-              <span className="lp-submit-inner">
-                {isLoggingIn ? <><span className="lp-spinner" /> Authenticating…</> : <>Sign In to Orbit <IcoArrow /></>}
-              </span>
-            </button>
+            <div className="lp-field">
+              <div className="lp-fmeta">
+                <span className="lp-fid">02 ──</span>
+                <span className="lp-fname">Auth Key</span>
+                <Link to="/forgot-password">Forgot?</Link>
+              </div>
+              <div className="lp-frow">
+                <span className="lp-fico"><IcoLock /></span>
+                <input className="lp-input"
+                  type={showPw ? "text" : "password"} placeholder="••••••••••••"
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  autoComplete="current-password" required />
+                <button type="button" className="lp-eye" onClick={() => { play?.("click"); setShowPw(p => !p); }}>
+                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="lp-submit-wrap">
+              <button type="submit" className="lp-submit" disabled={isLoggingIn}>
+                <span className="lp-submit-inner">
+                  {isLoggingIn
+                    ? <><span className="lp-spin" /> Authenticating…</>
+                    : <>Initiate Session <IcoArrow /></>}
+                </span>
+              </button>
+            </div>
           </form>
 
           {/* Alt auth */}
-          <div className="lp-divider">OR CONTINUE WITH</div>
-          <div className="lp-alt-row">
-            <button className="lp-alt-btn">
-              ✦ Constellation <span className="lp-alt-badge">Soon</span>
-            </button>
-            <button className="lp-alt-btn">
-              ✧ Starweave <span className="lp-alt-badge">Soon</span>
-            </button>
+          <div className="lp-or">Via</div>
+          <div className="lp-alts">
+            <div className="lp-alt"><span>✦ Constellation</span><span className="lp-alt-badge">SOON</span></div>
+            <div className="lp-alt"><span>✧ Starweave</span><span className="lp-alt-badge">SOON</span></div>
           </div>
 
           {/* Footer */}
-          <div className="lp-footer">
-            <div className="lp-footer-txt">No account? <Link to="/signup">Create one →</Link></div>
-            <Link to="/admin/login" className="lp-admin-link"><IcoShield /> Admin</Link>
+          <div className="lp-foot">
+            <div className="lp-foot-txt">No account? <Link to="/signup">Create one →</Link></div>
+            <Link to="/admin/login" className="lp-admin"><IcoShield /> Admin</Link>
           </div>
         </div>
       </div>
