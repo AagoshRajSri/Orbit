@@ -4,6 +4,7 @@
 @config "../tailwind.config.js";
 @plugin "daisyui";
 @import "./styles/orbital.css";
+@import "./styles/orbit-foundation.css";
 
 @font-face {
   font-family: "Bungee";
@@ -76,8 +77,12 @@
 /* Smooth visual changes when switching themes */
 html,
 body {
+  margin: 0;
+  padding: 0;
   height: 100%;
   overflow: hidden;
+  background-color: #050810;
+  color: #ffffff;
   font-family:
     "Dosis",
     system-ui,
@@ -92,8 +97,9 @@ body {
     color 200ms ease,
     border-color 200ms ease,
     box-shadow 200ms ease;
-  /* Prevent pull-to-refresh on mobile */
+  /* Prevent pull-to-refresh / bounce on mobile */
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -103,6 +109,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background-color: #05070f;
 }
 
 
@@ -111,6 +118,39 @@ body {
 /* Fix dynamic viewport height on mobile (fixes the 100vh problem) */
 :root {
   --dvh: 1dvh;
+
+  /* ═══════════════════════════════════════════════════════════════
+     ORBIT FOUNDATION SYSTEM — CSS Custom Property Defaults
+     Updated in realtime by OrbitalThemeEngine (RAF loop).
+     These are safe fallbacks before the first RAF tick.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Background surfaces */
+  --orb-bg-primary:     hsl(228, 42%, 5%);
+  --orb-bg-secondary:   hsl(225, 35%, 9%);
+  --orb-bg-glass:       rgba(8, 6, 22, 0.72);
+
+  /* Accent colors */
+  --orb-accent-warm:    hsl(30, 80%, 55%);
+  --orb-accent-cold:    hsl(210, 85%, 55%);
+
+  /* Typography */
+  --orb-text-primary:   hsl(40, 60%, 90%);
+  --orb-text-secondary: hsl(35, 30%, 60%);
+
+  /* Glow colors (rgba strings) */
+  --orb-glow-warm:      rgba(180, 110, 50, 0.35);
+  --orb-glow-cold:      rgba(50, 100, 200, 0.28);
+
+  /* Environment canvas */
+  --orb-particle-color: hsl(210, 85%, 55%);
+  --orb-star-opacity:   0.7;
+
+  /* Music hue-rotate (degrees) */
+  --orb-hue-rotate:     0deg;
+
+  /* Activity level 0–1 */
+  --orb-activity:       0;
 }
 
 /* Safe area insets for notch/island devices */

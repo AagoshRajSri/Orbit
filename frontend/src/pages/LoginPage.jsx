@@ -1,227 +1,151 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSoundManager } from "../hooks/useSoundManager";
 
+/* ─── Styles ─────────────────────────────────────────────────────── */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
-*{box-sizing:border-box;}
-.lp-root{
-  height:100%; min-height:100dvh;
-  background:#05070f;
-  display:flex; flex-direction:column;
-  overflow-y:auto; overflow-x:hidden;
-  position:relative;
-  font-family:'Inter',sans-serif;
-}
-/* Left accent rail */
-.lp-rail{
-  position:fixed; left:0; top:0; bottom:0; width:3px; z-index:10;
-  background:linear-gradient(180deg,transparent 0%,#7c3aed 25%,#38bdf8 55%,#7c3aed 80%,transparent 100%);
-  animation:railPulse 4s ease-in-out infinite;
-}
-@keyframes railPulse{0%,100%{opacity:.4} 50%{opacity:1}}
-/* Subtle grid */
-.lp-grid{
-  position:fixed; inset:0; z-index:0; pointer-events:none;
-  background-image:linear-gradient(rgba(124,58,237,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,.04) 1px,transparent 1px);
-  background-size:54px 54px;
-}
-/* Scan line */
-.lp-scan{
-  position:fixed; left:0; right:0; height:80px; pointer-events:none; z-index:1;
-  background:linear-gradient(180deg,transparent,rgba(124,58,237,.05),transparent);
-  animation:scan 12s linear infinite;
-}
-@keyframes scan{0%{transform:translateY(-80px)} 100%{transform:translateY(100vh)}}
-/* Ambient glows */
-.lp-g1{position:fixed;top:-80px;right:-40px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(56,189,248,.12) 0%,transparent 70%);pointer-events:none;z-index:0;}
-.lp-g2{position:fixed;bottom:-80px;left:20px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.1) 0%,transparent 70%);pointer-events:none;z-index:0;}
-/* Content */
-.lp-body{
-  position:relative; z-index:2;
-  flex:1; display:flex; flex-direction:column;
-  padding:28px 28px 24px 36px;
-}
-/* Header */
-.lp-top{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:36px;}
-.lp-brand{display:flex;align-items:center;gap:10px;}
-.lp-orb{
-  width:32px;height:32px;border-radius:50%;
-  border:1.5px solid rgba(124,58,237,.5);
-  display:flex;align-items:center;justify-content:center;
-  position:relative;
-}
-.lp-orb-inner{width:8px;height:8px;border-radius:50%;background:#7c3aed;box-shadow:0 0 12px #7c3aed;}
-.lp-orb::after{
-  content:'';position:absolute;width:5px;height:5px;border-radius:50%;
-  background:#38bdf8;box-shadow:0 0 8px #38bdf8;
-  top:-3px;left:50%;transform:translateX(-50%);
-  animation:orbRing 2.4s linear infinite;transform-origin:50% calc(100% + 13px);
-}
-@keyframes orbRing{to{transform:translateX(-50%) rotate(360deg);}}
-.lp-name-col{display:flex;flex-direction:column;gap:1px;}
-.lp-name{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.8);}
-.lp-sub{font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,255,255,.2);letter-spacing:.14em;text-transform:uppercase;}
-.lp-status{
-  display:flex;align-items:center;gap:5px;
-  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;
-  color:rgba(52,211,153,.7);
-}
-.lp-ping{
-  width:5px;height:5px;border-radius:50%;background:#34d399;box-shadow:0 0 7px #34d399;
-  animation:ping 2.2s ease-in-out infinite;
-}
-@keyframes ping{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.8)}}
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+.lp-root{min-height:100dvh;background:#050810;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;position:relative;font-family:'Space Mono',monospace;color:#c8d8f0;overscroll-behavior:none}
+.lp-stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+.lp-orbital{position:fixed;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.11}
+.lp-page{position:relative;z-index:2;flex:1;display:flex;align-items:center;justify-content:center;padding:20px;min-height:inherit}
+/* Hull */
+.lp-hull{width:100%;max-width:500px;position:relative}
+.lp-hull::before{content:'';position:absolute;inset:-1px;clip-path:polygon(0 0,calc(100% - 40px) 0,100% 40px,100% 100%,40px 100%,0 100%);background:linear-gradient(135deg,rgba(79,53,243,.9) 0%,rgba(0,229,255,.5) 40%,rgba(79,53,243,.1) 100%);z-index:0;animation:lpBorderPulse 4s ease-in-out infinite}
+@keyframes lpBorderPulse{0%,100%{opacity:.5}50%{opacity:1}}
+.lp-inner{position:relative;z-index:1;clip-path:polygon(0 0,calc(100% - 40px) 0,100% 40px,100% 100%,40px 100%,0 100%);background:linear-gradient(160deg,rgba(10,15,46,.97) 0%,rgba(5,8,16,.99) 100%);padding:28px 28px 24px;overflow:hidden}
+.lp-inner::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,.013) 2px,rgba(0,229,255,.013) 4px);pointer-events:none;z-index:10;animation:lpScanMove 10s linear infinite}
+@keyframes lpScanMove{from{background-position:0 0}to{background-position:0 80px}}
+.lp-inner::before{content:'';position:absolute;bottom:0;left:0;width:40px;height:40px;border-left:1.5px solid rgba(0,229,255,.35);border-bottom:1.5px solid rgba(0,229,255,.35);pointer-events:none;z-index:11}
+.lp-corner-tr{position:absolute;top:0;right:0;width:40px;height:40px;border-right:1.5px solid rgba(0,229,255,.35);border-top:1.5px solid rgba(0,229,255,.35);z-index:11}
+/* Status bar */
+.lp-status{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid rgba(79,53,243,.18)}
+.lp-brand-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#fff}
+.lp-brand-sub{font-size:7.5px;letter-spacing:.18em;color:rgba(0,229,255,.4);text-transform:uppercase;margin-top:2px}
+.lp-node-row{display:flex;align-items:center;gap:6px;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:rgba(52,211,153,.8)}
+.lp-dot{position:relative;width:7px;height:7px;border-radius:50%;background:#34d399;flex-shrink:0}
+.lp-dot::before{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(52,211,153,.35);animation:lpRadar 2s ease-out infinite}
+.lp-dot::after{content:'';position:absolute;inset:-9px;border-radius:50%;border:1px solid rgba(52,211,153,.1);animation:lpRadar 2s ease-out .4s infinite}
+@keyframes lpRadar{0%{transform:scale(1);opacity:.8}100%{transform:scale(3);opacity:0}}
+.lp-coords{font-size:7.5px;letter-spacing:.06em;color:rgba(200,216,240,.2);font-variant-numeric:tabular-nums;margin-top:4px;text-align:right}
 /* Hero */
-.lp-hero{flex-shrink:0;margin-bottom:44px;}
-.lp-eyebrow{
-  display:flex;align-items:center;gap:8px;margin-bottom:12px;
-}
-.lp-eyebrow-line{height:1px;width:24px;background:linear-gradient(90deg,#7c3aed,transparent);}
-.lp-eyebrow-text{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:rgba(124,58,237,.65);}
-.lp-h1{
-  font-size:clamp(36px,7vw,54px);font-weight:800;color:#fff;
-  letter-spacing:-1.5px;line-height:1;margin:0 0 4px;
-}
-.lp-h1 span{
-  display:block;font-style:italic;
-  -webkit-text-stroke:1.5px rgba(255,255,255,.35);
-  color:transparent;
-}
-/* Form */
-.lp-form{flex-shrink:0;}
-.lp-field{
-  position:relative;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  margin-bottom:32px;
-  padding-bottom:2px;
-  transition:border-color .25s;
-}
-.lp-field:focus-within{border-bottom-color:transparent;}
-.lp-field::after{
-  content:'';position:absolute;bottom:-1px;left:0;
-  width:0;height:2px;
-  background:linear-gradient(90deg,#7c3aed,#38bdf8);
-  transition:width .4s cubic-bezier(.4,0,.2,1);
-}
-.lp-field:focus-within::after{width:100%;}
-.lp-fmeta{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:10px;
-}
-.lp-fid{
-  font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;
-  letter-spacing:.2em;text-transform:uppercase;color:rgba(124,58,237,.55);
-}
-.lp-fname{
-  font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;
-  text-transform:uppercase;color:rgba(255,255,255,.2);
-}
-.lp-fmeta a{
-  font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;
-  color:rgba(124,58,237,.6);text-decoration:none;text-transform:uppercase;
-  transition:color .2s;
-}
-.lp-fmeta a:hover{color:#a78bfa;}
-.lp-frow{display:flex;align-items:center;gap:10px;padding-bottom:8px;}
-.lp-fico{
-  color:rgba(255,255,255,.18);flex-shrink:0;display:flex;align-items:center;
-  transition:color .25s;
-}
-.lp-field:focus-within .lp-fico{color:rgba(124,58,237,.6);}
-.lp-input{
-  flex:1;background:transparent;border:none;outline:none;
-  color:#f0f4ff;font-family:'Inter',sans-serif;
-  font-size:17px;font-weight:400;caret-color:#7c3aed;padding:0;
-}
-.lp-input::placeholder{color:rgba(255,255,255,.09);}
-.lp-eye{background:none;border:none;padding:4px;cursor:pointer;color:rgba(255,255,255,.18);display:flex;align-items:center;transition:color .2s;}
-.lp-eye:hover{color:rgba(255,255,255,.5);}
-/* Unique arrow-shaped submit */
-.lp-submit-wrap{margin-bottom:20px;}
-.lp-submit{
-  position:relative;width:100%;height:54px;border:none;cursor:pointer;
-  background:linear-gradient(90deg,#7c3aed 0%,#4f46e5 55%,#3b82f6 100%);
-  clip-path:polygon(0 0,calc(100% - 22px) 0,100% 50%,calc(100% - 22px) 100%,0 100%);
-  display:flex;align-items:center;
-  padding:0 50px 0 24px;
-  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
-  letter-spacing:.2em;text-transform:uppercase;color:#fff;
-  transition:transform .2s,box-shadow .3s;
-  box-shadow:0 0 36px rgba(124,58,237,.4);
-}
-.lp-submit:not(:disabled):hover{
-  transform:translateX(4px);
-  box-shadow:0 0 56px rgba(124,58,237,.6);
-}
-.lp-submit:disabled{opacity:.4;cursor:not-allowed;}
-.lp-submit-inner{display:flex;align-items:center;gap:10px;}
-/* Alt methods */
-.lp-or{
-  display:flex;align-items:center;gap:10px;margin-bottom:12px;
-  font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.14em;
-  color:rgba(255,255,255,.18);text-transform:uppercase;
-}
-.lp-or::before,.lp-or::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07);}
-.lp-alts{display:flex;gap:10px;margin-bottom:0;}
-.lp-alt{
-  flex:1;display:flex;align-items:center;justify-content:space-between;
-  padding:10px 12px;
-  border:1px solid rgba(255,255,255,.07);
-  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;
-  color:rgba(255,255,255,.2);cursor:not-allowed;
-  background:rgba(255,255,255,.018);
-}
-.lp-alt-badge{
-  font-size:7px;padding:2px 5px;
-  background:rgba(124,58,237,.12);color:rgba(167,139,250,.55);
-  border:1px solid rgba(124,58,237,.2);
-}
+.lp-hero{margin-bottom:32px}
+.lp-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.lp-eyebrow-line{width:20px;height:1px;background:linear-gradient(90deg,#4f35f3,transparent)}
+.lp-eyebrow-text{font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:rgba(79,53,243,.65)}
+.lp-h1{font-family:'Orbitron',monospace;font-size:clamp(26px,6vw,40px);font-weight:900;text-transform:uppercase;letter-spacing:-.02em;line-height:1}
+.lp-h-line1{display:block;animation:lpReveal .5s cubic-bezier(.25,.46,.45,.94) forwards}
+.lp-h-back{display:block;color:#00e5ff;text-shadow:0 0 20px rgba(0,229,255,.5);animation:lpReveal .5s .15s cubic-bezier(.25,.46,.45,.94) both,lpChromatic 7s 1.5s ease-in-out infinite}
+@keyframes lpReveal{from{clip-path:inset(0 0 100% 0);transform:translateY(8px);opacity:0}to{clip-path:inset(0 0 0% 0);transform:translateY(0);opacity:1}}
+@keyframes lpChromatic{0%,84%,100%{text-shadow:0 0 20px rgba(0,229,255,.5);transform:none}86%{text-shadow:-2px 0 #ff2d78,2px 0 #00e5ff;transform:translateX(1px)}88%{text-shadow:2px 0 #ff2d78,-2px 0 #00e5ff;transform:translateX(-1px)}90%{text-shadow:0 0 20px rgba(0,229,255,.5);transform:none}}
+/* HUD fields */
+.lp-field{margin-bottom:24px}
+.lp-label{display:flex;align-items:center;justify-content:space-between;font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:rgba(79,53,243,.55);margin-bottom:8px;transition:color .25s}
+.lp-field:focus-within .lp-label{color:#00e5ff}
+.lp-label a{color:rgba(79,53,243,.5);text-decoration:none;font-size:8px;letter-spacing:.1em;transition:color .2s}
+.lp-label a:hover{color:#00e5ff}
+.lp-bracket-row{display:flex;align-items:center;gap:6px}
+.lp-bl,.lp-br{font-size:22px;line-height:1;color:rgba(79,53,243,.4);transition:color .25s;flex-shrink:0;font-family:'Space Mono',monospace}
+.lp-field:focus-within .lp-bl,.lp-field:focus-within .lp-br{color:#00e5ff}
+.lp-input-wrap{flex:1;position:relative;border-bottom:1px solid rgba(79,53,243,.2);transition:border-color .25s}
+.lp-field:focus-within .lp-input-wrap{border-bottom-color:transparent}
+.lp-input-wrap::after{content:'';position:absolute;bottom:-1px;left:0;width:0;height:1.5px;background:linear-gradient(90deg,#4f35f3,#00e5ff);transition:width .4s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px rgba(0,229,255,.7)}
+.lp-field:focus-within .lp-input-wrap::after{width:100%}
+.lp-input{width:100%;background:transparent;border:none;outline:none;color:#c8d8f0;font-family:'Space Mono',monospace;font-size:15px;padding:5px 28px 8px 0;caret-color:#00e5ff;letter-spacing:.04em}
+.lp-input::placeholder{color:rgba(200,216,240,.1);font-size:13px}
+.lp-eye{position:absolute;right:0;top:50%;transform:translateY(-55%);background:none;border:none;cursor:pointer;color:rgba(200,216,240,.25);display:flex;align-items:center;transition:color .2s}
+.lp-eye:hover{color:#00e5ff}
+/* Button */
+.lp-btn-wrap{margin:8px 0 20px}
+.lp-btn{width:100%;height:54px;border:none;cursor:pointer;position:relative;overflow:hidden;background:linear-gradient(90deg,#3a1aff 0%,#4f35f3 35%,#005fa3 70%,#009dc4 100%);transform:skewX(-6deg);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;box-shadow:0 0 28px rgba(79,53,243,.5),inset 0 1px 0 rgba(255,255,255,.1);transition:box-shadow .3s;animation:lpBtnGlow 3s ease-in-out infinite}
+@keyframes lpBtnGlow{0%,100%{box-shadow:0 0 28px rgba(79,53,243,.5),inset 0 1px 0 rgba(255,255,255,.1)}50%{box-shadow:0 0 50px rgba(0,229,255,.45),0 0 80px rgba(79,53,243,.3),inset 0 1px 0 rgba(255,255,255,.15)}}
+.lp-btn-inner{display:flex;align-items:center;justify-content:center;gap:10px;transform:skewX(6deg)}
+.lp-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);transition:left .5s}
+.lp-btn:hover::before{left:150%}
+.lp-btn:hover{box-shadow:0 0 60px rgba(0,229,255,.6),0 0 100px rgba(79,53,243,.4),inset 0 1px 0 rgba(255,255,255,.2)}
+.lp-btn:disabled{opacity:.4;cursor:not-allowed;animation:none}
+/* Mission patches */
+.lp-via{display:flex;align-items:center;gap:10px;font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(200,216,240,.18);margin:14px 0 12px}
+.lp-via::before,.lp-via::after{content:'';flex:1;height:1px;background:rgba(79,53,243,.12)}
+.lp-patches{display:flex;gap:10px}
+.lp-patch{flex:1;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid rgba(79,53,243,.14);background:rgba(79,53,243,.03);cursor:not-allowed;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 100%)}
+.lp-patch-name{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(200,216,240,.22)}
+.lp-patch-stamp{font-size:7px;letter-spacing:.15em;padding:2px 6px;border:1px solid rgba(255,183,0,.3);color:rgba(255,183,0,.5);text-transform:uppercase;font-weight:700;background:rgba(255,183,0,.04)}
 /* Footer */
-.lp-foot{
-  margin-top:auto;padding-top:20px;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:8px;
-  border-top:1px solid rgba(255,255,255,.05);
-  flex-shrink:0;
-}
-.lp-foot-txt{font-size:12px;color:rgba(255,255,255,.3);}
-.lp-foot-txt a{color:#7c3aed;text-decoration:none;font-weight:600;transition:color .2s;}
-.lp-foot-txt a:hover{color:#a78bfa;}
-.lp-admin{
-  display:flex;align-items:center;gap:5px;
-  font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
-  color:rgba(255,255,255,.18);text-decoration:none;
-  padding:5px 10px;border:1px solid rgba(255,255,255,.07);transition:all .2s;
-}
-.lp-admin:hover{color:rgba(239,68,68,.65);border-color:rgba(239,68,68,.2);}
-/* Spinner */
-.lp-spin{
-  width:14px;height:14px;border-radius:50%;
-  border:2px solid rgba(255,255,255,.25);border-top-color:#fff;
-  animation:spin .7s linear infinite;display:inline-block;flex-shrink:0;
-}
-@keyframes spin{to{transform:rotate(360deg);}}
-/* Decorative coord readout top-right */
-.lp-coord{
-  position:fixed;top:14px;right:20px;
-  font-family:'JetBrains Mono',monospace;font-size:7px;
-  color:rgba(255,255,255,.1);letter-spacing:.1em;
-  pointer-events:none;z-index:3;
-  display:flex;flex-direction:column;align-items:flex-end;gap:2px;
-}
+.lp-foot{margin-top:16px;padding-top:14px;border-top:1px solid rgba(79,53,243,.1);display:flex;align-items:center;justify-content:space-between}
+.lp-foot-txt{font-size:11px;color:rgba(200,216,240,.28)}
+.lp-foot-txt a{color:#00e5ff;text-decoration:none;font-weight:700;transition:color .2s}
+.lp-foot-txt a:hover{color:#fff}
+.lp-admin{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(200,216,240,.2);text-decoration:none;padding:5px 10px;border:1px solid rgba(200,216,240,.07);display:flex;align-items:center;gap:4px;transition:all .2s}
+.lp-admin:hover{color:rgba(255,45,120,.6);border-color:rgba(255,45,120,.2)}
+.lp-spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:lpSpinA .7s linear infinite;display:inline-block;flex-shrink:0}
+@keyframes lpSpinA{to{transform:rotate(360deg)}}
+@media(max-width:400px){.lp-inner{padding:20px 16px}.lp-patches{flex-direction:column}}
 `;
 
-const IcoMail = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-  </svg>
-);
-const IcoLock = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+/* ─── Canvas Starfield ────────────────────────────────────────────── */
+function useStarfield(canvasRef) {
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    let animId;
+    let stars = [];
+    const resize = () => {
+      c.width = window.innerWidth;
+      c.height = window.innerHeight;
+      const count = Math.floor((c.width * c.height) / 4000);
+      stars = Array.from({ length: count }, () => ({
+        x: Math.random() * c.width,
+        y: Math.random() * c.height,
+        r: Math.random() * 1.3 + 0.2,
+        o: Math.random() * 0.7 + 0.1,
+        s: Math.random() * 0.3 + 0.05,
+        d: Math.random() * 0.3 - 0.15,
+      }));
+    };
+    let t = 0;
+    const draw = () => {
+      ctx.clearRect(0, 0, c.width, c.height);
+      t += 0.003;
+      stars.forEach((s) => {
+        s.x += s.d * 0.1; s.y -= s.s * 0.05;
+        if (s.y < 0) s.y = c.height;
+        if (s.x < 0) s.x = c.width;
+        if (s.x > c.width) s.x = 0;
+        const f = s.o * (0.7 + 0.3 * Math.sin(t * s.s * 20 + s.x));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,220,255,${f})`;
+        ctx.fill();
+      });
+      animId = requestAnimationFrame(draw);
+    };
+    window.addEventListener("resize", resize);
+    resize(); draw();
+    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
+  }, [canvasRef]);
+}
+
+/* ─── Live Coords ─────────────────────────────────────────────────── */
+function useLiveCoords(setCoords) {
+  useEffect(() => {
+    let lat = 28.6139, lng = 77.2088;
+    const id = setInterval(() => {
+      lat += (Math.random() - 0.5) * 0.001;
+      lng += (Math.random() - 0.5) * 0.001;
+      setCoords(`LAT ${lat.toFixed(4)} · LNG ${lng.toFixed(4)}`);
+    }, 1400);
+    return () => clearInterval(id);
+  }, [setCoords]);
+}
+
+/* ─── Icons ───────────────────────────────────────────────────────── */
+const IcoArrow = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <path d="M5 12h14M13 6l6 6-6 6"/>
   </svg>
 );
 const IcoShield = () => (
@@ -229,126 +153,143 @@ const IcoShield = () => (
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
   </svg>
 );
-const IcoArrow = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <path d="M5 12h14M13 6l6 6-6 6"/>
-  </svg>
-);
 
+/* ─── Component ───────────────────────────────────────────────────── */
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
+  const [coords, setCoords] = useState("LAT 28.6139 · LNG 77.2088");
+  const canvasRef = useRef(null);
   const { login, isLoggingIn } = useAuthStore();
   const { play } = useSoundManager();
-  const navigate = useNavigate();
+
+  useStarfield(canvasRef);
+  useLiveCoords(setCoords);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     play?.("click");
-    const result = await login(form);
-    if (result?.success) navigate("/");
+    await login(form);
   };
 
   return (
     <>
       <style>{CSS}</style>
       <div className="lp-root">
-        <div className="lp-rail" />
-        <div className="lp-grid" />
-        <div className="lp-scan" />
-        <div className="lp-g1" />
-        <div className="lp-g2" />
-        <div className="lp-coord">
-          <span>LAT 28.6139 · LNG 77.2088</span>
-          <span>NODE_ALPHA · SECURE</span>
+        <canvas ref={canvasRef} className="lp-stars" />
+
+        {/* Orbital ring background */}
+        <div className="lp-orbital">
+          <svg width="660" height="660" viewBox="0 0 660 660" fill="none" style={{animation:"lpOrbSpin 60s linear infinite"}} xmlns="http://www.w3.org/2000/svg">
+            <style>{`@keyframes lpOrbSpin{to{transform:rotate(360deg)}}`}</style>
+            <ellipse cx="330" cy="330" rx="290" ry="110" stroke="url(#lpr1)" strokeWidth="1" transform="rotate(-18 330 330)"/>
+            <ellipse cx="330" cy="330" rx="240" ry="88" stroke="url(#lpr2)" strokeWidth=".5" transform="rotate(-18 330 330)"/>
+            <circle cx="330" cy="330" r="260" stroke="rgba(79,53,243,.2)" strokeWidth=".5" strokeDasharray="3 8"/>
+            <circle cx="330" cy="330" r="50" fill="url(#lppg)"/>
+            <circle cx="330" cy="330" r="50" fill="none" stroke="rgba(0,229,255,.1)" strokeWidth="1"/>
+            <defs>
+              <linearGradient id="lpr1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#4f35f3" stopOpacity=".7"/>
+                <stop offset="50%" stopColor="#00e5ff" stopOpacity=".4"/>
+                <stop offset="100%" stopColor="#4f35f3" stopOpacity=".1"/>
+              </linearGradient>
+              <linearGradient id="lpr2" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#00e5ff" stopOpacity=".3"/>
+                <stop offset="100%" stopColor="transparent" stopOpacity="0"/>
+              </linearGradient>
+              <radialGradient id="lppg" cx="35%" cy="35%">
+                <stop offset="0%" stopColor="#1a2060"/>
+                <stop offset="65%" stopColor="#0a0f2e"/>
+                <stop offset="100%" stopColor="#050810"/>
+              </radialGradient>
+            </defs>
+          </svg>
         </div>
 
-        <div className="lp-body">
-          {/* Header */}
-          <div className="lp-top">
-            <div className="lp-brand">
-              <div className="lp-orb">
-                <div className="lp-orb-inner" />
+        <div className="lp-page">
+          <div className="lp-hull">
+            <div className="lp-inner">
+              <div className="lp-corner-tr" />
+
+              {/* Status bar */}
+              <div className="lp-status">
+                <div>
+                  <div className="lp-brand-name">Orbit</div>
+                  <div className="lp-brand-sub">Encrypted · E2EE</div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+                  <div className="lp-node-row"><div className="lp-dot"/>Node Online</div>
+                  <div className="lp-coords">{coords}</div>
+                </div>
               </div>
-              <div className="lp-name-col">
-                <span className="lp-name">Orbit</span>
-                <span className="lp-sub">Encrypted · E2EE</span>
+
+              {/* Hero */}
+              <div className="lp-hero">
+                <div className="lp-eyebrow"><div className="lp-eyebrow-line"/><span className="lp-eyebrow-text">Authentication Protocol</span></div>
+                <h1 className="lp-h1">
+                  <span className="lp-h-line1">Welcome</span>
+                  <span className="lp-h-back">back.</span>
+                </h1>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSubmit}>
+                <div className="lp-field">
+                  <label className="lp-label">01 ── Email Address</label>
+                  <div className="lp-bracket-row">
+                    <span className="lp-bl">[</span>
+                    <div className="lp-input-wrap">
+                      <input className="lp-input" type="email" placeholder="you@orbit.network"
+                        value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}
+                        autoComplete="email" required/>
+                    </div>
+                    <span className="lp-br">]</span>
+                  </div>
+                </div>
+
+                <div className="lp-field">
+                  <label className="lp-label">
+                    <span>02 ── Auth Key</span>
+                    <Link to="/forgot-password">Forgot?</Link>
+                  </label>
+                  <div className="lp-bracket-row">
+                    <span className="lp-bl">[</span>
+                    <div className="lp-input-wrap">
+                      <input className="lp-input" type={showPw?"text":"password"} placeholder="••••••••••••"
+                        value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))}
+                        autoComplete="current-password" required/>
+                      <button type="button" className="lp-eye" onClick={()=>{play?.("click");setShowPw(p=>!p)}}>
+                        {showPw?<EyeOff size={14}/>:<Eye size={14}/>}
+                      </button>
+                    </div>
+                    <span className="lp-br">]</span>
+                  </div>
+                </div>
+
+                <div className="lp-btn-wrap">
+                  <button type="submit" className="lp-btn" disabled={isLoggingIn}>
+                    <span className="lp-btn-inner">
+                      {isLoggingIn
+                        ? <><span className="lp-spin"/>Authenticating…</>
+                        : <><IcoArrow/>Initiate Session</>}
+                    </span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Alt methods */}
+              <div className="lp-via">Via</div>
+              <div className="lp-patches">
+                <div className="lp-patch"><span className="lp-patch-name">✦ Constellation</span><span className="lp-patch-stamp">Classified</span></div>
+                <div className="lp-patch"><span className="lp-patch-name">✧ Starweave</span><span className="lp-patch-stamp">Classified</span></div>
+              </div>
+
+              {/* Footer */}
+              <div className="lp-foot">
+                <div className="lp-foot-txt">No account? <Link to="/signup">Create one →</Link></div>
+                <Link to="/admin/login" className="lp-admin"><IcoShield/>Admin</Link>
               </div>
             </div>
-            <div className="lp-status">
-              <div className="lp-ping" />
-              Node Online
-            </div>
-          </div>
-
-          {/* Hero */}
-          <div className="lp-hero">
-            <div className="lp-eyebrow">
-              <div className="lp-eyebrow-line" />
-              <span className="lp-eyebrow-text">Authentication Protocol</span>
-            </div>
-            <h1 className="lp-h1">
-              Welcome<span>back.</span>
-            </h1>
-          </div>
-
-          {/* Form */}
-          <form className="lp-form" onSubmit={handleSubmit}>
-            <div className="lp-field">
-              <div className="lp-fmeta">
-                <span className="lp-fid">01 ──</span>
-                <span className="lp-fname">Email Address</span>
-              </div>
-              <div className="lp-frow">
-                <span className="lp-fico"><IcoMail /></span>
-                <input className="lp-input" type="email" placeholder="you@orbit.network"
-                  value={form.email}
-                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  autoComplete="email" required />
-              </div>
-            </div>
-
-            <div className="lp-field">
-              <div className="lp-fmeta">
-                <span className="lp-fid">02 ──</span>
-                <span className="lp-fname">Auth Key</span>
-                <Link to="/forgot-password">Forgot?</Link>
-              </div>
-              <div className="lp-frow">
-                <span className="lp-fico"><IcoLock /></span>
-                <input className="lp-input"
-                  type={showPw ? "text" : "password"} placeholder="••••••••••••"
-                  value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  autoComplete="current-password" required />
-                <button type="button" className="lp-eye" onClick={() => { play?.("click"); setShowPw(p => !p); }}>
-                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="lp-submit-wrap">
-              <button type="submit" className="lp-submit" disabled={isLoggingIn}>
-                <span className="lp-submit-inner">
-                  {isLoggingIn
-                    ? <><span className="lp-spin" /> Authenticating…</>
-                    : <>Initiate Session <IcoArrow /></>}
-                </span>
-              </button>
-            </div>
-          </form>
-
-          {/* Alt auth */}
-          <div className="lp-or">Via</div>
-          <div className="lp-alts">
-            <div className="lp-alt"><span>✦ Constellation</span><span className="lp-alt-badge">SOON</span></div>
-            <div className="lp-alt"><span>✧ Starweave</span><span className="lp-alt-badge">SOON</span></div>
-          </div>
-
-          {/* Footer */}
-          <div className="lp-foot">
-            <div className="lp-foot-txt">No account? <Link to="/signup">Create one →</Link></div>
-            <Link to="/admin/login" className="lp-admin"><IcoShield /> Admin</Link>
           </div>
         </div>
       </div>

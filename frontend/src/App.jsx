@@ -67,6 +67,13 @@ import OrbitChatApp from "./components/layout/OrbitChatApp";
 import { useAnimationContext } from "./components/effects/AnimLayer";
 import { AvatarProvider } from "./context/AvatarContext.jsx";
 
+// ── Orbit Foundation (Phase 1) ───────────────────────────────────────────────
+import { OrbitalThemeEngine, EnvironmentCanvas } from "./orbit";
+import { useOrbitalSocket } from "./orbit/useOrbitalSocket";
+// A stable ref shared between AppContent and the canvas, lives at module scope
+// so it persists across HMR without requiring context plumbing.
+const _globalCanvasRef = { current: null };
+
 // Initialized exactly once at module load time (before any renders)
 let _appSettingsInitialized = false;
 function ensureAppSettings() {
@@ -189,6 +196,13 @@ const DynamicRouteHandler = (props) => {
 const AppContent = () => {
   useAnimationContext();
   const location = useLocation();
+
+  // ── Orbital socket bridge (additive — does not touch existing handlers) ──
+  const _orbAuthUser = useAuthStore((s) => s.authUser);
+  useOrbitalSocket({
+    canvasRef: _globalCanvasRef,
+    isAuthenticated: !!_orbAuthUser,
+  });
   const navigate = useNavigate();
 
   const isAuthPage = [
@@ -495,8 +509,9 @@ const AppContent = () => {
       nexusTyping: ({ nexusId, userId, username, isTyping }) => {
         setNexusTyping(userId, username, isTyping);
       },
-      userJoinedNexus: ({ nexusId, user, username }) => {
-        useNexusStore.getState().addNexusMember(nexusId, user);
+      userJoinedNexus: ({ nexusId, userId, user, username }) => {
+        const memberUser = user || { _id: userId, username };
+        useNexusStore.getState().addNexusMember(nexusId, memberUser);
         toast.info(`${username} joined the Nexus`);
       },
       userLeftNexus: ({ nexusId, userId, username }) => {
@@ -705,7 +720,16 @@ const AppContent = () => {
 
 
   return (
-    <div className={`relative h-screen bg-base-300 text-[var(--chat-text)] overflow-hidden flex flex-col ${isOrbitMode ? 'orbit-active' : ''}`}>
+    <div className={`relative h-dvh text-[var(--chat-text)] overflow-hidden flex flex-col ${isOrbitMode ? 'orbit-active' : ''} ${isAuthPage ? 'bg-[#050810]' : 'bg-base-300'}`}>
+      {/* ── Orbit Foundation Layer ─────────────────────────────────────────
+           OrbitalThemeEngine: renders null, updates --orb-* CSS vars via RAF.
+           EnvironmentCanvas: Three.js starfield behind ALL content.
+           Both are purely additive — they do not affect existing layout.
+      ──────────────────────────────────────────────────────────────────── */}
+      <OrbitalThemeEngine />
+      {authUser && !isAuthPage && !isAdminRoute && (
+        <EnvironmentCanvas ref={_globalCanvasRef} />
+      )}
       <GlobalAnnouncementBanner />
       <ThemePortal />
       {!isOnline && <ConnectionStatus />}

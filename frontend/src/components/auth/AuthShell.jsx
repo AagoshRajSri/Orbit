@@ -23,7 +23,7 @@ export default function AuthShell({ children, animationKey }) {
   }, [animationKey]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden" style={{ background: "#05070f" }}>
+    <div className="relative w-full overflow-hidden" style={{ background: "#05070f", minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
 
       {/* ── Global starfield background ── */}
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -53,13 +53,14 @@ export default function AuthShell({ children, animationKey }) {
       `}</style>
 
       {/* ── Layout grid ── */}
-      <div className="relative z-10 h-full w-full flex xl:grid xl:grid-cols-2">
+      <div className="relative z-10 w-full flex-1 flex xl:grid xl:grid-cols-2" style={{ minHeight: "100dvh" }}>
 
         {/* ─── LEFT: full-height form panel, children fill it ─── */}
         <div
           ref={leftRef}
-          className="relative flex flex-col h-full overflow-hidden w-full xl:w-auto"
+          className="relative flex flex-col overflow-x-hidden w-full xl:w-auto"
           style={{
+            minHeight: "100dvh",
             background: "rgba(6,8,20,0.88)",
             backdropFilter: "blur(32px)",
             WebkitBackdropFilter: "blur(32px)",
@@ -73,7 +74,7 @@ export default function AuthShell({ children, animationKey }) {
           }} />
 
           {/* Children own ALL the space between stripes */}
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1" style={{ minHeight: 0, overflowX: "hidden", overflowY: "auto" }}>
             {children}
           </div>
 
