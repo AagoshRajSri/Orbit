@@ -287,9 +287,8 @@ const AppContent = () => {
   const requestFinishPostAuthLoader = useCallback(() => {
     if (!postAuthDataReadyRef.current || !postAuthAnimationReadyRef.current)
       return;
-    // FIX 14: Reduced from 4000ms to 300ms — returning users see the app in ~300ms.
-    // A 4-second forced wait was the single biggest perceived performance issue.
-    const MIN_VISIBLE_MS = 300;
+    // Changed from 300ms to 3500ms to allow the cinematic animation to fully resolve after login/signup
+    const MIN_VISIBLE_MS = 3500;
     const startedAt = postAuthLoaderStartedAtRef.current ?? Date.now();
     const elapsed = Date.now() - startedAt;
     const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);

@@ -10,6 +10,7 @@ import {
   Compass,
   Edit3,
   UserMinus,
+  UserPlus,
   Music,
   Flower,
 } from "lucide-react";
@@ -20,38 +21,57 @@ import toast from "../../lib/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useThemeStore } from "../../store/useThemeStore";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
+import { UserAura } from "../../orbit/UserAura";
 
 const AddContactAction = memo(function AddContactAction({ users, contactList, addContact }) {
   const [username, setUsername] = useState("");
 
-  const handleAdd = () => {
-    const candidate = users.find(
-      (u) => u.username.toLowerCase() === username.trim().toLowerCase(),
-    );
-    if (!candidate) {
-      toast.error("Contact not found");
+  const handleAdd = async () => {
+    const trimmed = username.trim();
+    if (!trimmed) {
+      toast.error("Please enter a username");
       return;
     }
-    if (contactList?.includes(candidate._id.toString())) {
+
+    const candidate = users.find(
+      (u) => u.username.toLowerCase() === trimmed.toLowerCase(),
+    );
+
+    if (candidate && contactList?.includes(candidate._id.toString())) {
       toast.error("Contact already in list");
       return;
     }
-    addContact(candidate._id.toString());
-    setUsername("");
-    toast.success("Contact added");
+
+    try {
+      await addContact(trimmed);
+      setUsername("");
+    } catch (error) {
+      // Error is handled in useChatStore
+    }
   };
 
   return (
-    <div className="flex gap-2 items-center">
-      <input
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Add contact by username"
-        className="input input-bordered input-xs flex-1"
-      />
-      <button onClick={handleAdd} className="btn btn-xs btn-primary">
-        Add
-      </button>
+    <div className="flex flex-col gap-2 mt-2">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <UserMinus className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 opacity-40 hidden" />
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username to add..."
+            className="input input-sm input-bordered w-full bg-base-200/50 focus:bg-base-200 transition-colors text-[11px] font-bold"
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          />
+        </div>
+        <button 
+          onClick={handleAdd} 
+          className="btn btn-sm btn-primary shadow-md hover:scale-105 transition-transform px-3"
+          title="Add Contact"
+        >
+          <UserPlus className="size-4" />
+          <span className="hidden lg:inline text-[10px] font-black uppercase tracking-wider">Add</span>
+        </button>
+      </div>
     </div>
   );
 });
@@ -128,8 +148,8 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   
   const visibleUsers = useMemo(() => users.filter((user) => {
     const id = user._id?.toString?.();
-    return contactList?.length ? contactSet.has(id) : true;
-  }), [users, contactSet, contactList?.length]);
+    return contactSet.has(id);
+  }), [users, contactSet]);
 
   const filteredUsers = useMemo(() => visibleUsers.filter((user) => {
     const id = user._id?.toString?.();
@@ -333,19 +353,24 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                     const uId = (user.id || user._id)?.toString() || "";
                     const ANIMALS = ['dog', 'cat', 'bunny'];
                     const animal = ANIMALS[parseInt((uId || "").toString().slice(-4) || '0', 16) % ANIMALS.length];
+                    const peerPresence = presenceMap[user._id?.toString()];
+                    const peerState = peerPresence?.state || (onlineSet.has(uId) ? "online" : "offline");
+                    const auraState = user.isTyping ? "typing" : peerState;
                     return (
-                      <PixelAvatarBadge
-                        type={animal}
-                        state="idle"
-                        size={36}
-                        showDot={false}
-                        style={{
-                          imageRendering: "pixelated",
-                          width: "100%",
-                          height: "100%",
-                          borderRadius: "8px"
-                        }}
-                      />
+                      <UserAura state={auraState} size={36} showDot={false}>
+                        <PixelAvatarBadge
+                          type={animal}
+                          state="idle"
+                          size={36}
+                          showDot={false}
+                          style={{
+                            imageRendering: "pixelated",
+                            width: "100%",
+                            height: "100%",
+                            borderRadius: "8px"
+                          }}
+                        />
+                      </UserAura>
                     );
                   })()}
                   {(() => {

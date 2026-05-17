@@ -26,20 +26,20 @@ const CSS = `
 .sp-corner-tr{position:absolute;top:0;right:0;width:40px;height:40px;border-right:1.5px solid rgba(0,229,255,.3);border-top:1.5px solid rgba(0,229,255,.3);z-index:11}
 /* Status */
 .sp-status{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;padding-bottom:10px;border-bottom:1px solid rgba(0,229,255,.12)}
-.sp-brand-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#fff}
-.sp-brand-sub{font-size:7.5px;letter-spacing:.18em;color:rgba(0,229,255,.4);text-transform:uppercase;margin-top:2px}
-.sp-node-row{display:flex;align-items:center;gap:6px;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:rgba(56,189,248,.8)}
+.sp-brand-name{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#fff}
+.sp-brand-sub{font-size:10px;letter-spacing:.18em;color:rgba(0,229,255,.4);text-transform:uppercase;margin-top:2px}
+.sp-node-row{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(56,189,248,.8)}
 .sp-dot{position:relative;width:7px;height:7px;border-radius:50%;background:#38bdf8;flex-shrink:0}
 .sp-dot::before{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(56,189,248,.3);animation:spRdr 2.2s ease-out infinite}
 .sp-dot::after{content:'';position:absolute;inset:-9px;border-radius:50%;border:1px solid rgba(56,189,248,.1);animation:spRdr 2.2s ease-out .5s infinite}
 @keyframes spRdr{0%{transform:scale(1);opacity:.7}100%{transform:scale(3);opacity:0}}
 .sp-node-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-.sp-reg-badge{font-size:7px;letter-spacing:.16em;text-transform:uppercase;color:rgba(0,229,255,.35);padding:2px 6px;border:1px solid rgba(0,229,255,.15)}
+.sp-reg-badge{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(0,229,255,.35);padding:3px 8px;border:1px solid rgba(0,229,255,.15)}
 /* Hero */
 .sp-hero{margin-bottom:24px}
 .sp-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .sp-eyebrow-line{width:20px;height:1px;background:linear-gradient(90deg,#00e5ff,transparent)}
-.sp-eyebrow-text{font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:rgba(0,229,255,.6)}
+.sp-eyebrow-text{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgba(0,229,255,.6)}
 .sp-h1{font-family:'Orbitron',monospace;font-size:clamp(22px,5vw,34px);font-weight:900;text-transform:uppercase;letter-spacing:-.02em;line-height:1}
 .sp-h1 .l1{display:block;animation:spRvl .5s cubic-bezier(.25,.46,.45,.94) forwards}
 .sp-h1 .l2{display:block;color:#00e5ff;text-shadow:0 0 18px rgba(0,229,255,.45);animation:spRvl .5s .15s cubic-bezier(.25,.46,.45,.94) both}
@@ -49,27 +49,27 @@ const CSS = `
 @media(max-width:420px){.sp-row2{grid-template-columns:1fr}}
 /* HUD fields */
 .sp-field{margin-bottom:20px}
-.sp-label{display:flex;align-items:center;justify-content:space-between;font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(0,229,255,.45);margin-bottom:6px;transition:color .25s}
+.sp-label{display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(0,229,255,.45);margin-bottom:6px;transition:color .25s}
 .sp-field:focus-within .sp-label{color:#00e5ff}
-.sp-bracket-row{display:flex;align-items:center;gap:5px}
-.sp-bl,.sp-br{font-size:20px;line-height:1;color:rgba(0,229,255,.3);transition:color .25s;flex-shrink:0;font-family:'Space Mono',monospace}
+.sp-bracket-row{display:flex;align-items:center;gap:6px}
+.sp-bl,.sp-br{font-size:24px;line-height:1;color:rgba(0,229,255,.3);transition:color .25s;flex-shrink:0;font-family:'Space Mono',monospace}
 .sp-field:focus-within .sp-bl,.sp-field:focus-within .sp-br{color:#00e5ff}
 .sp-iw{flex:1;position:relative;border-bottom:1px solid rgba(0,229,255,.18);transition:border-color .25s}
 .sp-field:focus-within .sp-iw{border-bottom-color:transparent}
 .sp-iw::after{content:'';position:absolute;bottom:-1px;left:0;width:0;height:1.5px;background:linear-gradient(90deg,#00e5ff,#4f35f3);transition:width .4s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px rgba(0,229,255,.7)}
 .sp-field:focus-within .sp-iw::after{width:100%}
-.sp-input{width:100%;background:transparent;border:none;outline:none;color:#c8d8f0;font-family:'Space Mono',monospace;font-size:14px;padding:4px 26px 7px 0;caret-color:#00e5ff;letter-spacing:.04em}
-.sp-input::placeholder{color:rgba(200,216,240,.09);font-size:12px}
+.sp-input{width:100%;background:transparent;border:none;outline:none;color:#c8d8f0;font-family:'Space Mono',monospace;font-size:16px;padding:6px 28px 8px 0;caret-color:#00e5ff;letter-spacing:.04em}
+.sp-input::placeholder{color:rgba(200,216,240,.12);font-size:14px}
 .sp-eye{position:absolute;right:0;top:50%;transform:translateY(-55%);background:none;border:none;cursor:pointer;color:rgba(200,216,240,.25);display:flex;align-items:center;transition:color .2s}
 .sp-eye:hover{color:#00e5ff}
-.sp-hint{font-size:8px;color:rgba(0,229,255,.32);margin-top:3px;letter-spacing:.04em}
+.sp-hint{font-size:11px;color:rgba(0,229,255,.32);margin-top:3px;letter-spacing:.04em}
 /* Strength */
-.sp-str-bars{display:flex;gap:3px;margin-top:5px}
-.sp-seg{flex:1;height:2px;border-radius:99px;background:rgba(255,255,255,.07);transition:background .3s}
-.sp-str-lbl{font-size:8px;letter-spacing:.1em;margin-top:3px;font-weight:700;transition:color .3s;font-family:'Space Mono',monospace}
+.sp-str-bars{display:flex;gap:4px;margin-top:6px}
+.sp-seg{flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,.07);transition:background .3s}
+.sp-str-lbl{font-size:11px;letter-spacing:.1em;margin-top:3px;font-weight:700;transition:color .3s;font-family:'Space Mono',monospace}
 /* Button */
 .sp-btn-wrap{margin:6px 0 18px}
-.sp-btn{width:100%;height:54px;border:none;cursor:pointer;position:relative;overflow:hidden;background:linear-gradient(90deg,#007ea3 0%,#0066cc 35%,#4f35f3 70%,#3a1aff 100%);transform:skewX(-6deg);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;box-shadow:0 0 28px rgba(0,229,255,.4),inset 0 1px 0 rgba(255,255,255,.1);transition:box-shadow .3s;animation:spBG 3.5s ease-in-out infinite}
+.sp-btn{width:100%;height:60px;border:none;cursor:pointer;position:relative;overflow:hidden;background:linear-gradient(90deg,#007ea3 0%,#0066cc 35%,#4f35f3 70%,#3a1aff 100%);transform:skewX(-6deg);font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;box-shadow:0 0 28px rgba(0,229,255,.4),inset 0 1px 0 rgba(255,255,255,.1);transition:box-shadow .3s;animation:spBG 3.5s ease-in-out infinite}
 @keyframes spBG{0%,100%{box-shadow:0 0 28px rgba(0,229,255,.4),inset 0 1px 0 rgba(255,255,255,.1)}50%{box-shadow:0 0 50px rgba(0,229,255,.55),0 0 80px rgba(79,53,243,.3),inset 0 1px 0 rgba(255,255,255,.15)}}
 .sp-btn-inner{display:flex;align-items:center;justify-content:center;gap:10px;transform:skewX(6deg)}
 .sp-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transition:left .5s}
@@ -77,18 +77,18 @@ const CSS = `
 .sp-btn:hover{box-shadow:0 0 60px rgba(0,229,255,.65),0 0 100px rgba(79,53,243,.4),inset 0 1px 0 rgba(255,255,255,.2)}
 .sp-btn:disabled{opacity:.4;cursor:not-allowed;animation:none}
 /* Patches */
-.sp-via{display:flex;align-items:center;gap:10px;font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(200,216,240,.18);margin:12px 0 10px}
+.sp-via{display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(200,216,240,.25);margin:12px 0 10px}
 .sp-via::before,.sp-via::after{content:'';flex:1;height:1px;background:rgba(0,229,255,.1)}
 .sp-patches{display:flex;gap:10px}
-.sp-patch{flex:1;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border:1px solid rgba(0,229,255,.1);background:rgba(0,229,255,.02);cursor:not-allowed;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 100%)}
-.sp-patch-name{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(200,216,240,.2)}
-.sp-patch-stamp{font-size:7px;letter-spacing:.15em;padding:2px 6px;border:1px solid rgba(255,183,0,.25);color:rgba(255,183,0,.45);text-transform:uppercase;font-weight:700;background:rgba(255,183,0,.03)}
+.sp-patch{flex:1;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid rgba(0,229,255,.1);background:rgba(0,229,255,.02);cursor:not-allowed;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 100%)}
+.sp-patch-name{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(200,216,240,.4)}
+.sp-patch-stamp{font-size:9px;letter-spacing:.15em;padding:3px 8px;border:1px solid rgba(255,183,0,.25);color:rgba(255,183,0,.45);text-transform:uppercase;font-weight:700;background:rgba(255,183,0,.03)}
 /* Footer */
 .sp-foot{margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,229,255,.08);display:flex;align-items:center;justify-content:space-between}
-.sp-foot-txt{font-size:11px;color:rgba(200,216,240,.28)}
+.sp-foot-txt{font-size:13px;color:rgba(200,216,240,.4)}
 .sp-foot-txt a{color:#00e5ff;text-decoration:none;font-weight:700;transition:color .2s}
 .sp-foot-txt a:hover{color:#fff}
-.sp-admin{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(200,216,240,.2);text-decoration:none;padding:5px 10px;border:1px solid rgba(200,216,240,.07);display:flex;align-items:center;gap:4px;transition:all .2s}
+.sp-admin{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(200,216,240,.3);text-decoration:none;padding:6px 12px;border:1px solid rgba(200,216,240,.07);display:flex;align-items:center;gap:4px;transition:all .2s}
 .sp-admin:hover{color:rgba(255,45,120,.6);border-color:rgba(255,45,120,.2)}
 .sp-spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:spSpnA .7s linear infinite;display:inline-block;flex-shrink:0}
 @keyframes spSpnA{to{transform:rotate(360deg)}}
