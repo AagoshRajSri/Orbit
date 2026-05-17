@@ -32,6 +32,9 @@ const CSRF_EXEMPT_PATHS = new Set([
   "/api/prekeys/bundle",
   "/api/prekeys/replenish",
   "/api/prekeys/hybrid-bundle",
+  "/api/starweave/login",
+  "/api/starweave/enroll",
+  "/api/starweave/challenge",
 ]);
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
