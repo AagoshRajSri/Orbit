@@ -71,6 +71,11 @@ export const csrfProtect = (req, res, next) => {
   // Skip exempt paths
   if (CSRF_EXEMPT_PATHS.has(req.path)) return next();
 
+  // If the request uses custom header authentication, it is immune to CSRF.
+  if (req.headers["x-auth-token"] || req.headers["authorization"]) {
+    return next();
+  }
+
   // ── Origin / Referer validation ──────────────────────────────────────────────
   const origin  = req.headers["origin"];
   const referer = req.headers["referer"];
