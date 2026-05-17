@@ -1,0 +1,242 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   ORBIT SPATIAL FOUNDATION — CSS Utilities (Phase 1)
+   Appended to orbital.css. All classes prefixed orb- to avoid conflicts.
+   Updated in realtime by OrbitalThemeEngine (--orb-* custom properties).
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Glass material ─────────────────────────────────────────────────────── */
+.orb-glass {
+  background: var(--orb-bg-glass, rgba(8, 6, 22, 0.72));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  transition: background 3s ease, box-shadow 0.2s ease;
+}
+
+/* ── Glow borders ────────────────────────────────────────────────────────── */
+.orb-glow-warm {
+  box-shadow:
+    0 0 0 1px var(--orb-glow-warm, rgba(180, 110, 50, 0.35)),
+    0 8px 32px var(--orb-glow-warm, rgba(180, 110, 50, 0.15));
+}
+.orb-glow-cold {
+  box-shadow:
+    0 0 0 1px var(--orb-glow-cold, rgba(50, 100, 200, 0.28)),
+    0 8px 32px var(--orb-glow-cold, rgba(50, 100, 200, 0.12));
+}
+
+/* ── Typography tokens ───────────────────────────────────────────────────── */
+.orb-text-primary   { color: var(--orb-text-primary,   hsl(40, 60%, 90%)); }
+.orb-text-secondary { color: var(--orb-text-secondary, hsl(35, 30%, 60%)); }
+.orb-accent-warm    { color: var(--orb-accent-warm,    hsl(30, 80%, 55%)); }
+.orb-accent-cold    { color: var(--orb-accent-cold,    hsl(210, 85%, 55%)); }
+
+/* ── Depth separator — environmental shift, not a line ───────────────────── */
+.orb-separator {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05) 30%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.05) 70%,
+    transparent
+  );
+  margin: 0 -8px;
+}
+
+/* ── Presence rings ──────────────────────────────────────────────────────── */
+.orb-aura {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--orb-accent-cold, hsl(210, 85%, 55%));
+  opacity: 0.5;
+  pointer-events: none;
+  animation: orb-aura-breathe 3s ease-in-out infinite;
+}
+.orb-aura--typing  {
+  border-color: var(--orb-accent-warm, hsl(30, 80%, 55%));
+  animation: orb-aura-typing 0.8s ease-in-out infinite;
+}
+.orb-aura--syncing {
+  border-color: var(--orb-accent-warm, hsl(30, 80%, 55%));
+  animation: orb-sync-ring 2s linear infinite;
+}
+.orb-sync-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px dashed var(--orb-accent-warm, hsl(30, 80%, 55%));
+  opacity: 0.6;
+  pointer-events: none;
+  animation: orb-sync-ring 2s linear infinite;
+}
+
+/* ── Message ribbon ──────────────────────────────────────────────────────── */
+.orb-message-ribbon {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+.orb-message-ribbon::-webkit-scrollbar { width: 4px; }
+.orb-message-ribbon::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+}
+
+/* Message surface — no box, architectural spacing */
+.orb-message-surface {
+  padding: 4px 16px;
+  position: relative;
+  transition: background 0.16s ease, transform 0.16s ease;
+  border-radius: 8px;
+  margin: 0 4px;
+}
+.orb-message-surface:hover {
+  background: rgba(255, 255, 255, 0.025);
+  transform: scale(1.002);
+}
+
+/* Author identity anchor — only shown at start of a sequence */
+.orb-message-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  margin-top: 14px;
+}
+.orb-message-author:first-child { margin-top: 4px; }
+
+/* Time strata — atmospheric temporal separator */
+.orb-time-strata {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px 8px;
+  opacity: 0.4;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--orb-text-secondary, hsl(35, 30%, 60%));
+}
+.orb-time-strata::before,
+.orb-time-strata::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+.orb-time-strata::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06));
+}
+.orb-time-strata::after {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);
+}
+
+/* Message content text — flowing, not in a box */
+.orb-message-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--orb-text-primary, hsl(40, 60%, 90%));
+  padding-left: 44px; /* align under avatar width */
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* Hover context layer — timestamp, delivery status */
+.orb-message-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 44px;
+  margin-top: 2px;
+  opacity: 0;
+  font-size: 10px;
+  color: var(--orb-text-secondary, hsl(35, 30%, 60%));
+  transition: opacity 0.16s ease;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+.orb-message-surface:hover .orb-message-context { opacity: 1; }
+
+/* ── Composition surface (message input) ─────────────────────────────────── */
+.orb-composition-surface {
+  position: relative;
+  margin: 8px 16px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+.orb-composition-surface:focus-within {
+  border-color: var(--orb-accent-cold, hsl(210, 85%, 55%));
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--orb-accent-cold, hsl(210, 85%, 55%)) 20%, transparent);
+}
+.orb-composition-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--orb-text-primary, hsl(40, 60%, 90%));
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px 16px;
+  resize: none;
+  font-family: inherit;
+}
+.orb-composition-input::placeholder {
+  color: var(--orb-text-secondary, hsl(35, 30%, 60%));
+  opacity: 0.5;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+
+@keyframes orb-aura-breathe {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%       { opacity: 0.7; transform: scale(1.06); }
+}
+@keyframes orb-aura-typing {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.12); }
+}
+@keyframes orb-sync-ring {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes orb-pulse-in {
+  0%   { opacity: 0; transform: scale(0.92) translateY(6px); filter: blur(4px); }
+  100% { opacity: 1; transform: scale(1)    translateY(0);   filter: blur(0); }
+}
+@keyframes orb-pulse-out {
+  0%   { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0); }
+  100% { opacity: 0; transform: scale(0.96) translateY(-4px); filter: blur(2px); }
+}
+@keyframes orb-message-enter {
+  0%   { opacity: 0; transform: translateY(5px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Reduced-motion safety ────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .orb-aura,
+  .orb-aura--typing,
+  .orb-aura--syncing,
+  .orb-sync-ring {
+    animation: none;
+    opacity: 0.4;
+  }
+  .orb-message-surface {
+    transition: none;
+  }
+  .orb-composition-surface {
+    transition: none;
+  }
+}
