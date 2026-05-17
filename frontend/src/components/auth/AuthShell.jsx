@@ -53,12 +53,12 @@ export default function AuthShell({ children, animationKey }) {
       `}</style>
 
       {/* ── Layout grid ── */}
-      <div className="relative z-10 h-full w-full flex lg:grid lg:grid-cols-2">
+      <div className="relative z-10 h-full w-full flex xl:grid xl:grid-cols-2">
 
         {/* ─── LEFT: full-height form panel, children fill it ─── */}
         <div
           ref={leftRef}
-          className="relative flex flex-col h-full overflow-hidden"
+          className="relative flex flex-col h-full overflow-hidden w-full xl:w-auto"
           style={{
             background: "rgba(6,8,20,0.88)",
             backdropFilter: "blur(32px)",
@@ -84,8 +84,8 @@ export default function AuthShell({ children, animationKey }) {
           }} />
         </div>
 
-        {/* ─── RIGHT: animation panel ─── */}
-        <div ref={rightRef} className="hidden lg:flex items-center justify-center relative overflow-hidden">
+        {/* ─── RIGHT: animation panel — only shown on xl+ (≥1280px) ─── */}
+        <div ref={rightRef} className="hidden xl:flex items-center justify-center relative overflow-hidden">
           <div className="h-full w-full">
             <OrbitLoader blendWithParent />
           </div>
