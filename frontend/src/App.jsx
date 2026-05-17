@@ -431,6 +431,11 @@ const AppContent = () => {
       getOnlineUsers: (users) => {
         setOnlineUsers(users);
       },
+      "presence:broadcast": (data) => {
+        if (data?.userId) {
+          useAuthStore.getState().updateUserPresence(data.userId, data);
+        }
+      },
       newMessage: (message, ack) => {
         const currentAuthUser = useAuthStore.getState().authUser;
         // Robust ID check: if sender is NOT the current user, play sound
@@ -522,16 +527,24 @@ const AppContent = () => {
           const nexusStore = useNexusStore.getState();
           const { loadSenderKey } = await import("./lib/nexusKeyStore.js");
           const authUser = useAuthStore.getState().authUser;
-          const myId = authUser?._id?.toString();
-          if (!myId) return;
+          const myObfuscatedId = authUser?.id?.toString() || authUser?._id?.toString();
+          if (!myObfuscatedId) return;
 
-          const senderKey = await loadSenderKey(nexusId, myId);
+          const senderKey = await loadSenderKey(nexusId, myObfuscatedId);
           if (senderKey) {
             await nexusStore.distributeNexusKey(nexusId, senderKey);
             console.log("[Nexus E2EE] Re-distributed sender key for nexus", nexusId);
           }
         } catch (err) {
           console.error("[Nexus E2EE] Failed to re-distribute sender key:", err);
+        }
+      },
+      "sender-key-distribution-published": async ({ nexusId, senderId }) => {
+        try {
+          console.log("[Nexus E2EE] New sender key published by", senderId, "for nexus", nexusId);
+          await useNexusStore.getState().syncNexusKeys(nexusId);
+        } catch (err) {
+          console.error("[Nexus E2EE] Failed to sync new sender key:", err);
         }
       },
       disconnect: (reason) => {

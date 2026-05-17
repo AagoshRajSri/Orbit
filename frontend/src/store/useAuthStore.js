@@ -14,6 +14,7 @@ export const useAuthStore = create(
       isCheckingAuth: true,
       showPostAuthLoader: false,
       onlineUsers: [],
+      presenceMap: {}, // Key: userId string, Value: rich presence object
       sessionId: null,
       socketToken: null,
       appConfig: null,
@@ -428,7 +429,57 @@ export const useAuthStore = create(
         }
       },
 
-      setOnlineUsers: (users) => set({ onlineUsers: users }),
+      setOnlineUsers: (users) => {
+        // Handle both ID string list and rich presence object arrays
+        const ids = users.map(u => (typeof u === "string" ? u : u.userId || u._id));
+        const map = {};
+        users.forEach(u => {
+          if (typeof u === "object" && u) {
+            const id = u.userId || u._id || u.id;
+            if (id) map[id.toString()] = u;
+          }
+        });
+        set({ 
+          onlineUsers: ids,
+          presenceMap: { ...get().presenceMap, ...map }
+        });
+      },
+
+      updateUserPresence: (userId, presence) => {
+        set((state) => {
+          const updatedMap = { ...state.presenceMap, [userId]: presence };
+          let updatedOnlineList = [...state.onlineUsers];
+          
+          const isActive = ["online", "idle", "dnd", "typing", "spotify", "syncing", "restoring"].includes(presence.state);
+          if (isActive) {
+            if (!updatedOnlineList.includes(userId)) updatedOnlineList.push(userId);
+          } else {
+            updatedOnlineList = updatedOnlineList.filter(id => id !== userId);
+          }
+          return {
+            onlineUsers: updatedOnlineList,
+            presenceMap: updatedMap
+          };
+        });
+      },
+
+      sendPresenceUpdate: async (presence) => {
+        try {
+          const { getSocket } = await import("../lib/socket");
+          const socket = getSocket();
+          if (socket?.connected) {
+            socket.emit("presence:update", presence);
+          }
+          // Update locally as well
+          const myId = get().authUser?._id?.toString();
+          if (myId) {
+            get().updateUserPresence(myId, presence);
+          }
+        } catch (e) {
+          console.error("Failed to send presence update:", e);
+        }
+      },
+
       finishPostAuthLoader: () => set({ showPostAuthLoader: false }),
       refreshSocketToken: async () => {
         try {

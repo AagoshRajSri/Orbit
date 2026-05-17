@@ -17,6 +17,76 @@ const memRateLimit = new Map();
 // In-memory typing state tracking (userId -> { conversations: Map, timeoutIds: Map })
 const typingState = new Map();
 
+// Secure Presence Engine state
+const activeGraceTimers = new Map();
+const userPresenceStates = new Map(); // Keep in-memory cache of rich presence { state, customText, spotify, lastSeen }
+const DISCONNECT_GRACE_PERIOD = 15000; // 15 seconds
+
+export const broadcastPresenceUpdate = async (userId, presenceState, io) => {
+  const presenceData = {
+    userId,
+    state: presenceState.state || "online",
+    customText: presenceState.customText || "",
+    spotify: presenceState.spotify || null,
+    lastSeen: presenceState.lastSeen || "active recently"
+  };
+
+  userPresenceStates.set(userId, presenceData);
+
+  if (isRedisAvailable) {
+    try {
+      await redisClient.hset(`presence:status:${userId}`, {
+        state: presenceData.state,
+        customText: presenceData.customText,
+        spotify: JSON.stringify(presenceData.spotify),
+        lastSeen: presenceData.lastSeen
+      });
+    } catch (e) {
+      console.error("[Presence] Redis hset failed:", e);
+    }
+  }
+
+  // If invisible, map status but broadcast as offline in global online lists
+  if (presenceData.state === "invisible") {
+    io.emit("presence:broadcast", {
+      userId,
+      state: "offline",
+      lastSeen: "active recently"
+    });
+    return;
+  }
+
+  io.emit("presence:broadcast", presenceData);
+};
+
+export const getPublicOnlineUsersList = async () => {
+  if (isRedisAvailable) {
+    try {
+      const allOnline = await redisClient.smembers("global:online_users");
+      const filtered = [];
+      for (const id of allOnline) {
+        const state = await redisClient.hget(`presence:status:${id}`, "state");
+        if (state !== "invisible") {
+          filtered.push(id);
+        }
+      }
+      return filtered;
+    } catch (e) {
+      console.error("[Presence] Redis list query failed:", e);
+      return [];
+    }
+  } else {
+    const filtered = [];
+    for (const id of memOnlineUsers) {
+      const presence = userPresenceStates.get(id);
+      if (!presence || presence.state !== "invisible") {
+        filtered.push(id);
+      }
+    }
+    return filtered;
+  }
+};
+
 // Stale typing timeout in milliseconds (10 seconds)
 const STALE_TYPING_TIMEOUT = 10000;
 
@@ -145,12 +215,28 @@ export const initializeSocketIO = (io) => {
     console.log(`User connected: ${socket.userId || 'Guest(Tether)'}`);
     
     if (socket.userId) {
+      // Clear any pending offline grace transition timer
+      if (activeGraceTimers.has(socket.userId)) {
+        clearTimeout(activeGraceTimers.get(socket.userId));
+        activeGraceTimers.delete(socket.userId);
+        console.log(`[Presence] Reconnect detected: cancelling offline flap for user ${socket.userId}`);
+      }
+
       if (isRedisAvailable) {
         const activeConns = await redisClient.incr(`online:${socket.userId}`);
         if (activeConns === 1) {
           await redisClient.sadd("global:online_users", socket.userId);
         }
-        const onlineUsers = await redisClient.smembers("global:online_users");
+
+        // Fetch current presence state or default
+        const state = await redisClient.hget(`presence:status:${socket.userId}`, "state") || "online";
+        const customText = await redisClient.hget(`presence:status:${socket.userId}`, "customText") || "";
+        const spotifyStr = await redisClient.hget(`presence:status:${socket.userId}`, "spotify");
+        const spotify = spotifyStr ? JSON.parse(spotifyStr) : null;
+        
+        await broadcastPresenceUpdate(socket.userId, { state, customText, spotify }, io);
+
+        const onlineUsers = await getPublicOnlineUsersList();
         io.emit("getOnlineUsers", onlineUsers);
 
         const queueKey = `offline_queue:${socket.userId}`;
@@ -177,7 +263,12 @@ export const initializeSocketIO = (io) => {
         const count = (memConnCounts.get(socket.userId) || 0) + 1;
         memConnCounts.set(socket.userId, count);
         memOnlineUsers.add(socket.userId);
-        io.emit("getOnlineUsers", Array.from(memOnlineUsers));
+
+        const current = userPresenceStates.get(socket.userId) || { state: "online" };
+        await broadcastPresenceUpdate(socket.userId, current, io);
+
+        const onlineUsers = await getPublicOnlineUsersList();
+        io.emit("getOnlineUsers", onlineUsers);
       }
     }
     
@@ -400,10 +491,11 @@ export const initializeSocketIO = (io) => {
           console.warn(`[Socket] Non-member ${socket.userId} tried to request sender key for ${realNexusId}`);
           return;
         }
-        if (!targetUserId || !nexus.members.some(m => m.toString() === targetUserId)) {
+        const realTargetUserId = getRealId(targetUserId);
+        if (!realTargetUserId || !nexus.members.some(m => m.toString() === realTargetUserId.toString())) {
           return;
         }
-        emitToUser(targetUserId, "sender-key-distribution-requested", { nexusId });
+        emitToUser(realTargetUserId, "sender-key-distribution-requested", { nexusId });
       } catch (e) {
         console.error("[Socket] sender-key-distribution error:", e);
       }
@@ -423,6 +515,19 @@ export const initializeSocketIO = (io) => {
       }
     });
 
+    socket.on("presence:update", async (payload) => {
+      try {
+        if (!socket.userId) return;
+        const { state, customText, spotify } = payload;
+        await broadcastPresenceUpdate(socket.userId, { state, customText, spotify }, io);
+        
+        const onlineUsers = await getPublicOnlineUsersList();
+        io.emit("getOnlineUsers", onlineUsers);
+      } catch (e) {
+        console.error("[Presence] Update error:", e);
+      }
+    });
+
     socket.on("disconnect", async (reason) => {
       console.log(`User disconnected: ${socket.userId} | ${reason}`);
       const state = typingState.get(socket.userId);
@@ -439,24 +544,35 @@ export const initializeSocketIO = (io) => {
       }
 
       if (socket.userId) {
-        if (isRedisAvailable) {
-          const count = await redisClient.decr(`online:${socket.userId}`);
-          if (count <= 0) {
-            await redisClient.srem("global:online_users", socket.userId);
-            await redisClient.del(`online:${socket.userId}`);
-          }
-          const online = await redisClient.smembers("global:online_users");
-          io.emit("getOnlineUsers", online);
-        } else {
-          const count = (memConnCounts.get(socket.userId) || 1) - 1;
-          if (count <= 0) {
-            memConnCounts.delete(socket.userId);
-            memOnlineUsers.delete(socket.userId);
+        // Enforce secure anti-flap disconnect grace period to avoid leaking connection state
+        const timer = setTimeout(async () => {
+          activeGraceTimers.delete(socket.userId);
+          
+          if (isRedisAvailable) {
+            const count = await redisClient.decr(`online:${socket.userId}`);
+            if (count <= 0) {
+              await redisClient.srem("global:online_users", socket.userId);
+              await redisClient.del(`online:${socket.userId}`);
+              await broadcastPresenceUpdate(socket.userId, { state: "offline", lastSeen: "active recently" }, io);
+            }
+            const online = await getPublicOnlineUsersList();
+            io.emit("getOnlineUsers", online);
           } else {
-            memConnCounts.set(socket.userId, count);
+            const count = (memConnCounts.get(socket.userId) || 1) - 1;
+            if (count <= 0) {
+              memConnCounts.delete(socket.userId);
+              memOnlineUsers.delete(socket.userId);
+              await broadcastPresenceUpdate(socket.userId, { state: "offline", lastSeen: "active recently" }, io);
+            } else {
+              memConnCounts.set(socket.userId, count);
+            }
+            const online = await getPublicOnlineUsersList();
+            io.emit("getOnlineUsers", online);
           }
-          io.emit("getOnlineUsers", Array.from(memOnlineUsers));
-        }
+          console.log(`[Presence] Offline transition buffer completed for user ${socket.userId}`);
+        }, DISCONNECT_GRACE_PERIOD);
+
+        activeGraceTimers.set(socket.userId, timer);
       }
     });
   });

@@ -82,6 +82,24 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   const [activeTab, setActiveTab] = useState(mobileInitialTab || "nexus");
   const [aliasEditingUserId, setAliasEditingUserId] = useState(null);
   const [aliasInputValue, setAliasInputValue] = useState("");
+  const [showPresencePanel, setShowPresencePanel] = useState(false);
+  const [presenceCustomText, setPresenceCustomText] = useState("");
+
+  const presenceMap = useAuthStore((state) => state.presenceMap);
+  const authUser = useAuthStore((state) => state.authUser);
+  const sendPresenceUpdate = useAuthStore((state) => state.sendPresenceUpdate);
+
+  const myPresence = useMemo(() => {
+    const myId = authUser?._id?.toString() || authUser?.id?.toString();
+    return presenceMap[myId] || { state: "online", customText: "" };
+  }, [presenceMap, authUser]);
+
+  useEffect(() => {
+    if (myPresence?.customText) {
+      setPresenceCustomText(myPresence.customText);
+    }
+  }, [myPresence]);
+
   // FIX 10: Memoize onlineSet so its reference is stable when onlineUsers array hasn't changed
   const onlineSet = useMemo(() => new Set(onlineUsers.map((id) => id?.toString())), [onlineUsers]);
   const fetchedRef = useRef(false);
@@ -330,16 +348,27 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                       />
                     );
                   })()}
-                  {onlineSet.has(user._id?.toString()) && (
-                    <div className="absolute -bottom-1 -right-1 flex items-center justify-center z-20">
-                      <motion.span
-                        animate={{ scale: [1, 2.5], opacity: [0.8, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
-                        className="absolute w-3 h-3 bg-emerald-400 rounded-full"
-                      />
-                      <span className="relative w-3.5 h-3.5 bg-emerald-500 rounded-full border-[2.5px] border-base-300 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                    </div>
-                  )}
+                  {(() => {
+                    const peerPresence = presenceMap[user._id?.toString()];
+                    const peerState = peerPresence?.state || (onlineSet.has(user._id?.toString()) ? "online" : "offline");
+                    if (peerState === "offline") return null;
+
+                    const colorClass = 
+                      peerState === "online" ? "bg-emerald-500" :
+                      peerState === "idle" ? "bg-amber-500" :
+                      peerState === "dnd" ? "bg-rose-500" : "bg-cyan-500";
+
+                    return (
+                      <div className="absolute -bottom-1 -right-1 flex items-center justify-center z-20">
+                        <motion.span
+                          animate={{ scale: [1, 2.5], opacity: [0.8, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                          className={`absolute w-3 h-3 ${colorClass} rounded-full`}
+                        />
+                        <span className={`relative w-3.5 h-3.5 ${colorClass} rounded-full border-[2.5px] border-base-300 shadow-[0_0_8px_rgba(16,185,129,0.8)]`} />
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="text-left min-w-0 flex-1 relative z-10">
@@ -357,31 +386,47 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                   </div>
 
                   <div className="text-[10px] truncate mt-0.5">
-                    {user.isTyping ? (
-                      <span className="text-secondary font-bold tracking-tight animate-pulse flex items-center gap-1">
-                        typing...
-                      </span>
-                    ) : (
-                      <span style={isPastel ? { color: "#a1887f" } : { color: "var(--chat-muted)" }} className="font-medium">
-                        {user.isTyping ? (
-                          <span className="flex items-center gap-1.5 text-primary animate-pulse italic">
-                            <span className="size-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0s' }}></span>
-                            <span className="size-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-                            <span className="size-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
-                            typing…
+                    {(() => {
+                      const peerPresence = presenceMap[user._id?.toString()];
+                      const peerState = peerPresence?.state || (onlineSet.has(user._id?.toString()) ? "online" : "offline");
+                      const statusText = peerPresence?.customText || user.lastMessage;
+                      
+                      if (user.isTyping) {
+                        return (
+                          <span className="text-secondary font-bold tracking-tight animate-pulse flex items-center gap-1">
+                            typing...
                           </span>
-                        ) : (
-                          onlineSet.has(user._id?.toString()) ? (
-                            <span className="flex items-center gap-1.5 text-emerald-500 font-black tracking-wide drop-shadow-[0_0_3px_rgba(16,185,129,0.5)]">
-                              <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                              ONLINE
+                        );
+                      }
+
+                      if (peerState === "offline") {
+                        return (
+                          <span style={isPastel ? { color: "#a1887f" } : { color: "var(--chat-muted)" }} className="font-medium">
+                            {statusText || "Offline"}
+                          </span>
+                        );
+                      }
+
+                      const dotColor = 
+                        peerState === "online" ? "bg-emerald-500 shadow-emerald-500/50" :
+                        peerState === "idle" ? "bg-amber-500 shadow-amber-500/50" :
+                        peerState === "dnd" ? "bg-rose-500 shadow-rose-500/50" :
+                        "bg-cyan-500 shadow-cyan-500/50";
+
+                      return (
+                        <span className="flex items-center gap-1.5 font-bold tracking-wide transition-all">
+                          <span className={`size-1.5 rounded-full ${dotColor} animate-pulse shadow-[0_0_4px]`} />
+                          <span className="uppercase text-[8px] font-black opacity-85" style={{ color: "var(--chat-text)" }}>
+                            {peerState}
+                          </span>
+                          {peerPresence?.customText && (
+                            <span className="text-[9px] font-normal italic text-[var(--chat-muted)] truncate max-w-[100px]">
+                              — "{peerPresence.customText}"
                             </span>
-                          ) : (
-                            user.lastMessage || "Offline"
-                          )
-                        )}
-                      </span>
-                    )}
+                          )}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -646,50 +691,169 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
           background: "rgba(250,247,240,0.8)",
         } : {}}
       >
-        <button
-          className="w-full relative group overflow-hidden rounded-[1rem] p-2.5 transition-all duration-300 shadow-xl shadow-primary/5 ring-1 ring-[var(--chat-border)] opacity-60 cursor-not-allowed"
-          style={{ pointerEvents: 'none' }}
-        >
-          {/* Background Effect */}
-          <div
-            className="absolute inset-0 opacity-80 group-hover:opacity-100 transition-opacity"
-            style={isPastel ? {
-              background: "linear-gradient(135deg, rgba(255,170,220,0.35) 0%, rgba(200,180,255,0.25) 100%)",
-            } : isLight ? {
-              background: "linear-gradient(135deg, rgba(176,141,87,0.12) 0%, rgba(255,255,255,0.7) 50%, rgba(155,168,142,0.1) 100%)",
-            } : {
-              background: "linear-gradient(135deg, rgba(var(--p),0.15), rgba(var(--chat-surface),1), rgba(var(--s),0.15))",
-            }}
-          />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--chat-primary),transparent_70%)] opacity-20" />
+        <div className="relative">
+          {/* Dynamic Rich Presence Modal Overlay */}
+          <AnimatePresence>
+            {showPresencePanel && (
+              <motion.div
+                initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                className="absolute bottom-full left-0 right-0 mb-3 p-4 rounded-2xl border backdrop-blur-xl shadow-2xl z-50 flex flex-col gap-3"
+                style={isPastel ? {
+                  background: "linear-gradient(135deg, rgba(255,240,250,0.95) 0%, rgba(240,240,255,0.95) 100%)",
+                  borderColor: "rgba(255,180,220,0.4)",
+                  boxShadow: "0 10px 30px rgba(255,150,200,0.2)",
+                } : isLight ? {
+                  background: "linear-gradient(135deg, rgba(250,247,240,0.98) 0%, rgba(240,235,216,0.98) 100%)",
+                  borderColor: "rgba(176,141,87,0.3)",
+                  boxShadow: "0 10px 30px rgba(176,141,87,0.15)",
+                } : {
+                  background: "rgba(30, 30, 40, 0.95)",
+                  borderColor: "var(--chat-border)",
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--chat-muted)]">
+                    Secure Telemetry
+                  </span>
+                  <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest font-mono">
+                      E2EE Verified
+                    </span>
+                  </div>
+                </div>
 
-          <div className="relative flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(var(--p),0.1)] group-hover:shadow-[0_0_20px_rgba(var(--p),0.3)] transition-all">
-              {isPastel ? (
-                <Flower className="size-5.5 group-hover:rotate-[120deg] transition-transform duration-1000 ease-in-out text-[#d060a8]" />
-              ) : (
-                <Compass className="size-5.5 group-hover:rotate-[120deg] transition-transform duration-1000 ease-in-out" />
-              )}
-            </div>
-            <div className="text-left">
+                {/* Custom Status Message input */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-bold text-[var(--chat-muted)] uppercase tracking-wider">
+                    Custom Status text
+                  </span>
+                  <input
+                    value={presenceCustomText}
+                    onChange={(e) => setPresenceCustomText(e.target.value)}
+                    placeholder="What's orbiting your mind?"
+                    className="input input-xs input-bordered w-full font-medium"
+                    style={{ fontSize: "10px" }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        sendPresenceUpdate({ state: myPresence.state, customText: presenceCustomText });
+                        toast.success("Presence synced successfully");
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Quick Status selectors */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[9px] font-bold text-[var(--chat-muted)] uppercase tracking-wider">
+                    Activity Vector
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: "online", label: "Active", desc: "Visible Online", color: "bg-emerald-500 shadow-emerald-500/50" },
+                      { id: "idle", label: "Idle", desc: "Away from desk", color: "bg-amber-500 shadow-amber-500/50" },
+                      { id: "dnd", label: "DND", desc: "Do Not Disturb", color: "bg-rose-500 shadow-rose-500/50" },
+                      { id: "invisible", label: "Invisible", desc: "Appear Offline", color: "bg-cyan-500 shadow-cyan-500/50" }
+                    ].map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          sendPresenceUpdate({ state: s.id, customText: presenceCustomText });
+                          toast.success(`State set to ${s.label} ✦`);
+                        }}
+                        className={`flex flex-col items-start p-2 rounded-xl border text-left transition-all ${
+                          myPresence.state === s.id
+                            ? isPastel
+                              ? "bg-white/80 border-[#ffaad0]/50 shadow-md"
+                              : isLight
+                              ? "bg-white/90 border-[#b08d57]/30 shadow-md"
+                              : "bg-primary/10 border-primary/30 shadow-md"
+                            : "bg-transparent border-transparent hover:bg-white/10 hover:border-white/5"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${s.color} shadow-[0_0_8px]`} />
+                          <span className="text-[10px] font-bold" style={isPastel ? { color: "#d060a8" } : isLight ? { color: "#5c4a2a" } : { color: "var(--chat-text)" }}>
+                            {s.label}
+                          </span>
+                        </div>
+                        <span className="text-[8px] text-[var(--chat-muted)] font-medium mt-0.5">
+                          {s.desc}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quick Save */}
+                <button
+                  onClick={() => {
+                    sendPresenceUpdate({ state: myPresence.state, customText: presenceCustomText });
+                    setShowPresencePanel(false);
+                    toast.success("Secure presence broadcasted ✦");
+                  }}
+                  className="btn btn-xs btn-primary w-full rounded-xl uppercase tracking-widest font-black text-[9px]"
+                >
+                  Broadcast Presence
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            onClick={() => setShowPresencePanel(!showPresencePanel)}
+            className="w-full relative group overflow-hidden rounded-[1rem] p-2.5 transition-all duration-300 shadow-xl shadow-primary/5 ring-1 ring-[var(--chat-border)] cursor-pointer"
+          >
+            {/* Background Effect */}
             <div
-              className="text-[11px] font-bricolage font-black uppercase tracking-[0.12em] bg-clip-text text-transparent group-hover:brightness-110 transition-all"
+              className="absolute inset-0 opacity-80 group-hover:opacity-100 transition-opacity"
               style={isPastel ? {
-                backgroundImage: "linear-gradient(90deg, #e060b0, #a060e0)",
+                background: "linear-gradient(135deg, rgba(255,170,220,0.35) 0%, rgba(200,180,255,0.25) 100%)",
               } : isLight ? {
-                backgroundImage: "linear-gradient(90deg, #b08d57, #5c4a2a, #708264)",
+                background: "linear-gradient(135deg, rgba(176,141,87,0.12) 0%, rgba(255,255,255,0.7) 50%, rgba(155,168,142,0.1) 100%)",
               } : {
-                backgroundImage: "linear-gradient(90deg, var(--chat-primary), var(--chat-text), var(--color-accent))",
+                background: "linear-gradient(135deg, rgba(var(--p),0.15), rgba(var(--chat-surface),1), rgba(var(--s),0.15))",
               }}
-            >
-              Enter Your Orbit
-            </div>
-              <div className="text-[8px] font-bold uppercase tracking-[0.2em] text-[var(--chat-muted)] group-hover:text-[var(--chat-text)]/50 transition-colors">
-                GALAXY ENGINE
+            />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--chat-primary),transparent_70%)] opacity-20" />
+
+            <div className="relative flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(var(--p),0.1)] group-hover:shadow-[0_0_20px_rgba(var(--p),0.3)] transition-all">
+                {isPastel ? (
+                  <Flower className="size-5.5 group-hover:rotate-[120deg] transition-transform duration-1000 ease-in-out text-[#d060a8]" />
+                ) : (
+                  <Compass className="size-5.5 group-hover:rotate-[120deg] transition-transform duration-1000 ease-in-out" />
+                )}
+              </div>
+              <div className="text-left">
+                <div
+                  className="text-[11px] font-bricolage font-black uppercase tracking-[0.12em] bg-clip-text text-transparent group-hover:brightness-110 transition-all"
+                  style={isPastel ? {
+                    backgroundImage: "linear-gradient(90deg, #e060b0, #a060e0)",
+                  } : isLight ? {
+                    backgroundImage: "linear-gradient(90deg, #b08d57, #5c4a2a, #708264)",
+                  } : {
+                    backgroundImage: "linear-gradient(90deg, var(--chat-primary), var(--chat-text), var(--color-accent))",
+                  }}
+                >
+                  Configure Presence
+                </div>
+                <div className="text-[8px] font-bold uppercase tracking-[0.2em] text-[var(--chat-muted)] group-hover:text-[var(--chat-text)]/50 transition-colors flex items-center gap-1.5 mt-0.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    myPresence.state === "online" ? "bg-emerald-500" :
+                    myPresence.state === "idle" ? "bg-amber-500" :
+                    myPresence.state === "dnd" ? "bg-rose-500" : "bg-cyan-500"
+                  }`} />
+                  {myPresence.state.toUpperCase()} MODE
+                </div>
               </div>
             </div>
-          </div>
-        </button>
+          </button>
+        </div>
       </div>
     </aside>
   );

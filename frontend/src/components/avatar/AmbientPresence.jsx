@@ -15,7 +15,16 @@ import { useChatStore } from "../../store/useChatStore";
 export default function AmbientPresence() {
   const authUser = useAuthStore((state) => state.authUser);
   const onlineUsers = useAuthStore((state) => state.onlineUsers);
+  const users = useChatStore((state) => state.users);
   const [isVisible, setIsVisible] = useState(true);
+
+  // Resolve online IDs to active user objects
+  const resolvedOnlineUsers = React.useMemo(() => {
+    return (onlineUsers || []).map(id => {
+      const matched = users.find(u => (u._id || u.id)?.toString() === id.toString());
+      return matched || { _id: id, username: "Peer" };
+    });
+  }, [onlineUsers, users]);
 
   useEffect(() => {
     // Auto-hide after 5 seconds if user moves mouse
@@ -149,7 +158,7 @@ export default function AmbientPresence() {
             Active:
           </span>
           <div style={{ display: "flex", marginLeft: "4px" }}>
-            {onlineUsers.slice(0, 3).map((user, idx) => (
+            {resolvedOnlineUsers.slice(0, 3).map((user, idx) => (
               <div
                 key={user._id || idx}
                 style={{
@@ -167,8 +176,8 @@ export default function AmbientPresence() {
                   fontWeight: 600,
                   color: "#ffffff",
                   boxShadow: `0 0 8px rgba(0, 212, 255, ${0.3 - idx * 0.1})`,
-                  title: user.username || `User ${idx}`,
                 }}
+                title={user.username || `User ${idx}`}
               >
                 {(user.username || `U${idx}`).charAt(0).toUpperCase()}
               </div>
