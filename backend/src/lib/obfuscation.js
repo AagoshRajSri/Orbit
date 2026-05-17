@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Use a stable key for encryption/decryption
-const SECRET = process.env.JWT_SECRET || "orbit-default-obfuscation-secret";
+const SECRET = process.env.OBFUSCATION_SECRET || process.env.JWT_SECRET || "orbit-default-obfuscation-secret";
 const ALGORITHM = "aes-256-ctr";
 
 // Derived key for AES (must be 32 bytes)
@@ -87,6 +87,12 @@ export const sanitizeForOrbit = (obj) => {
     return obfuscateId(obj.toString());
   }
 
+  // Robust check for BSON ObjectId represented as an object with a 12-byte buffer
+  if (obj !== null && typeof obj === 'object' && obj.buffer && (obj.buffer.length === 12 || Object.keys(obj.buffer).length === 12)) {
+    const bytes = obj.buffer.length === 12 ? obj.buffer : Object.values(obj.buffer);
+    return obfuscateId(Buffer.from(bytes).toString("hex"));
+  }
+
   if (obj !== null && typeof obj === 'object') {
     // If it's a Mongoose document, convert to object first
     const newObj = obj.toObject ? obj.toObject() : { ...obj };
@@ -111,6 +117,13 @@ export const sanitizeForOrbit = (obj) => {
         typeof val.toHexString === 'function'
       )) {
         val = val.toString();
+        newObj[key] = val;
+      }
+
+      // Robust check for nested BSON ObjectId represented as an object with a 12-byte buffer
+      if (val !== null && typeof val === 'object' && val.buffer && (val.buffer.length === 12 || Object.keys(val.buffer).length === 12)) {
+        const bytes = val.buffer.length === 12 ? val.buffer : Object.values(val.buffer);
+        val = Buffer.from(bytes).toString("hex");
         newObj[key] = val;
       }
 

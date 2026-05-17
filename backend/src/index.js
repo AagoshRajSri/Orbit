@@ -282,14 +282,14 @@ const validateEnv = () => {
     "CLOUDINARY_CLOUD_NAME",
     "CLOUDINARY_API_KEY",
     "CLOUDINARY_SECRET_KEY",
-    "OBFUSCATION_SECRET",
-    "TOKEN_ENCRYPTION_SECRET",
   ];
   const optional = [
     "CONSTELLATION_PEPPER",
     "FRONTEND_URL",
     "NODE_ENV",
     "PORT",
+    "OBFUSCATION_SECRET",
+    "TOKEN_ENCRYPTION_SECRET",
   ];
 
   const missing = required.filter((key) => !process.env[key]);
