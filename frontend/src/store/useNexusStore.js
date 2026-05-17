@@ -5,11 +5,14 @@ import { getSocket } from "../lib/socket";
 import { useAuthStore } from "./useAuthStore";
 import { normalizeId, isMatchObj } from "../lib/idUtils";
 
-// Track re-distribution requests sent per session to avoid spamming
-const requestedKeyResends = new Set();
+// Track re-distribution requests sent per session to avoid spamming (5-second cooldown)
+const requestedKeyResends = new Map();
 
 // Coalesce concurrent sender-key synchronization promises to prevent bootstrap race conditions
 const syncPromises = new Map();
+
+// Coalesce concurrent sender key distributions to prevent OPK exhaustion during burst joins
+const distributePromises = new Map();
 
 // ── Decrypt a single Nexus message (v4 Sender Key) ───────────────────────────
 const decryptSingleNexusMessage = async (m, userId) => {
@@ -31,8 +34,9 @@ const decryptSingleNexusMessage = async (m, userId) => {
 
     if (!senderKey) {
       const pairKey = `${nexusId}:${sIdStr}`;
-      if (!requestedKeyResends.has(pairKey)) {
-        requestedKeyResends.add(pairKey);
+      const lastReq = requestedKeyResends.get(pairKey) || 0;
+      if (Date.now() - lastReq > 5000) {
+        requestedKeyResends.set(pairKey, Date.now());
         const socket = getSocket();
         if (socket?.connected) {
           socket.emit("request-sender-key-distribution", { nexusId, targetUserId: sIdStr });
@@ -747,71 +751,83 @@ export const useNexusStore = create((set, get) => ({
   // ── Nexus E2EE Key Management ─────────────────────────────────────────────────
 
   distributeNexusKey: async (nexusId, senderKey) => {
-    try {
-      const { x3dhSender } = await import("../lib/x3dh.js");
-      const { createDistributionPayload } = await import("../lib/nexusSenderKey.js");
-      const { getKeyPair } = await import("../lib/keyStore.js");
-      const authUser = useAuthStore.getState().authUser;
-      const myId = authUser?._id?.toString();
-
-      // 1. Fetch all members' prekey bundles
-      const res = await axiosInstance.get(`/nexus/${nexusId}/member-keys`);
-      const members = res.data.members;
-
-      let myKeys = await getKeyPair(myId);
-      if (!myKeys) {
-        // initE2EE is fire-and-forget on login — keys may still be writing.
-        // Retry with backoff before giving up.
-        for (let attempt = 0; attempt < 5; attempt++) {
-          await new Promise(r => setTimeout(r, 300));
-          myKeys = await getKeyPair(myId);
-          if (myKeys) break;
-        }
-        if (!myKeys) throw new Error("Local identity keys missing");
-      }
-
-      // 2. Create X3DH-wrapped distributions for each member
-      const payload = createDistributionPayload(senderKey, nexusId, myId);
-      const distributions = await Promise.all(members.map(async (m) => {
-        const { sessionKey, ephemeralPublicKey, oneTimePrekeyId } = await x3dhSender({
-          senderIdentityPrivateKey: myKeys.privateKey,
-          recipientBundle: m,
-        });
-
-        // Use the X3DH session key to encrypt the sender key distribution payload
-        const aesKey = await crypto.subtle.importKey(
-          "raw", sessionKey, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
-        );
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const ct = await crypto.subtle.encrypt(
-          { name: "AES-GCM", iv },
-          aesKey,
-          new TextEncoder().encode(payload)
-        );
-
-        const buf2b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-        return {
-          recipientId: m.userId,
-          ciphertext:  buf2b64(ct),
-          iv:          buf2b64(iv),
-          x3dh: {
-            identityKey:  await (async () => {
-              const spki = await crypto.subtle.exportKey("spki", myKeys.publicKey);
-              return btoa(String.fromCharCode(...new Uint8Array(spki)));
-            })(),
-            ephemeralKey: ephemeralPublicKey,
-            opkId:        oneTimePrekeyId,
-          }
-        };
-      }));
-
-      // 3. Publish to backend
-      await axiosInstance.post(`/nexus/${nexusId}/sender-keys`, { distributions });
-    } catch (err) {
-      console.error("[Nexus E2EE] Failed to distribute keys:", err);
-      toast.error("Group security setup failed. Your messages may not be readable by others.");
-      throw err;
+    if (distributePromises.has(nexusId)) {
+      await distributePromises.get(nexusId);
+      return;
     }
+
+    const promise = (async () => {
+      try {
+        const { x3dhSender } = await import("../lib/x3dh.js");
+        const { createDistributionPayload } = await import("../lib/nexusSenderKey.js");
+        const { getKeyPair } = await import("../lib/keyStore.js");
+        const authUser = useAuthStore.getState().authUser;
+        const myId = authUser?._id?.toString();
+
+        // 1. Fetch all members' prekey bundles
+        const res = await axiosInstance.get(`/nexus/${nexusId}/member-keys`);
+        const members = res.data.members;
+
+        let myKeys = await getKeyPair(myId);
+        if (!myKeys) {
+          // initE2EE is fire-and-forget on login — keys may still be writing.
+          // Retry with backoff before giving up.
+          for (let attempt = 0; attempt < 5; attempt++) {
+            await new Promise(r => setTimeout(r, 300));
+            myKeys = await getKeyPair(myId);
+            if (myKeys) break;
+          }
+          if (!myKeys) throw new Error("Local identity keys missing");
+        }
+
+        // 2. Create X3DH-wrapped distributions for each member
+        const payload = createDistributionPayload(senderKey, nexusId, myId);
+        const distributions = await Promise.all(members.map(async (m) => {
+          const { sessionKey, ephemeralPublicKey, oneTimePrekeyId } = await x3dhSender({
+            senderIdentityPrivateKey: myKeys.privateKey,
+            recipientBundle: m,
+          });
+
+          // Use the X3DH session key to encrypt the sender key distribution payload
+          const aesKey = await crypto.subtle.importKey(
+            "raw", sessionKey, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
+          );
+          const iv = crypto.getRandomValues(new Uint8Array(12));
+          const ct = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv },
+            aesKey,
+            new TextEncoder().encode(payload)
+          );
+
+          const buf2b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+          return {
+            recipientId: m.userId,
+            ciphertext:  buf2b64(ct),
+            iv:          buf2b64(iv),
+            x3dh: {
+              identityKey:  await (async () => {
+                const spki = await crypto.subtle.exportKey("spki", myKeys.publicKey);
+                return btoa(String.fromCharCode(...new Uint8Array(spki)));
+              })(),
+              ephemeralKey: ephemeralPublicKey,
+              opkId:        oneTimePrekeyId,
+            }
+          };
+        }));
+
+        // 3. Publish to backend
+        await axiosInstance.post(`/nexus/${nexusId}/sender-keys`, { distributions });
+      } catch (err) {
+        console.error("[Nexus E2EE] Failed to distribute keys:", err);
+        toast.error("Group security setup failed. Your messages may not be readable by others.");
+        throw err;
+      } finally {
+        setTimeout(() => distributePromises.delete(nexusId), 2000);
+      }
+    })();
+
+    distributePromises.set(nexusId, promise);
+    await promise;
   },
 
   syncNexusKeys: async (nexusId) => {
@@ -870,8 +886,9 @@ export const useNexusStore = create((set, get) => ({
                 // OPK consumed or rotated during re-login — can't decrypt this distribution.
                 // Request the sender to re-distribute their key with fresh OPKs.
                 const pairKey = `${nexusId}:${d.senderId}`;
-                if (!requestedKeyResends.has(pairKey)) {
-                  requestedKeyResends.add(pairKey);
+                const lastReq = requestedKeyResends.get(pairKey) || 0;
+                if (Date.now() - lastReq > 5000) {
+                  requestedKeyResends.set(pairKey, Date.now());
                   const socket = getSocket();
                   if (socket?.connected) {
                     socket.emit("request-sender-key-distribution", {
