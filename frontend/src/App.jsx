@@ -260,6 +260,11 @@ const AppContent = () => {
     ensureAppSettings();
     performanceDetector.detect();
     useAuthStore.getState().fetchAppConfig();
+    
+    // Initialize cross-tab presence coordination
+    import("./lib/tabSync").then(({ initTabSync }) => {
+      initTabSync();
+    });
   }, []);
 
   // Initialize and apply global device performance classes

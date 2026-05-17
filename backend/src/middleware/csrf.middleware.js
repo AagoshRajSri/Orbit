@@ -42,12 +42,15 @@ const CSRF_TOKEN_TTL   = 24 * 60 * 60 * 1000; // 24 hours
  * Called on every GET / initial page load so the client always has a fresh token.
  */
 export const issueCSRFToken = (req, res, next) => {
+  const isProxySecure = req.header("x-forwarded-proto") === "https" || req.secure;
+  const isProduction = process.env.NODE_ENV === "production" || isProxySecure;
+
   if (!req.cookies?.[CSRF_COOKIE_NAME]) {
     const token = crypto.randomBytes(32).toString("hex");
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: false,            // Must be readable by JS
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction,
       maxAge: CSRF_TOKEN_TTL,
       path: "/",
     });
@@ -110,3 +113,10 @@ export const csrfProtect = (req, res, next) => {
 
   next();
 };
+
+/**
+ * Combined CSRF Middleware
+ * Sequentially issues a token and protects state-mutating requests.
+ */
+export const csrfMiddleware = [issueCSRFToken, csrfProtect];
+

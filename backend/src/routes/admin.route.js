@@ -8,46 +8,54 @@ import { getAuditLogs } from "../controllers/admin.security.controller.js";
 import { getSystemConfig, updateSystemConfig, getSystemTelemetry, getInsights } from "../controllers/admin.system.controller.js";
 import { sendNotification, sendSystemMessage, sendEmailBroadcast } from "../controllers/admin.broadcast.controller.js";
 import { protectAdminRoute } from "../middleware/admin.middleware.js";
+import { loginLimiter, apiLimiter } from "../middleware/rate-limit.middleware.js";
 
 const router = express.Router();
 
-// Auth Routes
-router.post("/login", adminLogin);
+// Auth Routes (Public or specific limiting)
+router.post("/login", loginLimiter, adminLogin);
 router.post("/logout", adminLogout);
-router.get("/check", protectAdminRoute, checkAdminAuth);
+
+// Secure Admin Route Consolidation (Zero-Trust + Rate-Limited)
+router.use(protectAdminRoute);
+router.use(apiLimiter);
+
+// Auth check
+router.get("/check", checkAdminAuth);
 
 // Dashboard Routes
-router.get("/dashboard/stats", protectAdminRoute, getDashboardStats);
+router.get("/dashboard/stats", getDashboardStats);
 
 // User Routes
-router.get("/users", protectAdminRoute, getUsers);
-router.post("/users/:userId/force-logout", protectAdminRoute, forceLogoutUser);
-router.post("/users/:userId/toggle-ban", protectAdminRoute, toggleBanUser);
-router.delete("/users/:userId", protectAdminRoute, deleteUser);
-router.post("/users/:userId/restore", protectAdminRoute, restoreUser);
+router.get("/users", getUsers);
+router.post("/users/:userId/force-logout", forceLogoutUser);
+router.post("/users/:userId/toggle-ban", toggleBanUser);
+router.delete("/users/:userId", deleteUser);
+router.post("/users/:userId/restore", restoreUser);
 
 // Message Routes
-router.get("/messages", protectAdminRoute, getMessages);
-router.delete("/messages/:messageId", protectAdminRoute, deleteMessage);
-router.post("/messages/:messageId/restore", protectAdminRoute, restoreMessage);
+router.get("/messages", getMessages);
+router.delete("/messages/:messageId", deleteMessage);
+router.post("/messages/:messageId/restore", restoreMessage);
 
 // Nexus Routes
-router.get("/nexuses", protectAdminRoute, getNexuses);
-router.delete("/nexuses/:nexusId", protectAdminRoute, deleteNexus);
-router.post("/nexuses/:nexusId/restore", protectAdminRoute, restoreNexus);
+router.get("/nexuses", getNexuses);
+router.delete("/nexuses/:nexusId", deleteNexus);
+router.post("/nexuses/:nexusId/restore", restoreNexus);
 
 // Security Routes
-router.get("/security/logs", protectAdminRoute, getAuditLogs);
+router.get("/security/logs", getAuditLogs);
 
 // System Routes
-router.get("/system/config", protectAdminRoute, getSystemConfig);
-router.put("/system/config", protectAdminRoute, updateSystemConfig);
-router.get("/system/telemetry", protectAdminRoute, getSystemTelemetry);
-router.get("/system/insights", protectAdminRoute, getInsights);
+router.get("/system/config", getSystemConfig);
+router.put("/system/config", updateSystemConfig);
+router.get("/system/telemetry", getSystemTelemetry);
+router.get("/system/insights", getInsights);
 
 // Broadcast Routes
-router.post("/broadcast/notification", protectAdminRoute, sendNotification);
-router.post("/broadcast/system-message", protectAdminRoute, sendSystemMessage);
-router.post("/broadcast/email", protectAdminRoute, sendEmailBroadcast);
+router.post("/broadcast/notification", sendNotification);
+router.post("/broadcast/system-message", sendSystemMessage);
+router.post("/broadcast/email", sendEmailBroadcast);
 
 export default router;
+

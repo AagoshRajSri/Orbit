@@ -323,8 +323,18 @@ export const initializeSocketIO = (io) => {
     });
 
     // Handle typing status
-    socket.on("typing", (payload) => {
+    socket.on("typing", async (payload) => {
       try {
+        if (!socket.userId) return;
+        // SECURITY: Prevent invisible users from leaking typing metadata
+        let currentState = "offline";
+        if (isRedisAvailable) {
+          currentState = await redisClient.hget(`presence:status:${socket.userId}`, "state") || "offline";
+        } else {
+          currentState = userPresenceStates.get(socket.userId)?.state || "offline";
+        }
+        if (currentState === "invisible") return; // Drop silently
+
         const parsed = typingSchema.safeParse(payload);
         if (!parsed.success) return;
         const { to, isTyping } = parsed.data;
@@ -359,8 +369,18 @@ export const initializeSocketIO = (io) => {
       }
     });
 
-    socket.on("nexusTyping", (payload) => {
+    socket.on("nexusTyping", async (payload) => {
       try {
+        if (!socket.userId) return;
+        // SECURITY: Prevent invisible users from leaking typing metadata
+        let currentState = "offline";
+        if (isRedisAvailable) {
+          currentState = await redisClient.hget(`presence:status:${socket.userId}`, "state") || "offline";
+        } else {
+          currentState = userPresenceStates.get(socket.userId)?.state || "offline";
+        }
+        if (currentState === "invisible") return; // Drop silently
+
         const parsed = nexusTypingSchema.safeParse(payload);
         if (!parsed.success) return;
         const { nexusId, isTyping } = parsed.data;
@@ -515,10 +535,28 @@ export const initializeSocketIO = (io) => {
       }
     });
 
+    const STATE_PRIORITIES = { typing: 100, online: 80, spotify: 70, idle: 40, dnd: 30, invisible: 0 };
+
     socket.on("presence:update", async (payload) => {
       try {
         if (!socket.userId) return;
         const { state, customText, spotify } = payload;
+        
+        let currentState = "offline";
+        if (isRedisAvailable) {
+          currentState = await redisClient.hget(`presence:status:${socket.userId}`, "state") || "offline";
+        } else {
+          currentState = userPresenceStates.get(socket.userId)?.state || "offline";
+        }
+
+        const newPriority = STATE_PRIORITIES[state] || 0;
+        const currentPriority = STATE_PRIORITIES[currentState] || 0;
+
+        // Reject 'idle' if we are currently strongly 'online' (cross-device protection)
+        if (state === "idle" && currentPriority > newPriority) {
+           return; // Ignore stale device downgrade
+        }
+
         await broadcastPresenceUpdate(socket.userId, { state, customText, spotify }, io);
         
         const onlineUsers = await getPublicOnlineUsersList();

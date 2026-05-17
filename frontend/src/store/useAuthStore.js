@@ -466,14 +466,17 @@ export const useAuthStore = create(
       sendPresenceUpdate: async (presence) => {
         try {
           const { getSocket } = await import("../lib/socket");
+          const { broadcastPresenceToTabs } = await import("../lib/tabSync");
           const socket = getSocket();
           if (socket?.connected) {
             socket.emit("presence:update", presence);
           }
-          // Update locally as well
+          
+          // Update locally and sync across tabs
           const myId = get().authUser?._id?.toString();
           if (myId) {
             get().updateUserPresence(myId, presence);
+            broadcastPresenceToTabs(presence);
           }
         } catch (e) {
           console.error("Failed to send presence update:", e);

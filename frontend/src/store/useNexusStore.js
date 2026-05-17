@@ -8,6 +8,9 @@ import { normalizeId, isMatchObj } from "../lib/idUtils";
 // Track re-distribution requests sent per session to avoid spamming
 const requestedKeyResends = new Set();
 
+// Coalesce concurrent sender-key synchronization promises to prevent bootstrap race conditions
+const syncPromises = new Map();
+
 // ── Decrypt a single Nexus message (v4 Sender Key) ───────────────────────────
 const decryptSingleNexusMessage = async (m, userId) => {
   // Use .id to prefer the obfuscated ID when loading the key
@@ -434,23 +437,24 @@ export const useNexusStore = create((set, get) => ({
       try {
         const authUser = useAuthStore.getState().authUser;
         const userId = authUser?._id?.toString();
+        const myObfuscatedId = authUser?.id?.toString() || userId;
 
         // ── Nexus E2EE logic ──────────────────────────────────────────────────
         const { loadSenderKey, saveSenderKey } = await import("../lib/nexusKeyStore.js");
         const { senderKeyEncrypt, generateSenderKey } = await import("../lib/nexusSenderKey.js");
 
-        let senderKey = await loadSenderKey(nexusId, userId);
+        let senderKey = await loadSenderKey(nexusId, myObfuscatedId);
         
         // If first message in this nexus, or key missing: generate and distribute
         if (!senderKey) {
           senderKey = await generateSenderKey();
-          await saveSenderKey(nexusId, userId, senderKey);
+          await saveSenderKey(nexusId, myObfuscatedId, senderKey);
           await get().distributeNexusKey(nexusId, senderKey);
         }
 
         const payload = JSON.stringify({ text: messageData.text, image: messageData.image });
         const { ciphertext, updatedSenderKey } = await senderKeyEncrypt(senderKey, payload);
-        await saveSenderKey(nexusId, userId, updatedSenderKey);
+        await saveSenderKey(nexusId, myObfuscatedId, updatedSenderKey);
 
         const apiPayload = { ...ciphertext, idempotencyKey };
         // Only include plaintext if we somehow failed to encrypt (fallback)
@@ -809,104 +813,138 @@ export const useNexusStore = create((set, get) => ({
   },
 
   syncNexusKeys: async (nexusId) => {
-    // Basic debounce/locking to prevent spamming key sync
-    const state = get();
-    if (state._syncingKeys === nexusId) return;
-    set({ _syncingKeys: nexusId });
+    // Coalesce concurrent sync requests for the same Nexus
+    if (syncPromises.has(nexusId)) {
+      await syncPromises.get(nexusId);
+      return;
+    }
 
-    try {
-      const { x3dhReceiver } = await import("../lib/x3dh.js");
-      const { parseDistributionPayload } = await import("../lib/nexusSenderKey.js");
-      const { saveSenderKey, hasSenderKey } = await import("../lib/nexusKeyStore.js");
-      const { getSignedPrekey, consumeOneTimePrekey } = await import("../lib/sessionStore.js");
-      const { getKeyPair } = await import("../lib/keyStore.js");
-      const authUser = useAuthStore.getState().authUser;
-      const myId = authUser?._id?.toString();
+    const promise = (async () => {
+      try {
+        const { x3dhReceiver } = await import("../lib/x3dh.js");
+        const { parseDistributionPayload } = await import("../lib/nexusSenderKey.js");
+        const { saveSenderKey, hasSenderKey, loadSenderKey } = await import("../lib/nexusKeyStore.js");
+        const { getSignedPrekey, consumeOneTimePrekey } = await import("../lib/sessionStore.js");
+        const { getKeyPair } = await import("../lib/keyStore.js");
+        const authUser = useAuthStore.getState().authUser;
+        const myId = authUser?._id?.toString();
 
-      // 1. Fetch distributions addressed to me
-      const res = await axiosInstance.get(`/nexus/${nexusId}/sender-keys`);
-      const dists = res.data?.distributions;
-      if (!Array.isArray(dists)) return;
+        // 1. Fetch distributions addressed to me
+        const res = await axiosInstance.get(`/nexus/${nexusId}/sender-keys`);
+        const dists = res.data?.distributions;
+        if (!Array.isArray(dists)) return;
 
-      const myKeys = await getKeyPair(myId);
-      if (!myKeys) return;
+        const myKeys = await getKeyPair(myId);
+        if (!myKeys) return;
 
-      for (const d of dists) {
-        if (!d?.x3dh?.identityKey || !d?.x3dh?.ephemeralKey) {
-          console.warn("[Nexus E2EE] Malformed distribution — missing x3dh header, skipping", d.senderId);
-          continue;
-        }
-        // Skip if we already have a newer or same key (unless it's a rotation)
-        // For now, we always process to ensure we're up to date
-        try {
-          const spk = await getSignedPrekey(myId);
-          if (!spk) {
-            console.warn("[Nexus E2EE] No signed prekey found, skipping distribution from", d.senderId);
+        // Keep track of successful decryptions to trigger in-memory re-decryption
+        let decryptedAny = false;
+
+        for (const d of dists) {
+          if (!d?.x3dh?.identityKey || !d?.x3dh?.ephemeralKey) {
+            console.warn("[Nexus E2EE] Malformed distribution — missing x3dh header, skipping", d.senderId);
             continue;
           }
 
-          const opkId = d.x3dh?.opkId;
-          let opkPriv = null;
-          if (opkId) {
-            opkPriv = await consumeOneTimePrekey(myId, opkId);
-            if (!opkPriv) {
-              // OPK consumed or rotated during re-login — can't decrypt this distribution.
-              // Request the sender to re-distribute their key with fresh OPKs.
-              const pairKey = `${nexusId}:${d.senderId}`;
-              if (!requestedKeyResends.has(pairKey)) {
-                requestedKeyResends.add(pairKey);
-                const socket = getSocket();
-                if (socket?.connected) {
-                  socket.emit("request-sender-key-distribution", {
-                    nexusId,
-                    targetUserId: d.senderId,
-                  });
-                }
-                console.warn("[Nexus E2EE] Requested sender key re-distribution from", d.senderId);
-              }
-              continue;
-            }
+          // Check if we already successfully decrypted this exact distribution
+          const existingKey = await loadSenderKey(nexusId, d.senderId);
+          if (existingKey && existingKey.distributionCiphertext === d.ciphertext) {
+            requestedKeyResends.delete(`${nexusId}:${d.senderId}`);
+            continue;
           }
 
-          const sessionKey = await x3dhReceiver({
-            recipientIdentityPrivateKey: myKeys.privateKey,
-            signedPrekeyPrivateKey:      spk.privateKey,
-            oneTimePrekeyPrivateKey:     opkPriv,
-            senderHeader: {
-              identityKey:  d.x3dh.identityKey,
-              ephemeralKey: d.x3dh.ephemeralKey,
-            },
-          });
+          try {
+            const spk = await getSignedPrekey(myId);
+            if (!spk) {
+              console.warn("[Nexus E2EE] No signed prekey found, skipping distribution from", d.senderId);
+              continue;
+            }
 
-          const aesKey = await crypto.subtle.importKey(
-            "raw", sessionKey, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
-          );
-          const b64toBuf = (b64) => {
-            const bin = atob(b64);
-            const buf = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-            return buf.buffer;
-          };
+            const opkId = d.x3dh?.opkId;
+            let opkPriv = null;
+            if (opkId) {
+              opkPriv = await consumeOneTimePrekey(myId, opkId);
+              if (!opkPriv) {
+                // OPK consumed or rotated during re-login — can't decrypt this distribution.
+                // Request the sender to re-distribute their key with fresh OPKs.
+                const pairKey = `${nexusId}:${d.senderId}`;
+                if (!requestedKeyResends.has(pairKey)) {
+                  requestedKeyResends.add(pairKey);
+                  const socket = getSocket();
+                  if (socket?.connected) {
+                    socket.emit("request-sender-key-distribution", {
+                      nexusId,
+                      targetUserId: d.senderId,
+                    });
+                  }
+                  console.warn("[Nexus E2EE] Requested sender key re-distribution from", d.senderId);
+                }
+                continue;
+              }
+            }
 
-          const plainBuf = await crypto.subtle.decrypt(
-            { name: "AES-GCM", iv: new Uint8Array(b64toBuf(d.iv)) },
-            aesKey,
-            b64toBuf(d.ciphertext)
-          );
+            const sessionKey = await x3dhReceiver({
+              recipientIdentityPrivateKey: myKeys.privateKey,
+              signedPrekeyPrivateKey:      spk.privateKey,
+              oneTimePrekeyPrivateKey:     opkPriv,
+              senderHeader: {
+                identityKey:  d.x3dh.identityKey,
+                ephemeralKey: d.x3dh.ephemeralKey,
+              },
+            });
 
-          const payload = new TextDecoder().decode(plainBuf);
-          const senderKey = parseDistributionPayload(payload);
-          
-          await saveSenderKey(nexusId, d.senderId, senderKey);
-        } catch (decErr) {
-          console.warn("[Nexus E2EE] Failed to decrypt distribution from", d.senderId, decErr);
+            const aesKey = await crypto.subtle.importKey(
+              "raw", sessionKey, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
+            );
+            const b64toBuf = (b64) => {
+              const bin = atob(b64);
+              const buf = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+              return buf.buffer;
+            };
+
+            const plainBuf = await crypto.subtle.decrypt(
+              { name: "AES-GCM", iv: new Uint8Array(b64toBuf(d.iv)) },
+              aesKey,
+              b64toBuf(d.ciphertext)
+            );
+
+            const payload = new TextDecoder().decode(plainBuf);
+            const senderKey = parseDistributionPayload(payload);
+            
+            await saveSenderKey(nexusId, d.senderId, {
+              ...senderKey,
+              distributionCiphertext: d.ciphertext
+            });
+            requestedKeyResends.delete(`${nexusId}:${d.senderId}`);
+            decryptedAny = true;
+          } catch (decErr) {
+            console.warn("[Nexus E2EE] Failed to decrypt distribution from", d.senderId, decErr);
+          }
         }
+
+        if (decryptedAny) {
+          const myId = useAuthStore.getState().authUser?._id?.toString();
+          const currentMessages = get().nexusMessages;
+          const updated = await Promise.all(
+            currentMessages.map(async (m) => {
+              if (m.text === "🔒 [Sender key missing — sync required]") {
+                return decryptSingleNexusMessage(m, myId);
+              }
+              return m;
+            })
+          );
+          set({ nexusMessages: updated });
+        }
+      } catch (err) {
+        console.error("[Nexus E2EE] Sync error:", err);
+      } finally {
+        syncPromises.delete(nexusId);
       }
-    } catch (err) {
-      console.error("[Nexus E2EE] Sync error:", err);
-    } finally {
-      set({ _syncingKeys: null });
-    }
+    })();
+
+    syncPromises.set(nexusId, promise);
+    await promise;
   },
 
   rotateNexusKey: async (nexusId) => {

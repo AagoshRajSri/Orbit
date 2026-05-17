@@ -7,6 +7,13 @@ export const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return null;
+};
+
 axiosInstance.interceptors.request.use(async (config) => {
   try {
     const authState = useAuthStore.getState();
@@ -16,6 +23,19 @@ axiosInstance.interceptors.request.use(async (config) => {
     }
   } catch (e) {
     console.error("Interceptor failed to attach token:", e);
+  }
+
+  // Attach CSRF Token for state-mutating requests (POST, PUT, PATCH, DELETE)
+  try {
+    const method = config.method?.toLowerCase();
+    if (["post", "put", "patch", "delete"].includes(method)) {
+      const csrfToken = getCookie("csrf_token");
+      if (csrfToken) {
+        config.headers["x-csrf-token"] = csrfToken;
+      }
+    }
+  } catch (e) {
+    console.error("Interceptor failed to attach CSRF token:", e);
   }
 
   // Phase 3: Attach device ID for anomaly detection

@@ -19,8 +19,10 @@ export const protectAdminRoute = async (req, res, next) => {
       });
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret");
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET environment variable is missing");
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Ensure token is an admin token
     if (!decoded || decoded.role !== "admin") {

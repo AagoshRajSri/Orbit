@@ -1,0 +1,6 @@
+Contact: mailto:security@orbitnexus.app
+Expires: 2027-05-17T12:00:00Z
+Encryption: https://orbitnexus.app/pgp-key.txt
+Acknowledgements: https://orbitnexus.app/acknowledgements
+Preferred-Languages: en
+Policy: https://orbitnexus.app/security-policy

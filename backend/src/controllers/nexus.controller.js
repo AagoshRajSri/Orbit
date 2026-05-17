@@ -769,6 +769,20 @@ export const publishSenderKeyDistributions = async (req, res) => {
     }));
     await NexusSenderKeyDistribution.bulkWrite(ops);
 
+    // Notify recipients in real-time so they can sync immediately
+    try {
+      const io = getIO();
+      distributions.forEach(({ recipientId }) => {
+        const realRecipientId = getRealId(recipientId);
+        io.to(realRecipientId.toString()).emit("sender-key-distribution-published", {
+          nexusId,
+          senderId: sanitizeForOrbit(senderId.toString())
+        });
+      });
+    } catch (socketError) {
+      console.warn("[Nexus] Failed to emit key distribution notification:", socketError.message);
+    }
+
     return res.status(200).json({ success: true, count: distributions.length });
   } catch (error) {
     console.error("[Nexus] publishSenderKeyDistributions error:", error.message);

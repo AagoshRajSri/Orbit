@@ -96,18 +96,41 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: [
         "'self'", 
-        process.env.NODE_ENV === "production" ? "'strict-dynamic'" : "'unsafe-inline'",
+        "'unsafe-inline'",
         process.env.NODE_ENV === "production" ? "" : "'unsafe-eval'",
       ].filter(Boolean),
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       workerSrc: ["'self'", "blob:"],
       childSrc: ["'self'", "blob:"],
-      connectSrc: ["'self'", "wss:", "ws:", "https:", "http:"],
-      imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com"],
-      mediaSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com"],
+      connectSrc: ["'self'", "wss:", "ws:", "https:", "http:", "https://api.spotify.com", "https://accounts.spotify.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://i.scdn.co", "https://*.spotifycdn.com"],
+      mediaSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://*.spotifycdn.com"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'self'"],
+      baseUri: ["'self'"],
       "require-trusted-types-for": ["'script'"],
+      "trusted-types": ["default", "'allow-duplicates'"],
     }
+  },
+  referrerPolicy: {
+    policy: "strict-origin-when-cross-origin",
+  },
+  strictTransportSecurity: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
   }
 }));
+
+// ── Strict Permissions-Policy Header ──────────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), battery=(), display-capture=()"
+  );
+  next();
+});
 app.use(
   cors({
     origin: (origin, callback) => {
