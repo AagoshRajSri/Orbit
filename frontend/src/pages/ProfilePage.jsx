@@ -165,7 +165,7 @@ export default function ProfilePage() {
       ],
       profileDetails: {
         username: authUser?.username || "Guest",
-        tag: authUser?.tag || "0000",
+        tag: authUser?.orbitTag || "0000",
         email: authUser?.email || "unknown@directive.com",
         bio: authUser?.bio || "Executive architecture node initializing. Secure protocols active. Managing nexus group frequencies and local constellation pulses with 98% optimal precision.",
         profilePic: authUser?.profilePic || "/avatar.png",
@@ -227,7 +227,7 @@ export default function ProfilePage() {
   if (!authUser) return null;
 
   return (
-    <div className="min-h-screen bg-[#F5F2EA] font-sans text-slate-800 pb-12 selection:bg-[#A68A56] selection:text-white">
+    <div className="absolute inset-0 overflow-y-auto bg-[#F5F2EA] font-sans text-slate-800 pb-12 selection:bg-[#A68A56] selection:text-white">
       {/* ── Top Navigation ── */}
       <header className="sticky top-0 z-10 bg-[#F5F2EA]/80 backdrop-blur-md border-b border-[#E5E1D3]">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
