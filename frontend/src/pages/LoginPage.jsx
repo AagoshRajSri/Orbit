@@ -324,13 +324,13 @@ export default function LoginPage() {
               {/* Form */}
               <form onSubmit={handleSubmit}>
                 <div className="lp-field">
-                  <label className="lp-label">01 ── Email Address</label>
+                  <label className="lp-label">01 ── Email or Username</label>
                   <div className="lp-bracket-row">
                     <span className="lp-bl">[</span>
                     <div className="lp-input-wrap">
-                      <input className="lp-input" type="email" placeholder="you@orbit.network"
+                      <input className="lp-input" type="text" placeholder="you@orbit.network or username"
                         value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}
-                        autoComplete="email" required/>
+                        autoComplete="username" required/>
                     </div>
                     <span className="lp-br">]</span>
                   </div>

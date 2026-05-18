@@ -322,7 +322,7 @@ export const login = async (req, res) => {
 
   try {
     const validation = z.object({
-      email: emailSchema,
+      email: z.string().min(1, "Email or Username is required"),
       password: z.string().min(1, "Password is required"),
     }).safeParse({ email, password });
 
@@ -337,7 +337,14 @@ export const login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email: validation.data.email });
+    const identifier = validation.data.email;
+    const user = await User.findOne({
+      $or: [
+        { email: identifier },
+        { username: identifier }
+      ]
+    });
+
     if (!user || !user.password) {
       systemEmitter.broadcast('login_failed', { email, reason: "invalid_user" }, "warning");
       return res.status(401).json({
