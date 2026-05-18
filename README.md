@@ -1,6 +1,5 @@
 <div align="center">
 
-<img src="https://img.icons8.com/fluency/144/null/orbit.png" width="100" height="100" alt="Orbit Logo" />
 
 # ✦ ORBIT
 ### *Immersive. Quantum-Secure. Hyper-Personalized.*
