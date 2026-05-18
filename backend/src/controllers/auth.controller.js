@@ -435,7 +435,7 @@ export const logout = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const updateProfileSchema = z.object({
-      profilePic: z.string().regex(/^data:image\/(png|jpeg|jpg|webp);base64,/, "Only explicit PNG, JPEG, or WEBP base64 images are supported").optional(),
+      profilePic: z.string().regex(/^data:image\/.+;base64,/, "Only explicit base64 images are supported").optional(),
       username: z.string().min(2, "Username too short").max(50, "Username too long").trim().optional(),
       email: z.string().email("Invalid email").optional(),
       bio: z.string().max(500, "Bio too long").optional(),
@@ -457,7 +457,7 @@ export const updateProfile = async (req, res) => {
     if (profilePic) {
       try {
         const uploadResponse = await cloudinary.uploader.upload(profilePic);
-        updater.profilePic = uploadResponse.secure_url;
+        updater.profilePic = `${uploadResponse.secure_url}?v=${Date.now()}`;
       } catch (uploadError) {
         console.error(
           "Cloudinary upload failed in updateProfile:",
