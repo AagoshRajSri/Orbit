@@ -1,13 +1,10 @@
 import { create } from "zustand";
 import { THEMES } from "../constants";
 import { applyTheme, initTheme } from "../lib/themeSwitcher";
+import toast from "react-hot-toast";
 
-// Initialize theme from localStorage and apply it immediately
-const getInitialTheme = () =>
-  initTheme({
-    allowedThemes: THEMES,
-    defaultTheme: "light",
-  });
+// Force light theme initially for all devices
+const getInitialTheme = () => "light";
 
 export const useThemeStore = create((set, get) => ({
   theme: getInitialTheme(),
@@ -25,10 +22,7 @@ export const useThemeStore = create((set, get) => ({
       settingsStore.subscribe(
         (settings) => settings.settings.appearance.theme,
         (newTheme) => {
-          let validTheme = newTheme;
-          if (!newTheme || !THEMES.includes(newTheme)) {
-            validTheme = "light"; // Fallback to a known valid theme
-          }
+          const validTheme = "light"; // Enforce light theme always
           
           if (typeof window !== "undefined") {
             applyTheme(validTheme);
@@ -42,11 +36,24 @@ export const useThemeStore = create((set, get) => ({
   },
 
   setTheme: (newTheme) => {
+    if (newTheme && newTheme !== "light") {
+      toast.error("Coming Soon ✦ This theme is currently under development!", {
+        id: "coming-soon-theme",
+        icon: "🎨",
+        style: {
+          borderRadius: '12px',
+          background: '#1C1C1C',
+          color: '#FFF',
+          fontFamily: "'Inter', sans-serif",
+          fontSize: '14px',
+          fontWeight: '500',
+        }
+      });
+      return {};
+    }
+
     set((state) => {
-      let validTheme = newTheme;
-      if (!newTheme || !THEMES.includes(newTheme)) {
-        validTheme = "light";
-      }
+      const validTheme = "light";
 
       if (typeof window !== "undefined") {
         applyTheme(validTheme);

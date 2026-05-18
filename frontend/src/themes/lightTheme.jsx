@@ -18,6 +18,7 @@ import { useChatStore } from "../store/useChatStore";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { useSpotifyStore } from "../store/useSpotifyStore";
 import { THEMES, THEME_LABELS } from "../constants";
+import { useThemeStore } from "../store/useThemeStore";
 import NexusActionOverlay from "../components/nexus/NexusActionOverlay";
 import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import SecurityExplanation from "../components/settings/SecurityExplanation";
@@ -1914,9 +1915,9 @@ export function LightSettings({
                      "pastel-dream":       { primary: "#e060b0", bg: "#ffd4ee" },
                    };
                    const preview = THEME_PREVIEW[t] || { primary: "#CFAE84", bg: "#F7F5F0" };
-                   const isComingSoon = isMobile && t !== "light";
+                   const isComingSoon = t !== "light";
                    return (
-                     <div key={t} onClick={() => { if (!isComingSoon) { setDraftTheme(t); handleSave(t); } }} style={{ padding: 12, borderRadius: 12, border: `2px solid ${draftTheme === t ? '#B8924A' : '#EAE4D8'}`, background: 'white', textAlign: 'center', cursor: isComingSoon ? 'not-allowed' : 'pointer', position: 'relative', opacity: isComingSoon ? 0.7 : 1 }}>
+                     <div key={t} onClick={() => { if (isComingSoon) { useThemeStore.getState().setTheme(t); } else { setDraftTheme(t); handleSave(t); } }} style={{ padding: 12, borderRadius: 12, border: `2px solid ${draftTheme === t ? '#B8924A' : '#EAE4D8'}`, background: 'white', textAlign: 'center', cursor: isComingSoon ? 'not-allowed' : 'pointer', position: 'relative', opacity: isComingSoon ? 0.7 : 1 }}>
                         {isComingSoon && (
                           <div style={{
                             position: "absolute", inset: 0, zIndex: 10,
