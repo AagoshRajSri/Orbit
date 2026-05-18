@@ -319,13 +319,12 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <Label>Email Directive</Label>
+                    <Label>Email Directive (Display Only)</Label>
                     <input
                       type="email"
                       value={profileDraft.email}
-                      onChange={(e) => setProfileDraft({ ...profileDraft, email: e.target.value })}
-                      disabled={!isEditing}
-                      className="w-full bg-[#F5F2EA] border border-[#E5E1D3] rounded-lg px-4 py-3 text-sm font-medium text-slate-800 focus:outline-none focus:border-[#A68A56] disabled:opacity-70 transition-colors"
+                      disabled={true}
+                      className="w-full bg-[#E5E1D3]/30 border border-[#E5E1D3] rounded-lg px-4 py-3 text-sm font-medium text-slate-400 focus:outline-none cursor-not-allowed transition-colors"
                     />
                   </div>
                 </div>

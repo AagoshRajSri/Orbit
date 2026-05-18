@@ -1572,7 +1572,7 @@ export default function OrbitGrind({ children }) {
                 <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer' }}>
                   <div style={{ width:62, height:62, borderRadius:'50%', border:`2px solid #00f5d4`, padding:2, background:'rgba(0,0,0,0.6)', boxShadow:`0 0 10px #00f5d466` }}>
                     <div style={{ width:'100%', height:'100%', borderRadius:'50%', overflow:'hidden' }}>
-                      <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} alt={u.username} />
+                      <img loading="lazy" decoding="async" src={u.profilePic || "/avatar.png"} style={{ width:'100%', height:'100%', objectFit:'cover' }} alt={u.username} />
                     </div>
                   </div>
                   <span style={{ fontSize:8, color:'#00f5d4', fontFamily:"'Orbitron',monospace", letterSpacing:'0.08em', maxWidth:64, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontWeight: 800 }}>{u.username.toUpperCase()}</span>
@@ -1802,7 +1802,7 @@ export default function OrbitGrind({ children }) {
                   <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                     <div style={{ width: 58, height: 58, borderRadius: '50%', border: `2.5px solid #00f5d4`, padding: 2, background: 'rgba(0,0,0,0.6)', boxShadow: `0 0 12px rgba(0,245,212,0.4)` }}>
                       <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden' }}>
-                        <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
+                        <img loading="lazy" decoding="async" src={u.profilePic || "/avatar.png"} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
                       </div>
                     </div>
                     <span style={{ fontSize: 9, color: '#00f5d4', fontFamily: "'Share Tech Mono'", letterSpacing: '0.1em', fontWeight: 800 }}>{u.username.toUpperCase()}</span>
@@ -2063,7 +2063,7 @@ export function GamerProfile() {
       <div style={{ display: "flex", gap: 20, height: "100%" }}>
         <NeonCard color="#ff2d78" style={{ width: 300, padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           <div style={{ width: 120, height: 120, borderRadius: "50%", border: "2px solid #ff2d78", overflow: "hidden", boxShadow: "0 0 20px rgba(255,45,120,0.5)" }}>
-            <img loading="lazy" decoding="async" src={authUser?.profilePic || "https://api.dicebear.com/7.x/avataaars/svg?seed=Gamer"} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
+            <img loading="lazy" decoding="async" src={authUser?.profilePic || "/avatar.png"} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
           </div>
           <div style={{ textAlign: "center" }}>
             <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", fontFamily: "'Orbitron',monospace", letterSpacing: "0.1em" }}>{authUser?.username || "GUEST_USER"}</h2>

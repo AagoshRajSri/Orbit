@@ -30,7 +30,7 @@ import { useThemeStore } from "../../store/useThemeStore";
 const MOCK_USER = {
   id: "u1",
   name: "Aagosh",
-  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aagosh&backgroundColor=6366f1",
+  avatar: "/avatar.png",
   status: "online",
 };
 
@@ -48,26 +48,26 @@ const ORBIT_RINGS = [
     radius: 130,
     duration: 45,
     contacts: [
-      { id: "c1", name: "Bro", status: "online", angle: 0, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Bro&backgroundColor=10b981", since: "2024", shared: 12, channels: ["Design Club"] },
-      { id: "c2", name: "Alice", status: "offline", angle: 180, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alice&backgroundColor=f43f5e", since: "2023", shared: 5, channels: ["Work Orbit"] },
+      { id: "c1", name: "Bro", status: "online", angle: 0, avatar: "/avatar.png", since: "2024", shared: 12, channels: ["Design Club"] },
+      { id: "c2", name: "Alice", status: "offline", angle: 180, avatar: "/avatar.png", since: "2023", shared: 5, channels: ["Work Orbit"] },
     ],
   },
   {
     radius: 240,
     duration: 70,
     contacts: [
-      { id: "c3", name: "Charlie", status: "online", angle: 45, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie&backgroundColor=0ea5e9", since: "2025", shared: 42, channels: ["Work Orbit", "Gaming"] },
-      { id: "c4", name: "David", status: "online", angle: 165, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David&backgroundColor=eab308", since: "2024", shared: 8, channels: ["Gaming", "Design Club"] },
-      { id: "c5", name: "Eve", status: "offline", angle: 285, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Eve&backgroundColor=a855f7", since: "2022", shared: 104, channels: ["Work Orbit"] },
+      { id: "c3", name: "Charlie", status: "online", angle: 45, avatar: "/avatar.png", since: "2025", shared: 42, channels: ["Work Orbit", "Gaming"] },
+      { id: "c4", name: "David", status: "online", angle: 165, avatar: "/avatar.png", since: "2024", shared: 8, channels: ["Gaming", "Design Club"] },
+      { id: "c5", name: "Eve", status: "offline", angle: 285, avatar: "/avatar.png", since: "2022", shared: 104, channels: ["Work Orbit"] },
     ],
   },
   {
     radius: 360,
     duration: 100,
     contacts: [
-      { id: "c6", name: "Frank", status: "online", angle: 90, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Frank&backgroundColor=14b8a6", since: "2024", shared: 3, channels: ["Design Club"] },
-      { id: "c7", name: "Grace", status: "online", angle: 210, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Grace&backgroundColor=fb923c", since: "2025", shared: 1, channels: ["Gaming"] },
-      { id: "c8", name: "Heidi", status: "offline", angle: 330, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Heidi&backgroundColor=64748b", since: "2023", shared: 22, channels: ["Work Orbit", "Gaming"] },
+      { id: "c6", name: "Frank", status: "online", angle: 90, avatar: "/avatar.png", since: "2024", shared: 3, channels: ["Design Club"] },
+      { id: "c7", name: "Grace", status: "online", angle: 210, avatar: "/avatar.png", since: "2025", shared: 1, channels: ["Gaming"] },
+      { id: "c8", name: "Heidi", status: "offline", angle: 330, avatar: "/avatar.png", since: "2023", shared: 22, channels: ["Work Orbit", "Gaming"] },
     ],
   },
 ];

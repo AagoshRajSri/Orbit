@@ -1871,7 +1871,7 @@ export default function OrbitVampire({ children }) {
                                     <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0, transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                                         <div style={{ width: 66, height: 66, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg, #dc143c 0%, #1a0000 100%)', boxShadow: '0 0 15px rgba(220,20,60,0.3)' }}>
                                             <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#000', overflow: 'hidden', border: '2px solid #000' }}>
-                                                <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <img loading="lazy" decoding="async" src={u.profilePic || "/avatar.png"} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             </div>
                                         </div>
                                         <span style={{ fontSize: 10, color: '#dc143c', fontWeight: 600, fontFamily: 'Cinzel, serif', letterSpacing: 1, textTransform: 'uppercase' }}>{u.username}</span>

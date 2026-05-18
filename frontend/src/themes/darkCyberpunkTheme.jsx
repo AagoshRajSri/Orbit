@@ -1331,7 +1331,7 @@ export default function OrbitNeonCyberpunk({ children }) {
                   <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                     <div style={{ width: 62, height: 62, borderRadius: '50%', border: `2px solid ${C}`, padding: 2, background: 'rgba(0,0,0,0.4)', boxShadow: `0 0 10px ${C}44` }}>
                       <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden' }}>
-                        <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
+                        <img loading="lazy" decoding="async" src={u.profilePic || "/avatar.png"} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
                       </div>
                     </div>
                     <span style={{ fontSize: 8, color: C, fontFamily: "'Orbitron',monospace", letterSpacing: '0.08em', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.username.toUpperCase()}</span>
@@ -1470,7 +1470,7 @@ export default function OrbitNeonCyberpunk({ children }) {
                     <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                       <div style={{ width: 58, height: 58, borderRadius: '50%', border: `2px solid ${C}`, padding: 2, background: 'rgba(0,0,0,0.4)', boxShadow: `0 0 10px ${C}44` }}>
                         <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden' }}>
-                          <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
+                          <img loading="lazy" decoding="async" src={u.profilePic || "/avatar.png"} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
                         </div>
                       </div>
                       <span style={{ fontSize: 9, color: C, fontFamily: "'Share Tech Mono'", letterSpacing: '0.1em' }}>{u.username.toUpperCase()}</span>
@@ -1706,7 +1706,7 @@ export function CyberpunkProfile() {
         <NeonCard color={M} style={{ width: 280, padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, flexShrink: 0 }} className="ncb-profile-card">
           <div style={{ position: "relative" }}>
             <div style={{ width: 120, height: 120, borderRadius: "50%", border: `2px solid ${M}`, overflow: "hidden", boxShadow: `0 0 24px ${M}66` }}>
-              <img loading="lazy" decoding="async" src={authUser?.profilePic || "https://api.dicebear.com/7.x/avataaars/svg?seed=Cyber"} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
+              <img loading="lazy" decoding="async" src={authUser?.profilePic || "/avatar.png"} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
             </div>
             <div style={{ position: "absolute", bottom: 4, right: 4, width: 16, height: 16, borderRadius: "50%", border: `2px solid ${C}`, background: C, boxShadow: `0 0 8px ${C}` }} />
           </div>

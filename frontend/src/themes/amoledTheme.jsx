@@ -901,7 +901,7 @@ const MobileAmoledNav = memo(() => {
       <div style={{ display:'flex', alignItems:'center', gap:15 }}>
         <div onClick={() => navigate('/settings')} style={{ fontSize:18, color:'rgba(198,160,110,.6)' }}>⚙</div>
         <div onClick={() => navigate('/profile')} style={{ width:32, height:32, borderRadius:'50%', border:'1px solid rgba(198,160,110,.3)', overflow:'hidden' }}>
-          <img loading="lazy" decoding="async" src={authUser?.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${authUser?.username}`} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          <img loading="lazy" decoding="async" src={authUser?.profilePic || "/avatar.png"} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
         </div>
       </div>
     </div>
@@ -1017,7 +1017,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                 <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer' }}>
                   <div style={{ width:64, height:64, borderRadius:'50%', padding:2, background:'linear-gradient(135deg,#C6A06E,#4ECDC4)', boxShadow:'0 0 12px rgba(198,160,110,0.2)' }}>
                     <div style={{ width:'100%', height:'100%', borderRadius:'50%', background:'#000', overflow:'hidden' }}>
-                      <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} alt={u.username} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      <img loading="lazy" decoding="async" src={u.profilePic || "/avatar.png"} alt={u.username} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                     </div>
                   </div>
                   <span className="oa-raj" style={{ fontSize:9, color:'rgba(198,160,110,0.7)', fontWeight:800, letterSpacing:1.5, textTransform:'uppercase', maxWidth:64, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{u.username}</span>
@@ -1134,7 +1134,7 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                     <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0, transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                       <div style={{ width: 66, height: 66, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg, #C6A06E 0%, #4ECDC4 100%)', boxShadow: '0 0 15px rgba(198,160,110,.2)' }}>
                         <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#000', overflow: 'hidden', border: '2px solid #000' }}>
-                          <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img loading="lazy" decoding="async" src={u.profilePic || "/avatar.png"} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                       </div>
                       <span className="oa-raj" style={{ fontSize: 9, color: 'rgba(198,160,110,.7)', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase' }}>{u.username}</span>

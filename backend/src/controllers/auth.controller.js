@@ -486,7 +486,7 @@ export const updateProfile = async (req, res) => {
       runValidators: true,
     });
 
-    res.status(200).json(updatedUser);
+    res.status(200).json(sanitizeForOrbit(updatedUser.toObject()));
   } catch (error) {
     console.error("error in update profile:", error);
     res.status(500).json({

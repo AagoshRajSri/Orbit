@@ -1464,7 +1464,7 @@ const MobilePastelNav = memo(function MobilePastelNav() {
         <span style={{ fontSize:16, fontWeight:900, color:'#ff479c', fontFamily:"'Nunito', sans-serif" }}>Orbit</span>
       </div>
       <div onClick={() => navigate('/profile')} style={{ width:32, height:32, borderRadius:'50%', border:'2px solid #ffb7b2', overflow:'hidden', cursor:'pointer' }}>
-        <img loading="lazy" decoding="async" src={authUser?.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${authUser?.username}`} alt="me" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        <img loading="lazy" decoding="async" src={authUser?.profilePic || "/avatar.png"} alt="me" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
       </div>
     </div>
   );
@@ -1666,7 +1666,7 @@ export default function PastelApp({ children }) {
                   <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer' }}>
                     <div style={{ width:64, height:64, borderRadius:'50%', background: 'linear-gradient(135deg, #FFB7B2, #FFDAC1)', padding: 3, boxShadow: '0 4px 12px rgba(255,183,178,0.3)' }}>
                       <div style={{ width:'100%', height:'100%', borderRadius:'50%', overflow:'hidden', background:'#fff' }}>
-                        <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} alt={u.username} />
+                        <img loading="lazy" decoding="async" src={u.profilePic || "/avatar.png"} style={{ width:'100%', height:'100%', objectFit:'cover' }} alt={u.username} />
                       </div>
                     </div>
                     <span style={{ fontSize:10, color:'#aa6496', fontWeight:900, maxWidth:64, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{u.username}</span>
@@ -1740,7 +1740,7 @@ export default function PastelApp({ children }) {
                       <div key={u._id} onClick={() => { setSelectedUser(u); setSelectedNexus(null); navigate(`/chat/${u._id}`); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 }}>
                         <div style={{ width: 62, height: 62, borderRadius: '50%', background: 'linear-gradient(135deg, #FFB7B2, #FFDAC1)', padding: 3 }}>
                           <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#fff' }}>
-                            <img loading="lazy" decoding="async" src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
+                            <img loading="lazy" decoding="async" src={u.profilePic || "/avatar.png"} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={u.username} />
                           </div>
                         </div>
                         <span style={{ fontSize: 10, color: '#aa6496', fontWeight: 800 }}>{u.username}</span>
