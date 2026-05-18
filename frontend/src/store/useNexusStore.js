@@ -42,7 +42,7 @@ const decryptSingleNexusMessage = async (m, userId) => {
           socket.emit("request-sender-key-distribution", { nexusId, targetUserId: sIdStr });
         }
       }
-      return { ...m, text: "🔒 [Sender key missing — sync required]", isMe: isSender };
+      return { ...m, text: "🔒 [Encrypted history locked]", isMe: isSender };
     }
 
     try {
@@ -1040,7 +1040,7 @@ export const useNexusStore = create((set, get) => ({
           const sweptMessages = await Promise.all(
             currentMessages.map(async (msg) => {
               if (
-                msg.text === "🔒 [Sender key missing — sync required]" || 
+                msg.text === "🔒 [Encrypted history locked]" || 
                 msg.text === "🔒 [Decryption failed]"
               ) {
                 try {

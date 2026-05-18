@@ -188,58 +188,17 @@ async function withRetry(fn, retries = MAX_RETRIES, delayMs = RETRY_DELAY_MS) {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-/**
- * Send an OTP via Telegram.
- * @param {string} chatId - The recipient's Telegram Chat ID
- * @param {string} otp - The OTP code
- * @param {string} type - verification or reset
- */
-async function sendTelegramOTP(chatId, otp, type = "verification") {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  if (!botToken) {
-    console.error("[MAILER] Telegram Bot Token is missing.");
-    return { success: false, error: "Telegram configuration error" };
-  }
 
-  const message = type === "reset"
-    ? `🔒 <b>Orbit Security Code</b>\n\nYour password reset code is: <code>${otp}</code>\n\nExpires in 5 minutes.`
-    : `🚀 <b>Welcome to Orbit</b>\n\nYour verification code is: <code>${otp}</code>\n\nExpires in 5 minutes.`;
-
-  try {
-    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: "HTML",
-      }),
-    });
-
-    const data = await response.json();
-    if (!data.ok) {
-      throw new Error(data.description || "Telegram API error");
-    }
-
-    console.log("[MAILER] ✓ Message sent via TELEGRAM. ID:", data.result.message_id);
-    return { success: true, messageId: data.result.message_id };
-  } catch (error) {
-    console.error("[MAILER] Telegram send failed:", error.message);
-    return { success: false, error: error.message };
-  }
-}
 
 /**
- * Send an OTP verification email or Telegram message.
+ * Send an OTP verification email.
  *
- * @param {string} to   - Recipient email address or Telegram ID
+ * @param {string} to   - Recipient email address
  * @param {string|number} otp - The one-time password to send
  * @param {string} type - The type of email (verification or reset)
- * @param {string} method - 'email' or 'telegram'
  * @returns {{ success: boolean, messageId?: string, error?: string }}
  */
-export async function sendOTP(to, otp, type = "verification", method = "email") {
+export async function sendOTP(to, otp, type = "verification") {
   // ── Input validation ──
   if (!to) {
     return { success: false, error: "Recipient is required." };
@@ -255,10 +214,7 @@ export async function sendOTP(to, otp, type = "verification", method = "email") 
     return { success: false, error: "Too many OTP requests. Please wait." };
   }
 
-  // ── Telegram Dispatch ──
-  if (method === "telegram" || (!EMAIL_REGEX.test(to) && to.match(/^\d+$/))) {
-    return await sendTelegramOTP(to, otp, type);
-  }
+
 
   // ── Email Dispatch (Existing SMTP logic) ──
   try {

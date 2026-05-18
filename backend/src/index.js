@@ -23,6 +23,7 @@ import adminRoutes from "./routes/admin.route.js";
 import configRoutes from "./routes/config.route.js";
 import prekeyRoutes from "./routes/prekey.route.js";
 import deviceRoutes from "./routes/device.route.js";
+import keyVaultRoutes from "./routes/keyVault.route.js";
 import { connectDB } from "./lib/db.js";
 import { initializeConfig } from "./lib/config.init.js";
 import { initializeSocketIO } from "./socket/socket.js";
@@ -184,6 +185,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/config", configRoutes);
 app.use("/api/prekeys", prekeyRoutes);
 app.use("/api/devices", deviceRoutes);
+app.use("/api/keyvault", keyVaultRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Orbit API is running", version: "1.0.0", security: "zero-trust-v3" });
 });

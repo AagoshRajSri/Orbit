@@ -37,6 +37,7 @@ import AnimalEasterEggs, {
   FlyingBirdTrigger,
 } from "../components/common/welcome/AnimalEasterEggs";
 import SecurityExplanation from "../components/settings/SecurityExplanation";
+import { SecurityRecoveryManager } from "../components/auth/SecurityRecovery";
 
 const STORAGE_KEYS = {
   displayName: "orbit_displayName_v1",
@@ -1368,6 +1369,9 @@ const SettingsPage = () => {
                           </button>
                         </div>
                       </div>
+
+                      {/* Security Key / Recovery Phrase Panel */}
+                      <SecurityRecoveryManager mode="linked-devices" />
 
                       {/* Animated Security Explanation */}
                       <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 backdrop-blur-md overflow-hidden">

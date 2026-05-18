@@ -521,6 +521,59 @@ export const initializeSocketIO = (io) => {
       }
     });
 
+    // ── Vault Sync Events ───────────────────────────────────────────────────
+    // Notify all other devices owned by this user that the vault has been updated.
+    socket.on("vault:updated", async (payload) => {
+      try {
+        if (!socket.userId) return;
+        const { epoch, counter, manifestHash, deviceId } = payload || {};
+        if (typeof epoch !== "number" || typeof counter !== "number") return;
+
+        // Broadcast to all sockets in this user's personal room EXCEPT the sender
+        socket.to(socket.userId).emit("vault:sync-available", {
+          epoch,
+          counter,
+          manifestHash,
+          fromDeviceId: deviceId || "unknown",
+          ts: Date.now(),
+        });
+      } catch (e) {
+        console.error("[Socket Vault] vault:updated error:", e.message);
+      }
+    });
+
+    // A device requests a vault re-sync (e.g., after coming online stale).
+    socket.on("vault:request-sync", async () => {
+      try {
+        if (!socket.userId) return;
+        // Notify other devices to push the latest vault state
+        socket.to(socket.userId).emit("vault:sync-requested", {
+          requestingDeviceId: socket.handshake.auth?.deviceId || "unknown",
+          ts: Date.now(),
+        });
+      } catch (e) {
+        console.error("[Socket Vault] vault:request-sync error:", e.message);
+      }
+    });
+
+    // Encrypted vault blob transfer during QR device linking.
+    // The trusted device sends the encrypted blob; the new device receives it.
+    socket.on("vault:link-transfer", async ({ targetDeviceId, encryptedBlob }) => {
+      try {
+        if (!socket.userId) return;
+        if (!targetDeviceId || !encryptedBlob) return;
+
+        // Route to all sockets of this user — the target device filters by its own deviceId
+        socket.to(socket.userId).emit("vault:link-received", {
+          fromDeviceId: socket.handshake.auth?.deviceId || "unknown",
+          encryptedBlob,
+          ts: Date.now(),
+        });
+      } catch (e) {
+        console.error("[Socket Vault] vault:link-transfer error:", e.message);
+      }
+    });
+
     socket.on("leaveNexusRoom", async (nexusId) => {
       try {
         const realNexusId = getRealId(nexusId);

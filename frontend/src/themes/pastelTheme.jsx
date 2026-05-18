@@ -746,18 +746,24 @@ const Sidebar = memo(function PastelSidebar({ sidebarRef, nexuses, isNexusesLoad
   const [activeTab, setActiveTab] = useState("orbits");
   const { play } = useSoundManager();
   const navigate = useNavigate();
-  const [newContactName, setNewContactName] = useState("");
+  const [contactUsername, setContactUsername] = useState("");
+  const [contactTag, setContactTag] = useState("");
+  const [usernameFocused, setUsernameFocused] = useState(false);
+  const [tagFocused, setTagFocused] = useState(false);
   const addContact = useChatStore(state => state.addContact);
 
   const handleAddContact = async () => {
-    const trimmed = newContactName.trim();
-    if (!trimmed) {
-      toast.error("Please enter a username");
+    const u = contactUsername.trim();
+    const t = contactTag.trim();
+    if (!u || !t) {
+      toast.error("Please enter both Username and Tag");
       return;
     }
+    const fullHandle = `${u}#${t}`;
     try {
-      await addContact(trimmed);
-      setNewContactName("");
+      await addContact(fullHandle);
+      setContactUsername("");
+      setContactTag("");
     } catch (err) {
       // Handled
     }
@@ -861,38 +867,118 @@ const Sidebar = memo(function PastelSidebar({ sidebarRef, nexuses, isNexusesLoad
               }}>+ NEXUS ✨</button>
           </>
         ) : (
-          <div style={{ display: "flex", gap: 6, width: "100%" }}>
-            <input 
-              type="text" 
-              placeholder="Bloom new contact..." 
-              value={newContactName}
-              onChange={(e) => setNewContactName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
-              style={{
-                flex: 1,
-                background: "rgba(255, 255, 255, 0.7)",
-                border: "1.5px solid #ffb4dc",
-                borderRadius: 14,
-                padding: "8px 12px",
-                fontSize: 11,
-                fontWeight: "bold",
-                color: "#8B6B8A",
-                outline: "none",
-                boxShadow: "0 2px 8px rgba(255, 180, 220, 0.15)"
-              }}
-            />
+          <div style={{ display: "flex", gap: 6, alignItems: "center", width: "100%", flexWrap: 'wrap' }}>
+            <div style={{ 
+              display: 'flex', 
+              flex: '1 1 110px', 
+              background: usernameFocused ? '#FFF' : 'rgba(255, 255, 255, 0.7)', 
+              padding: '4px 6px', 
+              borderRadius: 14, 
+              border: usernameFocused ? '1.5px solid #ff479c' : '1.5px solid #ffb4dc', 
+              alignItems: 'center', 
+              minWidth: 0,
+              boxShadow: usernameFocused ? '0 4px 12px rgba(255, 71, 156, 0.15)' : '0 2px 8px rgba(255, 180, 220, 0.15)',
+              transform: usernameFocused ? 'scale(1.01)' : 'scale(1)',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
+              <input 
+                type="text" 
+                placeholder="username" 
+                value={contactUsername}
+                onChange={(e) => setContactUsername(e.target.value.trim().toLowerCase())}
+                onFocus={() => setUsernameFocused(true)}
+                onBlur={() => setUsernameFocused(false)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  padding: "6px 8px",
+                  fontSize: 11,
+                  fontWeight: "bold",
+                  color: "#8B6B8A",
+                  minWidth: 0
+                }}
+              />
+            </div>
+            
+            <div style={{
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ff9fd0 0%, #ff479c 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(255, 71, 156, 0.25)',
+              userSelect: 'none',
+              flexShrink: 0
+            }}>
+              <span style={{ color: '#FFF', fontWeight: '900', fontSize: 11, fontFamily: "'Inter', sans-serif" }}>#</span>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              flex: '0 0 60px', 
+              background: tagFocused ? '#FFF' : 'rgba(255, 255, 255, 0.7)', 
+              padding: '4px 6px', 
+              borderRadius: 14, 
+              border: tagFocused ? '1.5px solid #ff479c' : '1.5px solid #ffb4dc', 
+              alignItems: 'center', 
+              flexShrink: 0,
+              boxShadow: tagFocused ? '0 4px 12px rgba(255, 71, 156, 0.15)' : '0 2px 8px rgba(255, 180, 220, 0.15)',
+              transform: tagFocused ? 'scale(1.01)' : 'scale(1)',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
+              <input 
+                type="text" 
+                placeholder="tag" 
+                value={contactTag}
+                onChange={(e) => setContactTag(e.target.value.trim().replace('#', ''))}
+                onFocus={() => setTagFocused(true)}
+                onBlur={() => setTagFocused(false)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+                maxLength={6}
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  padding: "6px 4px",
+                  fontSize: 11,
+                  fontFamily: "'Space Mono', monospace",
+                  fontWeight: "bold",
+                  color: "#8B6B8A",
+                  minWidth: 0,
+                  textAlign: 'center'
+                }}
+              />
+            </div>
+
             <button 
               onClick={handleAddContact}
               style={{
                 border: "none",
-                borderRadius: 14,
+                borderRadius: 12,
                 padding: "8px 16px",
                 fontSize: 11,
                 fontWeight: 900,
                 background: "linear-gradient(90deg, #ff9fd0, #c890f8)",
                 color: "white",
                 cursor: "pointer",
-                boxShadow: "0 4px 15px rgba(255,130,200,0.3)"
+                boxShadow: "0 4px 15px rgba(255,130,200,0.3)",
+                flex: "1 1 60px",
+                transition: 'all 0.2s ease',
+                textAlign: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 6px 18px rgba(255,130,200,0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(255,130,200,0.3)';
               }}
             >
               + ADD

@@ -685,18 +685,24 @@ const MobileTabBar = memo(({ activeTab }) => {
 const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, selectedUser, setSelectedUser, setNexusActionView, toggleHide, hiddenNexuses, forcedTab }) => {
   const navigate = useNavigate();
   const [internalTab, setInternalTab] = useState('orbits');
-  const [newContactName, setNewContactName] = useState("");
+  const [contactUsername, setContactUsername] = useState("");
+  const [contactTag, setContactTag] = useState("");
+  const [usernameFocused, setUsernameFocused] = useState(false);
+  const [tagFocused, setTagFocused] = useState(false);
   const addContact = useChatStore(state => state.addContact);
 
   const handleAddContact = async () => {
-    const trimmed = newContactName.trim();
-    if (!trimmed) {
-      toast.error("Please enter a username");
+    const u = contactUsername.trim();
+    const t = contactTag.trim();
+    if (!u || !t) {
+      toast.error("Please enter both Username and Tag");
       return;
     }
+    const fullHandle = `${u}#${t}`;
     try {
-      await addContact(trimmed);
-      setNewContactName("");
+      await addContact(fullHandle);
+      setContactUsername("");
+      setContactTag("");
     } catch (err) {
       // handled in store
     }
@@ -792,28 +798,120 @@ const LuxurySidebar = memo(({ nexuses, selectedNexus, setSelectedNexus, users, s
           </div>
         )}
         {tab === 'contacts' && (
-          <div style={{ display: 'flex', gap: 8, background: '#F8F5EE', padding: '4px 6px', borderRadius: 16, border: `1px solid ${LUXURY_COLORS.borderSubtle}` }}>
-            <input 
-              type="text" 
-              placeholder="Username..." 
-              value={newContactName}
-              onChange={(e) => setNewContactName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
-              style={{
-                flex: 1,
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                padding: '6px 8px',
-                fontSize: 12,
-                fontFamily: "'Inter', sans-serif",
-                color: LUXURY_COLORS.textPrimary
-              }}
-            />
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
+            <div style={{ 
+              display: 'flex', 
+              flex: '1 1 110px', 
+              background: usernameFocused ? '#FFF' : '#FAF8F5', 
+              padding: '4px 6px', 
+              borderRadius: 14, 
+              border: usernameFocused ? `1px solid ${LUXURY_COLORS.goldMedium}` : `1px solid rgba(168, 130, 87, 0.15)`, 
+              alignItems: 'center', 
+              minWidth: 0,
+              boxShadow: usernameFocused ? '0 4px 12px rgba(168, 130, 87, 0.08), 0 0 0 2px rgba(168, 130, 87, 0.05)' : 'none',
+              transform: usernameFocused ? 'scale(1.01)' : 'scale(1)',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
+              <input 
+                type="text" 
+                placeholder="username" 
+                value={contactUsername}
+                onChange={(e) => setContactUsername(e.target.value.trim().toLowerCase())}
+                onFocus={() => setUsernameFocused(true)}
+                onBlur={() => setUsernameFocused(false)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  padding: '6px 8px',
+                  fontSize: 12,
+                  fontFamily: "'Inter', sans-serif",
+                  color: LUXURY_COLORS.textPrimary,
+                  minWidth: 0,
+                  letterSpacing: '0.01em'
+                }}
+              />
+            </div>
+            
+            <div style={{
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #DFBA73 0%, #C5A059 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(197, 160, 89, 0.25)',
+              userSelect: 'none',
+              flexShrink: 0
+            }}>
+              <span style={{ color: '#FFF', fontWeight: '900', fontSize: 11, fontFamily: "'Inter', sans-serif" }}>#</span>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              flex: '0 0 60px', 
+              background: tagFocused ? '#FFF' : '#FAF8F5', 
+              padding: '4px 6px', 
+              borderRadius: 14, 
+              border: tagFocused ? `1px solid ${LUXURY_COLORS.goldMedium}` : `1px solid rgba(168, 130, 87, 0.15)`, 
+              alignItems: 'center', 
+              flexShrink: 0,
+              boxShadow: tagFocused ? '0 4px 12px rgba(168, 130, 87, 0.08), 0 0 0 2px rgba(168, 130, 87, 0.05)' : 'none',
+              transform: tagFocused ? 'scale(1.01)' : 'scale(1)',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
+              <input 
+                type="text" 
+                placeholder="tag" 
+                value={contactTag}
+                onChange={(e) => setContactTag(e.target.value.trim().replace('#', ''))}
+                onFocus={() => setTagFocused(true)}
+                onBlur={() => setTagFocused(false)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddContact()}
+                maxLength={6}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  padding: '6px 4px',
+                  fontSize: 12,
+                  fontFamily: "'Space Mono', monospace",
+                  color: LUXURY_COLORS.textPrimary,
+                  minWidth: 0,
+                  textAlign: 'center',
+                  fontWeight: '600'
+                }}
+              />
+            </div>
+
             <button 
               onClick={handleAddContact}
               className="luxury-button btn-gold" 
-              style={{ padding: '6px 12px', fontSize: 10, borderRadius: 12, height: 'auto', minHeight: 0 }}
+              style={{ 
+                padding: '8px 16px', 
+                fontSize: 10, 
+                fontWeight: '700',
+                letterSpacing: '0.08em',
+                borderRadius: 14, 
+                height: 'auto', 
+                minHeight: 0, 
+                flex: '1 1 60px',
+                boxShadow: '0 4px 14px rgba(197, 160, 89, 0.2)',
+                transition: 'all 0.2s ease',
+                textAlign: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 6px 18px rgba(197, 160, 89, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 14px rgba(197, 160, 89, 0.2)';
+              }}
             >
                + ADD
             </button>

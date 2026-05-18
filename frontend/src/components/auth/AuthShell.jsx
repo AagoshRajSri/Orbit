@@ -97,9 +97,7 @@ export default function AuthShell({ children, animationKey }) {
           className="relative flex flex-col overflow-x-hidden w-full xl:w-auto left-panel"
           style={{
             minHeight: "100dvh",
-            background: "rgba(5,7,15,0.45)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
+            background: "transparent",
           }}
         >
           {/* Top accent stripe */}

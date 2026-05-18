@@ -20,6 +20,7 @@ import {
   constellationSignup,
   constellationLogin,
   updatePublicKey,
+  validateHandle,
 } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 import { validateRequestBody } from "../middleware/validation.middleware.js";
@@ -34,6 +35,7 @@ const router = express.Router();
 
 
 // Basic Auth
+router.get("/validate-handle", apiLimiter, validateHandle);
 router.post("/signup", signupLimiter, signup);
 router.post("/login", loginLimiter, login);
 router.post("/logout", logout);

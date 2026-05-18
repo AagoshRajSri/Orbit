@@ -6,6 +6,15 @@ import './index.css'
 import './styles/animations.css'
 import App from './App.jsx'
 
+// Intercept and suppress upstream Three.js Clock deprecation warnings
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  if (args[0] && typeof args[0] === 'string' && args[0].includes('Clock: This module has been deprecated')) {
+    return;
+  }
+  originalWarn(...args);
+};
+
 // ── Strict Trusted Types Policy Enforcement ────────────────────────────────
 if (window.trustedTypes && trustedTypes.createPolicy) {
   try {

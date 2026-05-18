@@ -442,7 +442,7 @@ const Sidebar = memo(({ activeTab, setActiveTab, onJoin, onNexus, nexuses, isNex
   const handleAddContact = async () => {
     const trimmed = newContactName.trim();
     if (!trimmed) {
-      toast.error("Please enter a username");
+      toast.error("Please enter an orbit handle");
       return;
     }
     try {

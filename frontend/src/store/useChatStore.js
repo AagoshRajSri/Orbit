@@ -583,7 +583,7 @@ export const useChatStore = create((set, get) => ({
   addContact: async (userIdOrUsername) => {
     try {
       const isId = userIdOrUsername.startsWith("orb_") || userIdOrUsername.length === 24;
-      const payload = isId ? { contactId: userIdOrUsername } : { username: userIdOrUsername };
+      const payload = isId ? { contactId: userIdOrUsername } : { handle: userIdOrUsername };
 
       const res = await axiosInstance.post("/auth/contacts", payload);
       

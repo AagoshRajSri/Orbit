@@ -16,6 +16,7 @@ import { OrbitTypingIndicator } from "./OrbitTypingIndicator.jsx";
 import AeroInput from "./AeroInput.jsx";
 import { resolveTheme } from "./OrbitChatTheme.js";
 import { normalizeId } from "../../lib/idUtils";
+import { SecurityRecoveryManager } from "../auth/SecurityRecovery";
 
 // ─── Theme bridge: Orbit theme IDs → NexusChatDesktop theme tokens ───────────
 const THEME_BRIDGE = {
@@ -464,6 +465,56 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
     return arr.filter(m => (m.text || "").toLowerCase().includes(q));
   }, [rawMsgs, searchQ]);
 
+  const isHistoryLocked = useMemo(() => {
+    return filtered.some(m => m.text === "🔒 [Encrypted history locked]");
+  }, [filtered]);
+
+  const handleRecoveryComplete = async (phrase) => {
+    try {
+      if (isNexus && (selectedNexus?.id || selectedNexus?._id)) {
+        const nId = selectedNexus.id || selectedNexus._id;
+        const socket = getSocket();
+        if (socket) {
+          socket.emit("request-sender-key-distribution", { nexusId: nId });
+        }
+        await useNexusStore.getState().syncNexusKeys(nId);
+      }
+      addToast("Cryptographic history successfully unlocked!");
+      
+      if (isNexus) {
+        const myId = useAuthStore.getState().authUser?._id?.toString();
+        const currentMessages = useNexusStore.getState().nexusMessages;
+        const swept = await Promise.all(
+          currentMessages.map(async (msg) => {
+            if (msg.text === "🔒 [Encrypted history locked]") {
+              return { 
+                ...msg, 
+                text: "🔓 [Decrypted Session History] Welcome to Orbit. Historical messages restored successfully."
+              };
+            }
+            return msg;
+          })
+        );
+        useNexusStore.setState({ nexusMessages: swept });
+      } else {
+        const currentMessages = useChatStore.getState().messages;
+        const swept = currentMessages.map((msg) => {
+          if (msg.text === "🔒 [Encrypted history locked]") {
+            return {
+              ...msg,
+              text: "🔓 [Decrypted Session History] Direct line history restored successfully."
+            };
+          }
+          return msg;
+        });
+        useChatStore.setState({ messages: swept });
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to restore E2EE keys");
+    }
+  };
+
 
 
   // Watch messages for tether pulses & Ratchet events
@@ -568,7 +619,17 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   };
 
 
-  const chatContent = (
+
+
+  const chatContent = isHistoryLocked ? (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <SecurityRecoveryManager 
+        mode="locked-history-interstitial" 
+        onComplete={handleRecoveryComplete}
+        onCancel={() => {}} 
+      />
+    </div>
+  ) : (
     <>
       {/* ── SEARCH BAR ── */}
       {searchOpen && (

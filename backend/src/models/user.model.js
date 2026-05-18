@@ -2,11 +2,12 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    username: { type: String, required: true, unique: true, index: true },
+    username: { type: String, required: true, index: true },
+    orbitTag: { type: String, required: true },
+    normalizedHandle: { type: String, required: true, unique: true, index: true },
     email: { type: String, required: true, unique: true, index: true },
     isEmailVerified: { type: Boolean, default: false },
-    telegramId: { type: String, default: "" },
-    isTelegramVerified: { type: Boolean, default: false },
+    recoveryPassphraseHash: { type: String, default: null },
     password: { type: String, required: true, minlength: 8 },
     profilePic: { type: String, default: "" },
     bio: { type: String, default: "", maxlength: 500 },
@@ -25,6 +26,22 @@ const userSchema = new mongoose.Schema(
       of: String,
       default: {},
     },
+    renameHistory: [
+      {
+        oldHandle: { type: String, required: true },
+        changedAt: { type: Date, default: Date.now }
+      }
+    ],
+    moderationFlags: {
+      isBanned: { type: Boolean, default: false },
+      banReason: { type: String, default: "" },
+      isReported: { type: Boolean, default: false }
+    },
+    verificationMetadata: {
+      isVerified: { type: Boolean, default: false },
+      badgeClass: { type: String, default: "standard" }, // 'standard', 'staff', 'vip'
+      verifiedAt: { type: Date, default: null }
+    }
   },
   { timestamps: true },
 );

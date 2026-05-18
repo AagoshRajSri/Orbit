@@ -24,17 +24,17 @@ import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import { UserAura } from "../../orbit/UserAura";
 
 const AddContactAction = memo(function AddContactAction({ users, contactList, addContact }) {
-  const [username, setUsername] = useState("");
+  const [handle, setHandle] = useState("");
 
   const handleAdd = async () => {
-    const trimmed = username.trim();
+    const trimmed = handle.trim();
     if (!trimmed) {
-      toast.error("Please enter a username");
+      toast.error("Please enter an orbit handle");
       return;
     }
 
     const candidate = users.find(
-      (u) => u.username.toLowerCase() === trimmed.toLowerCase(),
+      (u) => (u.normalizedHandle || "").toLowerCase() === trimmed.toLowerCase() || u.username.toLowerCase() === trimmed.toLowerCase(),
     );
 
     if (candidate && contactList?.includes(candidate._id.toString())) {
@@ -44,7 +44,7 @@ const AddContactAction = memo(function AddContactAction({ users, contactList, ad
 
     try {
       await addContact(trimmed);
-      setUsername("");
+      setHandle("");
     } catch (error) {
       // Error is handled in useChatStore
     }
@@ -56,9 +56,9 @@ const AddContactAction = memo(function AddContactAction({ users, contactList, ad
         <div className="relative flex-1">
           <UserMinus className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 opacity-40 hidden" />
           <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Username to add..."
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder="Orbit handle to add..."
             className="input input-sm input-bordered w-full bg-base-200/50 focus:bg-base-200 transition-colors text-[11px] font-bold"
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           />

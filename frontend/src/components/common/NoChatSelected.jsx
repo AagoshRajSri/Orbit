@@ -525,19 +525,19 @@ const NoChatSelected = () => {
   const contactList = useChatStore((s) => s.contactList);
 
   const [showAddContactModal, setShowAddContactModal] = useState(false);
-  const [newContactUsername, setNewContactUsername] = useState("");
+  const [newContactHandle, setNewContactHandle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAddContactSubmit = async (e) => {
     e.preventDefault();
-    const trimmed = newContactUsername.trim();
+    const trimmed = newContactHandle.trim();
     if (!trimmed) {
-      toast.error("Please enter a username");
+      toast.error("Please enter a handle");
       return;
     }
 
     const candidate = users.find(
-      (u) => u.username.toLowerCase() === trimmed.toLowerCase(),
+      (u) => (u.normalizedHandle || "").toLowerCase() === trimmed.toLowerCase() || u.username.toLowerCase() === trimmed.toLowerCase(),
     );
 
     if (candidate && contactList?.includes(candidate._id.toString())) {
@@ -548,7 +548,7 @@ const NoChatSelected = () => {
     setIsAdding(true);
     try {
       await addContact(trimmed);
-      setNewContactUsername("");
+      setNewContactHandle("");
       setShowAddContactModal(false);
     } catch (err) {
       // Handled in store
@@ -666,7 +666,7 @@ const NoChatSelected = () => {
                         Add Contact 🎀
                       </h2>
                       <p className="text-xs text-[#e8338a] font-medium">
-                        Enter username to expand your pastel orbit!
+                        Enter orbit handle to expand your pastel orbit!
                       </p>
                     </div>
                   </div>
@@ -679,14 +679,14 @@ const NoChatSelected = () => {
                           fontFamily: "'Nunito', sans-serif",
                         }}
                       >
-                        NEURAL USERNAME
+                        ORBIT HANDLE
                       </label>
                       <input
                         autoFocus
                         type="text"
-                        placeholder="e.g. sweet_cipher"
-                        value={newContactUsername}
-                        onChange={(e) => setNewContactUsername(e.target.value)}
+                        placeholder="e.g. sweet_cipher#1000"
+                        value={newContactHandle}
+                        onChange={(e) => setNewContactHandle(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl border outline-none font-bold text-sm transition-all duration-300"
                         style={{
                           background: "#ffffff",
@@ -904,7 +904,7 @@ const NoChatSelected = () => {
                       Add Contact
                     </h2>
                     <p className="text-xs text-[var(--chat-muted)] font-medium">
-                      Enter username to expand your orbit network.
+                      Enter orbit handle to expand your orbit network.
                     </p>
                   </div>
                 </div>
@@ -917,14 +917,14 @@ const NoChatSelected = () => {
                         fontFamily: theme === "light" ? "'Josefin Sans', sans-serif" : "'Share Tech Mono', sans-serif",
                       }}
                     >
-                      NEURAL USERNAME
+                      ORBIT HANDLE
                     </label>
                     <input
                       autoFocus
                       type="text"
-                      placeholder="e.g. cipher_one"
-                      value={newContactUsername}
-                      onChange={(e) => setNewContactUsername(e.target.value)}
+                      placeholder="e.g. cipher_one#1000"
+                      value={newContactHandle}
+                      onChange={(e) => setNewContactHandle(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl border outline-none font-bold text-sm transition-all duration-300"
                       style={
                         theme === "light"
