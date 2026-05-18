@@ -41,11 +41,70 @@ const emailSchema = z.string().email("Invalid email format");
 const usernameSchema = z
   .string()
   .min(3, "Username must be at least 3 characters")
-  .max(30, "Username must be at most 30 characters")
-  .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores");
+  .max(20, "Username must be at most 20 characters")
+  .regex(/^[a-z0-9_]+$/, "Username can only contain lowercase letters, numbers, and underscores");
+
+/**
+ * Normalizes, sanitizes, and verifies that an Orbit Handle conforms to strict premium and anti-spoofing guidelines.
+ */
+export const verifyAndNormalizeHandle = (rawHandle) => {
+  if (!rawHandle) return { isValid: false, error: "Handle is required." };
+
+  // 1. NFC normalization and invisible/zero-width character stripping
+  const normalizedRaw = rawHandle.normalize("NFC").replace(/[\u200B-\u200D\uFEFF\u202E]/g, "").trim();
+
+  // 2. Premium Regex validation (Username: 3-20 lowercase/numeric/_; Tag: 3-6 alphanumeric with at least 1 letter)
+  const handleRegex = /^([a-z0-9_]{3,20})#([a-zA-Z0-9]{3,6})$/;
+  const match = normalizedRaw.match(handleRegex);
+
+  if (!match) {
+    return {
+      isValid: false,
+      error: "Invalid handle format. Must be username#tag where username is 3-20 lowercase alphanumeric characters/underscores, and tag is 3-6 alphanumeric characters containing at least one letter."
+    };
+  }
+
+  const username = match[1];
+  const orbitTag = match[2]; // Preserves display capitalization
+
+  if (!/[a-zA-Z]/.test(orbitTag)) {
+    return {
+      isValid: false,
+      error: "Tag must contain at least one letter."
+    };
+  }
+
+  const normalizedHandle = `${username}#${orbitTag.toLowerCase()}`;
+
+  // 3. Mixed-Script protection (redundant check, but highly secure)
+  const hasLatin = /[a-zA-Z]/.test(username) || /[a-zA-Z]/.test(orbitTag);
+  const hasCyrillic = /[\u0400-\u04FF]/.test(username) || /[\u0400-\u04FF]/.test(orbitTag);
+  if (hasLatin && hasCyrillic) {
+    return { isValid: false, error: "Mixed scripts are forbidden for security reasons." };
+  }
+
+  // 4. Fuzzy Authority Impersonation Check
+  const normalizedTagLower = orbitTag.toLowerCase().replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a").replace(/5/g, "s").replace(/7/g, "t");
+  const blacklist = ["admin", "support", "staff", "moderator", "official", "orbit", "security", "dev", "owner", "system"];
+  
+  const isImpersonator = blacklist.some(word => 
+    normalizedTagLower.includes(word) || username.includes(word)
+  );
+
+  if (isImpersonator) {
+    return { isValid: false, error: "This handle contains restricted administrative or official keywords." };
+  }
+
+  return {
+    isValid: true,
+    username,
+    orbitTag,
+    normalizedHandle
+  };
+};
 
 export const signup = async (req, res) => {
-  const { username, email, password, telegramId } = req.body;
+  const { handle, email, password } = req.body;
   let savedUser = null;
 
   try {
@@ -57,12 +116,18 @@ export const signup = async (req, res) => {
       });
     }
 
+    const handleVerification = verifyAndNormalizeHandle(handle);
+    if (!handleVerification.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: handleVerification.error },
+      });
+    }
+
     const validation = z.object({
-      username: usernameSchema,
       email: emailSchema,
       password: passwordSchema,
-      telegramId: z.string().min(1, "Telegram ID is required for verification"),
-    }).safeParse({ username, email, password, telegramId });
+    }).safeParse({ email, password });
 
     if (!validation.success) {
       return res.status(400).json({
@@ -75,6 +140,8 @@ export const signup = async (req, res) => {
       });
     }
 
+    const { username, orbitTag, normalizedHandle } = handleVerification;
+
     const existingEmail = await User.findOne({ email: validation.data.email });
     if (existingEmail) {
       return res.status(400).json({
@@ -83,11 +150,11 @@ export const signup = async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ username: validation.data.username });
-    if (existingUser) {
+    const existingHandle = await User.findOne({ normalizedHandle });
+    if (existingHandle) {
       return res.status(400).json({
         success: false,
-        error: { code: "USERNAME_TAKEN", message: "Username already taken" },
+        error: { code: "HANDLE_TAKEN", message: "Orbit Handle already taken" },
       });
     }
 
@@ -95,12 +162,13 @@ export const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(validation.data.password, salt);
 
     const newUser = new User({
-      username: validation.data.username,
+      username,
+      orbitTag,
+      normalizedHandle,
       email: validation.data.email,
       password: hashedPassword,
-      telegramId: validation.data.telegramId || "",
+      recoveryPassphraseHash: null,
       isEmailVerified: true,
-      isTelegramVerified: true,
     });
 
     savedUser = await newUser.save();
@@ -109,15 +177,12 @@ export const signup = async (req, res) => {
     const otp = generateOTP();
     await storeOTP(validation.data.email, otp);
     
-    // Background the email/telegram dispatch
-    const dispatchTo = validation.data.telegramId || validation.data.email;
-    const method = validation.data.telegramId ? "telegram" : "email";
-    
-    sendOTP(dispatchTo, otp, "verification", method).then(mailResult => {
+    // Background the email dispatch
+    sendOTP(validation.data.email, otp, "verification", "email").then(mailResult => {
       if (!mailResult.success) {
-        console.warn(`[Signup] Verification dispatch failed for ${dispatchTo}: ${mailResult.error}. OTP: ${otp}`);
+        console.warn(`[Signup] Verification dispatch failed for ${validation.data.email}: ${mailResult.error}. OTP: ${otp}`);
       } else {
-        console.log(`[Signup] Verification sent via ${method} to ${dispatchTo}`);
+        console.log(`[Signup] Verification sent via email to ${validation.data.email}`);
       }
     }).catch(err => console.error("[Signup] Dispatch error:", err.message));
     */
@@ -143,6 +208,8 @@ export const signup = async (req, res) => {
       data: sanitizeForOrbit({
         _id: newUser._id,
         username: newUser.username,
+        orbitTag: newUser.orbitTag,
+        normalizedHandle: newUser.normalizedHandle,
         email: newUser.email,
         profilePic: newUser.profilePic,
         createdAt: newUser.createdAt,
@@ -176,6 +243,77 @@ export const signup = async (req, res) => {
       success: false,
       error: { code: "SERVER_ERROR", message: "Server error" },
     });
+  }
+};
+
+// Suggestion Utility
+// Suggestion Utility
+const generateSuggestions = async (username) => {
+  const suggestions = new Set();
+  const themes = ["Void", "Nova", "Flux", "Neon", "Zero", "Echo", "Apex", "Byte", "Core", "Node", "Rift", "Warp", "Drift", "Pulse", "Ghost", "Aura", "Zen", "Vibe", "Volt", "Glow", "Sync"];
+  const maxAttempts = 30;
+  let attempts = 0;
+
+  while (suggestions.size < 3 && attempts < maxAttempts) {
+    attempts++;
+    const theme = themes[Math.floor(Math.random() * themes.length)];
+    let suggestedTag = theme;
+    if (Math.random() < 0.6) {
+      const num = Math.floor(Math.random() * 10);
+      suggestedTag = `${theme.substring(0, 5)}${num}`;
+    }
+    const normalized = `${username}#${suggestedTag}`.toLowerCase();
+    const exists = await User.exists({ normalizedHandle: normalized });
+    
+    if (!exists) {
+      suggestions.add(`${username}#${suggestedTag}`);
+    }
+  }
+
+  // Fallback if attempts exhaustion
+  while (suggestions.size < 3) {
+    const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
+    suggestions.add(`${username}#${randomHex}`);
+  }
+
+  return Array.from(suggestions);
+};
+
+export const validateHandle = async (req, res) => {
+  try {
+    const { handle } = req.query;
+    if (!handle) {
+      return res.status(400).json({ success: false, message: "Handle query parameter is required." });
+    }
+
+    const verification = verifyAndNormalizeHandle(handle);
+    if (!verification.isValid) {
+      return res.status(400).json({ success: false, message: verification.error });
+    }
+
+    const { username, orbitTag, normalizedHandle } = verification;
+    const existingUser = await User.findOne({ normalizedHandle }).lean();
+
+    if (existingUser) {
+      const suggestions = await generateSuggestions(username);
+      return res.status(409).json({
+        success: false,
+        available: false,
+        message: "Orbit Handle is already taken.",
+        suggestions,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      available: true,
+      message: "Orbit Handle is available.",
+      normalizedHandle,
+      orbitTag,
+    });
+  } catch (error) {
+    console.error("Error in validateHandle:", error);
+    res.status(500).json({ success: false, message: "Internal server error." });
   }
 };
 
@@ -287,7 +425,6 @@ export const updateProfile = async (req, res) => {
       username: z.string().min(2, "Username too short").max(50, "Username too long").trim().optional(),
       email: z.string().email("Invalid email").optional(),
       bio: z.string().max(500, "Bio too long").optional(),
-      telegramId: z.string().optional(),
     });
 
     const parsed = updateProfileSchema.safeParse(req.body);
@@ -298,7 +435,7 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    const { profilePic, username, email, bio, telegramId } = parsed.data;
+    const { profilePic, username, email, bio } = parsed.data;
     const userId = req.user._id;
 
     const updater = {};
@@ -326,7 +463,6 @@ export const updateProfile = async (req, res) => {
     if (username) updater.username = username;
     if (email) updater.email = email;
     if (typeof bio === "string") updater.bio = bio;
-    if (typeof telegramId === "string") updater.telegramId = telegramId;
 
     if (Object.keys(updater).length === 0) {
       return res.status(400).json({ message: "No profile fields provided" });
@@ -351,7 +487,7 @@ export const getContacts = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).populate(
       "contacts",
-      "username profilePic email",
+      "username normalizedHandle profilePic email",
     );
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -371,9 +507,9 @@ export const addContact = async (req, res) => {
 
     const contactSchema = z.object({
       contactId: z.string().optional(),
-      username: z.string().optional(),
-    }).refine(data => data.contactId || data.username, {
-      message: "Either contactId or username must be provided",
+      handle: z.string().optional(),
+    }).refine(data => data.contactId || data.handle, {
+      message: "Either contactId or handle must be provided",
       path: ["contactId"],
     });
 
@@ -385,13 +521,13 @@ export const addContact = async (req, res) => {
       });
     }
 
-    const { contactId, username } = parsed.data;
+    const { contactId, handle } = parsed.data;
 
     let targetUser = null;
     if (contactId) {
       targetUser = await User.findById(contactId);
-    } else if (username) {
-      targetUser = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, "i") } });
+    } else if (handle) {
+      targetUser = await User.findOne({ normalizedHandle: handle.toLowerCase() });
     }
 
     if (!targetUser) return res.status(404).json({ message: "User not found" });
@@ -412,7 +548,7 @@ export const addContact = async (req, res) => {
 
     const updated = await User.findById(userId).populate(
       "contacts",
-      "username profilePic email",
+      "username normalizedHandle profilePic email",
     );
     res.status(200).json({
       contacts: updated.contacts,
@@ -663,8 +799,8 @@ export const forgotPassword = async (req, res) => {
     await storeOTP(email, otp);
 
     // Background the dispatch
-    const dispatchTo = user.telegramId || email;
-    const method = user.telegramId ? "telegram" : "email";
+    const dispatchTo = email;
+    const method = "email";
     
     sendOTP(dispatchTo, otp, "reset", method).then(res => {
       if (!res.success) console.warn(`[Forgot Password] Dispatch failed: ${res.error}. OTP: ${otp}`);
@@ -824,16 +960,13 @@ export const resendVerificationEmail = async (req, res) => {
     await storeOTP(email, otp);
     
     // Background dispatch
-    const dispatchTo = user.telegramId || email;
-    const method = user.telegramId ? "telegram" : "email";
-
-    sendOTP(dispatchTo, otp, "verification", method).then(res => {
+    sendOTP(email, otp, "verification", "email").then(res => {
       if (!res.success) console.warn(`[Email Verification] Dispatch failed: ${res.error}. OTP: ${otp}`);
     }).catch(err => console.error("[Email Verification] Dispatch error:", err.message));
 
     res.status(200).json({ 
       success: true, 
-      message: `Verification code sent via ${method}`
+      message: "Verification code sent via email"
     });
   } catch (error) {
     console.error("Error in resendVerificationEmail:", error);
@@ -912,9 +1045,13 @@ export const constellationSignup = async (req, res) => {
     if (await User.findOne({ email })) {
       return res.status(400).json({ message: "Email already exists." });
     }
-    if (await User.findOne({ username })) {
-      return res.status(400).json({ message: "Username already taken." });
-    }
+
+    const normalizedUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    const generatedTags = await generateSuggestions(normalizedUsername);
+    const chosenHandle = generatedTags[0];
+    const match = chosenHandle.match(/^([a-z0-9_]{3,20})#([a-zA-Z0-9]{3,6})$/);
+    const orbitTag = match ? match[2] : "orbit";
+    const normalizedHandle = chosenHandle.toLowerCase();
 
     // ── Create user (constellation-only accounts get a dummy unguessable password) ────────
     const dummyPassword = crypto.randomBytes(32).toString("hex");
@@ -922,11 +1059,12 @@ export const constellationSignup = async (req, res) => {
     const hashedDummyPassword = await bcrypt.hash(dummyPassword, pwdSalt);
 
     savedUser = await new User({
-      username,
+      username: normalizedUsername,
+      orbitTag,
+      normalizedHandle,
       email,
       password: hashedDummyPassword,
       isEmailVerified: true,
-      isTelegramVerified: true,
     }).save();
 
     /*
