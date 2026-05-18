@@ -6,6 +6,7 @@
 // =============================================================================
 import { useState, useEffect, useRef } from "react";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
+import { SpotifyWave } from "../SpotifyWave";
 
 // Inject pulse + scan animations once
 const STYLE = `
@@ -96,6 +97,7 @@ export default function TelemeteryCapsule({
   onInfoToggle,
   onMobileMenuToggle,
   searchActive,
+  userId,
 }) {
   const [latency, setLatency]     = useState(12);
   const [signalStr, setSignalStr] = useState(4);
@@ -198,6 +200,9 @@ export default function TelemeteryCapsule({
                 <div style={{ width: 5, height: 5, background: "#10b981", borderRadius: "50%", animation: "pdot 1.5s infinite" }} />
                 LIVE
               </div>
+            )}
+            {!isNexus && userId && (
+              <SpotifyWave userId={userId} size="small" />
             )}
           </div>
           <div className="tc-sub" style={{

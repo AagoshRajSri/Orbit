@@ -1,13 +1,13 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { motion, AnimatePresence, useSpring } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import { useNexusStore } from "../store/useNexusStore";
-import { prefersReducedMotion, variants } from "./MotionSystem";
+import { prefersReducedMotion } from "./MotionSystem";
+import { CentralPulse } from "../components/CentralPulse";
 import { PixelAvatarBadge } from "../components/avatar/PixelAvatar/PixelAvatarBadge";
-import { Hash, Users, Compass, CloudOff, CloudLightning, Activity } from "lucide-react";
-import toast from "../lib/toast";
+import { CloudOff, Activity, Compass, Users, Plus } from "lucide-react";
 import { getQueue } from "../lib/offlineQueue";
 
 function SyncStatusBadge() {
@@ -43,212 +43,428 @@ function SyncStatusBadge() {
   if (!isOffline && queueCount === 0) return null;
 
   return (
-    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${isOffline ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-400'}`}>
-      {isOffline ? <CloudOff className="size-3" /> : <Activity className="size-3 animate-pulse" />}
+    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${isOffline ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-400'}`}>
+      {isOffline ? <CloudOff className="size-2.5" /> : <Activity className="size-2.5 animate-pulse" />}
       {isOffline ? 'Offline' : 'Syncing'}
-      {queueCount > 0 && <span className="bg-black/40 px-1.5 rounded-sm ml-1">{queueCount}</span>}
+      {queueCount > 0 && <span className="bg-black/40 px-1 rounded-sm ml-0.5">{queueCount}</span>}
     </div>
   );
 }
 
-/**
- * NavigationOrbit.jsx
- * ──────────────────────────────────────────────────────────────────────────────
- * Phase 2 of Orbit Singularity: Radial / Floating Navigation System
- * Replaces the static Sidebar with a dynamic, spatial "Thumb Arc" (mobile)
- * or floating glass dock (desktop).
- */
+// ── Orbital Node Component ───────────────────────────────────────────────────
 
-const NAV_SPRING = { type: "spring", stiffness: 400, damping: 30 };
-
-function NavItem({ id, item, type, isSelected, onClick, hasUnread, unreadCount, peerState, customText }) {
+function OrbitalNode({
+  id,
+  item,
+  type,
+  isSelected,
+  selectedId,
+  hasUnread,
+  unreadCount,
+  peerState,
+  onClick,
+  basePos,
+  isMobile,
+}) {
   const [hover, setHover] = useState(false);
-  
-  // Choose colors based on state
-  const isOnline = peerState === "online";
-  const ringColor = isSelected ? "var(--orb-acc, #c9a84c)" : hasUnread ? "#10b981" : "transparent";
-  const glow = isSelected || hasUnread ? `drop-shadow(0 0 12px ${ringColor})` : "none";
+  const nodeRef = useRef(null);
+
+  // Magnetic hover tracking
+  const [magneticOffset, setMagneticOffset] = useState({ x: 0, y: 0 });
+  const springX = useSpring(0, { stiffness: 200, damping: 20 });
+  const springY = useSpring(0, { stiffness: 200, damping: 20 });
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    springX.set(magneticOffset.x);
+    springY.set(magneticOffset.y);
+  }, [magneticOffset, springX, springY]);
+
+  const handleMouseMove = (e) => {
+    if (prefersReducedMotion || isMobile) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const nodeCenterX = rect.left + rect.width / 2;
+    const nodeCenterY = rect.top + rect.height / 2;
+    const dx = e.clientX - nodeCenterX;
+    const dy = e.clientY - nodeCenterY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < 50) {
+      const pull = 6; // max offset ±6px toward cursor
+      setMagneticOffset({
+        x: (dx / distance) * pull,
+        y: (dy / distance) * pull,
+      });
+    } else {
+      setMagneticOffset({ x: 0, y: 0 });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHover(false);
+    setMagneticOffset({ x: 0, y: 0 });
+  };
+
+  // Compute position shifts on selections
+  const hasSelection = !!selectedId;
+  const itemSelected = isSelected;
+
+  let x = basePos.x;
+  let y = basePos.y;
+  let scale = isMobile ? 1.0 : 1.0;
+  let opacity = 1.0;
+
+  if (hasSelection) {
+    if (itemSelected) {
+      scale = isMobile ? 1.2 : 1.15;
+      x = isMobile ? basePos.x : basePos.x * 0.3; // Moves toward center in desktop
+      y = isMobile ? basePos.y : basePos.y * 0.3;
+    } else {
+      scale = isMobile ? 0.8 : 0.7;
+      x = isMobile ? basePos.x : basePos.x * 1.25; // Drift outward in desktop
+      y = isMobile ? basePos.y : basePos.y * 1.25;
+      opacity = 0.4;
+    }
+  }
+
+  const ringColor = itemSelected
+    ? "var(--accent-primary, #00d4ff)"
+    : hasUnread
+    ? "var(--text-success, #00ff88)"
+    : "rgba(240, 237, 232, 0.1)";
+
+  const glowScale = Math.min(3, 1 + (unreadCount || 0) * 0.5);
+  const glow = itemSelected || hasUnread
+    ? `0 0 ${12 * glowScale}px ${ringColor}`
+    : "none";
+
+  const size = isMobile ? 24 : itemSelected ? 36 : 28;
 
   return (
-    <motion.button
-      layout="position"
-      whileHover={prefersReducedMotion ? {} : { scale: 1.05, x: 4 }}
-      whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-      onClick={() => onClick(item)}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className="relative flex items-center gap-3 p-2 w-full text-left rounded-2xl transition-all duration-300 group"
+    <motion.div
+      ref={nodeRef}
       style={{
-        background: isSelected ? "var(--orb-glass-2)" : hover ? "var(--orb-glass-1)" : "transparent",
-        border: `1px solid ${isSelected ? "var(--orb-acc, #c9a84c)" : "transparent"}`,
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        x: prefersReducedMotion ? x : springX,
+        y: prefersReducedMotion ? y : springY,
+        translateX: "-50%",
+        translateY: "-50%",
+        zIndex: itemSelected ? 50 : 20,
       }}
+      animate={{
+        x: prefersReducedMotion ? x : undefined,
+        y: prefersReducedMotion ? y : undefined,
+      }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onMouseEnter={() => setHover(true)}
     >
-      <div className="relative shrink-0 transition-transform duration-300" style={{ filter: glow }}>
-        <PixelAvatarBadge
-          type={type === "nexus" ? "cat" : "dog"} // Pseudo logic for animal
-          state="idle"
-          size={42}
-          showDot={false}
-          style={{ imageRendering: "pixelated", borderRadius: "12px" }}
+      <motion.button
+        onClick={() => onClick(item)}
+        className="relative rounded-full flex items-center justify-center transition-all focus:outline-none"
+        style={{
+          width: size,
+          height: size,
+          opacity,
+          scale: hover && !isMobile ? 1.15 : 1,
+          transition: "width 0.2s, height 0.2s, scale 0.2s",
+        }}
+        aria-label={`${type === "nexus" ? item.name : item.username}, ${unreadCount || 0} unread`}
+      >
+        {/* Border Glow Ring */}
+        <span
+          className="absolute inset-0 rounded-full border-2 transition-all duration-300"
+          style={{
+            borderColor: ringColor,
+            boxShadow: glow,
+          }}
         />
-        {/* Unread / Online Indicator */}
-        {hasUnread && type === "nexus" && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-black text-white shadow-[0_0_8px_#10b981]">
+
+        {/* PixelAvatar or Standard circular fallback */}
+        <div className="rounded-full overflow-hidden w-full h-full flex items-center justify-center bg-black/40">
+          <PixelAvatarBadge
+            type={type === "nexus" ? "cat" : "dog"}
+            state="idle"
+            size={size - 4}
+            showDot={false}
+            style={{ imageRendering: "pixelated", borderRadius: "50%" }}
+          />
+        </div>
+
+        {/* Dynamic Unread Dot Overlay */}
+        {hasUnread && (
+          <span
+            className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-black text-white shadow-[0_0_8px_#10b981]"
+          >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
+
+        {/* Presence Ring indicator for DMs */}
         {type === "user" && peerState && peerState !== "offline" && (
-          <span 
-            className={`absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-black ${isOnline ? "bg-emerald-500" : "bg-amber-500"}`} 
-            style={{ boxShadow: `0 0 8px ${isOnline ? '#10b981' : '#f59e0b'}` }}
+          <span
+            className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-black ${
+              peerState === "online" ? "bg-emerald-500" : "bg-amber-500"
+            }`}
           />
         )}
-      </div>
+      </motion.button>
 
-      <div className="flex flex-col overflow-hidden">
-        <span className="truncate font-bold text-[13px] tracking-wide" style={{ color: "var(--orb-text, #fff)" }}>
-          {type === "nexus" ? item.name : item.username}
-        </span>
-        <span className="truncate text-[10px] font-medium opacity-70 flex items-center gap-1" style={{ color: "var(--orb-text, #fff)" }}>
-          {type === "nexus" ? (
-             <><Hash className="size-3"/> {item.members?.length || 0} members</>
-          ) : (
-            <>
-              {item.isTyping ? <span className="text-emerald-400 animate-pulse">Typing...</span> : peerState || "Offline"}
-              {customText && <span className="italic truncate ml-1 opacity-60">— {customText}</span>}
-            </>
-          )}
-        </span>
-      </div>
-    </motion.button>
+      {/* Spatial Hover Label */}
+      <AnimatePresence>
+        {hover && !isMobile && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 rounded-xl border border-white/5 backdrop-blur-xl pointer-events-none whitespace-nowrap text-center z-50 shadow-2xl"
+            style={{
+              background: "rgba(8, 9, 16, 0.85)",
+              color: "var(--text-primary)",
+            }}
+          >
+            <div className="font-bold text-[11px] tracking-wide">
+              {type === "nexus" ? item.name : item.username}
+            </div>
+            <div className="text-[9px] opacity-60">
+              {type === "nexus"
+                ? `${item.members?.length || 0} members`
+                : peerState || "Offline"}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
+// ── Main Component ───────────────────────────────────────────────────────────
+
 export function NavigationOrbit() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const users = useChatStore((s) => s.users);
   const nexuses = useNexusStore((s) => s.nexuses);
   const onlineUsers = useAuthStore((s) => s.onlineUsers);
   const presenceMap = useAuthStore((s) => s.presenceMap);
   const nexusUnread = useNexusStore((s) => s.nexusUnread);
-  
+
   const selectedUser = useChatStore((s) => s.selectedUser);
   const selectedNexus = useNexusStore((s) => s.selectedNexus);
 
-  const [tab, setTab] = useState("nexus"); // 'nexus' | 'users'
+  // Responsive layout state
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Memoize sets for performance
-  const onlineSet = useMemo(() => new Set(onlineUsers.map((id) => id?.toString())), [onlineUsers]);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-  const handleSelect = useCallback((item, type) => {
-    if (type === "nexus") {
-      useNexusStore.getState().setSelectedNexus(item);
-      useChatStore.getState().setSelectedUser(null);
-      navigate(`/nexus/${item._id || item.id}`);
-    } else {
-      useChatStore.getState().setSelectedUser(item);
-      useNexusStore.getState().setSelectedNexus(null);
-      navigate(`/chat/${item._id || item.id}`);
-    }
-  }, [navigate]);
+  const onlineSet = useMemo(
+    () => new Set(onlineUsers.map((id) => id?.toString())),
+    [onlineUsers]
+  );
+
+  const selectedId = useMemo(() => {
+    if (selectedNexus) return (selectedNexus._id || selectedNexus.id)?.toString();
+    if (selectedUser) return (selectedUser._id || selectedUser.id)?.toString();
+    return null;
+  }, [selectedNexus, selectedUser]);
+
+  const handleSelect = useCallback(
+    (item, type) => {
+      if (type === "nexus") {
+        useNexusStore.getState().setSelectedNexus(item);
+        useChatStore.getState().setSelectedUser(null);
+        navigate(`/nexus/${item._id || item.id}`);
+      } else {
+        useChatStore.getState().setSelectedUser(item);
+        useNexusStore.getState().setSelectedNexus(null);
+        navigate(`/chat/${item._id || item.id}`);
+      }
+    },
+    [navigate]
+  );
+
+  // Calculate coordinates for spatial layouts
+  const nodes = useMemo(() => {
+    const nexusNodes = nexuses.map((nexus, index) => {
+      const id = (nexus._id || nexus.id)?.toString();
+      const unread = nexusUnread[id] || 0;
+      const isSel = selectedNexus && (selectedNexus._id || selectedNexus.id)?.toString() === id;
+      return {
+        id,
+        item: nexus,
+        type: "nexus",
+        isSelected: isSel,
+        hasUnread: unread > 0 && !isSel,
+        unreadCount: unread,
+        peerState: null,
+      };
+    });
+
+    const userNodes = users.map((u) => {
+      const id = (u._id || u.id)?.toString();
+      const isSel = selectedUser && (selectedUser._id || selectedUser.id)?.toString() === id;
+      const pState = presenceMap[id]?.state || (onlineSet.has(id) ? "online" : "offline");
+      const unread = Number(u.unreadCount) || 0;
+      return {
+        id,
+        item: u,
+        type: "user",
+        isSelected: isSel,
+        hasUnread: unread > 0 && !isSel,
+        unreadCount: unread,
+        peerState: pState,
+      };
+    });
+
+    return { nexusNodes, userNodes };
+  }, [nexuses, users, selectedNexus, selectedUser, nexusUnread, presenceMap, onlineSet]);
+
+  // Position calculation functions
+  const getOrbitalPosition = useCallback(
+    (type, index, total) => {
+      const isNexus = type === "nexus";
+      const orbitRadius = isNexus ? 140 : 80;
+      // Arc fanning centered around user pulse (left thumb comfort zone)
+      const angle = (index / (total || 1)) * Math.PI * 1.4 - Math.PI * 0.2;
+      return {
+        x: Math.cos(angle) * orbitRadius,
+        y: Math.sin(angle) * orbitRadius,
+      };
+    },
+    []
+  );
+
+  const getMobilePosition = useCallback((index, total) => {
+    // 180° thumb arc fanned upwards from bottom center
+    const angle = (index / (total - 1 || 1)) * Math.PI;
+    const radius = 90;
+    return {
+      x: -Math.cos(angle) * radius,
+      y: -Math.sin(angle) * radius,
+    };
+  }, []);
 
   return (
-    <motion.nav
-      initial={{ x: -50, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      className="fixed left-4 top-24 bottom-6 w-72 z-40 hidden md:flex flex-col rounded-[32px] overflow-hidden shadow-2xl backdrop-blur-2xl"
-      style={{
-        background: "var(--orb-glass-1, rgba(20,20,25,0.4))",
-        border: "1px solid var(--orb-border, rgba(255,255,255,0.05))",
-        boxShadow: "inset 0 0 40px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.5)",
-      }}
-    >
-      {/* ── Segmented Control ── */}
-      <div className="p-4 pb-2 relative z-10">
-        <div className="flex bg-black/40 p-1 rounded-2xl relative shadow-inner">
-          <motion.div
-            className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl bg-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.2)] border border-white/10 backdrop-blur-md"
-            animate={{ left: tab === "nexus" ? 4 : "50%" }}
-            transition={NAV_SPRING}
-          />
-          <button
-            className={`relative z-10 flex-1 py-2 flex justify-center items-center gap-2 text-[11px] font-black uppercase tracking-widest transition-colors ${tab === "nexus" ? "text-white" : "text-white/40 hover:text-white/80"}`}
-            onClick={() => setTab("nexus")}
-          >
-            <Compass className="size-4" /> Orbits
-          </button>
-          <button
-            className={`relative z-10 flex-1 py-2 flex justify-center items-center gap-2 text-[11px] font-black uppercase tracking-widest transition-colors ${tab === "users" ? "text-white" : "text-white/40 hover:text-white/80"}`}
-            onClick={() => setTab("users")}
-          >
-            <Users className="size-4" /> Comms
-          </button>
-        </div>
-      </div>
-
-      {/* ── List ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-4">
-        <AnimatePresence mode="popLayout">
-          {tab === "nexus" && nexuses.map((nexus) => {
-            const nId = (nexus._id || nexus.id)?.toString();
-            const unread = nexusUnread[nId] || 0;
-            const isSel = selectedNexus && (selectedNexus._id || selectedNexus.id)?.toString() === nId;
-            return (
-              <motion.div key={nId} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.2 }}>
-                <NavItem
-                  id={nId}
-                  item={nexus}
-                  type="nexus"
-                  isSelected={isSel}
-                  hasUnread={unread > 0 && !isSel}
-                  unreadCount={unread}
-                  onClick={(n) => handleSelect(n, "nexus")}
-                />
-              </motion.div>
-            );
-          })}
-
-          {tab === "users" && users.map((u) => {
-            const uId = (u._id || u.id)?.toString();
-            const isSel = selectedUser && (selectedUser._id || selectedUser.id)?.toString() === uId;
-            const pState = presenceMap[uId]?.state || (onlineSet.has(uId) ? "online" : "offline");
-            return (
-              <motion.div key={uId} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.2 }}>
-                <NavItem
-                  id={uId}
-                  item={u}
-                  type="user"
-                  isSelected={isSel}
-                  peerState={pState}
-                  customText={presenceMap[uId]?.customText}
-                  onClick={(u) => handleSelect(u, "user")}
-                />
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-
-        {tab === "nexus" && nexuses.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full opacity-40 text-[11px] font-bold tracking-widest uppercase">
-             No Orbits Detected
-          </div>
-        )}
-      </div>
-      
-      {/* ── Actions Footer ── */}
-      <div className="p-3 border-t border-white/5 bg-black/20 shrink-0 flex justify-between items-center">
-        <button 
-          onClick={() => { document.dispatchEvent(new CustomEvent('open-nexus-modal')); }}
-          className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500/20 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+    <>
+      {/* ── Desktop Spatial Cluster Layout ── */}
+      {!isMobile && (
+        <div
+          className="fixed left-0 top-0 w-[220px] h-screen z-40 pointer-events-none"
+          aria-label="Spatial Navigation"
         >
-          + Add Orbit
-        </button>
-        <SyncStatusBadge />
-      </div>
-    </motion.nav>
+          {/* Centered orbital anchor */}
+          <div className="absolute left-[100px] top-[50%] -translate-y-1/2 pointer-events-auto">
+            {/* Central Pulse represents current user */}
+            <CentralPulse className="absolute -translate-x-1/2 -translate-y-1/2" />
+
+            {/* Orbit paths for aesthetics */}
+            <div
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/5 pointer-events-none"
+              style={{ width: 160, height: 160 }}
+            />
+            <div
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/5 pointer-events-none"
+              style={{ width: 280, height: 280 }}
+            />
+
+            {/* Render Nodes along concentric orbits */}
+            <AnimatePresence mode="popLayout">
+              {nodes.nexusNodes.map((n, i) => (
+                <OrbitalNode
+                  key={n.id}
+                  id={n.id}
+                  item={n.item}
+                  type="nexus"
+                  isSelected={n.isSelected}
+                  selectedId={selectedId}
+                  hasUnread={n.hasUnread}
+                  unreadCount={n.unreadCount}
+                  peerState={n.peerState}
+                  onClick={() => handleSelect(n.item, "nexus")}
+                  basePos={getOrbitalPosition("nexus", i, nodes.nexusNodes.length)}
+                  isMobile={false}
+                />
+              ))}
+
+              {nodes.userNodes.map((u, i) => (
+                <OrbitalNode
+                  key={u.id}
+                  id={u.id}
+                  item={u.item}
+                  type="user"
+                  isSelected={u.isSelected}
+                  selectedId={selectedId}
+                  hasUnread={u.hasUnread}
+                  unreadCount={u.unreadCount}
+                  peerState={u.peerState}
+                  onClick={() => handleSelect(u.item, "user")}
+                  basePos={getOrbitalPosition("user", i, nodes.userNodes.length)}
+                  isMobile={false}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {/* Floating Actions Dock at Bottom Left */}
+          <div className="absolute bottom-6 left-4 right-4 pointer-events-auto flex flex-col gap-2 items-center">
+            <button
+              onClick={() => document.dispatchEvent(new CustomEvent('open-nexus-modal'))}
+              className="w-10 h-10 flex items-center justify-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full hover:bg-emerald-500/20 transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+              aria-label="Add Orbit"
+            >
+              <Plus className="size-5" />
+            </button>
+            <SyncStatusBadge />
+          </div>
+        </div>
+      )}
+
+      {/* ── Mobile Thumb-Arc Navigation ── */}
+      {isMobile && (
+        <div
+          className="fixed bottom-[16px] left-[50%] -translate-x-1/2 z-40 pointer-events-auto"
+          style={{
+            marginBottom: "env(safe-area-inset-bottom)",
+          }}
+        >
+          {/* Arc center represents current user */}
+          <div className="relative">
+            <CentralPulse
+              className="-translate-x-1/2 -translate-y-1/2 scale-[0.8]"
+              style={{ zIndex: 60 }}
+            />
+
+            {/* Concentric nodes in a combined 180° fanned arc */}
+            {(() => {
+              const allItems = [...nodes.nexusNodes, ...nodes.userNodes];
+              return allItems.map((item, index) => (
+                <OrbitalNode
+                  key={item.id}
+                  id={item.id}
+                  item={item.item}
+                  type={item.type}
+                  isSelected={item.isSelected}
+                  selectedId={selectedId}
+                  hasUnread={item.hasUnread}
+                  unreadCount={item.unreadCount}
+                  peerState={item.peerState}
+                  onClick={() => handleSelect(item.item, item.type)}
+                  basePos={getMobilePosition(index, allItems.length)}
+                  isMobile={true}
+                />
+              ));
+            })()}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
-
-export default NavigationOrbit;

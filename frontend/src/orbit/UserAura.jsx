@@ -77,45 +77,19 @@ function auraVariants(color) {
   };
 }
 
-// ── Dot indicator ────────────────────────────────────────────────────────────
-
-function StatusDot({ state, color, shadow, size }) {
-  const dotSize = Math.max(8, Math.floor(size * 0.22));
-  const offset = Math.floor(dotSize * 0.1);
-
-  if (state === "offline" || state === "invisible") return null;
-
-  return (
-    <span
-      style={{
-        position: "absolute",
-        bottom: -offset,
-        right: -offset,
-        width: dotSize,
-        height: dotSize,
-        borderRadius: "50%",
-        background: color,
-        border: "2px solid var(--orb-bg, #09080f)",
-        boxShadow: `0 0 ${dotSize}px ${shadow}`,
-        zIndex: 10,
-      }}
-    />
-  );
-}
-
 // ── Main component ───────────────────────────────────────────────────────────
 
 /**
  * @param {"online"|"idle"|"dnd"|"invisible"|"offline"|"typing"|"syncing"} state
  * @param {number}  size      - Total avatar size in px (ring sizes relative to this)
- * @param {boolean} showDot   - Show the corner status dot
+ * @param {string}  userName  - The display name of the user for accessibility
  * @param {string}  className - Extra classes on the wrapper
  * @param children
  */
 export const UserAura = memo(function UserAura({
   state = "offline",
   size = 40,
-  showDot = true,
+  userName = "User",
   className = "",
   children,
 }) {
@@ -136,6 +110,7 @@ export const UserAura = memo(function UserAura({
     <div
       className={`relative inline-flex items-center justify-center ${className}`}
       style={{ width: size, height: size }}
+      aria-label={`${userName} is ${state}`}
     >
       {/* Outer aura ring — animates based on state */}
       <AnimatePresence>
@@ -173,11 +148,6 @@ export const UserAura = memo(function UserAura({
 
       {/* Content (avatar, icon, etc.) */}
       {children}
-
-      {/* Status dot */}
-      {showDot && (
-        <StatusDot state={state} color={color} shadow={shadow} size={size} />
-      )}
     </div>
   );
 });

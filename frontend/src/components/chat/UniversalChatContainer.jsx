@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, Component } from "react";
 import { useNavigate } from "react-router-dom";
-import { Virtuoso } from "react-virtuoso";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { THEMES, Ico, I, Toast, CallOverlay, VoiceBubble, ImgBubble, FileBubble, InfoPanel, Wave, MediaPanel } from "./ChatCoreUI";
 import { useNexusStore } from "../../store/useNexusStore";
 import { useChatStore } from "../../store/useChatStore";
@@ -12,6 +12,7 @@ import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import { useAvatarState } from "../avatar/PixelAvatar/useAvatarState.js";
 import TelemeteryCapsule from "./TelemeteryCapsule.jsx";
 import { OrbitMsgBubble, SafeImage } from "./MsgBubble.jsx";
+import { TimeStrata } from "../TimeStrata";
 import { OrbitTypingIndicator } from "./OrbitTypingIndicator.jsx";
 import AeroInput from "./AeroInput.jsx";
 import { resolveTheme } from "./OrbitChatTheme.js";
@@ -302,21 +303,41 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
     return arr.at(-1)?._id ?? arr.at(-1)?.id ?? null;
   }, [isNexus, nexusMessages, messages]);
 
-  // FIX 1: Virtuoso ref for programmatic scroll
-  const virtuosoRef = useRef(null);
+  // FIX 1: useVirtualizer scrollContainerRef for programmatic scroll
+  const scrollContainerRef = useRef(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: useCallback((index) => {
+      const msg = filtered[index];
+      const textLen = (msg?.text || "").length;
+      const lines = Math.ceil(textLen / 68);
+      return Math.max(48, lines * 24 + 16);
+    }, [filtered]),
+    overscan: 10,
+  });
+
+  const isNearBottom = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return true; // Default to true if not mounted yet
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+  }, []);
 
   const scrollToBottom = useCallback((behavior = "smooth") => {
-    if (virtuosoRef.current) {
-      virtuosoRef.current.scrollToIndex({ index: "LAST", behavior });
+    if (filtered.length > 0) {
+      rowVirtualizer.scrollToIndex(filtered.length - 1, { align: "end", behavior });
     } else {
       endRef.current?.scrollIntoView({ behavior, block: "end" });
     }
-  }, []);
+  }, [filtered.length, rowVirtualizer]);
 
   // FIX 16: Use lastMsgId (stable derived id) to trigger scroll — not messages.length
   useEffect(() => {
-    scrollToBottom("smooth");
-  }, [lastMsgId, isTypingActive, scrollToBottom]);
+    if (isNearBottom()) {
+      scrollToBottom("smooth");
+    }
+  }, [lastMsgId, isTypingActive, scrollToBottom, isNearBottom]);
 
   useEffect(() => {
     scrollToBottom("auto");
@@ -555,27 +576,48 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
     const rowAvatarType = out ? myAnimal : peerAnimal;
     const rowAvatarState = isLatest ? (out ? myAvatar.state : peerAvatar.state) : "idle";
 
+    const prevMsg = filtered[index - 1];
+    const nextMsg = filtered[index + 1];
+
+    const currentSender = sIdStr;
+    const prevSender = prevMsg ? (prevMsg.senderId?._id || prevMsg.senderId?.id || prevMsg.senderId)?.toString() : null;
+    const nextSender = nextMsg ? (nextMsg.senderId?._id || nextMsg.senderId?.id || nextMsg.senderId)?.toString() : null;
+
+    // Consecutiveness within 2 minutes
+    const TIME_GAP = 2 * 60 * 1000;
+    const isGroupStart = !prevMsg || prevSender !== currentSender || (new Date(m.createdAt) - new Date(prevMsg.createdAt) > TIME_GAP);
+    const isGroupEnd = !nextMsg || nextSender !== currentSender || (new Date(nextMsg.createdAt) - new Date(m.createdAt) > TIME_GAP);
+
+    // Separators for >30 minutes
+    const STRATA_GAP = 30 * 60 * 1000;
+    const showTimeStrata = prevMsg && (new Date(m.createdAt) - new Date(prevMsg.createdAt) > STRATA_GAP);
+
     if (m.text === "__voice__") return <VoiceBubble key={mKey} t={t} out={m.out} />;
     if (m.text === "__img__")   return <ImgBubble   key={mKey} t={t} out={m.out} />;
     if (m.text === "__file__")  return <FileBubble  key={mKey} t={t} out={m.out} />;
 
     return (
-      <MsgErrorBoundary key={mKey}>
-        <OrbitMsgBubble
-          msg={m}
-          rawOut={out}
-          isLatest={isLatest}
-          authUser={authUser}
-          localReactions={localReactions[mKey] || {}}
-          t={ot}
-          avatarAnimal={rowAvatarType}
-          avatarState={rowAvatarState}
-          onReact={handleReact}
-          onPin={(msg) => { setPinnedMsgData(msg); setPinnedVisible(true); addToast("Message pinned"); }}
-        />
-      </MsgErrorBoundary>
+      <div key={mKey}>
+        {showTimeStrata && <TimeStrata timestamp={new Date(m.createdAt).getTime()} />}
+        <MsgErrorBoundary>
+          <OrbitMsgBubble
+            msg={m}
+            rawOut={out}
+            isLatest={isLatest}
+            authUser={authUser}
+            localReactions={localReactions[mKey] || {}}
+            t={ot}
+            avatarAnimal={rowAvatarType}
+            avatarState={rowAvatarState}
+            onReact={handleReact}
+            onPin={(msg) => { setPinnedMsgData(msg); setPinnedVisible(true); addToast("Message pinned"); }}
+            isGroupStart={isGroupStart}
+            isGroupEnd={isGroupEnd}
+          />
+        </MsgErrorBoundary>
+      </div>
     );
-  }, [filtered.length, authUser, myAnimal, peerAnimal, myAvatar.state, peerAvatar.state, t, ot, handleReact, localReactions, addToast]);
+  }, [filtered, authUser, myAnimal, peerAnimal, myAvatar.state, peerAvatar.state, t, ot, handleReact, localReactions, addToast]);
 
   if (!entity) return (
     <div style={{ flex: 1, display: "flex", height: "100%", background: ot["--bg"], ...cssVars }}>
@@ -698,37 +740,60 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         {/* Loading skeleton */}
         {isLoading && <MsgSkeleton ot={ot} />}
 
-        {/* Virtuoso message list — only ~25-35 DOM nodes regardless of message count */}
+        {/* React Virtual message list — only ~25-35 DOM nodes regardless of message count */}
         {!isLoading && (
-          <Virtuoso
-            ref={virtuosoRef}
-            style={{ flex: 1, padding: isNexus ? "0 20px 10px" : "0 20px 10px", overflowX: "hidden" }}
-            data={filtered}
-            followOutput="smooth"
-            increaseViewportBy={250}
-            initialTopMostItemIndex={filtered.length > 0 ? filtered.length - 1 : 0}
-            alignToBottom
-            itemContent={renderItemContent}
-            components={{
-              Footer: () => (
-                <>
-                  {isTypingActive && (
-                    <div style={{ padding: "0 0 10px" }}>
-                      <OrbitTypingIndicator
-                        t={ot}
-                        peerAnimal={peerAnimal}
-                        peerAvatarState={peerAvatar.state}
-                        typingUsers={isNexus
-                          ? (Array.isArray(nexusTypingUsers) ? nexusTypingUsers : []).filter(u => u.userId !== authUser?._id?.toString()).map(u => u.username)
-                          : [selectedUser?.username || "user"]}
-                      />
-                    </div>
-                  )}
-                  <div ref={endRef} />
-                </>
-              )
+          <div
+            ref={scrollContainerRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "0 20px 10px",
+              overflowX: "hidden",
             }}
-          />
+          >
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: "100%",
+                position: "relative",
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const m = filtered[virtualRow.index];
+                return (
+                  <div
+                    key={virtualRow.key}
+                    ref={rowVirtualizer.measureElement}
+                    data-index={virtualRow.index}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    {renderItemContent(virtualRow.index, m)}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Footer with typing indicator */}
+            {isTypingActive && (
+              <div style={{ padding: "10px 0" }}>
+                <OrbitTypingIndicator
+                  t={ot}
+                  peerAnimal={peerAnimal}
+                  peerAvatarState={peerAvatar.state}
+                  typingUsers={isNexus
+                    ? (Array.isArray(nexusTypingUsers) ? nexusTypingUsers : []).filter(u => u.userId !== authUser?._id?.toString()).map(u => u.username)
+                    : [selectedUser?.username || "user"]}
+                />
+              </div>
+            )}
+            <div ref={endRef} />
+          </div>
         )}
       </div>
 
@@ -784,6 +849,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         onCall={() => setCallType("voice")} onInfoToggle={() => setShowInfo(x => !x)}
         onMobileMenuToggle={onOpenSidebar ? () => onOpenSidebar(isNexus ? "nexus" : "contacts") : null}
         searchActive={searchOpen}
+        userId={selectedUser?._id}
       />
       
       {showInfo && localNexusGroup && isNexus && (

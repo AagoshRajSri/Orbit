@@ -316,16 +316,16 @@ button, [role="button"] {
   /* ──────────────────────────────────────────────── */
 
   /* Surfaces - AMOLED optimized */
-  --bg-primary: #000000;
-  --bg-elevation-0: rgba(255, 255, 255, 0.02);
-  --bg-elevation-1: rgba(255, 255, 255, 0.04);
-  --bg-elevation-2: rgba(255, 255, 255, 0.06);
-  --bg-elevation-3: rgba(255, 255, 255, 0.08);
-  --bg-elevation-4: rgba(255, 255, 255, 0.12);
-  --bg-elevation-5: rgba(255, 255, 255, 0.16);
+  --bg-primary: #080910;
+  --bg-elevation-0: rgba(240, 237, 232, 0.02);
+  --bg-elevation-1: rgba(240, 237, 232, 0.04);
+  --bg-elevation-2: rgba(240, 237, 232, 0.06);
+  --bg-elevation-3: rgba(240, 237, 232, 0.08);
+  --bg-elevation-4: rgba(240, 237, 232, 0.12);
+  --bg-elevation-5: rgba(240, 237, 232, 0.16);
 
   /* Text Hierarchy */
-  --text-primary: #ffffff;
+  --text-primary: #F0EDE8;
   --text-secondary: #e0e0e0;
   --text-tertiary: #a0a0a0;
   --text-disabled: #606060;
@@ -344,17 +344,17 @@ button, [role="button"] {
   --accent-quaternary: #a78bfa;
 
   /* Borders & Dividers */
-  --border-default: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(240, 237, 232, 0.08);
   --border-active: rgba(198, 160, 110, 0.3);
   --border-brand: rgba(198, 160, 110, 0.4);
   --border-error: rgba(255, 45, 120, 0.4);
   --border-success: rgba(0, 255, 136, 0.3);
 
   /* Shadows & Glows */
-  --shadows-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --shadows-md: 0 4px 8px rgba(0, 0, 0, 0.4);
-  --shadows-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
-  --shadows-xl: 0 16px 32px rgba(0, 0, 0, 0.6);
+  --shadows-sm: 0 2px 4px rgba(8, 9, 16, 0.3);
+  --shadows-md: 0 4px 8px rgba(8, 9, 16, 0.4);
+  --shadows-lg: 0 8px 16px rgba(8, 9, 16, 0.5);
+  --shadows-xl: 0 16px 32px rgba(8, 9, 16, 0.6);
   --shadows-glow-brand:
     0 0 8px rgba(198, 160, 110, 0.4), 0 0 20px rgba(198, 160, 110, 0.2);
   --shadows-glow-primary:
@@ -363,62 +363,62 @@ button, [role="button"] {
     0 0 8px rgba(0, 245, 212, 0.4), 0 0 20px rgba(0, 245, 212, 0.2);
   --shadows-glow-error:
     0 0 8px rgba(255, 45, 120, 0.4), 0 0 20px rgba(255, 45, 120, 0.2);
-  --shadows-inset: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  --shadows-inset: inset 0 0 10px rgba(8, 9, 16, 0.5);
 
   /* Component Tokens */
-  --button-bg: rgba(255, 255, 255, 0.08);
-  --button-bg-hover: rgba(255, 255, 255, 0.12);
-  --button-bg-active: rgba(255, 255, 255, 0.16);
-  --button-text: #ffffff;
-  --button-border: rgba(255, 255, 255, 0.1);
+  --button-bg: rgba(240, 237, 232, 0.08);
+  --button-bg-hover: rgba(240, 237, 232, 0.12);
+  --button-bg-active: rgba(240, 237, 232, 0.16);
+  --button-text: #F0EDE8;
+  --button-border: rgba(240, 237, 232, 0.1);
   --button-shadow-focus:
     0 0 0 3px rgba(0, 212, 255, 0.2), inset 0 0 4px rgba(0, 212, 255, 0.1);
 
-  --input-bg: rgba(255, 255, 255, 0.04);
-  --input-bg-focus: rgba(255, 255, 255, 0.08);
-  --input-border: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(240, 237, 232, 0.04);
+  --input-bg-focus: rgba(240, 237, 232, 0.08);
+  --input-border: rgba(240, 237, 232, 0.1);
   --input-border-focus: rgba(0, 212, 255, 0.4);
-  --input-text: #ffffff;
-  --input-placeholder: rgba(255, 255, 255, 0.4);
+  --input-text: #F0EDE8;
+  --input-placeholder: rgba(240, 237, 232, 0.4);
   --input-shadow-focus:
     0 0 0 3px rgba(0, 212, 255, 0.15), inset 0 0 6px rgba(0, 212, 255, 0.05);
 
-  --card-bg: rgba(255, 255, 255, 0.04);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-bg-hover: rgba(255, 255, 255, 0.06);
+  --card-bg: rgba(240, 237, 232, 0.04);
+  --card-border: rgba(240, 237, 232, 0.08);
+  --card-bg-hover: rgba(240, 237, 232, 0.06);
   --card-border-hover: rgba(198, 160, 110, 0.2);
-  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --card-shadow: 0 4px 12px rgba(8, 9, 16, 0.4);
 
-  --modal-bg: rgba(0, 0, 0, 0.95);
-  --modal-border: rgba(255, 255, 255, 0.06);
-  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --modal-bg: rgba(8, 9, 16, 0.95);
+  --modal-border: rgba(240, 237, 232, 0.06);
+  --modal-overlay: rgba(8, 9, 16, 0.7);
 
-  --scroll-thumb: rgba(255, 255, 255, 0.15);
-  --scroll-thumb-hover: rgba(255, 255, 255, 0.25);
-  --scroll-track: rgba(255, 255, 255, 0.02);
+  --scroll-thumb: rgba(240, 237, 232, 0.15);
+  --scroll-thumb-hover: rgba(240, 237, 232, 0.25);
+  --scroll-track: rgba(240, 237, 232, 0.02);
 
-  --divider-default: rgba(255, 255, 255, 0.06);
-  --divider-subtle: rgba(255, 255, 255, 0.03);
+  --divider-default: rgba(240, 237, 232, 0.06);
+  --divider-subtle: rgba(240, 237, 232, 0.03);
 
-  --chip-bg: rgba(255, 255, 255, 0.06);
+  --chip-bg: rgba(240, 237, 232, 0.06);
   --chip-bg-selected: rgba(0, 212, 255, 0.15);
-  --chip-text: #ffffff;
+  --chip-text: #F0EDE8;
   --chip-text-selected: #00d4ff;
 
   --tooltip-bg: rgba(40, 40, 40, 0.95);
-  --tooltip-text: #ffffff;
+  --tooltip-text: #F0EDE8;
 
   /* Legacy/Compatibility */
-  --chat-bg: #000000;
-  --chat-surface: rgba(255, 255, 255, 0.04);
-  --chat-text: #ffffff;
-  --chat-muted: rgba(255, 255, 255, 0.68);
+  --chat-bg: #080910;
+  --chat-surface: rgba(240, 237, 232, 0.04);
+  --chat-text: #F0EDE8;
+  --chat-muted: rgba(240, 237, 232, 0.68);
   --chat-primary: #00d4ff;
   --message-sender-color: var(--chat-primary);
-  --chat-border: rgba(255, 255, 255, 0.08);
+  --chat-border: rgba(240, 237, 232, 0.08);
   --chat-glow: 0 0 8px rgba(0, 212, 255, 0.4), 0 0 20px rgba(0, 212, 255, 0.2);
   --chat-bg-gradient: none;
-  --chat-glass-bg: rgba(255, 255, 255, 0.04);
+  --chat-glass-bg: rgba(240, 237, 232, 0.04);
 
   /* Orbital Dashboard Colors */
   --orbital-primary: #c6a06e;
@@ -437,28 +437,28 @@ button, [role="button"] {
   --user-color-7: #8a8aff;
 
   /* DaisyUI color tokens */
-  --color-base-100: #000000;
+  --color-base-100: #080910;
   --color-base-200: #0a0a0a;
   --color-base-300: #1f1f1f;
-  --color-base-content: #ffffff;
+  --color-base-content: #F0EDE8;
 
   --color-primary: #00d4ff;
-  --color-primary-content: #000000;
+  --color-primary-content: #080910;
   --color-secondary: #00f5d4;
-  --color-secondary-content: #000000;
+  --color-secondary-content: #080910;
   --color-accent: #c6a06e;
-  --color-accent-content: #000000;
+  --color-accent-content: #080910;
   --color-neutral: #0a0a0a;
-  --color-neutral-content: #ffffff;
+  --color-neutral-content: #F0EDE8;
 
   --color-info: #00d4ff;
-  --color-info-content: #000000;
+  --color-info-content: #080910;
   --color-success: #00ff88;
-  --color-success-content: #000000;
+  --color-success-content: #080910;
   --color-warning: #ffd700;
-  --color-warning-content: #000000;
+  --color-warning-content: #080910;
   --color-error: #ff2d78;
-  --color-error-content: #ffffff;
+  --color-error-content: #F0EDE8;
 }
 
 [data-theme="neon-cyberpunk"] {
@@ -527,15 +527,15 @@ button, [role="button"] {
 
 [data-theme="amoled-dark"] {
   /* Pure AMOLED optimization */
-  --bg-primary: #000000;
-  --bg-elevation-0: rgba(255, 255, 255, 0.02);
-  --bg-elevation-1: rgba(255, 255, 255, 0.04);
-  --bg-elevation-2: rgba(255, 255, 255, 0.06);
-  --bg-elevation-3: rgba(255, 255, 255, 0.08);
-  --bg-elevation-4: rgba(255, 255, 255, 0.12);
-  --bg-elevation-5: rgba(255, 255, 255, 0.16);
+  --bg-primary: #080910;
+  --bg-elevation-0: rgba(240, 237, 232, 0.02);
+  --bg-elevation-1: rgba(240, 237, 232, 0.04);
+  --bg-elevation-2: rgba(240, 237, 232, 0.06);
+  --bg-elevation-3: rgba(240, 237, 232, 0.08);
+  --bg-elevation-4: rgba(240, 237, 232, 0.12);
+  --bg-elevation-5: rgba(240, 237, 232, 0.16);
 
-  --text-primary: #ffffff;
+  --text-primary: #F0EDE8;
   --text-secondary: #e0e0e0;
   --text-tertiary: #a0a0a0;
   --text-disabled: #606060;
@@ -544,17 +544,17 @@ button, [role="button"] {
   --accent-secondary: #ff2d78;
   --accent-tertiary: #00f5d4;
 
-  --chat-bg: #000000;
-  --chat-surface: rgba(255, 255, 255, 0.04);
-  --chat-text: #ffffff;
-  --chat-muted: rgba(255, 255, 255, 0.68);
+  --chat-bg: #080910;
+  --chat-surface: rgba(240, 237, 232, 0.04);
+  --chat-text: #F0EDE8;
+  --chat-muted: rgba(240, 237, 232, 0.68);
   --chat-primary: #00d4ff;
-  --chat-border: rgba(255, 255, 255, 0.08);
+  --chat-border: rgba(240, 237, 232, 0.08);
   --message-sender-color: #00d4ff;
   --chat-glow: 0 0 8px rgba(0, 212, 255, 0.4), 0 0 20px rgba(0, 212, 255, 0.2);
 
-  --card-bg: rgba(255, 255, 255, 0.04);
-  --card-border: rgba(255, 255, 255, 0.08);
+  --card-bg: rgba(240, 237, 232, 0.04);
+  --card-border: rgba(240, 237, 232, 0.08);
 
   --user-color-0: #00ff88;
   --user-color-1: #00d4ff;
@@ -565,16 +565,16 @@ button, [role="button"] {
   --user-color-6: #00ffc9;
   --user-color-7: #4ecdc4;
 
-  --color-base-100: #000000;
+  --color-base-100: #080910;
   --color-base-200: #0a0a0a;
   --color-base-300: #1f1f1f;
-  --color-base-content: #ffffff;
+  --color-base-content: #F0EDE8;
 
   --color-primary: #00d4ff;
   --color-secondary: #00f5d4;
   --color-accent: #c6a06e;
   --color-neutral: #0a0a0a;
-  --color-neutral-content: #ffffff;
+  --color-neutral-content: #F0EDE8;
 
   --color-success: #00ff88;
   --color-error: #ff2d78;
