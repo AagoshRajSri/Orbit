@@ -50,14 +50,39 @@ const openDB = () => {
 };
 
 const tx = async (storeName, mode, fn) => {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, mode);
-    const store = transaction.objectStore(storeName);
-    const req = fn(store);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = db.transaction(storeName, mode);
+        const store = transaction.objectStore(storeName);
+        const req = fn(store);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      } catch (txErr) {
+        if (txErr.name === "InvalidStateError" || txErr.message?.includes("closing")) {
+          console.warn("[SessionStore] Database connection closing detected. Resetting and retrying transaction...");
+          _db = null;
+          openDB().then((newDb) => {
+            try {
+              const transaction = newDb.transaction(storeName, mode);
+              const store = transaction.objectStore(storeName);
+              const req = fn(store);
+              req.onsuccess = () => resolve(req.result);
+              req.onerror = () => reject(req.error);
+            } catch (retryErr) {
+              resolve(null); // Resolve gracefully on catastrophic unload
+            }
+          }).catch(() => resolve(null));
+        } else {
+          reject(txErr);
+        }
+      }
+    });
+  } catch (err) {
+    console.warn("[SessionStore] tx failed during database lifecycle:", err.message);
+    return null;
+  }
 };
 
 // ── Hot-Path In-Memory Cache ──────────────────────────────────────────────────

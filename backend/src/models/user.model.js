@@ -41,6 +41,11 @@ const userSchema = new mongoose.Schema(
       isVerified: { type: Boolean, default: false },
       badgeClass: { type: String, default: "standard" }, // 'standard', 'staff', 'vip'
       verifiedAt: { type: Date, default: null }
+    },
+    similarityMetadata: {
+      similarityFlag: { type: Boolean, default: false },
+      similarityScore: { type: Number, default: 0 },
+      similarTo: { type: String, default: "" }
     }
   },
   { timestamps: true },

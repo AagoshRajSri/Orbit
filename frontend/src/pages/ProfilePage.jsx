@@ -376,7 +376,7 @@ export default function ProfilePage() {
               </div>
               
               <div className="w-full h-48 -mx-2">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <AreaChart data={userProfile.engagementData}>
                     <defs>
                       <linearGradient id="colorWave" x1="0" y1="0" x2="0" y2="1">
@@ -449,7 +449,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="w-full h-64">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={userProfile.nexusMetrics}>
                     <PolarGrid stroke="#E5E1D3" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} />

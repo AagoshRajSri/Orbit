@@ -55,14 +55,39 @@ const openDB = () => {
 };
 
 const dbTx = async (mode, fn) => {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const t    = db.transaction(STORE_NAME, mode);
-    const store = t.objectStore(STORE_NAME);
-    const req  = fn(store);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
-  });
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      try {
+        const t    = db.transaction(STORE_NAME, mode);
+        const store = t.objectStore(STORE_NAME);
+        const req  = fn(store);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror   = () => reject(req.error);
+      } catch (txErr) {
+        if (txErr.name === "InvalidStateError" || txErr.message?.includes("closing")) {
+          console.warn("[DeviceRegistry] Database connection closing detected. Resetting and retrying transaction...");
+          _db = null;
+          openDB().then((newDb) => {
+            try {
+              const t    = newDb.transaction(STORE_NAME, mode);
+              const store = t.objectStore(STORE_NAME);
+              const req  = fn(store);
+              req.onsuccess = () => resolve(req.result);
+              req.onerror   = () => reject(req.error);
+            } catch (retryErr) {
+              resolve(null); // Resolve gracefully on catastrophic unload
+            }
+          }).catch(() => resolve(null));
+        } else {
+          reject(txErr);
+        }
+      }
+    });
+  } catch (err) {
+    console.warn("[DeviceRegistry] dbTx failed during database lifecycle:", err.message);
+    return null;
+  }
 };
 
 const buf2b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));

@@ -44,56 +44,159 @@ const usernameSchema = z
   .max(20, "Username must be at most 20 characters")
   .regex(/^[a-z0-9_]+$/, "Username can only contain lowercase letters, numbers, and underscores");
 
+// Homoglyph map for standard lookalike Latin, Cyrillic, Greek and numeric spoofing characters
+const homoglyphMap = {
+  // Cyrillic
+  'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'i', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 'c', 'т': 't', 'у': 'y', 'ф': 'f', 'х': 'x', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+  // Greek
+  'α': 'a', 'β': 'b', 'γ': 'g', 'δ': 'd', 'ε': 'e', 'ζ': 'z', 'η': 'h', 'θ': 'th', 'ι': 'i', 'κ': 'k', 'λ': 'l', 'μ': 'm', 'ν': 'v', 'ξ': 'x', 'ο': 'o', 'π': 'p', 'ρ': 'r', 'σ': 's', 'τ': 't', 'υ': 'y', 'φ': 'ph', 'χ': 'ch', 'ψ': 'ps', 'ω': 'o',
+  // Leetspeak / Visual number replacements
+  '0': 'o', '1': 'i', 'l': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b', '9': 'g', '@': 'a', '$': 's'
+};
+
+const dehomoglyph = (str) => {
+  if (!str) return "";
+  return str.normalize("NFC").split('').map(char => homoglyphMap[char] || char.toLowerCase()).join('');
+};
+
+// Calculate normalized Jaro-Winkler similarity (highly resilient typographic string comparison)
+const getJaroWinklerSimilarity = (s1, s2) => {
+  if (s1 === s2) return 1.0;
+
+  const len1 = s1.length;
+  const len2 = s2.length;
+  if (len1 === 0 || len2 === 0) return 0.0;
+
+  const matchWindow = Math.floor(Math.max(len1, len2) / 2) - 1;
+  const match1 = new Array(len1).fill(false);
+  const match2 = new Array(len2).fill(false);
+
+  let matches = 0;
+  let transpositions = 0;
+
+  for (let i = 0; i < len1; i++) {
+    const start = Math.max(0, i - matchWindow);
+    const end = Math.min(len2, i + matchWindow + 1);
+
+    for (let j = start; j < end; j++) {
+      if (match2[j]) continue;
+      if (s1[i] === s2[j]) {
+        match1[i] = true;
+        match2[j] = true;
+        matches++;
+        break;
+      }
+    }
+  }
+
+  if (matches === 0) return 0.0;
+
+  let k = 0;
+  for (let i = 0; i < len1; i++) {
+    if (!match1[i]) continue;
+    while (!match2[k]) k++;
+    if (s1[i] !== s2[k]) transpositions++;
+    k++;
+  }
+
+  const jaro = (matches / len1 + matches / len2 + (matches - transpositions / 2) / matches) / 3.0;
+
+  // Winkler modifications
+  let prefix = 0;
+  for (let i = 0; i < Math.min(4, len1, len2); i++) {
+    if (s1[i] === s2[i]) {
+      prefix++;
+    } else {
+      break;
+    }
+  }
+
+  return jaro + prefix * 0.1 * (1.0 - jaro);
+};
+
 /**
  * Normalizes, sanitizes, and verifies that an Orbit Handle conforms to strict premium and anti-spoofing guidelines.
  */
 export const verifyAndNormalizeHandle = (rawHandle) => {
-  if (!rawHandle) return { isValid: false, error: "Handle is required." };
+  if (!rawHandle) return { isValid: false, errorType: "VALIDATION_ERROR", error: "Handle is required." };
 
-  // 1. NFC normalization and invisible/zero-width character stripping
-  const normalizedRaw = rawHandle.normalize("NFC").replace(/[\u200B-\u200D\uFEFF\u202E]/g, "").trim();
+  // 1. NFC normalization and invisible/zero-width/lookalike space character stripping
+  const normalizedRaw = rawHandle
+    .normalize("NFC")
+    .replace(/[\u200B-\u200D\uFEFF\u202E\u00A0\u2000-\u200A\u202F\u205F\u3000]/g, "")
+    .trim();
 
-  // 2. Premium Regex validation (Username: 3-20 lowercase/numeric/_; Tag: 3-6 alphanumeric with at least 1 letter)
-  const handleRegex = /^([a-z0-9_]{3,20})#([a-zA-Z0-9]{3,6})$/;
-  const match = normalizedRaw.match(handleRegex);
-
-  if (!match) {
+  // Check for raw formatting
+  const handleRegex = /^([^#]+)#([^#]+)$/;
+  const rawMatch = normalizedRaw.match(handleRegex);
+  if (!rawMatch) {
     return {
       isValid: false,
+      errorType: "VALIDATION_ERROR",
+      error: "Invalid handle format. Must be username#tag"
+    };
+  }
+
+  const rawUsername = rawMatch[1];
+  const rawTag = rawMatch[2];
+
+  // 2. Validate mixed scripts (to prevent Cyrillic/Greek/Latin lookalike attacks)
+  const hasLatin = /[a-zA-Z]/.test(rawUsername) || /[a-zA-Z]/.test(rawTag);
+  const hasCyrillic = /[\u0400-\u04FF]/.test(rawUsername) || /[\u0400-\u04FF]/.test(rawTag);
+  const hasGreek = /[\u0370-\u03FF]/.test(rawUsername) || /[\u0370-\u03FF]/.test(rawTag);
+  
+  if ((hasLatin && hasCyrillic) || (hasLatin && hasGreek) || (hasCyrillic && hasGreek)) {
+    return {
+      isValid: false,
+      errorType: "UNICODE_SPOOF",
+      error: "Unsupported characters detected"
+    };
+  }
+
+  // 3. Dehomoglyph / Leetspeak normalization to check for sneaky spoofing attempts
+  const dehomoUsername = dehomoglyph(rawUsername);
+  const dehomoTag = dehomoglyph(rawTag);
+
+  // 4. Fuzzy / Leetspeak Authority Impersonation Check (Only hard-blocks admin terms)
+  // We do this BEFORE length checks so any authority spoofs are immediately caught
+  const blacklist = ["admin", "support", "staff", "moderator", "official", "orbit", "security", "dev", "owner", "system"];
+  
+  const isImpersonator = blacklist.some(word => 
+    dehomoUsername.includes(word) || dehomoTag.includes(word)
+  );
+
+  if (isImpersonator) {
+    return {
+      isValid: false,
+      errorType: "AUTHORITY_PROTECTION",
+      error: "Protected keywords cannot be used"
+    };
+  }
+
+  // 5. Standard Premium format checks on normalized standard letters
+  const standardUsernameRegex = /^[a-z0-9_]{3,20}$/;
+  const standardTagRegex = /^[a-zA-Z0-9]{3,6}$/;
+
+  if (!standardUsernameRegex.test(dehomoUsername) || !standardTagRegex.test(dehomoTag)) {
+    return {
+      isValid: false,
+      errorType: "VALIDATION_ERROR",
       error: "Invalid handle format. Must be username#tag where username is 3-20 lowercase alphanumeric characters/underscores, and tag is 3-6 alphanumeric characters containing at least one letter."
     };
   }
 
-  const username = match[1];
-  const orbitTag = match[2]; // Preserves display capitalization
-
-  if (!/[a-zA-Z]/.test(orbitTag)) {
+  if (!/[a-zA-Z]/.test(dehomoTag)) {
     return {
       isValid: false,
+      errorType: "VALIDATION_ERROR",
       error: "Tag must contain at least one letter."
     };
   }
 
+  // Preserve the raw standard characters for standard storage!
+  const username = rawUsername.toLowerCase();
+  const orbitTag = rawTag;
   const normalizedHandle = `${username}#${orbitTag.toLowerCase()}`;
-
-  // 3. Mixed-Script protection (redundant check, but highly secure)
-  const hasLatin = /[a-zA-Z]/.test(username) || /[a-zA-Z]/.test(orbitTag);
-  const hasCyrillic = /[\u0400-\u04FF]/.test(username) || /[\u0400-\u04FF]/.test(orbitTag);
-  if (hasLatin && hasCyrillic) {
-    return { isValid: false, error: "Mixed scripts are forbidden for security reasons." };
-  }
-
-  // 4. Fuzzy Authority Impersonation Check
-  const normalizedTagLower = orbitTag.toLowerCase().replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a").replace(/5/g, "s").replace(/7/g, "t");
-  const blacklist = ["admin", "support", "staff", "moderator", "official", "orbit", "security", "dev", "owner", "system"];
-  
-  const isImpersonator = blacklist.some(word => 
-    normalizedTagLower.includes(word) || username.includes(word)
-  );
-
-  if (isImpersonator) {
-    return { isValid: false, error: "This handle contains restricted administrative or official keywords." };
-  }
 
   return {
     isValid: true,
@@ -118,9 +221,15 @@ export const signup = async (req, res) => {
 
     const handleVerification = verifyAndNormalizeHandle(handle);
     if (!handleVerification.isValid) {
+      let errCode = "VALIDATION_ERROR";
+      if (handleVerification.errorType === "AUTHORITY_PROTECTION") {
+        errCode = "AUTHORITY_PROTECTED";
+      } else if (handleVerification.errorType === "UNICODE_SPOOF") {
+        errCode = "UNICODE_SPOOF";
+      }
       return res.status(400).json({
         success: false,
-        error: { code: "VALIDATION_ERROR", message: handleVerification.error },
+        error: { code: errCode, message: handleVerification.error },
       });
     }
 
@@ -150,12 +259,50 @@ export const signup = async (req, res) => {
       });
     }
 
+    // A. HARD BLOCK: Exact Normalized handle collision check
     const existingHandle = await User.findOne({ normalizedHandle });
     if (existingHandle) {
       return res.status(400).json({
         success: false,
-        error: { code: "HANDLE_TAKEN", message: "Orbit Handle already taken" },
+        error: { code: "HANDLE_TAKEN", message: "This Orbit Handle is already taken" },
       });
+    }
+
+    // B. SOFT SIMILARITY SYSTEM: Perform soft similarity scoring against candidates
+    let similarityMetadata = {
+      similarityFlag: false,
+      similarityScore: 0,
+      similarTo: ""
+    };
+
+    const minLength = Math.max(3, username.length - 3);
+    const maxLength = username.length + 3;
+    const candidates = await User.find({
+      $expr: {
+        $and: [
+          { $gte: [{ $strLenCP: "$username" }, minLength] },
+          { $lte: [{ $strLenCP: "$username" }, maxLength] }
+        ]
+      }
+    }).select("username normalizedHandle").lean();
+
+    let highestSimilarity = 0;
+    let mostSimilarHandle = "";
+
+    for (const candidate of candidates) {
+      const score = getJaroWinklerSimilarity(username, candidate.username);
+      if (score > highestSimilarity) {
+        highestSimilarity = score;
+        mostSimilarHandle = candidate.normalizedHandle;
+      }
+    }
+
+    if (highestSimilarity >= 0.80) {
+      similarityMetadata = {
+        similarityFlag: true,
+        similarityScore: parseFloat(highestSimilarity.toFixed(2)),
+        similarTo: mostSimilarHandle
+      };
     }
 
     const salt = await bcrypt.genSalt(12);
@@ -169,6 +316,7 @@ export const signup = async (req, res) => {
       password: hashedPassword,
       recoveryPassphraseHash: null,
       isEmailVerified: true,
+      similarityMetadata, // Attached internally for moderation
     });
 
     savedUser = await newUser.save();
@@ -286,12 +434,18 @@ export const validateHandle = async (req, res) => {
       return res.status(400).json({ success: false, message: "Handle query parameter is required." });
     }
 
-    const verification = verifyAndNormalizeHandle(handle);
-    if (!verification.isValid) {
-      return res.status(400).json({ success: false, message: verification.error });
+    const handleVerification = verifyAndNormalizeHandle(handle);
+    if (!handleVerification.isValid) {
+      let errCode = "VALIDATION_ERROR";
+      if (handleVerification.errorType === "AUTHORITY_PROTECTION") {
+        errCode = "AUTHORITY_PROTECTED";
+      } else if (handleVerification.errorType === "UNICODE_SPOOF") {
+        errCode = "UNICODE_SPOOF";
+      }
+      return res.status(400).json({ success: false, code: errCode, message: handleVerification.error });
     }
 
-    const { username, orbitTag, normalizedHandle } = verification;
+    const { username, orbitTag, normalizedHandle } = handleVerification;
     const existingUser = await User.findOne({ normalizedHandle }).lean();
 
     if (existingUser) {
@@ -299,8 +453,47 @@ export const validateHandle = async (req, res) => {
       return res.status(409).json({
         success: false,
         available: false,
-        message: "Orbit Handle is already taken.",
+        code: "HANDLE_TAKEN",
+        message: "This Orbit Handle is already taken",
         suggestions,
+      });
+    }
+
+    // Soft similarity warning check (visual and typographic resemblance check)
+    const minLength = Math.max(3, username.length - 3);
+    const maxLength = username.length + 3;
+    const candidates = await User.find({
+      $expr: {
+        $and: [
+          { $gte: [{ $strLenCP: "$username" }, minLength] },
+          { $lte: [{ $strLenCP: "$username" }, maxLength] }
+        ]
+      }
+    }).select("username normalizedHandle").lean();
+
+    let highestSimilarity = 0;
+    let mostSimilarHandle = "";
+
+    for (const candidate of candidates) {
+      const score = getJaroWinklerSimilarity(username, candidate.username);
+      if (score > highestSimilarity) {
+        highestSimilarity = score;
+        mostSimilarHandle = candidate.normalizedHandle;
+      }
+    }
+
+    if (highestSimilarity >= 0.80) {
+      return res.status(200).json({
+        success: true,
+        available: true,
+        message: "This handle is visually similar to another account",
+        normalizedHandle,
+        orbitTag,
+        similarityMetadata: {
+          similarityFlag: true,
+          similarityScore: parseFloat(highestSimilarity.toFixed(2)),
+          similarTo: mostSimilarHandle
+        }
       });
     }
 
