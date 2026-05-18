@@ -11,7 +11,8 @@ const STR_COL = ["","#ef4444","#f97316","#eab308","#22c55e","#00e5ff"];
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
-.sp-root{min-height:100dvh;background:#050810;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;position:relative;font-family:'Space Mono',monospace;color:#c8d8f0;overscroll-behavior:none}
+.sp-root{min-height:100dvh;background:transparent;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;position:relative;font-family:'Space Mono',monospace;color:#c8d8f0;overscroll-behavior:none;scrollbar-width:none;-ms-overflow-style:none}
+.sp-root::-webkit-scrollbar{display:none !important}
 .sp-orbital{position:fixed;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.09}
 .sp-grid-bg{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,229,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none}
 .sp-page{position:relative;z-index:2;flex:1;display:flex;align-items:center;justify-content:center;padding:20px 16px;min-height:inherit}
@@ -25,7 +26,7 @@ const CSS = `
 .sp-inner::before{content:'';position:absolute;bottom:0;left:0;width:40px;height:40px;border-left:1.5px solid rgba(0,229,255,.3);border-bottom:1.5px solid rgba(0,229,255,.3);pointer-events:none;z-index:11}
 .sp-corner-tr{position:absolute;top:0;right:0;width:40px;height:40px;border-right:1.5px solid rgba(0,229,255,.3);border-top:1.5px solid rgba(0,229,255,.3);z-index:11}
 /* Status */
-.sp-status{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;padding-bottom:10px;border-bottom:1px solid rgba(0,229,255,.12)}
+.sp-status{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(0,229,255,.12)}
 .sp-brand-name{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#fff}
 .sp-brand-sub{font-size:10px;letter-spacing:.18em;color:rgba(0,229,255,.4);text-transform:uppercase;margin-top:2px}
 .sp-node-row{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(56,189,248,.8)}
@@ -36,7 +37,7 @@ const CSS = `
 .sp-node-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 .sp-reg-badge{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(0,229,255,.35);padding:3px 8px;border:1px solid rgba(0,229,255,.15)}
 /* Hero */
-.sp-hero{margin-bottom:24px}
+.sp-hero{margin-bottom:16px}
 .sp-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .sp-eyebrow-line{width:20px;height:1px;background:linear-gradient(90deg,#00e5ff,transparent)}
 .sp-eyebrow-text{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgba(0,229,255,.6)}
@@ -48,7 +49,7 @@ const CSS = `
 .sp-row2{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
 @media(max-width:420px){.sp-row2{grid-template-columns:1fr}}
 /* HUD fields */
-.sp-field{margin-bottom:20px}
+.sp-field{margin-bottom:14px}
 .sp-label{display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(0,229,255,.45);margin-bottom:6px;transition:color .25s}
 .sp-field:focus-within .sp-label{color:#00e5ff}
 .sp-bracket-row{display:flex;align-items:center;gap:6px}
@@ -68,7 +69,7 @@ const CSS = `
 .sp-seg{flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,.07);transition:background .3s}
 .sp-str-lbl{font-size:11px;letter-spacing:.1em;margin-top:3px;font-weight:700;transition:color .3s;font-family:'Space Mono',monospace}
 /* Button */
-.sp-btn-wrap{margin:6px 0 18px}
+.sp-btn-wrap{margin:6px 0 12px}
 .sp-btn{width:100%;height:60px;border:none;cursor:pointer;position:relative;overflow:hidden;background:linear-gradient(90deg,#007ea3 0%,#0066cc 35%,#4f35f3 70%,#3a1aff 100%);transform:skewX(-6deg);font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;box-shadow:0 0 28px rgba(0,229,255,.4),inset 0 1px 0 rgba(255,255,255,.1);transition:box-shadow .3s;animation:spBG 3.5s ease-in-out infinite}
 @keyframes spBG{0%,100%{box-shadow:0 0 28px rgba(0,229,255,.4),inset 0 1px 0 rgba(255,255,255,.1)}50%{box-shadow:0 0 50px rgba(0,229,255,.55),0 0 80px rgba(79,53,243,.3),inset 0 1px 0 rgba(255,255,255,.15)}}
 .sp-btn-inner{display:flex;align-items:center;justify-content:center;gap:10px;transform:skewX(6deg)}
@@ -77,14 +78,52 @@ const CSS = `
 .sp-btn:hover{box-shadow:0 0 60px rgba(0,229,255,.65),0 0 100px rgba(79,53,243,.4),inset 0 1px 0 rgba(255,255,255,.2)}
 .sp-btn:disabled{opacity:.4;cursor:not-allowed;animation:none}
 /* Patches */
-.sp-via{display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(200,216,240,.25);margin:12px 0 10px}
+.sp-via{display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(200,216,240,.25);margin:8px 0 8px}
 .sp-via::before,.sp-via::after{content:'';flex:1;height:1px;background:rgba(0,229,255,.1)}
 .sp-patches{display:flex;gap:10px}
-.sp-patch{flex:1;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid rgba(0,229,255,.1);background:rgba(0,229,255,.02);cursor:not-allowed;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 100%)}
-.sp-patch-name{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(200,216,240,.4)}
-.sp-patch-stamp{font-size:9px;letter-spacing:.15em;padding:3px 8px;border:1px solid rgba(255,183,0,.25);color:rgba(255,183,0,.45);text-transform:uppercase;font-weight:700;background:rgba(255,183,0,.03)}
+.sp-patch{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px 8px;
+  border:1px solid rgba(0,229,255,.15);
+  background:rgba(0,229,255,.03);
+  cursor:not-allowed;
+  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 100%);
+  position:relative;
+  overflow:hidden;
+  min-height:48px;
+}
+.sp-patch-name{
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:rgba(200, 216, 240, .2);
+  filter:blur(3.5px);
+  user-select:none;
+  transition:all .3s;
+}
+.sp-patch-stamp{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  font-size:9px;
+  letter-spacing:.15em;
+  padding:3px 8px;
+  border:1px solid rgba(251,191,36,.5);
+  color:#fbbf24;
+  text-shadow:0 0 6px rgba(251,191,36,0.4);
+  text-transform:uppercase;
+  font-weight:700;
+  background:rgba(251,191,36,.1);
+  z-index:2;
+  white-space:nowrap;
+  transition:all .3s;
+}
 /* Footer */
-.sp-foot{margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,229,255,.08);display:flex;align-items:center;justify-content:space-between}
+.sp-foot{margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,229,255,.08);display:flex;align-items:center;justify-content:space-between}
 .sp-foot-txt{font-size:13px;color:rgba(200,216,240,.4)}
 .sp-foot-txt a{color:#00e5ff;text-decoration:none;font-weight:700;transition:color .2s}
 .sp-foot-txt a:hover{color:#fff}
@@ -92,7 +131,13 @@ const CSS = `
 .sp-admin:hover{color:rgba(255,45,120,.6);border-color:rgba(255,45,120,.2)}
 .sp-spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:spSpnA .7s linear infinite;display:inline-block;flex-shrink:0}
 @keyframes spSpnA{to{transform:rotate(360deg)}}
-@media(max-width:400px){.sp-inner{padding:18px 14px}.sp-patches{flex-direction:column}}
+@media(max-width:400px){
+  .sp-inner{padding:18px 14px}
+  .sp-patches{flex-direction:column;gap:8px}
+  .sp-patch{padding:12px 6px;min-height:44px}
+  .sp-patch-name{font-size:9px;letter-spacing:.04em}
+  .sp-patch-stamp{font-size:8px;padding:2px 6px;letter-spacing:.1em}
+}
 `;
 
 const IcoUser = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>;

@@ -7,7 +7,8 @@ import { useSoundManager } from "../hooks/useSoundManager";
 /* ─── Styles ─────────────────────────────────────────────────────── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
-.lp-root{min-height:100dvh;background:#050810;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;position:relative;font-family:'Space Mono',monospace;color:#c8d8f0;overscroll-behavior:none}
+.lp-root{min-height:100dvh;background:transparent;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;position:relative;font-family:'Space Mono',monospace;color:#c8d8f0;overscroll-behavior:none;scrollbar-width:none;-ms-overflow-style:none}
+.lp-root::-webkit-scrollbar{display:none !important}
 .lp-stars{position:fixed;inset:0;z-index:0;pointer-events:none}
 .lp-orbital{position:fixed;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.11}
 .lp-page{position:relative;z-index:2;flex:1;display:flex;align-items:center;justify-content:center;padding:20px;min-height:inherit}
@@ -21,7 +22,7 @@ const CSS = `
 .lp-inner::before{content:'';position:absolute;bottom:0;left:0;width:40px;height:40px;border-left:1.5px solid rgba(0,229,255,.35);border-bottom:1.5px solid rgba(0,229,255,.35);pointer-events:none;z-index:11}
 .lp-corner-tr{position:absolute;top:0;right:0;width:40px;height:40px;border-right:1.5px solid rgba(0,229,255,.35);border-top:1.5px solid rgba(0,229,255,.35);z-index:11}
 /* Status bar */
-.lp-status{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid rgba(79,53,243,.18)}
+.lp-status{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid rgba(79,53,243,.18)}
 .lp-brand-name{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#fff}
 .lp-brand-sub{font-size:10px;letter-spacing:.18em;color:rgba(0,229,255,.4);text-transform:uppercase;margin-top:2px}
 .lp-node-row{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(52,211,153,.8)}
@@ -31,7 +32,7 @@ const CSS = `
 @keyframes lpRadar{0%{transform:scale(1);opacity:.8}100%{transform:scale(3);opacity:0}}
 .lp-coords{font-size:10px;letter-spacing:.06em;color:rgba(200,216,240,.2);font-variant-numeric:tabular-nums;margin-top:4px;text-align:right}
 /* Hero */
-.lp-hero{margin-bottom:32px}
+.lp-hero{margin-bottom:20px}
 .lp-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .lp-eyebrow-line{width:20px;height:1px;background:linear-gradient(90deg,#4f35f3,transparent)}
 .lp-eyebrow-text{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgba(79,53,243,.65)}
@@ -41,7 +42,7 @@ const CSS = `
 @keyframes lpReveal{from{clip-path:inset(0 0 100% 0);transform:translateY(8px);opacity:0}to{clip-path:inset(0 0 0% 0);transform:translateY(0);opacity:1}}
 @keyframes lpChromatic{0%,84%,100%{text-shadow:0 0 20px rgba(0,229,255,.5);transform:none}86%{text-shadow:-2px 0 #ff2d78,2px 0 #00e5ff;transform:translateX(1px)}88%{text-shadow:2px 0 #ff2d78,-2px 0 #00e5ff;transform:translateX(-1px)}90%{text-shadow:0 0 20px rgba(0,229,255,.5);transform:none}}
 /* HUD fields */
-.lp-field{margin-bottom:24px}
+.lp-field{margin-bottom:18px}
 .lp-label{display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(79,53,243,.55);margin-bottom:8px;transition:color .25s}
 .lp-field:focus-within .lp-label{color:#00e5ff}
 .lp-label a{color:rgba(79,53,243,.5);text-decoration:none;font-size:10px;letter-spacing:.1em;transition:color .2s}
@@ -58,23 +59,105 @@ const CSS = `
 .lp-eye{position:absolute;right:0;top:50%;transform:translateY(-55%);background:none;border:none;cursor:pointer;color:rgba(200,216,240,.25);display:flex;align-items:center;transition:color .2s}
 .lp-eye:hover{color:#00e5ff}
 /* Button */
-.lp-btn-wrap{margin:8px 0 20px}
-.lp-btn{width:100%;height:60px;border:none;cursor:pointer;position:relative;overflow:hidden;background:linear-gradient(90deg,#3a1aff 0%,#4f35f3 35%,#005fa3 70%,#009dc4 100%);transform:skewX(-6deg);font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;box-shadow:0 0 28px rgba(79,53,243,.5),inset 0 1px 0 rgba(255,255,255,.1);transition:box-shadow .3s;animation:lpBtnGlow 3s ease-in-out infinite}
-@keyframes lpBtnGlow{0%,100%{box-shadow:0 0 28px rgba(79,53,243,.5),inset 0 1px 0 rgba(255,255,255,.1)}50%{box-shadow:0 0 50px rgba(0,229,255,.45),0 0 80px rgba(79,53,243,.3),inset 0 1px 0 rgba(255,255,255,.15)}}
-.lp-btn-inner{display:flex;align-items:center;justify-content:center;gap:10px;transform:skewX(6deg)}
-.lp-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);transition:left .5s}
-.lp-btn:hover::before{left:150%}
-.lp-btn:hover{box-shadow:0 0 60px rgba(0,229,255,.6),0 0 100px rgba(79,53,243,.4),inset 0 1px 0 rgba(255,255,255,.2)}
-.lp-btn:disabled{opacity:.4;cursor:not-allowed;animation:none}
+.lp-btn-wrap{margin:6px 0 14px}
+.lp-btn{
+  width:100%;
+  height:60px;
+  border:none;
+  cursor:pointer;
+  position:relative;
+  overflow:visible;
+  background:linear-gradient(90deg, #ffffff 0%, #fffbe6 30%, #fef08a 65%, #facc15 100%);
+  transform:skewX(-6deg);
+  font-family:'Orbitron',monospace;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:#050810;
+  box-shadow:0 0 24px rgba(250,204,21,.4),inset 0 1px 0 rgba(255,255,255,.25);
+  transition:all .4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lp-btn-inner{display:flex;align-items:center;justify-content:center;gap:10px;transform:skewX(6deg);position:relative;z-index:2}
+.lp-btn::before, .lp-btn::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border:1.5px solid rgba(250,204,21,.65);
+  pointer-events:none;
+  transform:scale(1);
+  opacity:0;
+  z-index:1;
+}
+.lp-btn:hover{
+  background:linear-gradient(90deg, #ffffff 0%, #fffbeb 20%, #fef08a 50%, #facc15 80%, #fbbf24 100%);
+  box-shadow:0 0 45px rgba(250,204,21,.85), 0 0 80px rgba(255,255,255,.4), inset 0 1px 0 rgba(255,255,255,.4);
+  animation:lpHeartbeatHover 1.5s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
+}
+@keyframes lpHeartbeatHover{
+  0%,100%{transform:skewX(-6deg) scale(1.03);box-shadow:0 0 30px rgba(250,204,21,.6)}
+  50%{transform:skewX(-6deg) scale(1.06);box-shadow:0 0 48px rgba(250,204,21,.9),0 0 80px rgba(255,255,255,.4)}
+}
+.lp-btn:hover::before{
+  animation:lpRippleHover 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+.lp-btn:hover::after{
+  animation:lpRippleHover 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+  animation-delay:0.4s;
+}
+@keyframes lpRippleHover{
+  0%{transform:scale(1);opacity:0.95;border-color:#fff}
+  100%{transform:scale(1.22, 1.45);opacity:0;border-color:rgba(255,255,255,0)}
+}
+.lp-btn:disabled{opacity:.4;cursor:not-allowed}
+.lp-btn:disabled::before, .lp-btn:disabled::after{display:none}
 /* Mission patches */
-.lp-via{display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(200,216,240,.25);margin:14px 0 12px}
+.lp-via{display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(200,216,240,.25);margin:10px 0 8px}
 .lp-via::before,.lp-via::after{content:'';flex:1;height:1px;background:rgba(79,53,243,.12)}
 .lp-patches{display:flex;gap:10px}
-.lp-patch{flex:1;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid rgba(79,53,243,.14);background:rgba(79,53,243,.03);cursor:not-allowed;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 100%)}
-.lp-patch-name{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(200,216,240,.4)}
-.lp-patch-stamp{font-size:9px;letter-spacing:.15em;padding:3px 8px;border:1px solid rgba(255,183,0,.3);color:rgba(255,183,0,.5);text-transform:uppercase;font-weight:700;background:rgba(255,183,0,.04)}
+.lp-patch{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px 8px;
+  border:1px solid rgba(79,53,243,.14);
+  background:rgba(79,53,243,.03);
+  cursor:not-allowed;
+  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 100%);
+  position:relative;
+  overflow:hidden;
+  min-height:48px;
+}
+.lp-patch-name{
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:rgba(200, 216, 240, .2);
+  filter:blur(3.5px);
+  user-select:none;
+  transition:all .3s;
+}
+.lp-patch-stamp{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  font-size:9px;
+  letter-spacing:.15em;
+  padding:3px 8px;
+  border:1px solid rgba(251,191,36,.5);
+  color:#fbbf24;
+  text-shadow:0 0 6px rgba(251,191,36,0.4);
+  text-transform:uppercase;
+  font-weight:700;
+  background:rgba(251,191,36,.1);
+  z-index:2;
+  white-space:nowrap;
+  transition:all .3s;
+}
 /* Footer */
-.lp-foot{margin-top:16px;padding-top:14px;border-top:1px solid rgba(79,53,243,.1);display:flex;align-items:center;justify-content:space-between}
+.lp-foot{margin-top:12px;padding-top:10px;border-top:1px solid rgba(79,53,243,.1);display:flex;align-items:center;justify-content:space-between}
 .lp-foot-txt{font-size:13px;color:rgba(200,216,240,.4)}
 .lp-foot-txt a{color:#00e5ff;text-decoration:none;font-weight:700;transition:color .2s}
 .lp-foot-txt a:hover{color:#fff}
@@ -82,7 +165,13 @@ const CSS = `
 .lp-admin:hover{color:rgba(255,45,120,.6);border-color:rgba(255,45,120,.2)}
 .lp-spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:lpSpinA .7s linear infinite;display:inline-block;flex-shrink:0}
 @keyframes lpSpinA{to{transform:rotate(360deg)}}
-@media(max-width:400px){.lp-inner{padding:20px 16px}.lp-patches{flex-direction:column}}
+@media(max-width:400px){
+  .lp-inner{padding:20px 16px}
+  .lp-patches{flex-direction:column;gap:8px}
+  .lp-patch{padding:12px 6px;min-height:44px}
+  .lp-patch-name{font-size:9px;letter-spacing:.04em}
+  .lp-patch-stamp{font-size:8px;padding:2px 6px;letter-spacing:.1em}
+}
 `;
 
 /* ─── Canvas Starfield ────────────────────────────────────────────── */

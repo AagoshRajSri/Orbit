@@ -5,7 +5,7 @@ import "./OrbitLoader.css";
 
 gsap.registerPlugin(CustomEase);
 
-export default function OrbitLoader({ blendWithParent = false }) {
+export default function OrbitLoader({ blendWithParent = false, onComplete = null, timeScale = 1 }) {
   const rootRef = useRef(null);
 
   useEffect(() => {
@@ -104,7 +104,18 @@ export default function OrbitLoader({ blendWithParent = false }) {
       }
 
       function masterLoop() {
-        const master = gsap.timeline({ onComplete: masterLoop });
+        const master = gsap.timeline({
+          onComplete: () => {
+            if (onComplete) {
+              onComplete();
+            } else {
+              masterLoop();
+            }
+          }
+        });
+        if (timeScale) {
+          master.timeScale(timeScale);
+        }
         master
           .to("#center-glow", { opacity: 1, scale: 1.1, duration: 1.5, ease: "power1.inOut" }, 0)
           .to("#chat-stage", { opacity: 1, duration: 0.7, ease: "power2.out" }, 1.2)

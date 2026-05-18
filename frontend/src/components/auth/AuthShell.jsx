@@ -50,6 +50,42 @@ export default function AuthShell({ children, animationKey }) {
           from { transform: scale(1); opacity: 0.7; }
           to   { transform: scale(1.15) translate(20px, -15px); opacity: 1; }
         }
+        .no-scrollbar::-webkit-scrollbar,
+        .lp-root::-webkit-scrollbar,
+        .sp-root::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+          overflow-x: hidden !important;
+          overflow-y: auto !important;
+        }
+        .lp-root, .sp-root {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+          overflow-x: hidden !important;
+          overflow-y: auto !important;
+        }
+        @media (min-width: 1280px) {
+          * {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+          }
+          *::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+          .left-panel, .no-scrollbar, .lp-root, .sp-root, .lp-page, .sp-page {
+            overflow: hidden !important;
+            overflow-y: hidden !important;
+            min-height: 0 !important;
+            height: 100% !important;
+          }
+        }
       `}</style>
 
       {/* ── Layout grid ── */}
@@ -58,13 +94,12 @@ export default function AuthShell({ children, animationKey }) {
         {/* ─── LEFT: full-height form panel, children fill it ─── */}
         <div
           ref={leftRef}
-          className="relative flex flex-col overflow-x-hidden w-full xl:w-auto"
+          className="relative flex flex-col overflow-x-hidden w-full xl:w-auto left-panel"
           style={{
             minHeight: "100dvh",
-            background: "rgba(6,8,20,0.88)",
-            backdropFilter: "blur(32px)",
-            WebkitBackdropFilter: "blur(32px)",
-            borderRight: "1px solid rgba(109,40,217,0.12)",
+            background: "rgba(5,7,15,0.45)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
           }}
         >
           {/* Top accent stripe */}
@@ -74,7 +109,7 @@ export default function AuthShell({ children, animationKey }) {
           }} />
 
           {/* Children own ALL the space between stripes */}
-          <div className="flex-1" style={{ minHeight: 0, overflowX: "hidden", overflowY: "auto" }}>
+          <div className="flex-1 no-scrollbar" style={{ minHeight: 0 }}>
             {children}
           </div>
 
