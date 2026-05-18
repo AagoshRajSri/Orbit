@@ -384,6 +384,7 @@ export const login = async (req, res) => {
       data: sanitizeForOrbit({
         _id: user._id,
         username: user.username,
+        orbitTag: user.orbitTag,
         email: user.email,
         profilePic: user.profilePic,
         createdAt: user.createdAt,
@@ -1130,6 +1131,7 @@ export const constellationSignup = async (req, res) => {
       data: sanitizeForOrbit({
         _id: savedUser._id,
         username: savedUser.username,
+        orbitTag: savedUser.orbitTag,
         email: savedUser.email,
         profilePic: savedUser.profilePic,
         createdAt: savedUser.createdAt,
@@ -1360,6 +1362,7 @@ export const constellationLogin = async (req, res) => {
       data: sanitizeForOrbit({
         _id: user._id,
         username: user.username,
+        orbitTag: user.orbitTag,
         email: user.email,
         profilePic: user.profilePic,
         createdAt: user.createdAt,
