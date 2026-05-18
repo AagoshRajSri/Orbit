@@ -337,11 +337,17 @@ export const login = async (req, res) => {
       });
     }
 
-    const identifier = validation.data.email;
+    const identifier = validation.data.email.trim();
+    const lowerIdentifier = identifier.toLowerCase();
+    const cleanHandle = lowerIdentifier.startsWith("@") ? lowerIdentifier.slice(1) : lowerIdentifier;
+
     const user = await User.findOne({
       $or: [
         { email: identifier },
-        { username: identifier }
+        { email: lowerIdentifier },
+        { username: identifier },
+        { username: cleanHandle },
+        { normalizedHandle: cleanHandle }
       ]
     });
 
