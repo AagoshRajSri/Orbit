@@ -18,13 +18,7 @@ const OrbitalPageWrapper = memo(({ children, className = "" }) => {
     <div
       className={`${!isLightPastel ? "orbital-nebula-bg orbital-overlay" : ""} flex-1 min-h-0 w-full flex flex-col relative ${className}`}
     >
-      {/* Legacy overlays specifically for dark themes */}
-      {isDarkThemed && (
-        <>
-          <StarfieldBackground />
-          <HexagonalGridOverlay />
-        </>
-      )}
+
 
       {/* Global Asthetic Overlays per Theme */}
       <ThemeEffects />

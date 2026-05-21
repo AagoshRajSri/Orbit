@@ -189,7 +189,7 @@ export default function StarWeaveLoginPage() {
       >
         ← BACK
       </button>
-      <NebulaBg/>
+
 
       {/* Corner brackets */}
       {[

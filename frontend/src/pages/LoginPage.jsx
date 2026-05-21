@@ -265,7 +265,6 @@ export default function LoginPage() {
     <>
       <style>{CSS}</style>
       <div className="lp-root">
-        <canvas ref={canvasRef} className="lp-stars" />
 
         {/* Orbital ring background */}
         <div className="lp-orbital">
