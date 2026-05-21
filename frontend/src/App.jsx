@@ -38,7 +38,7 @@ import { useDevicePerformance } from "./hooks/useDevicePerformance";
 import { useSpotifyStore } from "./store/useSpotifyStore";
 import { getSocket, disconnectSocket, updateSocketToken } from "./lib/socket";
 import ChatLoader from "./components/chat/ChatLoader";
-import OrbitLoader from "./components/common/OrbitLoader";
+// OrbitLoader import removed – replaced with lightweight placeholder
 
 import AuthShell from "./components/auth/AuthShell";
 import { NotificationContainer } from "./components/common/NotificationContainer";
@@ -696,7 +696,7 @@ const AppContent = () => {
       {!isOnline && <ConnectionStatus />}
       <NotificationContainer />
       {!hydrated || (isCheckingAuth && !!authUser && location.pathname !== "/") && !isAuthPage && !isAdminRoute ? (
-        <OrbitLoader />
+        <div className="auth-loading-placeholder" />
       ) : (
         <>
           {!isAuthPage && !isAdminRoute && !isFullscreenTheme && !isOrbitMode && (
@@ -714,7 +714,7 @@ const AppContent = () => {
             className={`flex flex-col flex-1 min-h-0 overflow-hidden main-content-mobile ${isAuthPage || isFullscreenTheme || isAdminRoute ? "" : "pt-12"} relative`}
           >
             {isAuthPage ? (
-              <Suspense fallback={<OrbitLoader />}>
+              <Suspense fallback={<div className="auth-loading-placeholder" />}>
                 {authUser && !isCheckingAuth ? (
                   <Navigate to="/" />
                 ) : location.pathname === "/login/constellation" ? (
