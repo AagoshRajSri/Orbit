@@ -175,13 +175,13 @@ export const verifyAndNormalizeHandle = (rawHandle) => {
 
   // 5. Standard Premium format checks on normalized standard letters
   const standardUsernameRegex = /^[a-z0-9_]{3,16}$/;
-  const standardTagRegex = /^[a-zA-Z0-9_]{3,24}$/;
+  const standardTagRegex = /^[a-zA-Z0-9_]{3,9}$/;
 
   if (!standardUsernameRegex.test(dehomoUsername) || !standardTagRegex.test(dehomoTag)) {
     return {
       isValid: false,
       errorType: "VALIDATION_ERROR",
-      error: "Username must be 3-16 chars. Tag must be 3-24 chars. Only alphanumerics and underscores allowed."
+      error: "Username must be 3-16 chars. Tag must be 3-9 chars. Only alphanumerics and underscores allowed."
     };
   }
 

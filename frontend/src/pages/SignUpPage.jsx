@@ -161,17 +161,17 @@ export const analyzeHandle = (rawHandle) => {
   if (!/^[a-z0-9_]+$/.test(username)) {
     return { isValid: false, error: "Only lowercase letters, numbers, and underscores are allowed in username" };
   }
-  // Rule 4: Tag length (3 to 6 characters)
+  // Rule 4: Tag length (3 to 9 characters)
   if (tag.length < 3) {
-    return { isValid: false, error: "Tag must contain 3–6 characters" };
+    return { isValid: false, error: "Tag must contain 3–9 characters" };
   }
-  if (tag.length > 6) {
-    return { isValid: false, error: "Tag must contain 3–6 characters" };
+  if (tag.length > 9) {
+    return { isValid: false, error: "Tag must contain 3–9 characters" };
   }
 
-  // Rule 5: Tag characters (alphanumeric)
-  if (!/^[a-zA-Z0-9]+$/.test(tag)) {
-    return { isValid: false, error: "Only letters and numbers are allowed in tag" };
+  // Rule 5: Tag characters (alphanumeric and underscore)
+  if (!/^[a-zA-Z0-9_]+$/.test(tag)) {
+    return { isValid: false, error: "Only letters, numbers, and underscores are allowed in tag" };
   }
 
   // Rule 6: At least one letter in tag
@@ -218,10 +218,10 @@ export const generatePremiumHandle = (currentUsername) => {
   let tag = "";
   const r = Math.random();
   if (r < 0.4) {
-    tag = word.substring(0, 6);
+    tag = word.substring(0, Math.min(word.length, 9));
   } else {
     const digit = Math.floor(Math.random() * 10);
-    tag = word.substring(0, 5) + digit;
+    tag = word.substring(0, Math.min(word.length, 8)) + digit;
   }
 
   return `${username}#${tag}`;
