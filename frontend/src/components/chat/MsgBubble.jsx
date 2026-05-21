@@ -170,8 +170,6 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
           paddingRight: "16px",
           marginBottom: isGroupEnd ? "8px" : "2px"
         }}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
       >
         {/* Left Avatar for Received */}
         {!mine && (
@@ -196,7 +194,11 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
         )}
 
         {/* Message Content */}
-        <div className={`flex flex-col relative max-w-[75%] md:max-w-[65%] ${mine ? 'items-end' : 'items-start'}`}>
+        <div 
+          className={`flex flex-col relative max-w-[75%] md:max-w-[65%] ${mine ? 'items-end' : 'items-start'}`}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+        >
           {/* Sender Name (only on group start for received) */}
           {isGroupStart && !mine && (
             <div className="text-[11px] font-bold opacity-70 ml-1 mb-1">
@@ -218,7 +220,11 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
 
             {/* The Bubble */}
             <div
-              className={`relative px-4 py-2.5 text-[14.5px] leading-relaxed break-words shadow-sm ${
+              onDoubleClick={(e) => {
+                e.preventDefault();
+                handleReact("❤️");
+              }}
+              className={`relative px-4 py-2.5 text-[14.5px] leading-relaxed break-words shadow-sm cursor-pointer transition-transform active:scale-[0.98] ${
                 mine 
                   ? 'bg-[var(--color-primary)] text-primary-content rounded-2xl rounded-br-sm' 
                   : 'bg-[var(--color-base-200)] text-base-content border border-[var(--color-base-300)] rounded-2xl rounded-bl-sm'
@@ -228,6 +234,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
                 color: mine ? "#fff" : "var(--text-primary, #F0EDE8)",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
               }}
+              title="Double click to heart"
             >
               {/* Attachment image */}
               {msg.image && (
@@ -285,13 +292,6 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
             {mine && isGroupEnd && (
               <MessageStatusRing
                 status={msg.status || "delivered"}
-                colorOverride={
-                  msg.status === "read"
-                    ? "var(--accent-primary, #00d4ff)"
-                    : msg.status === "failed"
-                    ? "#FF5252"
-                    : "currentColor"
-                }
               />
             )}
           </div>
