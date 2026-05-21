@@ -34,6 +34,9 @@ const userSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    // Timestamps for when each request was sent/received (keyed by userId string)
+    sentRequestDates:    { type: Map, of: Date, default: {} },
+    contactRequestDates: { type: Map, of: Date, default: {} },
     blockedContacts: [
       {
         type: mongoose.Schema.Types.ObjectId,

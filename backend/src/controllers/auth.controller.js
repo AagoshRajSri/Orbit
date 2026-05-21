@@ -703,13 +703,18 @@ export const getContacts = async (req, res) => {
     const contactIds = user.contacts.map((contact) => contact._id.toString());
     const aliases = Object.fromEntries(user.contactAliases || []);
 
+    const sentRequestDates = Object.fromEntries(user.sentRequestDates || []);
+    const contactRequestDates = Object.fromEntries(user.contactRequestDates || []);
+
     res.status(200).json({ 
       contacts: user.contacts, 
       contactRequests: user.contactRequests || [],
       sentRequests: user.sentRequests || [],
       blockedContacts: user.blockedContacts || [],
       contactIds, 
-      aliases 
+      aliases,
+      sentRequestDates,
+      contactRequestDates,
     });
   } catch (error) {
     console.error("Error in getContacts:", error.message);
@@ -806,6 +811,12 @@ export const addContact = async (req, res) => {
     
     if (!targetUser.contactRequests) targetUser.contactRequests = [];
     targetUser.contactRequests.push(userIdStr);
+
+    // Record timestamps so the UI can show "sent X ago"
+    if (!user.sentRequestDates) user.sentRequestDates = new Map();
+    user.sentRequestDates.set(targetUserIdStr, new Date());
+    if (!targetUser.contactRequestDates) targetUser.contactRequestDates = new Map();
+    targetUser.contactRequestDates.set(userIdStr, new Date());
     
     await user.save();
     await targetUser.save();

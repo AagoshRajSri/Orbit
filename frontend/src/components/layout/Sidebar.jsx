@@ -13,6 +13,10 @@ import {
   UserPlus,
   Music,
   Flower,
+  UserCheck,
+  UserX,
+  Clock,
+  ChevronDown,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSoundManager } from "../../hooks/useSoundManager";
@@ -22,6 +26,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useThemeStore } from "../../store/useThemeStore";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import { UserAura } from "../../orbit/UserAura";
+
+// Helper: format a date string as relative time (e.g. "3m ago")
+const formatRelativeTime = (dateStr) => {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
 
 const AddContactAction = memo(function AddContactAction({ users, contactList, addContact }) {
   const [handle, setHandle] = useState("");
@@ -84,6 +100,12 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   const addContact = useChatStore((state) => state.addContact);
   const removeContact = useChatStore((state) => state.removeContact);
   const renameContact = useChatStore((state) => state.renameContact);
+  const contactRequests = useChatStore((state) => state.contactRequests);
+  const sentRequests   = useChatStore((state) => state.sentRequests);
+  const contactRequestDates = useChatStore((state) => state.contactRequestDates);
+  const sentRequestDates    = useChatStore((state) => state.sentRequestDates);
+  const acceptContactRequest = useChatStore((state) => state.acceptContactRequest);
+  const rejectContactRequest = useChatStore((state) => state.rejectContactRequest);
   const selectedUser = useChatStore((state) => state.selectedUser);
   const setSelectedUser = useChatStore((state) => state.setSelectedUser);
   const isUsersLoading = useChatStore((state) => state.isUsersLoading);
@@ -104,6 +126,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   const [aliasInputValue, setAliasInputValue] = useState("");
   const [showPresencePanel, setShowPresencePanel] = useState(false);
   const [presenceCustomText, setPresenceCustomText] = useState("");
+  const [showRequests, setShowRequests] = useState(false);
 
   const presenceMap = useAuthStore((state) => state.presenceMap);
   const authUser = useAuthStore((state) => state.authUser);
@@ -133,6 +156,11 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   useEffect(() => {
     if (mobileInitialTab) setActiveTab(mobileInitialTab);
   }, [mobileInitialTab]);
+
+  // Auto-expand requests panel when incoming requests arrive
+  useEffect(() => {
+    if (contactRequests.length > 0) setShowRequests(true);
+  }, [contactRequests.length]);
 
   useEffect(() => {
     // Prevent multiple fetches
@@ -309,6 +337,102 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
               contactList={contactList}
               addContact={addContact}
             />
+
+            {/* ── Requests Section ─────────────────────────── */}
+            {(contactRequests.length > 0 || sentRequests.length > 0) && (
+              <div className="mt-1">
+                <button
+                  onClick={() => setShowRequests(v => !v)}
+                  className="w-full flex items-center justify-between px-2 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-[var(--chat-muted)] hover:text-[var(--chat-text)] hover:bg-[var(--bg-elevation-1)] transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="size-3" />
+                    <span>Requests</span>
+                    <span className="bg-primary text-primary-content text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[16px] text-center leading-none">
+                      {contactRequests.length + sentRequests.length}
+                    </span>
+                  </div>
+                  <ChevronDown className={`size-3 transition-transform duration-200 ${showRequests ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {showRequests && (
+                    <motion.div
+                      key="requests-panel"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      {/* Incoming requests */}
+                      {contactRequests.length > 0 && (
+                        <div className="mt-1 mb-2">
+                          <div className="px-2 text-[9px] uppercase tracking-widest text-[var(--chat-muted)] mb-1 font-bold">Incoming</div>
+                          {contactRequests.map(req => {
+                            const reqId = (req._id || req.id)?.toString();
+                            const handle = req.normalizedHandle || `${req.username}`;
+                            const receivedAt = contactRequestDates?.[reqId];
+                            return (
+                              <div key={reqId} className="flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-[var(--bg-elevation-1)] transition-colors">
+                                <div className="size-8 rounded-lg bg-[var(--bg-elevation-2)] flex items-center justify-center flex-shrink-0 text-[11px] font-black text-[var(--chat-text)] border border-[var(--border-default)]">
+                                  {req.username?.[0]?.toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[11px] font-bold text-[var(--chat-text)] truncate">{handle}</div>
+                                  <div className="text-[9px] text-[var(--chat-muted)]">{receivedAt ? formatRelativeTime(receivedAt) : 'Pending'}</div>
+                                </div>
+                                <div className="flex gap-1 shrink-0">
+                                  <button
+                                    onClick={() => acceptContactRequest(reqId)}
+                                    className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400 transition-colors"
+                                    title="Accept request"
+                                  >
+                                    <UserCheck className="size-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => rejectContactRequest(reqId)}
+                                    className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/25 text-red-400 transition-colors"
+                                    title="Reject request"
+                                  >
+                                    <UserX className="size-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Sent requests */}
+                      {sentRequests.length > 0 && (
+                        <div className="mt-1">
+                          <div className="px-2 text-[9px] uppercase tracking-widest text-[var(--chat-muted)] mb-1 font-bold">Sent</div>
+                          {sentRequests.map(req => {
+                            const reqId = (req._id || req.id)?.toString();
+                            const handle = req.normalizedHandle || `${req.username}`;
+                            const sentAt = sentRequestDates?.[reqId];
+                            return (
+                              <div key={reqId} className="flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-[var(--bg-elevation-1)] transition-colors">
+                                <div className="size-8 rounded-lg bg-[var(--bg-elevation-2)] flex items-center justify-center flex-shrink-0 text-[11px] font-black text-[var(--chat-muted)] opacity-70 border border-[var(--border-default)]">
+                                  {req.username?.[0]?.toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[9px] text-[var(--chat-muted)] uppercase tracking-wide font-bold">Sent request to</div>
+                                  <div className="text-[11px] font-bold text-[var(--chat-text)] truncate">{handle}</div>
+                                  <div className="text-[9px] text-[var(--chat-muted)]">{sentAt ? formatRelativeTime(sentAt) : 'Pending'}</div>
+                                </div>
+                                <div className="size-2 rounded-full bg-amber-400/70 animate-pulse shrink-0" title="Awaiting response" />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
         )}
 

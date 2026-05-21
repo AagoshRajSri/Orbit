@@ -24,6 +24,8 @@ export const useChatStore = create((set, get) => ({
   sentRequests: [],
   blockedContacts: [],
   contactAliases: {},
+  sentRequestDates: {},    // { [userId]: ISO date string }
+  contactRequestDates: {}, // { [userId]: ISO date string }
   isUsersLoading: false,
   isMessagesLoading: false,
   isLoadingMoreParams: false,
@@ -44,6 +46,8 @@ export const useChatStore = create((set, get) => ({
       const dbBlockedContacts = contactsRes.data.blockedContacts || [];
       const dbContactIds = contactsRes.data.contactIds || [];
       const dbAliases = contactsRes.data.aliases || {};
+      const dbSentRequestDates = contactsRes.data.sentRequestDates || {};
+      const dbContactRequestDates = contactsRes.data.contactRequestDates || {};
 
       // 2. Fetch sidebar/all users
       const res = await axiosInstance.get("/message/users");
@@ -69,6 +73,8 @@ export const useChatStore = create((set, get) => ({
         sentRequests: dbSentRequests,
         blockedContacts: dbBlockedContacts,
         contactAliases: dbAliases,
+        sentRequestDates: dbSentRequestDates,
+        contactRequestDates: dbContactRequestDates,
       }));
     } catch (error) {
       console.error("[getUsers] failed:", error.message);
