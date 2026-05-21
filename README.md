@@ -1,6 +1,5 @@
 <div align="center">
 
-
 # ✦ ORBIT
 ### *Immersive. Quantum-Secure. Hyper-Personalized.*
 
@@ -16,7 +15,7 @@
 
 **Orbit** is not just a chat application—it is a secure, immersive digital ecosystem designed for high-fidelity communication. Built on a foundation of zero-trust security and cutting-edge cryptography, Orbit combines a stunning glassmorphism UI with industrial-grade operational hardening.
 
-[**Launch Orbit →**](https://orbitnexus.vercel.app) &nbsp;•&nbsp; [**API Documentation →**](https://orbit-ajgs.onrender.com) &nbsp;•&nbsp; [**Security Audit →**](#-security--cryptographic-hardening)
+[**Launch Orbit →**](https://orbitnexus.vercel.app) &nbsp;•&nbsp; [**API Documentation →**](https://orbit-ajgs.onrender.com) &nbsp;•&nbsp; [**Security Audit & Updates →**](#-recent-hardening--engineering-updates)
 
 </div>
 
@@ -31,6 +30,25 @@ Choose your aesthetic. Orbit features a library of fully-animated, immersive the
 - **Amoled & Dark Cyberpunk**: Viewport-locked, high-contrast designs for the night.
 - **Pastel Dream & Light**: Clean, airy, and glassmorphic layouts.
 - **Gamer & Retro**: Neon-pulsing, high-energy interfaces with ambient crossfade music.
+
+---
+
+## 🔒 Recent Hardening & Engineering Updates
+
+Following a comprehensive repository-wide audit, the security and reliability pipelines have been heavily updated:
+
+### 1. Zero-Trust Session & JWT Cryptographic Alignment
+*   **Decoupled & Database-Backed Verification**: Access token validation has been fully aligned with a zero-trust model. JWTs now sign both `{ userId, sessionId }` where `sessionId` strictly maps to the database `Session` Mongoose `_id`. 
+*   **Granular Session Revocation**: The `protectRoute` middleware performs real-time queries against the `isValid` state in the database. Revoking a session from any device instantly invalidates it globally within milliseconds.
+*   **Replay Attack Defense**: Token refresh endpoints (`/api/auth/refresh`) now leverage unique session identifiers coupled with one-time rotation bounds to enforce replay protection.
+
+### 2. High-Performance Virtualized Render Engine
+*   **DOM virtualization**: Large-scale chat histories now render via `useVirtualizer` with dynamic, estimated size calculations mapping to message lengths.
+*   **Initialization Safety**: Resolved initialization order and state race conditions inside the `UniversalChatContainer` by encapsulating search-filtered streams within a resilient `useMemo` context. This ensures that even under rapid rendering, the virtualized container never suffers from initialization crashes.
+
+### 3. Resilient Network & Deployment Architecture
+*   **Automatic Developer CORS Handshake**: Handled Vite's port-increment behaviors in local development. Express CORS and Socket.IO configurations now automatically recognize any local loopback ports (5173 to 5177) alongside wildcarded regex overrides (`isLocalhostOrigin`), resolving CORS errors when multiple Vite servers run concurrently.
+*   **Production Anti-Crash Middleware**: Integrated system-level error containment using process listeners for `uncaughtException` and `unhandledRejection` to prevent server shutdowns during unexpected external API drops or microservice connection timeouts.
 
 ---
 
