@@ -11,8 +11,7 @@
     <!-- Removed: Cinzel, Cinzel Decorative, Cormorant Garamond, DM Mono, Quicksand -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Orbitron:wght@400;700&family=Rajdhani:wght@400;700&family=Share+Tech+Mono&family=Nunito:wght@400;700&family=Playfair+Display:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet" />
     
-    <!-- FIX 20: Preload critical React app entrypoint so network fetch begins before HTML parsing finishes -->
-    <link rel="modulepreload" href="/src/main.jsx" />
+    <!-- Removed manual modulepreload for main.jsx to let Vite handle production bundling properly -->
   </head>
   <body>
     <div id="root"></div>
