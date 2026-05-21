@@ -695,7 +695,7 @@ const AppContent = () => {
       <ThemePortal />
       {!isOnline && <ConnectionStatus />}
       <NotificationContainer />
-      {!hydrated || (isCheckingAuth && !!authUser && location.pathname !== "/") && !isAuthPage && !isAdminRoute ? (
+      {!hydrated && !isAuthPage && !isAdminRoute ? (
         <div className="auth-loading-placeholder" />
       ) : (
         <>
@@ -742,98 +742,109 @@ const AppContent = () => {
                 )}
               </Suspense>
             ) : (
-              <Suspense fallback={<div className="flex-1 flex items-center justify-center auth-loading-placeholder" />}>
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                      authUser ? (
-                        <DynamicRouteHandler
-                          isDark={isDark}
-                          isCyber={isCyber}
-                          isGamer={isGamer}
-                          isAmoled={isAmoled}
-                          isLight={isLight}
-                          isPastel={isPastel}
-                          HomePage={HomePage}
-                        />
-                      ) : (
-                        <Navigate to="/login" />
-                      )
-                    }
-                  />
+              <Suspense fallback={<div className="flex-1" />}>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={location.pathname.split('/')[1] || "home"}
+                    initial={{ opacity: 0.8, scale: 0.995 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0.8, scale: 1.005 }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    className="flex-1 flex flex-col min-h-0 w-full relative"
+                  >
+                    <Routes location={location}>
+                      <Route
+                        path="/"
+                        element={
+                          authUser ? (
+                            <DynamicRouteHandler
+                              isDark={isDark}
+                              isCyber={isCyber}
+                              isGamer={isGamer}
+                              isAmoled={isAmoled}
+                              isLight={isLight}
+                              isPastel={isPastel}
+                              HomePage={HomePage}
+                            />
+                          ) : (
+                            <Navigate to="/login" />
+                          )
+                        }
+                      />
 
-                  <Route
-                    path="/nexus/:nexusId"
-                    element={
-                      authUser ? (
-                        <DynamicRouteHandler
-                          isDark={isDark}
-                          isCyber={isCyber}
-                          isGamer={isGamer}
-                          isAmoled={isAmoled}
-                          isLight={isLight}
-                          isPastel={isPastel}
-                          HomePage={HomePage}
-                        />
-                      ) : (
-                        <Navigate to="/login" />
-                      )
-                    }
-                  />
+                      <Route
+                        path="/nexus/:nexusId"
+                        element={
+                          authUser ? (
+                            <DynamicRouteHandler
+                              isDark={isDark}
+                              isCyber={isCyber}
+                              isGamer={isGamer}
+                              isAmoled={isAmoled}
+                              isLight={isLight}
+                              isPastel={isPastel}
+                              HomePage={HomePage}
+                            />
+                          ) : (
+                            <Navigate to="/login" />
+                          )
+                        }
+                      />
 
-                  <Route
-                    path="/chat/:userId"
-                    element={
-                      authUser ? (
-                        <DynamicRouteHandler
-                          isDark={isDark}
-                          isCyber={isCyber}
-                          isGamer={isGamer}
-                          isAmoled={isAmoled}
-                          isLight={isLight}
-                          isPastel={isPastel}
-                          HomePage={HomePage}
-                        />
-                      ) : (
-                        <Navigate to="/login" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="/spotify"
-                    element={
-                      authUser ? <SpotifyPage /> : <Navigate to="/login" />
-                    }
-                  />
-                  <Route
-                    path="/settings/*"
-                    element={
-                      authUser ? <SettingsPage /> : <Navigate to="/login" />
-                    }
-                  />
-                  <Route
-                    path="/profile/:userId?"
-                    element={
-                      authUser ? <ProfilePage /> : <Navigate to="/login" />
-                    }
-                  />
-                  <Route path="/tether/approve" element={<TetherApproval />} />
+                      <Route
+                        path="/chat/:userId"
+                        element={
+                          authUser ? (
+                            <DynamicRouteHandler
+                              isDark={isDark}
+                              isCyber={isCyber}
+                              isGamer={isGamer}
+                              isAmoled={isAmoled}
+                              isLight={isLight}
+                              isPastel={isPastel}
+                              HomePage={HomePage}
+                            />
+                          ) : (
+                            <Navigate to="/login" />
+                          )
+                        }
+                      />
+                      <Route
+                        path="/spotify"
+                        element={
+                          authUser ? <SpotifyPage /> : <Navigate to="/login" />
+                        }
+                      />
+                      <Route
+                        path="/settings/*"
+                        element={
+                          authUser ? <SettingsPage /> : <Navigate to="/login" />
+                        }
+                      />
+                      <Route
+                        path="/profile/:userId?"
+                        element={
+                          authUser ? <ProfilePage /> : <Navigate to="/login" />
+                        }
+                      />
+                      <Route path="/tether/approve" element={<TetherApproval />} />
 
-                  <Route path="/verify-email" element={<VerifyEmailPage />} />
+                      <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-                  {/* Admin Routes */}
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  <Route path="/admin" element={<AdminLayout />}>
-                    <Route path="dashboard" element={<AdminDashboard />} />
-                    <Route path="users" element={<AdminUsers />} />
-                    <Route path="messages" element={<AdminMessages />} />
-                    <Route path="nexuses" element={<AdminNexuses />} />
-                    <Route path="security" element={<AdminSecurity />} />
-                    <Route path="system" element={<AdminSystem />} />
-                    <Route path="broadcast" element={<AdminBroadcast />} />
-                  </Route>
-                </Routes>
+                      {/* Admin Routes */}
+                      <Route path="/admin/login" element={<AdminLogin />} />
+                      <Route path="/admin" element={<AdminLayout />}>
+                        <Route path="dashboard" element={<AdminDashboard />} />
+                        <Route path="users" element={<AdminUsers />} />
+                        <Route path="messages" element={<AdminMessages />} />
+                        <Route path="nexuses" element={<AdminNexuses />} />
+                        <Route path="security" element={<AdminSecurity />} />
+                        <Route path="system" element={<AdminSystem />} />
+                        <Route path="broadcast" element={<AdminBroadcast />} />
+                      </Route>
+                    </Routes>
+                  </motion.div>
+                </AnimatePresence>
               </Suspense>
             )}
             {isOrbitMode && (

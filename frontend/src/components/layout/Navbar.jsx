@@ -180,6 +180,7 @@ const Navbar = ({ onHamburger }) => {
           )}
           <Link
             to={"/settings"}
+            onMouseEnter={() => import("../../pages/SettingsPage").catch(()=>{})}
             className={`h-10 px-4 rounded-[1.2rem] border transition-all duration-300 text-xs flex items-center gap-2.5 font-bold group/btn ${isPastel 
               ? "border-pink-300/40 bg-gradient-to-r from-pink-50 to-purple-50 hover:from-pink-100 hover:to-purple-100 text-[#d946a8] hover:border-pink-400/60 shadow-sm hover:shadow-pink-200/60 hover:shadow-md hover:scale-[1.04] active:scale-95" 
               : isCyber
@@ -204,6 +205,7 @@ const Navbar = ({ onHamburger }) => {
             <>
               <Link
                 to={"/profile"}
+                onMouseEnter={() => import("../../pages/ProfilePage").catch(()=>{})}
                 className={`h-10 px-4 rounded-[1.2rem] border transition-all duration-300 text-xs flex items-center gap-2.5 font-bold group/btn ${isPastel 
                   ? "border-purple-300/40 bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 text-[#9333ea] hover:border-purple-400/60 shadow-sm hover:shadow-purple-200/60 hover:shadow-md hover:scale-[1.04] active:scale-95" 
                   : isCyber

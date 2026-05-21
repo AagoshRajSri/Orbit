@@ -373,29 +373,35 @@ export const useAuthStore = create(
 
       logout: async () => {
         const userId = get().authUser?._id?.toString();
-        try {
-          await axiosInstance.post("/auth/logout");
-        } catch (error) {
-          console.warn("Server logout failed, forcing local session clear.");
-        } finally {
-          // Clear all crypto material from IndexedDB
-          if (userId) {
-            const { clearAllSessions, clearPrekeys } = await import("../lib/sessionStore.js").catch(() => ({}));
-            const { clearAllNexusSenderKeys } = await import("../lib/nexusKeyStore.js").catch(() => ({}));
-            const { clearDeviceIdentity } = await import("../lib/deviceFingerprint.js").catch(() => ({}));
-            const { resetSealedSender } = await import("../lib/sealedSender.js").catch(() => ({}));
-            await Promise.allSettled([
-              clearKeyPair(userId),
-              clearAllSessions?.(),
-              clearPrekeys?.(userId),
-              clearAllNexusSenderKeys?.(),
-              clearDeviceIdentity?.(),
-            ]);
-            resetSealedSender?.();
+        
+        // 1. Instantly clear UI state for immediate logout perception
+        set({ authUser: null, sessionId: null, socketToken: null, e2eePublicKey: null });
+        get().refreshSocketToken();
+        
+        // 2. Perform background invalidation and cleanup asynchronously
+        (async () => {
+          try {
+            await axiosInstance.post("/auth/logout");
+          } catch (error) {
+            console.warn("Server logout failed, forcing local session clear.");
+          } finally {
+            // Clear all crypto material from IndexedDB
+            if (userId) {
+              const { clearAllSessions, clearPrekeys } = await import("../lib/sessionStore.js").catch(() => ({}));
+              const { clearAllNexusSenderKeys } = await import("../lib/nexusKeyStore.js").catch(() => ({}));
+              const { clearDeviceIdentity } = await import("../lib/deviceFingerprint.js").catch(() => ({}));
+              const { resetSealedSender } = await import("../lib/sealedSender.js").catch(() => ({}));
+              await Promise.allSettled([
+                clearKeyPair(userId),
+                clearAllSessions?.(),
+                clearPrekeys?.(userId),
+                clearAllNexusSenderKeys?.(),
+                clearDeviceIdentity?.(),
+              ]);
+              resetSealedSender?.();
+            }
           }
-          set({ authUser: null, sessionId: null, socketToken: null, e2eePublicKey: null });
-          get().refreshSocketToken();
-        }
+        })();
       },
 
       updateProfile: async (data) => {
