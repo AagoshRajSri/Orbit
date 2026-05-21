@@ -1,5 +1,35 @@
 import React, { useState } from "react";
-import { X, Hash, Wand2, Sparkles, ArrowRight } from "lucide-react";
+
+// Inline SVGs — no lucide-react dependency to prevent TDZ minifier crashes
+// when this component is bundled in the same chunk as theme files.
+const IconX = ({ size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
+const IconHash = ({ size = 24, strokeWidth = 1.5 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
+    <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
+  </svg>
+);
+const IconWand2 = ({ size = 24, strokeWidth = 1.5 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/>
+    <path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>
+  </svg>
+);
+const IconSparkles = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+    <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+  </svg>
+);
+const IconArrowRight = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+  </svg>
+);
 import { useNexusStore } from "../../store/useNexusStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import toast from "react-hot-toast";
@@ -220,7 +250,7 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
         <div style={{ position: "relative", width: "100%", maxWidth: 440, background: tk.bg, border: `1px solid ${tk.accentBorder}`, borderRadius: tk.decorBorderRadius, padding: 32, fontFamily: tk.fontFamily, boxShadow: `0 20px 80px rgba(0,0,0,0.5)` }}>
           <button onClick={() => { play("click"); onClose(); }} style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: "50%", background: tk.closeBg, border: `2px solid ${tk.closeBorder}`, boxShadow: tk.closeGlow, color: tk.closeColor, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, transition: "transform 0.15s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.18)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>✕</button>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <div style={{ width: 60, height: 60, borderRadius: "50%", background: tk.accentSoft, border: `1px solid ${tk.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24, color: tk.accent }}>{mode === "create" ? <Wand2 size={24} /> : <Hash size={24} />}</div>
+            <div style={{ width: 60, height: 60, borderRadius: "50%", background: tk.accentSoft, border: `1px solid ${tk.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24, color: tk.accent }}>{mode === "create" ? <IconWand2 size={24} /> : <IconHash size={24} />}</div>
             <h2 style={{ fontSize: 22, color: tk.text, margin: "0 0 8px" }}>{mode === "create" ? "Establish Nexus" : "Link to Nexus"}</h2>
             <p style={{ fontSize: 13, color: tk.textMuted, margin: 0 }}>{tk.tagline}</p>
           </div>
@@ -234,7 +264,7 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
               <input type="text" required placeholder="Join Code (e.g. X82K9L)" value={formData.code} onChange={e => setFormData(p => ({ ...p, code: e.target.value.toUpperCase() }))} style={{ width: "100%", padding: "14px 16px", background: tk.inputBg, border: `1px solid ${tk.inputBorder}`, borderRadius: 8, color: tk.inputText, fontFamily: tk.fontFamily, fontSize: 16, fontWeight: 700, textAlign: "center", letterSpacing: "0.2em", outline: "none", boxSizing: "border-box" }} />
             )}
             <button type="submit" disabled={loading} style={{ width: "100%", padding: "14px", marginTop: 8, background: tk.btnBg, border: "none", borderRadius: 8, color: tk.btnText, fontFamily: tk.fontFamily, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              {loading ? <div style={{ width: 18, height: 18, border: `2px solid ${tk.btnText}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> : <>{mode === "create" ? <Sparkles size={16} /> : <ArrowRight size={16} />}{mode === "create" ? "Manifest Nexus" : "Execute Join"}</>}
+              {loading ? <div style={{ width: 18, height: 18, border: `2px solid ${tk.btnText}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> : <>{mode === "create" ? <IconSparkles size={16} /> : <IconArrowRight size={16} />}{mode === "create" ? "Manifest Nexus" : "Execute Join"}</>}
             </button>
           </form>
         </div>
@@ -271,7 +301,7 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
         {/* Central glyph / icon */}
         <div style={{ animation: "nao-float 4s ease-in-out infinite", marginBottom: 32, zIndex: 1 }}>
           <div style={{ width: 120, height: 120, borderRadius: "50%", background: tk.accentSoft, border: `2px solid ${tk.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, color: tk.accent, boxShadow: `0 0 40px ${tk.accentSoft}` }}>
-            {mode === "create" ? <Wand2 size={48} strokeWidth={1.5} /> : <Hash size={48} strokeWidth={1.5} />}
+            {mode === "create" ? <IconWand2 size={48} strokeWidth={1.5} /> : <IconHash size={48} strokeWidth={1.5} />}
           </div>
         </div>
 
@@ -300,7 +330,7 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
           onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.18)"; }}
           onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
         >
-          <X size={15} />
+          <IconX size={15} />
         </button>
 
         {/* Section label */}
@@ -370,7 +400,7 @@ export default function NexusActionOverlay({ mode, onClose, inline = false }) {
           >
             {loading
               ? <div style={{ width: 20, height: 20, border: `2px solid ${tk.btnText}`, borderTopColor: "transparent", borderRadius: "50%", animation: "nao-spin 0.8s linear infinite" }} />
-              : <>{mode === "create" ? <Sparkles size={18} /> : <ArrowRight size={18} />}{mode === "create" ? "Manifest Nexus" : "Execute Join"}</>
+              : <>{mode === "create" ? <IconSparkles size={18} /> : <IconArrowRight size={18} />}{mode === "create" ? "Manifest Nexus" : "Execute Join"}</>
             }
           </button>
         </form>
