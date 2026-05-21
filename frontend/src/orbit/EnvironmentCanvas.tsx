@@ -251,61 +251,6 @@ function NebulaCloud() {
   );
 }
 
-// ── Orbital rings ────────────────────────────────────────────────────────────
-function OrbitalRings() {
-  const group = useRef<THREE.Group>(null);
-
-  const rings = useMemo(() => {
-    return [
-      { radius: 12, tube: 0.018, opacity: 0.07, speed: 0.018, tilt: 0.3 },
-      { radius: 20, tube: 0.012, opacity: 0.04, speed: -0.011, tilt: 0.7 },
-      { radius: 28, tube: 0.008, opacity: 0.03, speed: 0.007, tilt: 1.1 },
-    ];
-  }, []);
-
-  const ringMeshes = useMemo(() =>
-    rings.map(r => ({
-      geo: new THREE.TorusGeometry(r.radius, r.tube, 8, 96),
-      mat: new THREE.MeshBasicMaterial({
-        color: new THREE.Color(0.4, 0.6, 1.0),
-        transparent: true,
-        opacity: r.opacity,
-        depthWrite: false,
-      }),
-    })),
-  [rings]);
-
-  useEffect(() => {
-    return () => {
-      ringMeshes.forEach(({ geo, mat }) => {
-        geo.dispose();
-        mat.dispose();
-      });
-    };
-  }, [ringMeshes]);
-
-  useFrame((_, delta) => {
-    if (prefersReducedMotion) return;
-    const g = group.current;
-    if (!g) return;
-    g.children.forEach((child, i) => {
-      child.rotation.z += rings[i].speed * delta;
-    });
-  });
-
-  return (
-    <group ref={group} position={[0, 0, -15]}>
-      {rings.map((r, i) => (
-        <mesh
-          key={i}
-          geometry={ringMeshes[i].geo}
-          material={ringMeshes[i].mat}
-          rotation={[r.tilt, 0, 0]}
-        />
-      ))}
-    </group>
-  );
-}
 
 // ── Activity pulse flash ─────────────────────────────────────────────────────
 function PulseFlash({ pulseRef }: SceneProps) {
@@ -364,7 +309,6 @@ function Scene({ pulseRef }: SceneProps) {
       <SceneCamera />
       <StarField />
       {!isMobile && <NebulaCloud />}
-      <OrbitalRings />
       {!prefersReducedMotion && <PulseFlash pulseRef={pulseRef} />}
     </>
   );
