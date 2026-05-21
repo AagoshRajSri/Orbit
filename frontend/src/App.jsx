@@ -122,9 +122,7 @@ const DynamicThemeLoader = ({ isDark, isCyber, isGamer, isAmoled, isLight, isPas
 
   if (!ThemeComponent) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary" />
-      </div>
+      <div className="flex-1 flex items-center justify-center auth-loading-placeholder" />
     );
   }
 
@@ -742,7 +740,7 @@ const AppContent = () => {
                 )}
               </Suspense>
             ) : (
-              <Suspense fallback={<div className="flex-1 flex items-center justify-center"><span className="loading loading-spinner loading-lg text-primary" /></div>}>
+              <Suspense fallback={<div className="flex-1 flex items-center justify-center auth-loading-placeholder" />}>
                 <Routes>
                   <Route
                     path="/"
