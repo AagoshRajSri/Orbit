@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 
-import StarrySky from "../effects/StarrySky";
-import GalaxyDust from "../effects/GalaxyDust";
+
 
 export default function AuthShell({ children, animationKey }) {
   const leftRef = useRef(null);
@@ -27,8 +26,7 @@ export default function AuthShell({ children, animationKey }) {
 
       {/* ── Global starfield background ── */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <StarrySky />
-        <GalaxyDust />
+
         {/* Deep ambient glow top-left */}
         <div style={{
           position: "absolute", borderRadius: "50%",

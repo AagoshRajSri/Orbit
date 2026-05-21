@@ -68,7 +68,7 @@ import { useAnimationContext } from "./components/effects/AnimLayer";
 import { AvatarProvider } from "./context/AvatarContext.jsx";
 
 // ── Orbit Foundation (Phase 1) ───────────────────────────────────────────────
-import { OrbitalThemeEngine, EnvironmentCanvas } from "./orbit";
+import { OrbitalThemeEngine } from "./orbit";
 import { useOrbitalSocket } from "./orbit/useOrbitalSocket";
 // A stable ref shared between AppContent and the canvas, lives at module scope
 // so it persists across HMR without requiring context plumbing.
@@ -684,13 +684,8 @@ const AppContent = () => {
     <div className={`relative h-dvh text-[var(--chat-text)] overflow-hidden flex flex-col ${isOrbitMode ? 'orbit-active' : ''} ${isAuthPage ? 'bg-[#050810]' : 'bg-base-300'}`}>
       {/* ── Orbit Foundation Layer ─────────────────────────────────────────
            OrbitalThemeEngine: renders null, updates --orb-* CSS vars via RAF.
-           EnvironmentCanvas: Three.js starfield behind ALL content.
-           Both are purely additive — they do not affect existing layout.
       ──────────────────────────────────────────────────────────────────── */}
       <OrbitalThemeEngine />
-      {authUser && !isAuthPage && !isAdminRoute && (
-        <EnvironmentCanvas ref={_globalCanvasRef} />
-      )}
       <GlobalAnnouncementBanner />
       <ThemePortal />
       {!isOnline && <ConnectionStatus />}

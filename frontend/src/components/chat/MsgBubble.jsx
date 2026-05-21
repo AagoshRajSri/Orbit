@@ -83,33 +83,34 @@ function ReactionStrip({ reactions, onReact, t }) {
   );
 }
 
-function QuickReactBar({ onReact, onPin }) {
+function QuickReactBar({ onReact, onPin, mine }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8, scale: 0.95 }}
+      initial={{ opacity: 0, y: 5, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.95 }}
+      exit={{ opacity: 0, y: 5, scale: 0.95 }}
       transition={{ duration: 0.12 }}
-      className="absolute -top-10 right-4 px-3 py-1 flex items-center gap-2 rounded-full backdrop-blur-xl z-50 pointer-events-auto"
+      className={`absolute -top-10 px-2 py-1 flex items-center gap-1.5 rounded-full backdrop-blur-xl z-50 pointer-events-auto ${mine ? 'right-0' : 'left-0'}`}
       style={{
-        background: "rgba(8, 9, 16, 0.75)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+        background: "var(--color-base-200, rgba(20, 20, 20, 0.8))",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        border: "1px solid var(--color-base-300, rgba(255,255,255,0.1))"
       }}
     >
-      {REACT_SET.slice(0, 6).map((e) => (
+      {REACT_SET.slice(0, 4).map((e) => (
         <span
           key={e}
           onClick={() => onReact(e)}
-          className="cursor-pointer text-base hover:scale-130 transition-transform active:scale-95 inline-block"
+          className="cursor-pointer text-sm hover:scale-125 transition-transform active:scale-95 inline-block"
         >
           {e}
         </span>
       ))}
-      <div className="w-px h-4 bg-white/10 mx-1" />
+      <div className="w-px h-3 bg-white/10 mx-0.5" />
       <span
         onClick={onPin}
         title="Pin Message"
-        className="cursor-pointer text-sm hover:scale-125 transition-transform active:scale-95 inline-block opacity-70 hover:opacity-100"
+        className="cursor-pointer text-xs hover:scale-125 transition-transform active:scale-95 inline-block opacity-70 hover:opacity-100"
       >
         📌
       </span>
@@ -128,7 +129,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
   avatarState,
   onReact,
   onPin,
-  isGroupStart = true, // Defaults to true if group calculations are not passed down
+  isGroupStart = true,
   isGroupEnd = true,
 }) {
   const [hover, setHover] = useState(false);
@@ -151,10 +152,10 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
 
   if (msg.isSystem) {
     return (
-      <div className="flex items-center gap-3 my-4 text-[10px] font-mono font-bold tracking-widest uppercase opacity-40 w-full">
-        <div className="flex-1 h-px bg-white/10" />
+      <div className="flex items-center gap-3 my-4 text-[10px] font-mono font-bold tracking-widest uppercase opacity-40 w-full justify-center">
+        <div className="w-12 h-px bg-current opacity-30" />
         <span>{msg.text}</span>
-        <div className="flex-1 h-px bg-white/10" />
+        <div className="w-12 h-px bg-current opacity-30" />
       </div>
     );
   }
@@ -163,111 +164,124 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
     <AnimatedMessage id={msgId} isMine={mine} isNew={!!isLatest}>
       <div
         id={`msg-${msgId}`}
-        className="flex items-start gap-4 py-1.5 w-full box-border group message-surface-item"
+        className={`flex items-end gap-2 py-0.5 w-full box-border group ${mine ? 'justify-end' : 'justify-start'}`}
         style={{
-          // Atmospheric background highlight on hover, no box frame
-          background: hover ? "rgba(240, 237, 232, 0.015)" : "transparent",
-          transition: "background 0.2s ease",
           paddingLeft: "16px",
           paddingRight: "16px",
+          marginBottom: isGroupEnd ? "8px" : "2px"
         }}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       >
-        {/* Left margin identity space (32px width) */}
-        <div className="w-8 shrink-0 flex justify-center">
-          {isGroupStart && !mine ? (
-            <PixelAvatar
-              type={avatarAnimal || "dog"}
-              state={avatarState || "idle"}
-              size={32}
-              style={{
-                imageRendering: "pixelated",
-                borderRadius: "50%",
-                border: "1.5px solid rgba(240, 237, 232, 0.1)",
-                display: "block",
-              }}
-            />
-          ) : (
-            <div className="w-8" />
-          )}
-        </div>
-
-        {/* Message Content column */}
-        <div className="flex flex-col flex-1 min-w-0 relative">
-          {/* Action strip overlay */}
-          <AnimatePresence>
-            {hover && (
-              <QuickReactBar
-                onReact={handleReact}
-                onPin={() => onPin?.(msg)}
+        {/* Left Avatar for Received */}
+        {!mine && (
+          <div className="w-8 shrink-0 flex justify-center mb-1">
+            {isGroupEnd ? (
+              <PixelAvatar
+                type={avatarAnimal || "dog"}
+                state={avatarState || "idle"}
+                size={32}
+                style={{
+                  imageRendering: "pixelated",
+                  borderRadius: "50%",
+                  border: "1px solid var(--color-base-300, rgba(255, 255, 255, 0.1))",
+                  display: "block",
+                  background: "var(--color-base-200, rgba(20,20,20,0.5))"
+                }}
               />
+            ) : (
+              <div className="w-8" />
             )}
-          </AnimatePresence>
+          </div>
+        )}
 
-          {/* Group start attribution */}
+        {/* Message Content */}
+        <div className={`flex flex-col relative max-w-[75%] md:max-w-[65%] ${mine ? 'items-end' : 'items-start'}`}>
+          {/* Sender Name (only on group start for received) */}
           {isGroupStart && !mine && (
-            <div className="text-xs font-black tracking-wide text-amber-500/80 mb-1">
+            <div className="text-[11px] font-bold opacity-70 ml-1 mb-1">
               {fromStr}
             </div>
           )}
 
-          {/* Transparent body text directly on surface */}
-          <div
-            className="text-[14px] font-sans leading-relaxed tracking-wide text-left relative break-words"
-            style={{
-              color: "var(--text-primary, #F0EDE8)",
-              maxWidth: "68ch", // Readability max-width
-            }}
-          >
-            {/* Attachment image */}
-            {msg.image && (
-              <SafeImage
-                src={msg.image}
-                alt="attachment"
-                style={{
-                  maxWidth: "100%",
-                  borderRadius: 12,
-                  marginBottom: msg.text ? 8 : 0,
-                  display: "block",
-                  border: "1px solid rgba(240, 237, 232, 0.08)",
-                }}
-              />
-            )}
+          <div className="relative">
+            {/* Quick React Bar */}
+            <AnimatePresence>
+              {hover && (
+                <QuickReactBar
+                  onReact={handleReact}
+                  onPin={() => onPin?.(msg)}
+                  mine={mine}
+                />
+              )}
+            </AnimatePresence>
 
-            {msg.text && (
-              <span className="relative z-10 selection:bg-white/20 select-text">
-                {msg.text}
-              </span>
-            )}
+            {/* The Bubble */}
+            <div
+              className={`relative px-4 py-2.5 text-[14.5px] leading-relaxed break-words shadow-sm ${
+                mine 
+                  ? 'bg-[var(--color-primary)] text-primary-content rounded-2xl rounded-br-sm' 
+                  : 'bg-[var(--color-base-200)] text-base-content border border-[var(--color-base-300)] rounded-2xl rounded-bl-sm'
+              }`}
+              style={{
+                background: mine ? "var(--color-primary, #00d4ff)" : "var(--color-base-200, #1e1e24)",
+                color: mine ? "#fff" : "var(--text-primary, #F0EDE8)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+              }}
+            >
+              {/* Attachment image */}
+              {msg.image && (
+                <SafeImage
+                  src={msg.image}
+                  alt="attachment"
+                  style={{
+                    maxWidth: "100%",
+                    borderRadius: 8,
+                    marginBottom: msg.text ? 8 : 0,
+                    display: "block",
+                  }}
+                />
+              )}
 
-            {/* Pending Spinner */}
-            {msg.status === "pending" && (
-              <span className="ml-2 text-xs opacity-50 animate-spin inline-block">
-                ◷
-              </span>
-            )}
+              {msg.text && (
+                <span className="relative z-10 select-text">
+                  {msg.text}
+                </span>
+              )}
+
+              {/* Pending Spinner */}
+              {msg.status === "pending" && (
+                <span className="ml-2 text-xs opacity-50 animate-spin inline-block">
+                  ◷
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* ResonanceLayer Metadata (Only visible on hover or if end of run) */}
+          {/* Reactions Strip */}
+          <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+            <ReactionStrip reactions={localReactions} onReact={handleReact} t={t} />
+          </div>
+
+          {/* Timestamp & Status (below bubble, fading in on hover or showing on group end) */}
           <div
-            className="flex items-center gap-2 mt-1 select-none pointer-events-none transition-opacity duration-[160ms] ease-in-out"
+            className={`flex items-center gap-1.5 mt-1 select-none pointer-events-none transition-opacity duration-200 ${mine ? 'flex-row-reverse' : 'flex-row'}`}
             style={{
-              opacity: hover || isGroupEnd ? 0.6 : 0, // opacity 0.0 at rest, 0.6 on hover
+              opacity: hover || isGroupEnd ? 0.65 : 0,
             }}
           >
-            <span className="text-[9px] font-mono font-bold tracking-wider opacity-60">
+            <span className="text-[10px] font-medium opacity-70">
               {timeStr}
             </span>
 
-            {/* End-to-End Encryption Indicator (lock icon at group start/end) */}
+            {/* E2EE Indicator */}
             {isGroupEnd && (msg.v === 3 || msg.v === 4) && (
-              <span title="End-to-End Encrypted" className="text-[9px] opacity-70">
+              <span title="End-to-End Encrypted" className="text-[10px] opacity-80">
                 🔐
               </span>
             )}
 
-            {/* Delivery status indicator */}
+            {/* Delivery Status (Sent only) */}
             {mine && isGroupEnd && (
               <MessageStatusRing
                 status={msg.status || "delivered"}
@@ -276,14 +290,11 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
                     ? "var(--accent-primary, #00d4ff)"
                     : msg.status === "failed"
                     ? "#FF5252"
-                    : undefined
+                    : "currentColor"
                 }
               />
             )}
           </div>
-
-          {/* Reactions */}
-          <ReactionStrip reactions={localReactions} onReact={handleReact} t={t} />
         </div>
       </div>
     </AnimatedMessage>

@@ -1,7 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { useThemeStore } from "../../store/useThemeStore";
-import StarfieldBackground from "../effects/StarfieldBackground";
-import HexagonalGridOverlay from "../effects/HexagonalGridOverlay";
+
 import ThemeEffects from "../effects/ThemeEffects";
 
 /**
