@@ -35,15 +35,8 @@ export default defineConfig({
           // ── Socket ─────────────────────────────────────────────────
           if (id.includes('socket.io-client')) return 'vendor-socket';
 
-          // ── Zustand ────────────────────────────────────────────────
-          if (id.includes('zustand')) return 'vendor-zustand';
-
-          // ── React core ─────────────────────────────────────────────
-          if (id.includes('react-dom') || id.includes('react-router-dom')) return 'vendor-react';
-          if (id.includes('/node_modules/react/')) return 'vendor-react';
-
-          // ── Remaining node_modules go to vendor-utils ──────────────
-          if (id.includes('node_modules')) return 'vendor-utils';
+          // Let Vite handle React and other utilities automatically to prevent 
+          // context initialization order crashes.
         },
       },
       onwarn(warning, warn) {
