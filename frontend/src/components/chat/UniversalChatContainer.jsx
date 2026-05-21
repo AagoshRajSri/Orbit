@@ -709,10 +709,10 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
           <Ico d={I.pin} size={14} stroke={t.acc} />
           <div style={{ flex: 1, overflow: "hidden" }}>
             <div style={{ color: t.txt2, fontSize: 10, fontFamily: t.font, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 1 }}>
-              {pinnedMsgData ? "Pinned Message" : (isNexus ? "Pinned" : "Encrypted · End-to-End")}
+              {pinnedMsgData ? "Pinned Message" : "Encrypted · End-to-End"}
             </div>
             <div style={{ color: t.txt, fontSize: 12, fontFamily: t.font, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: .9 }}>
-              {pinnedMsgData ? pinnedMsgData.text : (isNexus ? (localNexusGroup?.pinnedMsg || selectedNexus?.description || "No pinned message") : "Messages are secured.")}
+              {pinnedMsgData ? pinnedMsgData.text : "Messages are secured."}
             </div>
           </div>
           <button onClick={(e) => { e.stopPropagation(); setPinnedVisible(false); }} style={{ background: "none", border: "none", color: t.txt2, cursor: "pointer", display: "flex", padding: 4 }}>
@@ -725,7 +725,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
       <div style={{
         flex: 1,
         position: "relative",
-        display: showInfo && isNexus ? "none" : "flex",
+        display: "flex",
         flexDirection: "column",
         minHeight: 0,
         zIndex: 1,
@@ -734,7 +734,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 20px", fontSize: 10, color: ot["--text2"], opacity: 0.55, fontWeight: 700, letterSpacing: "1.5px", flexShrink: 0 }}>
           <div style={{ flex: 1, height: 1, background: ot["--border"] }} />
           <span style={{ fontFamily: ot.fontMono, whiteSpace: "nowrap", textTransform: "uppercase" }}>
-            {isNexus ? "Nexus Thread" : "Direct Line"} · {new Date().toLocaleDateString("en", { month: "short", day: "numeric" })}
+            Direct Line · {new Date().toLocaleDateString("en", { month: "short", day: "numeric" })}
           </span>
           <div style={{ flex: 1, height: 1, background: ot["--border"] }} />
         </div>
@@ -800,38 +800,36 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
       </div>
 
       {/* ── INPUT AREA ── */}
-      {!(showInfo && isNexus) && (
-        <div style={{ position: "relative", zIndex: 100, display: "flex", flexDirection: "column" }}>
-          {mediaPanel && (
-            <div style={{
-              position: "absolute",
-              bottom: "calc(100% + 8px)",
-              right: typeof window !== "undefined" && window.innerWidth < 640 ? 0 : 16,
-              left: typeof window !== "undefined" && window.innerWidth < 640 ? 0 : "auto",
-              zIndex: 200,
-            }}>
-              <MediaPanel t={ot} mode={mediaPanel} onClose={() => setMediaPanel(null)} onSelectEmoji={e => { setInput(v => v + e); inputRef.current?.focus(); }} />
-            </div>
-          )}
-          {recording && (
-            <div style={{ position: "absolute", bottom: "100%", left: 20, right: 20, zIndex: 101, marginBottom: 10, padding: "10px 20px", background: ot["--bg2"], border: `1px solid ${ot["--border"]}`, borderRadius: ot["--radius"], display: "flex", alignItems: "center", gap: 14, boxShadow: ot["--shadow"], animation: "fadeUp .3s ease" }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff3131", animation: "recPulse 1s ease-in-out infinite", flexShrink: 0 }} />
-              <Wave color={ot["--acc"]} active bars={36} h={32} />
-              <span style={{ color: ot["--text"], fontSize: 14, fontFamily: ot.font, minWidth: 40, fontVariantNumeric: "tabular-nums" }}>{fmt(recSec)}</span>
-              <span style={{ color: ot["--text2"], fontSize: 12, fontFamily: ot.font, marginLeft: "auto" }}>Recording...</span>
-            </div>
-          )}
-          <AeroInput
-            t={ot} value={input} onChange={setInput}
-            onSend={() => { sendMsg(input); setInput(""); }}
-            onTyping={() => { emitTyping(true); myAvatar.onTyping(); clearTimeout(typingTimerRef.current); typingTimerRef.current = setTimeout(() => emitTyping(false), 2000); }}
-            onMediaToggle={(mode) => setMediaPanel(m => m === mode ? null : mode)}
-            onVoiceToggle={() => setRecording(!recording)}
-            onImageAttach={handleAttach}
-            isRecording={recording} selfAnimal={myAnimal} selfAvatarState={myAvatar.state} disabled={false}
-          />
-        </div>
-      )}
+      <div style={{ position: "relative", zIndex: 100, display: "flex", flexDirection: "column" }}>
+        {mediaPanel && (
+          <div style={{
+            position: "absolute",
+            bottom: "calc(100% + 8px)",
+            right: typeof window !== "undefined" && window.innerWidth < 640 ? 0 : 16,
+            left: typeof window !== "undefined" && window.innerWidth < 640 ? 0 : "auto",
+            zIndex: 200,
+          }}>
+            <MediaPanel t={ot} mode={mediaPanel} onClose={() => setMediaPanel(null)} onSelectEmoji={e => { setInput(v => v + e); inputRef.current?.focus(); }} />
+          </div>
+        )}
+        {recording && (
+          <div style={{ position: "absolute", bottom: "100%", left: 20, right: 20, zIndex: 101, marginBottom: 10, padding: "10px 20px", background: ot["--bg2"], border: `1px solid ${ot["--border"]}`, borderRadius: ot["--radius"], display: "flex", alignItems: "center", gap: 14, boxShadow: ot["--shadow"], animation: "fadeUp .3s ease" }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff3131", animation: "recPulse 1s ease-in-out infinite", flexShrink: 0 }} />
+            <Wave color={ot["--acc"]} active bars={36} h={32} />
+            <span style={{ color: ot["--text"], fontSize: 14, fontFamily: ot.font, minWidth: 40, fontVariantNumeric: "tabular-nums" }}>{fmt(recSec)}</span>
+            <span style={{ color: ot["--text2"], fontSize: 12, fontFamily: ot.font, marginLeft: "auto" }}>Recording...</span>
+          </div>
+        )}
+        <AeroInput
+          t={ot} value={input} onChange={setInput}
+          onSend={() => { sendMsg(input); setInput(""); }}
+          onTyping={() => { emitTyping(true); myAvatar.onTyping(); clearTimeout(typingTimerRef.current); typingTimerRef.current = setTimeout(() => emitTyping(false), 2000); }}
+          onMediaToggle={(mode) => setMediaPanel(m => m === mode ? null : mode)}
+          onVoiceToggle={() => setRecording(!recording)}
+          onImageAttach={handleAttach}
+          isRecording={recording} selfAnimal={myAnimal} selfAvatarState={myAvatar.state} disabled={false}
+        />
+      </div>
       {/* SECURITY ASSURANCE FOOTER REMOVED - NOW IN HEADER TOOLTIP */}
 
     </>
@@ -855,7 +853,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
       />
       
       {showInfo && localNexusGroup && isNexus && (
-        <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", animation: "fadeIn .2s ease" }}>
+        <div style={{ position: "absolute", top: 64, right: 0, bottom: 0, zIndex: 30, display: "flex", animation: "fadeIn .2s ease" }}>
           <InfoPanel t={t} group={localNexusGroup} setGroup={setLocalNexusGroup} onClose={() => setShowInfo(false)} addToast={addToast} onUpdate={handleInfoUpdate} onLeave={handleLeaveNexus} onDelete={handleDeleteNexus} fullArea />
         </div>
       )}
