@@ -18,11 +18,14 @@ import messageRoutes from "./routes/message.route.js";
 import nexusRoutes from "./routes/nexus.route.js";
 import spotifyRoutes from "./routes/spotify.route.js";
 import spotifySessionRoutes from "./routes/spotifySession.route.js";
+import starweaveRoutes from "./routes/starweave.route.js";
 import adminRoutes from "./routes/admin.route.js";
+import notificationRoutes from "./routes/notification.route.js";
 import configRoutes from "./routes/config.route.js";
 import prekeyRoutes from "./routes/prekey.route.js";
 import deviceRoutes from "./routes/device.route.js";
 import keyVaultRoutes from "./routes/keyVault.route.js";
+import contactsRoutes from "./routes/contacts.route.js";
 import { connectDB } from "./lib/db.js";
 import { initializeConfig } from "./lib/config.init.js";
 import { initializeSocketIO } from "./socket/socket.js";
@@ -84,7 +87,18 @@ const httpServer = createServer(app);
 
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
-  : ["http://localhost:5173"];
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://localhost:5176",
+      "http://localhost:5177",
+    ];
+
+// In development, allow any localhost origin so Vite's auto-port never blocks CORS
+const isLocalhostOrigin = (origin) =>
+  process.env.NODE_ENV !== "production" &&
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(compression());
@@ -137,6 +151,8 @@ app.use(
       if (!origin) return callback(null, true);
       
       const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+      if (isLocalhostOrigin(normalizedOrigin)) return callback(null, true);
       
       const isAllowed = allowedOrigins.some(allowed => {
         const normalizedAllowed = allowed.replace(/\/$/, "");
@@ -177,6 +193,10 @@ app.use("/api", resolveOrbitIds);
 app.use("/api/auth", authRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/nexus", nexusRoutes);
+app.use("/api/contacts", contactsRoutes);
+app.use("/api/starweave", starweaveRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/spotify", spotifyRoutes);
 app.use("/api/spotify/session", spotifySessionRoutes);
 app.use("/api/admin", adminRoutes);
@@ -184,6 +204,7 @@ app.use("/api/config", configRoutes);
 app.use("/api/prekeys", prekeyRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/keyvault", keyVaultRoutes);
+app.use("/api/contacts", contactsRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Orbit API is running", version: "1.0.0", security: "zero-trust-v3" });
 });
@@ -229,6 +250,8 @@ const io = new Server(httpServer, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+      if (isLocalhostOrigin(normalizedOrigin)) return callback(null, true);
       
       const isAllowed = allowedOrigins.some(allowed => {
         const normalizedAllowed = allowed.replace(/\/$/, "");

@@ -421,7 +421,7 @@ export const useNexusStore = create((set, get) => ({
 
     set({ isLoadingMoreParams: true });
     try {
-      const cursor = nexusMessages[0].createdAt;
+      const cursor = nexusMessages[0]._id;
       const res = await axiosInstance.get(`/nexus/${nexusId}/messages?cursor=${cursor}`);
 
       // Sync missing sender keys before decrypting older messages

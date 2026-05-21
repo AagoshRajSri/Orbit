@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import bcryptjs from 'bcryptjs';
 import User from '../models/user.model.js';
 import StarWeaveProfile from '../models/starweave.model.js';
+import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { generateToken } from '../lib/utils.js';
 import {
@@ -232,8 +233,15 @@ export async function enrollHandler(req, res) {
     const passwordHash = await bcryptjs.hash(password, 12);
     let newUser;
     try {
+      // Need a random orbitTag for starweave enroll since it doesn't prompt for it
+      const orbitTag = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const normalizedHandle = `${username.trim().toLowerCase()}#${orbitTag.toLowerCase()}`;
+      
       newUser = await User.create({
         username: username.trim(),
+        orbitId: nanoid(8),
+        orbitTag,
+        normalizedHandle,
         email: email.trim().toLowerCase(),
         password: passwordHash,
       });

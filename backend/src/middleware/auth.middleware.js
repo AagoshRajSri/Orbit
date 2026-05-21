@@ -41,7 +41,7 @@ export const protectRoute = async (req, res, next) => {
     }
 
     const activeSession = await Session.findOne({
-      sessionId: decoded.sessionId,
+      _id: decoded.sessionId,
     });
     
     if (!activeSession) {
@@ -82,7 +82,7 @@ export const protectRoute = async (req, res, next) => {
     }
 
     req.user = user;
-    req.sessionId = activeSession.sessionId;
+    req.sessionId = activeSession._id.toString();
     next();
   } catch (error) {
     if (error.name === "TokenExpiredError") {

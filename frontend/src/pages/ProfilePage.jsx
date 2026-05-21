@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { axiosInstance } from "../lib/axios";
+import { useContactStore } from "../store/useContactStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import { useNexusStore } from "../store/useNexusStore";
@@ -96,12 +98,39 @@ const RadialGauge = ({ value }) => {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const { userId } = useParams();
   const { authUser, isUpdatingProfile, updateProfile, deleteAccount } = useAuthStore();
-  const { users } = useChatStore();
+  const { users, setSelectedUser } = useChatStore();
   const { nexuses } = useNexusStore();
+  const { sendRequest, acceptRequest, declineRequest } = useContactStore();
 
   const [isEditing, setIsEditing] = useState(false);
   const [sessionSeconds, setSessionSeconds] = useState(0);
+
+  const [otherUser, setOtherUser] = useState(null);
+  const [relationship, setRelationship] = useState("none");
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+
+  const isViewingOther = userId && authUser && userId !== authUser._id;
+
+  // Fetch other user profile if needed
+  useEffect(() => {
+    if (isViewingOther) {
+      setIsLoadingProfile(true);
+      axiosInstance.get(`/api/auth/profile/${userId}`)
+        .then(res => {
+          setOtherUser(res.data.user);
+          setRelationship(res.data.relationship);
+        })
+        .catch(err => {
+          console.error(err);
+          toast.error("Failed to load profile");
+        })
+        .finally(() => setIsLoadingProfile(false));
+    } else {
+      setOtherUser(null);
+    }
+  }, [userId, isViewingOther]);
 
   // Draft state for edits
   const [profileDraft, setProfileDraft] = useState({
@@ -146,6 +175,8 @@ export default function ProfilePage() {
 
   // Real Data Construction
   const userProfile = useMemo(() => {
+    const targetUser = isViewingOther ? otherUser : authUser;
+    
     return {
       identityGrade: 98,
       engagementData: [
@@ -164,11 +195,12 @@ export default function ProfilePage() {
         { subject: "NEX", A: nexuses.length * 15 + 60, fullMark: 150 },
       ],
       profileDetails: {
-        username: authUser?.username || "Guest",
-        tag: authUser?.orbitTag || "0000",
-        email: authUser?.email || "unknown@directive.com",
-        bio: authUser?.bio || "Executive architecture node initializing. Secure protocols active. Managing nexus group frequencies and local constellation pulses with 98% optimal precision.",
-        profilePic: authUser?.profilePic || "/avatar.png",
+        username: targetUser?.username || "Guest",
+        tag: targetUser?.orbitTag || "0000",
+        orbitId: targetUser?.orbitId || "XXXXX",
+        email: targetUser?.email || "unknown@directive.com",
+        bio: targetUser?.bio || "Executive architecture node initializing. Secure protocols active. Managing nexus group frequencies and local constellation pulses with 98% optimal precision.",
+        profilePic: targetUser?.profilePic || "/avatar.png",
       },
       stats: {
         daysActive: daysRegistered,
@@ -177,7 +209,7 @@ export default function ProfilePage() {
         shieldStatus: "Optimal",
       },
     };
-  }, [authUser, users.length, nexuses.length, daysRegistered]);
+  }, [authUser, otherUser, isViewingOther, users.length, nexuses.length, daysRegistered]);
 
   // Handlers
   const handleImageUpload = (e) => {
@@ -240,15 +272,63 @@ export default function ProfilePage() {
           </button>
 
           <div className="flex items-center gap-4">
-            <GhostButton icon={Edit3} onClick={() => setIsEditing(!isEditing)}>
-              {isEditing ? "View Profile" : "Edit Profile"}
-            </GhostButton>
-            <GhostButton icon={Trash2} onClick={handleDelete} danger>
-              Delete Identity
-            </GhostButton>
+            {!isViewingOther && (
+              <>
+                <GhostButton icon={Edit3} onClick={() => setIsEditing(!isEditing)}>
+                  {isEditing ? "View Profile" : "Edit Profile"}
+                </GhostButton>
+                <GhostButton icon={Trash2} onClick={handleDelete} danger>
+                  Delete Identity
+                </GhostButton>
+              </>
+            )}
           </div>
         </div>
       </header>
+
+      {isViewingOther && (
+        <div className="max-w-6xl mx-auto px-6 mt-4">
+          <div className="flex items-center justify-between p-4 bg-white border border-[#E5E1D3] rounded-xl shadow-sm">
+            <span className="text-sm font-semibold text-slate-600 tracking-wide uppercase">Relationship Status</span>
+            <div className="flex items-center gap-3">
+              {relationship === "none" && (
+                <button 
+                  className="btn btn-sm btn-primary"
+                  onClick={async () => {
+                    await sendRequest(userId);
+                    setRelationship("request_sent");
+                  }}
+                >
+                  Send Contact Request
+                </button>
+              )}
+              {relationship === "request_sent" && (
+                <button className="btn btn-sm" disabled>Request Pending</button>
+              )}
+              {relationship === "request_received" && (
+                <div className="flex gap-2">
+                  <button className="btn btn-sm btn-success text-white" onClick={() => {/* handle accept logic via store then setRelationship('contacts') */}}>Accept</button>
+                  <button className="btn btn-sm btn-error text-white" onClick={() => {/* decline logic */}}>Decline</button>
+                </div>
+              )}
+              {relationship === "contacts" && (
+                <>
+                  <button className="btn btn-sm btn-primary" onClick={() => {
+                    setSelectedUser(otherUser);
+                    navigate(`/chat/${userId}`);
+                  }}>
+                    Message
+                  </button>
+                  <button className="btn btn-sm btn-outline text-red-500 hover:bg-red-50 hover:border-red-200">Remove Contact</button>
+                </>
+              )}
+              {relationship === "blocked" && (
+                <button className="btn btn-sm btn-outline text-red-500">Unblock</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Main Grid Layout ── */}
       <main className="max-w-6xl mx-auto px-6 mt-8">
@@ -261,20 +341,22 @@ export default function ProfilePage() {
             <Card className="flex flex-col sm:flex-row items-center sm:items-start gap-8">
               <div className="relative group shrink-0">
                 <img
-                  src={profileDraft.profilePic || "/avatar.png"}
+                  src={userProfile.profileDetails.profilePic}
                   alt="Avatar"
                   className="w-28 h-28 rounded-2xl object-cover border-2 border-[#E5E1D3] shadow-sm"
                 />
-                <label className="absolute -bottom-3 -right-3 p-2.5 bg-[#A68A56] text-white rounded-xl shadow-md cursor-pointer hover:bg-[#8e764a] transition-colors">
-                  <Camera className="w-4 h-4" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                    disabled={isUpdatingProfile}
-                  />
-                </label>
+                {!isViewingOther && (
+                  <label className="absolute -bottom-3 -right-3 p-2.5 bg-[#A68A56] text-white rounded-xl shadow-md cursor-pointer hover:bg-[#8e764a] transition-colors">
+                    <Camera className="w-4 h-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={isUpdatingProfile}
+                    />
+                  </label>
+                )}
               </div>
 
               <div className="flex-1 text-center sm:text-left pt-2">
@@ -287,7 +369,7 @@ export default function ProfilePage() {
                   </span>
                 </div>
                 <p className="text-xs font-mono text-slate-500 mb-4">
-                  @{userProfile.profileDetails.username}#{userProfile.profileDetails.tag}
+                  @{userProfile.profileDetails.username}#{userProfile.profileDetails.tag} • {userProfile.profileDetails.orbitId}
                 </p>
 
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-6 text-sm text-slate-600">
@@ -312,9 +394,9 @@ export default function ProfilePage() {
                     <Label>Persona Name</Label>
                     <input
                       type="text"
-                      value={profileDraft.username}
+                      value={isViewingOther ? userProfile.profileDetails.username : profileDraft.username}
                       onChange={(e) => setProfileDraft({ ...profileDraft, username: e.target.value })}
-                      disabled={!isEditing}
+                      disabled={!isEditing || isViewingOther}
                       className="w-full bg-[#F5F2EA] border border-[#E5E1D3] rounded-lg px-4 py-3 text-sm font-medium text-slate-800 focus:outline-none focus:border-[#A68A56] disabled:opacity-70 transition-colors"
                     />
                   </div>
@@ -322,7 +404,7 @@ export default function ProfilePage() {
                     <Label>Email Directive (Display Only)</Label>
                     <input
                       type="email"
-                      value={profileDraft.email}
+                      value={isViewingOther ? userProfile.profileDetails.email : profileDraft.email}
                       disabled={true}
                       className="w-full bg-[#E5E1D3]/30 border border-[#E5E1D3] rounded-lg px-4 py-3 text-sm font-medium text-slate-400 focus:outline-none cursor-not-allowed transition-colors"
                     />
@@ -332,32 +414,34 @@ export default function ProfilePage() {
                 <div>
                   <Label>Biography / Network Log</Label>
                   <textarea
-                    value={profileDraft.bio}
+                    value={isViewingOther ? userProfile.profileDetails.bio : profileDraft.bio}
                     onChange={(e) => setProfileDraft({ ...profileDraft, bio: e.target.value })}
-                    disabled={!isEditing}
+                    disabled={!isEditing || isViewingOther}
                     rows={4}
                     className="w-full bg-[#F5F2EA] border border-[#E5E1D3] rounded-lg px-4 py-3 text-sm font-medium text-slate-800 focus:outline-none focus:border-[#A68A56] disabled:opacity-70 resize-none transition-colors leading-relaxed"
                   />
                 </div>
 
-                {isEditing ? (
-                  <div className="flex justify-end pt-2">
-                    <button
-                      type="button"
-                      onClick={handleSave}
-                      disabled={isUpdatingProfile}
-                      className="px-6 py-2.5 bg-[#A68A56] hover:bg-[#8e764a] text-white text-[11px] font-bold tracking-widest uppercase rounded-lg transition-colors"
-                    >
-                      {isUpdatingProfile ? "Committing..." : "Commit Changes"}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 justify-end pt-2 text-[#A68A56]/60">
-                    <Zap className="w-3.5 h-3.5" />
-                    <span className="text-[10px] font-semibold tracking-widest uppercase">
-                      Turn on edit mode to update identifiers
-                    </span>
-                  </div>
+                {!isViewingOther && (
+                  isEditing ? (
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={isUpdatingProfile}
+                        className="px-6 py-2.5 bg-[#A68A56] hover:bg-[#8e764a] text-white text-[11px] font-bold tracking-widest uppercase rounded-lg transition-colors"
+                      >
+                        {isUpdatingProfile ? "Committing..." : "Commit Changes"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 justify-end pt-2 text-[#A68A56]/60">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-semibold tracking-widest uppercase">
+                        Turn on edit mode to update identifiers
+                      </span>
+                    </div>
+                  )
                 )}
               </form>
             </Card>

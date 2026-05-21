@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from "react";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import { SpotifyWave } from "../SpotifyWave";
+import UserSafetySheet from "./UserSafetySheet";
 
 // Inject pulse + scan animations once
 const STYLE = `
@@ -103,6 +104,7 @@ export default function TelemeteryCapsule({
   const [signalStr, setSignalStr] = useState(4);
   const [copied, setCopied]       = useState(false);
   const [e2eeHover, setE2EEHover] = useState(false);
+  const [showSafety, setShowSafety] = useState(false);
 
   useEffect(() => {
     injectStyle();
@@ -382,7 +384,24 @@ export default function TelemeteryCapsule({
             <MoreIcon size={20} />
           </TeleBtn>
         </div>
+
+        {/* Safety sheet trigger (DMs only) */}
+        {!isNexus && userId && (
+          <TeleBtn t={t} onClick={() => setShowSafety(true)} title="User safety options" square={isCyber}>
+            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+          </TeleBtn>
+        )}
       </div>
+
+      {showSafety && userId && (
+        <UserSafetySheet
+          userId={userId}
+          username={entityName}
+          onClose={() => setShowSafety(false)}
+        />
+      )}
     </div>
   );
 }

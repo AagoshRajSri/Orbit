@@ -445,11 +445,11 @@ export const getMyNexuses = async (req, res) => {
 
     const query = { nexusId: realNexusId };
     if (cursor) {
-      query.createdAt = { $lt: new Date(cursor) };
+      query._id = { $lt: cursor };
     }
 
     let messages = await Message.find(query)
-      .sort({ createdAt: -1 })
+      .sort({ _id: -1 })
       .limit(parsedLimit)
       .populate("senderId", "username profilePic")
       .maxTimeMS(5000) // FIX 17: Prevent thread stall

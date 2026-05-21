@@ -1,6 +1,8 @@
 import { generateToken } from "../lib/utils.js";
+import { nanoid } from "nanoid";
 import User from "../models/user.model.js";
 import Session from "../models/session.model.js";
+import AuditLog from "../models/auditLog.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import bcrypt from "bcryptjs";
 import { generateOTP, storeOTP, verifyOTP, clearOTP } from "../lib/otp.js";
@@ -310,6 +312,7 @@ export const signup = async (req, res) => {
 
     const newUser = new User({
       username,
+      orbitId: nanoid(8),
       orbitTag,
       normalizedHandle,
       email: validation.data.email,
@@ -545,6 +548,8 @@ export const login = async (req, res) => {
     });
 
     if (!user || !user.password) {
+      // Dummy verify to prevent timing attacks and enumeration
+      await bcrypt.compare(validation.data.password, "$2a$12$DUMMYHASHXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
       systemEmitter.broadcast('login_failed', { email, reason: "invalid_user" }, "warning");
       return res.status(401).json({
         success: false,
@@ -602,8 +607,8 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
   try {
     if (req.sessionId) {
-      await Session.findOneAndUpdate(
-        { sessionId: req.sessionId },
+      await Session.findByIdAndUpdate(
+        req.sessionId,
         { isValid: false }
       ).catch(() => {});
     }
@@ -690,6 +695,20 @@ export const updateProfile = async (req, res) => {
   }
 };
 
+export const getUserProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select(
+      "username profilePic bio handle normalizedHandle onlineStatus createdAt"
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json(sanitizeForOrbit(user.toObject()));
+  } catch (error) {
+    console.error("Error in getUserProfile:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const getContacts = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
@@ -718,6 +737,46 @@ export const getContacts = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in getContacts:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getSessions = async (req, res) => {
+  try {
+    const sessions = await Session.find({ userId: req.user._id })
+      .select("-refreshTokenHash")
+      .sort({ lastActive: -1 });
+    res.status(200).json(sessions);
+  } catch (error) {
+    console.error("Error in getSessions:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getSecurityLogs = async (req, res) => {
+  try {
+    const logs = await AuditLog.find({ userId: req.user._id })
+      .sort({ createdAt: -1 })
+      .limit(50);
+    res.status(200).json(logs);
+  } catch (error) {
+    console.error("Error in getSecurityLogs:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const revokeSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await Session.findOneAndDelete({ _id: sessionId, userId: req.user._id });
+    
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+    
+    res.status(200).json({ message: "Session revoked successfully" });
+  } catch (error) {
+    console.error("Error in revokeSession:", error.message);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -934,6 +993,26 @@ export const removeContact = async (req, res) => {
   } catch (error) {
     console.error("Error in removeContact:", error.message);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const reportContact = async (req, res) => {
+  try {
+    const reporterId = req.user._id;
+    const { contactId } = req.params;
+    const { reason = 'Unspecified', note = '' } = req.body;
+    await AuditLog.create({
+      userId: reporterId,
+      action: 'user_report',
+      ip: req.ip || 'unknown',
+      userAgent: req.headers['user-agent'] || 'unknown',
+      details: { reportedUserId: contactId, reason, note: note.slice(0, 500) },
+      riskScore: 0,
+    });
+    res.status(200).json({ success: true, message: 'Report received' });
+  } catch (error) {
+    console.error('Error in reportContact:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 

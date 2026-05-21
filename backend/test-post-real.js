@@ -23,17 +23,15 @@ const main = async () => {
   }
 
   // Create session
-  const sessionId = "test-session-id-123456";
-  await Session.deleteOne({ sessionId });
-  await Session.create({
+  const session = await Session.create({
     userId: user._id,
-    sessionId,
-    hashedRefreshToken: "test-hash",
-    ip: "127.0.0.1",
+    refreshTokenHash: "test-hash",
+    ipAddress: "127.0.0.1",
     userAgent: "test",
     isValid: true,
     lastActive: new Date()
   });
+  const sessionId = session._id.toString();
 
   // Generate JWT token
   const token = jwt.sign(

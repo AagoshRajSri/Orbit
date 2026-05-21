@@ -34,6 +34,7 @@ const AdminBroadcast = lazy(() => import("./pages/admin/AdminBroadcast"));
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatStore } from "./store/useChatStore";
 import { useNexusStore } from "./store/useNexusStore";
+import { useContactStore } from "./store/useContactStore";
 import { useDevicePerformance } from "./hooks/useDevicePerformance";
 import { useSpotifyStore } from "./store/useSpotifyStore";
 import { getSocket, disconnectSocket, updateSocketToken } from "./lib/socket";
@@ -505,13 +506,14 @@ const AppContent = () => {
       messageDeleted: ({ messageId }) => {
         useChatStore.getState().deleteMessage(messageId);
       },
-      contactRequestReceived: (data) => {
+      "contact:request_received": (data) => {
         useChatStore.getState().getUsers();
-        try { toast.success(`New contact request from ${data.from.username}`); } catch (e) {}
+        useContactStore.getState().fetchPendingRequests();
+        try { toast.success(`New contact request from ${data.sender?.username || "someone"}`); } catch (e) {}
       },
-      contactRequestAccepted: (data) => {
+      "contact:accepted": (data) => {
         useChatStore.getState().getUsers();
-        try { toast.success(`${data.user.username} accepted your request!`); } catch (e) {}
+        try { toast.success(`Contact request accepted!`); } catch (e) {}
       },
       nexusMessageUpdated: (data) => {
         const { nexusId, messageId, updates } = data;
@@ -805,13 +807,13 @@ const AppContent = () => {
                     }
                   />
                   <Route
-                    path="/settings"
+                    path="/settings/*"
                     element={
                       authUser ? <SettingsPage /> : <Navigate to="/login" />
                     }
                   />
                   <Route
-                    path="/profile"
+                    path="/profile/:userId?"
                     element={
                       authUser ? <ProfilePage /> : <Navigate to="/login" />
                     }

@@ -25,6 +25,11 @@ import {
   rejectContact,
   blockContact,
   unblockContact,
+  reportContact,
+  getUserProfile,
+  getSessions,
+  revokeSession,
+  getSecurityLogs,
 } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 import { validateRequestBody } from "../middleware/validation.middleware.js";
@@ -50,16 +55,21 @@ router.post("/verify-email", loginLimiter, verifyEmail);
 router.post("/resend-verification", loginLimiter, resendVerificationEmail);
 
 // Profile & Contacts
+router.get("/profile/:userId", protectRoute, getUserProfile);
 router.put("/update-profile", protectRoute, updateProfile);
 router.put("/update-public-key", protectRoute, updatePublicKey);
 router.delete("/delete-account", protectRoute, deleteAccount);
 router.get("/check", protectRoute, checkAuth);
+router.get("/sessions", protectRoute, getSessions);
+router.delete("/sessions/:sessionId", protectRoute, revokeSession);
+router.get("/security-logs", protectRoute, getSecurityLogs);
 router.get("/contacts", protectRoute, getContacts);
 router.post("/contacts", protectRoute, addContact);
 router.post("/contacts/:contactId/accept", protectRoute, acceptContact);
 router.post("/contacts/:contactId/reject", protectRoute, rejectContact);
 router.post("/contacts/:contactId/block", protectRoute, blockContact);
 router.post("/contacts/:contactId/unblock", protectRoute, unblockContact);
+router.post("/contacts/:contactId/report", protectRoute, reportContact);
 router.delete("/contacts/:contactId", protectRoute, removeContact);
 router.put("/contacts/:contactId", protectRoute, renameContact);
 

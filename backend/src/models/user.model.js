@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, index: true },
+    orbitId: { type: String, unique: true, index: true },
     orbitTag: { type: String, required: true },
     normalizedHandle: { type: String, required: true, unique: true, index: true },
     email: { type: String, required: true, unique: true, index: true },

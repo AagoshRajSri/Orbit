@@ -112,12 +112,12 @@ export const getMessage = async (req, res) => {
     };
 
     if (cursor) {
-      query.createdAt = { $lt: new Date(cursor) };
+      query._id = { $lt: cursor };
     }
 
     // Fetch chronologically backwards, then reverse for the client
     let messages = await Message.find(query)
-      .sort({ createdAt: -1 })
+      .sort({ _id: -1 })
       .limit(parsedLimit)
       .populate("senderId", "username profilePic")
       .populate("receiverId", "username profilePic")

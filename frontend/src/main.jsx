@@ -5,6 +5,7 @@ import DOMPurify from 'dompurify'
 import './index.css'
 import './styles/animations.css'
 import App from './App.jsx'
+import { initStoreSubscriptions } from './store/orchestrator.js';
 
 // Intercept and suppress upstream Three.js Clock deprecation warnings
 const originalWarn = console.warn;
@@ -43,5 +44,8 @@ const AppTree = import.meta.env.DEV
       <App />
     </BrowserRouter>
   );
+
+// Initialize cross-store dependencies
+initStoreSubscriptions();
 
 createRoot(document.getElementById('root')).render(AppTree)

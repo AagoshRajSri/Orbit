@@ -26,6 +26,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useThemeStore } from "../../store/useThemeStore";
 import { PixelAvatarBadge } from "../avatar/PixelAvatar/PixelAvatarBadge.jsx";
 import { UserAura } from "../../orbit/UserAura";
+import NotificationTray from "../common/NotificationTray";
+import { useNotificationStore } from "../../store/useNotificationStore";
+import { Bell } from "lucide-react";
 
 // Helper: format a date string as relative time (e.g. "3m ago")
 const formatRelativeTime = (dateStr) => {
@@ -127,6 +130,9 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   const [showPresencePanel, setShowPresencePanel] = useState(false);
   const [presenceCustomText, setPresenceCustomText] = useState("");
   const [showRequests, setShowRequests] = useState(false);
+  const [showNotificationTray, setShowNotificationTray] = useState(false);
+
+  const { unreadCount } = useNotificationStore();
 
   const presenceMap = useAuthStore((state) => state.presenceMap);
   const authUser = useAuthStore((state) => state.authUser);
@@ -232,19 +238,20 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
           borderColor: "rgba(176,141,87,0.15)",
         } : {}}
       >
-        <div
-          className={`flex w-full p-1 rounded-xl relative border group overflow-hidden ${
-            !isPastel && !isLight ? "bg-base-300/40 border-[var(--chat-border)]" : ""
-          }`}
-          style={isPastel ? {
-            background: "rgba(255,220,240,0.55)",
-            borderColor: "rgba(255,160,210,0.3)",
-          } : isLight ? {
-            background: "rgba(240,235,216,0.5)",
-            borderColor: "rgba(176,141,87,0.2)",
-          } : {}}
-        >
-          {/* Subtle shimmer across the tab bar */}
+        <div className="flex items-center gap-2 w-full">
+          <div
+            className={`flex flex-1 p-1 rounded-xl relative border group overflow-hidden ${
+              !isPastel && !isLight ? "bg-base-300/40 border-[var(--chat-border)]" : ""
+            }`}
+            style={isPastel ? {
+              background: "rgba(255,220,240,0.55)",
+              borderColor: "rgba(255,160,210,0.3)",
+            } : isLight ? {
+              background: "rgba(240,235,216,0.5)",
+              borderColor: "rgba(176,141,87,0.2)",
+            } : {}}
+          >
+            {/* Subtle shimmer across the tab bar */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--chat-text)]/5 to-transparent w-[200%] -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out pointer-events-none" />
 
           <button
@@ -301,11 +308,41 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
             } : {
               background: "rgba(var(--chat-bg),0.4)",
               borderColor: "var(--chat-border)",
-              boxShadow: "0 4px 15px rgba(var(--p),0.05)",
+              boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
             }}
           />
         </div>
+        
+        {/* Notification Bell */}
+        <button
+          onClick={() => setShowNotificationTray(true)}
+          className={`relative p-2 rounded-xl transition-all border shadow-sm flex items-center justify-center`}
+          style={isPastel ? {
+            background: unreadCount > 0 ? "rgba(255,160,210,0.4)" : "rgba(255,220,240,0.55)",
+            borderColor: "rgba(255,160,210,0.3)",
+            color: "#d060a8"
+          } : isLight ? {
+            background: unreadCount > 0 ? "rgba(176,141,87,0.3)" : "rgba(240,235,216,0.5)",
+            borderColor: "rgba(176,141,87,0.2)",
+            color: "#5c4a2a"
+          } : {
+            background: unreadCount > 0 ? "rgba(var(--p), 0.2)" : "rgba(var(--b3), 0.4)",
+            borderColor: "var(--chat-border)",
+            color: "var(--chat-text)"
+          }}
+        >
+          <Bell className={`size-4 ${unreadCount > 0 ? "animate-bounce" : ""}`} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+            </span>
+          )}
+        </button>
       </div>
+      </div>
+
+      <NotificationTray isOpen={showNotificationTray} onClose={() => setShowNotificationTray(false)} />
 
       {activeTab === "nexus" && <NexusActions />}
 

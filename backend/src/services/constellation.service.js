@@ -35,6 +35,7 @@ const LOCKOUT_THRESHOLDS = [
 
 /**
  * Build a canonical, deterministic string from an ordered edge list.
+ * Uses only label data (from/to node labels).
  */
 export function buildCanonicalPattern(edges) {
   if (!Array.isArray(edges) || edges.length === 0) {
@@ -46,6 +47,70 @@ export function buildCanonicalPattern(edges) {
         throw new Error("Each edge must have 'from' and 'to' fields.");
       const f = String(from).trim().toUpperCase();
       const t = String(to).trim().toUpperCase();
+      return `${f}>${t}`;
+    })
+    .join("|");
+}
+
+/**
+ * Normalize raw screen-coordinate constellation edges onto a 100×100 unit grid.
+ *
+ * This ensures a pattern drawn on a 1080p screen and the same pattern drawn
+ * on a 720p screen produce the identical canonical string after quantisation,
+ * enabling resolution-independent authentication.
+ *
+ * If edges carry no coordinate data (fx/fy/tx/ty), falls back gracefully
+ * to the label-only form from buildCanonicalPattern.
+ *
+ * @param {Array<{from:string, to:string, fx?:number, fy?:number, tx?:number, ty?:number}>} edges
+ * @returns {string} canonical pattern string
+ */
+export function normalizeConstellation(edges) {
+  if (!Array.isArray(edges) || edges.length === 0) {
+    throw new Error("Pattern must be a non-empty array of edges.");
+  }
+
+  // Gather all coordinate values to derive a bounding box
+  const allX = [];
+  const allY = [];
+  for (const e of edges) {
+    if (typeof e.fx === "number") allX.push(e.fx);
+    if (typeof e.tx === "number") allX.push(e.tx);
+    if (typeof e.fy === "number") allY.push(e.fy);
+    if (typeof e.ty === "number") allY.push(e.ty);
+  }
+
+  // Fall back to label-only form if no coordinate data was provided
+  if (allX.length === 0 || allY.length === 0) {
+    return buildCanonicalPattern(edges);
+  }
+
+  const minX = Math.min(...allX);
+  const maxX = Math.max(...allX);
+  const minY = Math.min(...allY);
+  const maxY = Math.max(...allY);
+  // Prevent division by zero for single-point patterns
+  const rangeX = maxX - minX || 1;
+  const rangeY = maxY - minY || 1;
+
+  // Project value onto [0, 100] integer grid
+  const norm = (v, min, range) => Math.round(((v - min) / range) * 100);
+
+  return edges
+    .map(({ from, to, fx, fy, tx, ty }) => {
+      const f = String(from).trim().toUpperCase();
+      const t = String(to).trim().toUpperCase();
+      if (
+        typeof fx === "number" && typeof fy === "number" &&
+        typeof tx === "number" && typeof ty === "number"
+      ) {
+        const nfx = norm(fx, minX, rangeX);
+        const nfy = norm(fy, minY, rangeY);
+        const ntx = norm(tx, minX, rangeX);
+        const nty = norm(ty, minY, rangeY);
+        return `${f}(${nfx},${nfy})>${t}(${ntx},${nty})`;
+      }
+      // Edge has no coords — use label only
       return `${f}>${t}`;
     })
     .join("|");

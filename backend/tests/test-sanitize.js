@@ -1,4 +1,4 @@
-import { sanitizeForOrbit } from "./src/lib/obfuscation.js";
+import { sanitizeForOrbit } from "../src/lib/obfuscation.js";
 
 const populatedMessage = {
   _id: "65e23abc1234567890abcdef",

@@ -12,49 +12,28 @@ export const generateToken = async (userId, req, res) => {
       throw new Error("Request and response objects are required");
     }
 
-    const sessionId = crypto.randomBytes(16).toString("hex");
     const refreshToken = crypto.randomBytes(32).toString("hex");
+    const refreshTokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
 
-    // Hash refresh token for DB
-    const hashedRefreshToken = crypto
-      .createHash("sha256")
-      .update(refreshToken)
-      .digest("hex");
-
-    // Capture device/IP
-    const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
+    const ipAddress = req.ip || req.headers["x-forwarded-for"] || "unknown";
     const userAgent = req.headers["user-agent"] || "unknown";
+    const deviceName = "Unknown Device"; // Could parse user agent here
 
-    // Enforce max 5 sessions
-    const activeSessions = await Session.find({ userId, isValid: true }).sort({
-      lastActive: 1,
-    });
-    if (activeSessions.length >= 5) {
-      // kill the oldest
-      await Session.findByIdAndUpdate(activeSessions[0]._id, {
-        isValid: false,
-      });
-    }
-
-    // Save session
-    await Session.create({
+    const session = await Session.create({
       userId,
-      sessionId,
-      hashedRefreshToken,
-      ip,
+      refreshTokenHash,
+      ipAddress,
       userAgent,
-      isValid: true,
+      deviceName,
       lastActive: new Date(),
     });
 
-    // Short-lived access token (15 min)
     const accessToken = jwt.sign(
-      { userId, sessionId },
+      { userId, sessionId: session._id },
       process.env.JWT_SECRET,
-      { expiresIn: "15m" },
+      { expiresIn: "15m" }
     );
 
-    // Determine if we should use secure/cross-site cookies
     const isProxySecure = req.header("x-forwarded-proto") === "https" || req.secure;
     const isProduction = process.env.NODE_ENV === "production" || isProxySecure;
 
@@ -70,64 +49,94 @@ export const generateToken = async (userId, req, res) => {
       httpOnly: true,
       sameSite: isProduction ? "none" : "lax",
       secure: isProduction,
-      path: "/api/auth/refresh", // Only sent on refresh endpoint
+      path: "/api/auth/refresh",
     });
 
-    return { accessToken, refreshToken, sessionId };
+    return { accessToken, refreshToken };
   } catch (error) {
     console.error("Error generating dual tokens:", error.message);
     throw error;
   }
 };
 
-/**
- * POST /api/auth/refresh
- * Silently renews the short-lived access token using the long-lived refresh cookie.
- * Rotates the refresh token on every call (prevents token replay).
- */
 export const refreshAccessToken = async (req, res) => {
-  const refreshToken = req.body.refreshToken || req.cookies?.refresh_jwt;
-  const { sessionId } = req.body;
+  const refreshToken = req.cookies?.refresh_jwt;
 
   if (!refreshToken) {
-    return res.status(401).json({ message: "No refresh token provided" });
+    return res.status(401).json({ code: "INVALID_SESSION", message: "No refresh token provided" });
   }
 
   try {
-    const hashedRefreshToken = crypto
-      .createHash("sha256")
-      .update(refreshToken)
-      .digest("hex");
-
-    const query = { hashedRefreshToken, isValid: true };
-    if (sessionId) {
-      query.sessionId = sessionId;
-    }
-
-    const session = await Session.findOne(query);
+    const hashedToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
+    const session = await Session.findOne({ refreshTokenHash: hashedToken });
 
     if (!session) {
-      console.warn(`[Refresh] Potential session mismatch or poisoned cookie for session: ${sessionId}`);
-      return res.status(401).json({ message: "Session mismatch or expired" });
+      return res.status(401).json({ code: "INVALID_SESSION" });
     }
+
+    if (session.usedAt) {
+      // Replay attack detected!
+      await Session.deleteMany({ userId: session.userId });
+      
+      // Emit security alert via Socket.IO
+      import("../socket/socket.js").then(({ getIO }) => {
+        const io = getIO();
+        if (io) {
+          io.to(session.userId.toString()).emit("security:alert", {
+            type: "replay_attack_detected",
+            message: "Suspicious login detected. All sessions have been terminated."
+          });
+        }
+      }).catch(err => console.error("Error importing socket for replay alert:", err));
+
+      return res.status(401).json({ code: "REPLAY_ATTACK" });
+    }
+
+    // Mark as used to detect future replay attempts
+    session.usedAt = new Date();
+    await session.save();
 
     const user = await User.findById(session.userId).select("-password");
     if (!user) {
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({ code: "INVALID_SESSION", message: "User not found" });
     }
 
-    session.isValid = false;
+    // Generate new tokens for rotation
+    const newRefreshToken = crypto.randomBytes(32).toString("hex");
+    const newHashedToken = crypto.createHash("sha256").update(newRefreshToken).digest("hex");
+
+    session.refreshTokenHash = newHashedToken;
+    session.usedAt = null;
+    session.lastActive = new Date();
     await session.save();
 
-    const tokens = await generateToken(user._id, req, res);
+    const newAccessToken = jwt.sign(
+      { userId: user._id, sessionId: session._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
 
-    return res.status(200).json({
-      authToken: tokens.accessToken,
-      sessionId: tokens.sessionId,
-      message: "Token refreshed",
+    const isProxySecure = req.header("x-forwarded-proto") === "https" || req.secure;
+    const isProduction = process.env.NODE_ENV === "production" || isProxySecure;
+
+    res.cookie("jwt", newAccessToken, {
+      maxAge: 15 * 60 * 1000,
+      httpOnly: true,
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction,
     });
+
+    res.cookie("refresh_jwt", newRefreshToken, {
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction,
+      path: "/api/auth/refresh",
+    });
+
+    return res.status(200).json({ success: true, message: "Token refreshed" });
   } catch (error) {
     console.error("[refreshAccessToken] Error:", error.message);
-    return res.status(401).json({ message: "Token refresh failed" });
+    return res.status(401).json({ code: "INVALID_SESSION" });
   }
 };

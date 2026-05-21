@@ -162,7 +162,7 @@ export const useChatStore = create((set, get) => ({
 
     set({ isLoadingMoreParams: true });
     try {
-      const cursor = messages[0].createdAt;
+      const cursor = messages[0]._id;
       const res = await axiosInstance.get(`/message/${userId}?cursor=${cursor}`);
       const decrypted = await decryptMessagesList(res.data);
       

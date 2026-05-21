@@ -32,11 +32,13 @@ import { GamerSettings } from "../themes/gamerTheme";
 import { CyberpunkSettings } from "../themes/darkCyberpunkTheme";
 import { LightSettings } from "../themes/lightTheme";
 import { PastelSettings } from "../themes/pastelTheme";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import AnimalEasterEggs, {
   FlyingBirdTrigger,
 } from "../components/common/welcome/AnimalEasterEggs";
 import SecurityExplanation from "../components/settings/SecurityExplanation";
+import ActiveSessionsManager from "../components/settings/ActiveSessionsManager";
+import SecurityLogViewer from "../components/settings/SecurityLogViewer";
 import { SecurityRecoveryManager } from "../components/auth/SecurityRecovery";
 
 const STORAGE_KEYS = {
@@ -161,7 +163,28 @@ const SettingsPage = () => {
     [],
   );
 
-  const [activeSection, setActiveSection] = useState("profile");
+  const location = useLocation();
+  const currentPath = location.pathname.split("/").pop();
+  
+  const [activeSectionState, setActiveSectionState] = useState("profile");
+
+  const validSections = ["profile", "sound", "notifications", "appearance", "animations", "orbit", "security", "account"];
+  
+  const activeSection = validSections.includes(currentPath) ? currentPath : activeSectionState;
+
+  useEffect(() => {
+    if (location.pathname === "/settings" || location.pathname === "/settings/") {
+      navigate("/settings/profile", { replace: true });
+    } else if (validSections.includes(currentPath)) {
+      setActiveSectionState(currentPath);
+    }
+  }, [location.pathname, currentPath, navigate]);
+
+  const setActiveSection = (section) => {
+    setActiveSectionState(section);
+    navigate(`/settings/${section}`);
+  };
+
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => { const check = () => setIsMobile(window.innerWidth < 768); window.addEventListener("resize", check); return () => window.removeEventListener("resize", check); }, []);
@@ -1373,6 +1396,9 @@ const SettingsPage = () => {
                       {/* Security Key / Recovery Phrase Panel */}
                       <SecurityRecoveryManager mode="linked-devices" />
 
+                      {/* Security Log Viewer */}
+                      <SecurityLogViewer />
+
                       {/* Animated Security Explanation */}
                       <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 backdrop-blur-md overflow-hidden">
                         <SecurityExplanation isDark={!isPastel} />
@@ -1396,6 +1422,10 @@ const SettingsPage = () => {
                           <LogOut className="size-4" /> Log Out
                         </button>
                       </div>
+
+                      {/* Active Sessions Manager */}
+                      <ActiveSessionsManager />
+                      
                       <div className="rounded-2xl border border-red-500/20 bg-red-500/5 backdrop-blur-md p-5 flex flex-col gap-3">
                         <div>
                           <div className="text-sm font-bold text-red-400 flex items-center gap-2">

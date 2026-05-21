@@ -47,11 +47,11 @@ const createLimiter = (inputOptions) => {
   };
 };
 
-// 1. General API Limiter - 100 requests per minute
+// 1. General API Limiter - 300 requests per minute
 export const apiLimiter = createLimiter({
   name: "api",
   windowMs: 60 * 1000,
-  max: 100,
+  max: 300,
   standardHeaders,
   legacyHeaders,
   message: { success: false, error: { code: "RATE_LIMIT", message: "Too many requests. Please slow down." } },
@@ -107,11 +107,11 @@ export const botProtectionLimiter = createLimiter({
   message: { success: false, error: { code: "RATE_LIMIT", message: "Suspiciously high request rate detected." } },
 });
 
-// 6. Message Limiter - 60 messages per minute
+// 6. Message Limiter - 100 messages per minute
 export const messageLimiter = createLimiter({
   name: "message",
   windowMs: 60 * 1000,
-  max: 60,
+  max: 100,
   standardHeaders,
   legacyHeaders,
   message: { success: false, error: { code: "RATE_LIMIT", message: "Sending messages too fast. Please slow down." } },
