@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import OrbitLoader from "../common/OrbitLoader";
+
 import StarrySky from "../effects/StarrySky";
 import GalaxyDust from "../effects/GalaxyDust";
 
@@ -120,9 +120,7 @@ export default function AuthShell({ children, animationKey }) {
 
         {/* ─── RIGHT: animation panel — only shown on xl+ (≥1280px) ─── */}
         <div ref={rightRef} className="hidden xl:flex items-center justify-center relative overflow-hidden">
-          <div className="h-full w-full">
-            <OrbitLoader blendWithParent />
-          </div>
+          {/* OrbitLoader removed for performance. The background StarrySky/GalaxyDust effects are visible here. */}
         </div>
       </div>
     </div>
