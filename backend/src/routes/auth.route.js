@@ -21,6 +21,10 @@ import {
   constellationLogin,
   updatePublicKey,
   validateHandle,
+  acceptContact,
+  rejectContact,
+  blockContact,
+  unblockContact,
 } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 import { validateRequestBody } from "../middleware/validation.middleware.js";
@@ -52,6 +56,10 @@ router.delete("/delete-account", protectRoute, deleteAccount);
 router.get("/check", protectRoute, checkAuth);
 router.get("/contacts", protectRoute, getContacts);
 router.post("/contacts", protectRoute, addContact);
+router.post("/contacts/:contactId/accept", protectRoute, acceptContact);
+router.post("/contacts/:contactId/reject", protectRoute, rejectContact);
+router.post("/contacts/:contactId/block", protectRoute, blockContact);
+router.post("/contacts/:contactId/unblock", protectRoute, unblockContact);
 router.delete("/contacts/:contactId", protectRoute, removeContact);
 router.put("/contacts/:contactId", protectRoute, renameContact);
 

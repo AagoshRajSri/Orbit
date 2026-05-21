@@ -21,6 +21,26 @@ const userSchema = new mongoose.Schema(
         index: true,
       },
     ],
+    contactRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        index: true,
+      },
+    ],
+    sentRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    blockedContacts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        index: true,
+      },
+    ],
     contactAliases: {
       type: Map,
       of: String,

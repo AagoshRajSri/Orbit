@@ -52,6 +52,13 @@ export const getUsersForSidebar = async (req, res) => {
         { username: { $regex: sanitizedSearch, $options: "i" } },
         { email: { $regex: sanitizedSearch, $options: "i" } },
       ];
+    } else {
+      // Only return users who have an actual conversation with the logged-in user
+      const chatPartnerIds = await Message.distinct("senderId", { receiverId: loggedInUserId });
+      const chatPartnerIds2 = await Message.distinct("receiverId", { senderId: loggedInUserId });
+      const allChatPartners = [...new Set([...chatPartnerIds, ...chatPartnerIds2].map(id => id.toString()))];
+      
+      query._id = { $in: allChatPartners, $ne: loggedInUserId };
     }
 
     if (cursor) {

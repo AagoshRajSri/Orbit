@@ -13,8 +13,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SpotifyPage = lazy(() => import("./pages/SpotifyPage"));
 const TetherApproval = lazy(() => import("./pages/TetherApproval"));
-const StarWeaveLoginPage = lazy(() => import("./starweave/pages/StarWeaveLoginPage"));
-const StarWeaveSignupPage = lazy(() => import("./starweave/pages/StarWeaveSignupPage"));
+
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 
 import FaceLock from "./components/auth/FaceLock";
@@ -40,7 +39,7 @@ import { useSpotifyStore } from "./store/useSpotifyStore";
 import { getSocket, disconnectSocket, updateSocketToken } from "./lib/socket";
 import ChatLoader from "./components/chat/ChatLoader";
 import OrbitLoader from "./components/common/OrbitLoader";
-import PostAuthLoader from "./components/auth/PostAuthLoader";
+
 import AuthShell from "./components/auth/AuthShell";
 import { NotificationContainer } from "./components/common/NotificationContainer";
 import MobileSidebarDrawer from "./components/layout/MobileSidebarDrawer";
@@ -210,7 +209,7 @@ const AppContent = () => {
     "/login/constellation", "/signup/constellation",
     "/login/facelock", "/signup/facelock",
     "/login/ambient", "/signup/ambient",
-    "/login/starweave", "/signup/starweave"
+    "/login/cloud-tether", "/signup/cloud-tether"
   ].some(path => location.pathname === path || location.pathname === path + "/");
 
   const isAdminRoute = location.pathname.startsWith("/admin");
@@ -227,8 +226,7 @@ const AppContent = () => {
   const isFullscreenTheme = isAmoled || isGamer || isDark || isCyber || isLight || isPastel;
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
-  const showPostAuthLoader = useAuthStore((state) => state.showPostAuthLoader);
-  const finishPostAuthLoader = useAuthStore((state) => state.finishPostAuthLoader);
+
   const setOnlineUsers = useAuthStore((state) => state.setOnlineUsers);
   const socketToken = useAuthStore((state) => state.socketToken);
 
@@ -245,10 +243,7 @@ const AppContent = () => {
   const nexusMessages = useNexusStore((state) => state.nexusMessages);
   const markNexusSeen = useNexusStore((state) => state.markNexusSeen);
   const selectedNexusId = useNexusStore((state) => state.selectedNexusId);
-  const postAuthLoaderStartedAtRef = useRef(null);
-  const postAuthDataReadyRef = useRef(false);
-  const postAuthAnimationReadyRef = useRef(false);
-  const postAuthFinishTimerRef = useRef(null);
+
   const markSeenTimeoutRef = useRef(null);
   const markNexusSeenTimeoutRef = useRef(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -284,26 +279,6 @@ const AppContent = () => {
   // Initialize and apply global device performance classes
   useDevicePerformance();
 
-  const requestFinishPostAuthLoader = useCallback(() => {
-    if (!postAuthDataReadyRef.current || !postAuthAnimationReadyRef.current)
-      return;
-    // Changed from 300ms to 3500ms to allow the cinematic animation to fully resolve after login/signup
-    const MIN_VISIBLE_MS = 3500;
-    const startedAt = postAuthLoaderStartedAtRef.current ?? Date.now();
-    const elapsed = Date.now() - startedAt;
-    const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
-    if (postAuthFinishTimerRef.current) {
-      clearTimeout(postAuthFinishTimerRef.current);
-    }
-    postAuthFinishTimerRef.current = setTimeout(() => {
-      finishPostAuthLoader();
-      postAuthLoaderStartedAtRef.current = null;
-      postAuthDataReadyRef.current = false;
-      postAuthAnimationReadyRef.current = false;
-      postAuthFinishTimerRef.current = null;
-    }, remaining);
-  }, [finishPostAuthLoader]);
-
   const [hydrated, setHydrated] = useState(false);
   
   useEffect(() => {
@@ -318,23 +293,16 @@ const AppContent = () => {
     checkHydration();
   }, []);
 
-  const hasCheckedAuthRef = useRef(false);
+  const hasAttemptedAuthRef = useRef(false);
 
   useEffect(() => {
-    // Only perform the initial security check ONCE per application load.
-    if (hydrated && !hasCheckedAuthRef.current) {
-      // If the post-auth loader is active, it means the user JUST logged in.
-      // We already have their fresh data, so we DO NOT need to check auth again.
-      // We just mark it as checked and skip the API call.
-      if (showPostAuthLoader) {
-        hasCheckedAuthRef.current = true;
-        return;
-      }
-      
-      hasCheckedAuthRef.current = true;
+    if (!hydrated) return;
+
+    if (!hasAttemptedAuthRef.current) {
       checkAuth();
+      hasAttemptedAuthRef.current = true;
     }
-  }, [hydrated, showPostAuthLoader, checkAuth]);
+  }, [hydrated, checkAuth]);
 
   useEffect(() => {
     if (isOnline && authUser) {
@@ -342,13 +310,25 @@ const AppContent = () => {
     }
   }, [isOnline, authUser]);
 
-  /*
   useEffect(() => {
-    if (authUser && !authUser.isEmailVerified && !isAuthPage) {
-      navigate("/verify-email", { replace: true });
-    }
-  }, [authUser, isAuthPage, navigate]);
-  */
+    if (!authUser) return;
+    let isCancelled = false;
+
+    const loadAppData = async () => {
+      try {
+        await Promise.all([
+          getUsers(),
+          getNexuses()
+        ]);
+      } catch (error) {
+        console.error("Error preloading app data:", error);
+      }
+    };
+
+    loadAppData();
+
+    return () => { isCancelled = true; };
+  }, [authUser, getUsers, getNexuses]);
 
   // Ref-based buffers and locks to prevent race conditions
   const messageBufferRef = useRef([]);
@@ -527,6 +507,14 @@ const AppContent = () => {
       messageDeleted: ({ messageId }) => {
         useChatStore.getState().deleteMessage(messageId);
       },
+      contactRequestReceived: (data) => {
+        useChatStore.getState().getUsers();
+        try { toast.success(`New contact request from ${data.from.username}`); } catch (e) {}
+      },
+      contactRequestAccepted: (data) => {
+        useChatStore.getState().getUsers();
+        try { toast.success(`${data.user.username} accepted your request!`); } catch (e) {}
+      },
       nexusMessageUpdated: (data) => {
         const { nexusId, messageId, updates } = data;
         useNexusStore.getState().updateNexusMessage(nexusId, messageId, updates);
@@ -607,34 +595,8 @@ const AppContent = () => {
   }, [authUser, syncConversationData]);
 
   useEffect(() => {
-    if (!authUser && window.__orbitMusicEngine__) {
-      window.__orbitMusicEngine__.stop();
-    }
+    if (!authUser) return;
   }, [authUser]);
-
-  useEffect(() => {
-    if (!authUser || !showPostAuthLoader) return;
-
-    postAuthLoaderStartedAtRef.current = Date.now();
-    postAuthDataReadyRef.current = false;
-    postAuthAnimationReadyRef.current = false;
-    let cancelled = false;
-
-    Promise.allSettled([getUsers(), getNexuses()]).finally(() => {
-      if (!cancelled) {
-        postAuthDataReadyRef.current = true;
-        requestFinishPostAuthLoader();
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      if (postAuthFinishTimerRef.current) {
-        clearTimeout(postAuthFinishTimerRef.current);
-        postAuthFinishTimerRef.current = null;
-      }
-    };
-  }, [authUser, showPostAuthLoader, getUsers, getNexuses, requestFinishPostAuthLoader]);
 
   const spotifyLinked = useSpotifyStore((state) => state.spotifyLinked);
   const startPolling = useSpotifyStore((state) => state.startPolling);
@@ -733,7 +695,7 @@ const AppContent = () => {
       <ThemePortal />
       {!isOnline && <ConnectionStatus />}
       <NotificationContainer />
-      {(!hydrated || (isCheckingAuth && !!authUser && location.pathname !== "/")) && !isAuthPage && !isAdminRoute ? (
+      {!hydrated || (isCheckingAuth && !!authUser && location.pathname !== "/") && !isAuthPage && !isAdminRoute ? (
         <OrbitLoader />
       ) : (
         <>
@@ -753,7 +715,7 @@ const AppContent = () => {
           >
             {isAuthPage ? (
               <Suspense fallback={<OrbitLoader />}>
-                {authUser && !isCheckingAuth && !location.pathname.includes('starweave') ? (
+                {authUser && !isCheckingAuth ? (
                   <Navigate to="/" />
                 ) : location.pathname === "/login/constellation" ? (
                   <OrbitAuth initialMode="login" />
@@ -765,10 +727,6 @@ const AppContent = () => {
                 ) : location.pathname === "/login/ambient" ||
                   location.pathname === "/signup/ambient" ? (
                   <AmbientPresence />
-                ) : location.pathname === "/login/starweave" ? (
-                  <StarWeaveLoginPage />
-                ) : location.pathname === "/signup/starweave" ? (
-                  <StarWeaveSignupPage />
                 ) : (
                   <AuthShell animationKey={location.pathname}>
                     {location.pathname === "/verify-email" ? (
@@ -861,8 +819,7 @@ const AppContent = () => {
                     }
                   />
                   <Route path="/tether/approve" element={<TetherApproval />} />
-                  <Route path="/login/starweave"  element={<StarWeaveLoginPage />} />
-                  <Route path="/signup/starweave" element={<StarWeaveSignupPage />} />
+
                   <Route path="/verify-email" element={<VerifyEmailPage />} />
 
                   {/* Admin Routes */}
@@ -878,14 +835,6 @@ const AppContent = () => {
                   </Route>
                 </Routes>
               </Suspense>
-            )}
-            {showPostAuthLoader && (
-              <PostAuthLoader
-                onComplete={() => {
-                  postAuthAnimationReadyRef.current = true;
-                  requestFinishPostAuthLoader();
-                }}
-              />
             )}
             {isOrbitMode && (
               <div className="fixed inset-0 z-[9999]">

@@ -20,6 +20,9 @@ export const useChatStore = create((set, get) => ({
   hasMoreMessages: true,
   users: [],
   contactList: [],
+  contactRequests: [],
+  sentRequests: [],
+  blockedContacts: [],
   contactAliases: {},
   isUsersLoading: false,
   isMessagesLoading: false,
@@ -36,6 +39,9 @@ export const useChatStore = create((set, get) => ({
       // 1. Fetch contacts list and aliases from the database
       const contactsRes = await axiosInstance.get("/auth/contacts");
       const dbContacts = contactsRes.data.contacts || [];
+      const dbContactRequests = contactsRes.data.contactRequests || [];
+      const dbSentRequests = contactsRes.data.sentRequests || [];
+      const dbBlockedContacts = contactsRes.data.blockedContacts || [];
       const dbContactIds = contactsRes.data.contactIds || [];
       const dbAliases = contactsRes.data.aliases || {};
 
@@ -59,6 +65,9 @@ export const useChatStore = create((set, get) => ({
           return { ...u, unreadCount: u.unreadCount !== undefined ? u.unreadCount : (existing?.unreadCount || 0) };
         }),
         contactList: dbContactIds,
+        contactRequests: dbContactRequests,
+        sentRequests: dbSentRequests,
+        blockedContacts: dbBlockedContacts,
         contactAliases: dbAliases,
       }));
     } catch (error) {
@@ -587,30 +596,32 @@ export const useChatStore = create((set, get) => ({
 
       const res = await axiosInstance.post("/auth/contacts", payload);
       
-      const updatedContacts = res.data.contacts || [];
-      const updatedAliases = res.data.aliases || {};
-      const updatedIds = updatedContacts.map(c => c._id.toString());
+      await get().getUsers(); // Refresh all contact states
 
-      set((state) => {
-        const usersMap = new Map();
-        state.users.forEach(u => usersMap.set(u._id.toString(), u));
-        updatedContacts.forEach(u => {
-          if (!usersMap.has(u._id.toString())) {
-            usersMap.set(u._id.toString(), u);
-          }
-        });
-
-        return {
-          users: Array.from(usersMap.values()),
-          contactList: updatedIds,
-          contactAliases: updatedAliases,
-        };
-      });
-
-      toast.success("Contact added");
+      toast.success(res.data.status === "accepted" ? "Contact added" : "Contact request sent");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to add contact");
       throw error;
+    }
+  },
+
+  acceptContactRequest: async (userId) => {
+    try {
+      await axiosInstance.post(`/auth/contacts/${userId}/accept`);
+      await get().getUsers();
+      toast.success("Contact request accepted");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to accept contact request");
+    }
+  },
+
+  rejectContactRequest: async (userId) => {
+    try {
+      await axiosInstance.post(`/auth/contacts/${userId}/reject`);
+      await get().getUsers();
+      toast.success("Contact request rejected");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to reject contact request");
     }
   },
 
@@ -628,6 +639,26 @@ export const useChatStore = create((set, get) => ({
       toast.success("Contact removed");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to remove contact");
+    }
+  },
+
+  blockContact: async (userId) => {
+    try {
+      await axiosInstance.post(`/auth/contacts/${userId}/block`);
+      await get().getUsers();
+      toast.success("Contact blocked");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to block contact");
+    }
+  },
+
+  unblockContact: async (userId) => {
+    try {
+      await axiosInstance.post(`/auth/contacts/${userId}/unblock`);
+      await get().getUsers();
+      toast.success("Contact unblocked");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to unblock contact");
     }
   },
 

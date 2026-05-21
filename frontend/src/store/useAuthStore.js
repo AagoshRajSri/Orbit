@@ -12,7 +12,7 @@ export const useAuthStore = create(
       isLoggingIn: false,
       isUpdatingProfile: false,
       isCheckingAuth: true,
-      showPostAuthLoader: false,
+      
       onlineUsers: [],
       presenceMap: {}, // Key: userId string, Value: rich presence object
       sessionId: null,
@@ -230,7 +230,7 @@ export const useAuthStore = create(
         try {
           const res = await axiosInstance.post("/auth/signup", data);
           const { authToken, sessionId } = res.data.data;
-           set({ authUser: res.data.data, socketToken: authToken, showPostAuthLoader: true, sessionId });
+           set({ authUser: res.data.data, socketToken: authToken,  sessionId });
           get().refreshSocketToken();
           // Force-generate fresh E2EE keys for new account (after userId is set)
           setTimeout(() => get().initE2EE().catch(console.error), 0);
@@ -263,7 +263,7 @@ export const useAuthStore = create(
           set({ 
             authUser: res.data.data, 
             socketToken: authToken, 
-            showPostAuthLoader: true, 
+             
             sessionId 
           });
           get().refreshSocketToken();
@@ -312,7 +312,7 @@ export const useAuthStore = create(
           set({ 
             authUser: res.data.data, 
             socketToken: authToken, 
-            showPostAuthLoader: true, 
+             
             sessionId 
           });
           get().refreshSocketToken();
@@ -349,7 +349,7 @@ export const useAuthStore = create(
           set({ 
             authUser: res.data.data, 
             socketToken: authToken, 
-            showPostAuthLoader: true, 
+             
             sessionId 
           });
           get().refreshSocketToken();
@@ -430,7 +430,7 @@ export const useAuthStore = create(
           await axiosInstance.post("/auth/verify-email", { email, otp: code });
           set((state) => ({
             authUser: state.authUser ? { ...state.authUser, isEmailVerified: true } : null,
-            showPostAuthLoader: true,
+            
           }));
           get().refreshSocketToken();
           toast.success("Identity verified ✦");
@@ -506,7 +506,7 @@ export const useAuthStore = create(
         }
       },
 
-      finishPostAuthLoader: () => set({ showPostAuthLoader: false }),
+      
       refreshSocketToken: async () => {
         try {
           const { reconnectSocket } = await import("../lib/socket");

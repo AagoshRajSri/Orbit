@@ -174,14 +174,14 @@ export const verifyAndNormalizeHandle = (rawHandle) => {
   }
 
   // 5. Standard Premium format checks on normalized standard letters
-  const standardUsernameRegex = /^[a-z0-9_]{3,20}$/;
-  const standardTagRegex = /^[a-zA-Z0-9]{3,6}$/;
+  const standardUsernameRegex = /^[a-z0-9_]{3,16}$/;
+  const standardTagRegex = /^[a-zA-Z0-9_]{3,24}$/;
 
   if (!standardUsernameRegex.test(dehomoUsername) || !standardTagRegex.test(dehomoTag)) {
     return {
       isValid: false,
       errorType: "VALIDATION_ERROR",
-      error: "Invalid handle format. Must be username#tag where username is 3-20 lowercase alphanumeric characters/underscores, and tag is 3-6 alphanumeric characters containing at least one letter."
+      error: "Username must be 3-16 chars. Tag must be 3-24 chars. Only alphanumerics and underscores allowed."
     };
   }
 
@@ -692,16 +692,25 @@ export const updateProfile = async (req, res) => {
 
 export const getContacts = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate(
-      "contacts",
-      "username normalizedHandle profilePic email",
-    );
+    const user = await User.findById(req.user._id)
+      .populate("contacts", "username normalizedHandle profilePic email")
+      .populate("contactRequests", "username normalizedHandle profilePic email")
+      .populate("sentRequests", "username normalizedHandle profilePic email")
+      .populate("blockedContacts", "username normalizedHandle profilePic email");
+      
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const contactIds = user.contacts.map((contact) => contact._id.toString());
     const aliases = Object.fromEntries(user.contactAliases || []);
 
-    res.status(200).json({ contacts: user.contacts, contactIds, aliases });
+    res.status(200).json({ 
+      contacts: user.contacts, 
+      contactRequests: user.contactRequests || [],
+      sentRequests: user.sentRequests || [],
+      blockedContacts: user.blockedContacts || [],
+      contactIds, 
+      aliases 
+    });
   } catch (error) {
     console.error("Error in getContacts:", error.message);
     res.status(500).json({ message: "Internal server error" });
@@ -740,29 +749,149 @@ export const addContact = async (req, res) => {
     if (!targetUser) return res.status(404).json({ message: "User not found" });
 
     const targetUserIdStr = targetUser._id.toString();
+    const userIdStr = userId.toString();
 
-    if (targetUserIdStr === userId.toString()) {
-      return res
-        .status(400)
-        .json({ message: "Cannot add yourself as a contact" });
+    if (targetUserIdStr === userIdStr) {
+      return res.status(400).json({ message: "Cannot add yourself as a contact" });
+    }
+
+    if (targetUser.blockedContacts?.includes(userIdStr)) {
+      return res.status(403).json({ message: "You cannot add this user" });
     }
 
     const user = await User.findById(userId);
-    if (!user.contacts.includes(targetUserIdStr)) {
+    
+    if (user.blockedContacts?.includes(targetUserIdStr)) {
+      return res.status(400).json({ message: "You have blocked this user" });
+    }
+    
+    // Check if already a contact
+    if (user.contacts.includes(targetUserIdStr)) {
+      return res.status(400).json({ message: "Already in your contacts" });
+    }
+    
+    // Check if request already sent
+    if (user.sentRequests?.includes(targetUserIdStr)) {
+      return res.status(400).json({ message: "Request already sent" });
+    }
+    
+    // If they already sent US a request, just accept it automatically
+    if (user.contactRequests?.includes(targetUserIdStr)) {
+      // Remove from requests
+      user.contactRequests = user.contactRequests.filter(id => id.toString() !== targetUserIdStr);
+      targetUser.sentRequests = targetUser.sentRequests?.filter(id => id.toString() !== userIdStr) || [];
+      
+      // Add to contacts
       user.contacts.push(targetUserIdStr);
+      targetUser.contacts.push(userIdStr);
+      
+      await targetUser.save();
       await user.save();
+      
+      // Notify both
+      import("../socket/socket.js").then(({ getIO }) => {
+        const io = getIO();
+        if (io) {
+          io.to(targetUserIdStr).emit("contactRequestAccepted", { userId: userIdStr, user: sanitizeForOrbit(user.toObject()) });
+          io.to(userIdStr).emit("contactRequestAccepted", { userId: targetUserIdStr, user: sanitizeForOrbit(targetUser.toObject()) });
+        }
+      }).catch(console.error);
+      
+      return res.status(200).json({ message: "Request accepted automatically", status: "accepted" });
     }
 
-    const updated = await User.findById(userId).populate(
-      "contacts",
-      "username normalizedHandle profilePic email",
-    );
-    res.status(200).json({
-      contacts: updated.contacts,
-      aliases: Object.fromEntries(updated.contactAliases || []),
-    });
+    // Otherwise, send a request
+    if (!user.sentRequests) user.sentRequests = [];
+    user.sentRequests.push(targetUserIdStr);
+    
+    if (!targetUser.contactRequests) targetUser.contactRequests = [];
+    targetUser.contactRequests.push(userIdStr);
+    
+    await user.save();
+    await targetUser.save();
+    
+    // Notify target user
+    import("../socket/socket.js").then(({ getIO }) => {
+      const io = getIO();
+      if (io) {
+        io.to(targetUserIdStr).emit("contactRequestReceived", { 
+          from: sanitizeForOrbit(user.toObject()) 
+        });
+      }
+    }).catch(console.error);
+
+    res.status(200).json({ message: "Contact request sent", status: "pending" });
   } catch (error) {
     console.error("Error in addContact:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const acceptContact = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { contactId } = req.params;
+    
+    const user = await User.findById(userId);
+    const targetUser = await User.findById(contactId);
+    
+    if (!targetUser) return res.status(404).json({ message: "User not found" });
+    
+    const targetUserIdStr = targetUser._id.toString();
+    const userIdStr = userId.toString();
+    
+    if (!user.contactRequests?.includes(targetUserIdStr)) {
+      return res.status(400).json({ message: "No pending request from this user" });
+    }
+    
+    // Remove from requests
+    user.contactRequests = user.contactRequests.filter(id => id.toString() !== targetUserIdStr);
+    targetUser.sentRequests = targetUser.sentRequests?.filter(id => id.toString() !== userIdStr) || [];
+    
+    // Add to contacts
+    if (!user.contacts.includes(targetUserIdStr)) user.contacts.push(targetUserIdStr);
+    if (!targetUser.contacts.includes(userIdStr)) targetUser.contacts.push(userIdStr);
+    
+    await user.save();
+    await targetUser.save();
+    
+    import("../socket/socket.js").then(({ getIO }) => {
+      const io = getIO();
+      if (io) {
+        io.to(targetUserIdStr).emit("contactRequestAccepted", { userId: userIdStr, user: sanitizeForOrbit(user.toObject()) });
+      }
+    }).catch(console.error);
+    
+    res.status(200).json({ message: "Contact request accepted", success: true });
+  } catch (error) {
+    console.error("Error in acceptContact:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const rejectContact = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { contactId } = req.params;
+    
+    const user = await User.findById(userId);
+    const targetUser = await User.findById(contactId);
+    
+    if (!targetUser) return res.status(404).json({ message: "User not found" });
+    
+    const targetUserIdStr = targetUser._id.toString();
+    const userIdStr = userId.toString();
+    
+    // Remove from requests
+    user.contactRequests = user.contactRequests?.filter(id => id.toString() !== targetUserIdStr) || [];
+    targetUser.sentRequests = targetUser.sentRequests?.filter(id => id.toString() !== userIdStr) || [];
+    
+    await user.save();
+    await targetUser.save();
+    
+    res.status(200).json({ message: "Contact request rejected", success: true });
+  } catch (error) {
+    console.error("Error in rejectContact:", error.message);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -793,6 +922,59 @@ export const removeContact = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in removeContact:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const blockContact = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { contactId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Ensure it's not already blocked
+    if (!user.blockedContacts) user.blockedContacts = [];
+    if (!user.blockedContacts.includes(contactId.toString())) {
+      user.blockedContacts.push(contactId.toString());
+    }
+
+    // Remove from contacts if present
+    user.contacts = user.contacts.filter((id) => id.toString() !== contactId.toString());
+    if (user.contactAliases?.has(contactId.toString())) {
+      user.contactAliases.delete(contactId.toString());
+    }
+    
+    // Remove pending requests if any
+    user.contactRequests = user.contactRequests?.filter(id => id.toString() !== contactId.toString()) || [];
+    user.sentRequests = user.sentRequests?.filter(id => id.toString() !== contactId.toString()) || [];
+
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Contact blocked" });
+  } catch (error) {
+    console.error("Error in blockContact:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const unblockContact = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { contactId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.blockedContacts) {
+      user.blockedContacts = user.blockedContacts.filter((id) => id.toString() !== contactId.toString());
+    }
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Contact unblocked" });
+  } catch (error) {
+    console.error("Error in unblockContact:", error.message);
     res.status(500).json({ message: "Internal server error" });
   }
 };
