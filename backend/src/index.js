@@ -37,6 +37,15 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// ── Global Error Handling (Anti-Crash) ────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught Exception:', err);
+  // Optional: send to error tracking service here.
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 // ── Port availability probe ───────────────────────────────────────────────────
 const isPortAvailable = (port) =>
   new Promise((resolve) => {

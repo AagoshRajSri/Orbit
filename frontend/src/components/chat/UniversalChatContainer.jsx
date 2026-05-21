@@ -306,6 +306,13 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   // FIX 1: useVirtualizer scrollContainerRef for programmatic scroll
   const scrollContainerRef = useRef(null);
 
+  const filtered = useMemo(() => {
+    const arr = isNexus ? nexusMessages : messages;
+    if (!searchQ) return arr;
+    const q = searchQ.toLowerCase();
+    return arr.filter(m => m.text?.toLowerCase().includes(q));
+  }, [isNexus, nexusMessages, messages, searchQ]);
+
   const rowVirtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement: () => scrollContainerRef.current,
@@ -479,12 +486,7 @@ export default function UniversalChatContainer({ type, onMobileBack, onOpenSideb
   const rawMsgs = isNexus ? nexusMessages : messages;
   const isLoading = isNexus ? isNexusLoading : isChatLoading;
 
-  const filtered = useMemo(() => {
-    const arr = rawMsgs || [];
-    if (!searchQ) return arr;
-    const q = searchQ.toLowerCase();
-    return arr.filter(m => (m.text || "").toLowerCase().includes(q));
-  }, [rawMsgs, searchQ]);
+
 
   const isHistoryLocked = useMemo(() => {
     return filtered.some(m => m.text === "🔒 [Encrypted history locked]");
