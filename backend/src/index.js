@@ -208,12 +208,10 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/spotify", spotifyRoutes);
 app.use("/api/spotify/session", spotifySessionRoutes);
-app.use("/api/admin", adminRoutes);
 app.use("/api/config", configRoutes);
 app.use("/api/prekeys", prekeyRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/keyvault", keyVaultRoutes);
-app.use("/api/contacts", contactsRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Orbit API is running", version: "1.0.0", security: "zero-trust-v3" });
 });

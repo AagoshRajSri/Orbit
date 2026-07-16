@@ -595,8 +595,8 @@ export const MsgBubble = memo(function MsgBubble({msg,t,onReact,isMe,isNew=false
             <span style={{fontSize:9.5, color:t.txt2, fontFamily:t.font, letterSpacing:".04em", fontWeight: 700}}>{msg.time}</span>
             {isMe && (
               <MessageStatusRing 
-                status={msg.status||'delivered'} 
-                colorOverride={msg.status==='read' ? t.acc : (msg.status==='failed' ? '#FF5252' : undefined)} 
+                status={msg.seenAt ? 'read' : (msg.status||'delivered')} 
+                colorOverride={msg.seenAt || msg.status==='read' ? t.acc : (msg.status==='failed' ? '#FF5252' : undefined)} 
               />
             )}
           </div>

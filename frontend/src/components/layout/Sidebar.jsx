@@ -575,7 +575,7 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
                     {(() => {
                       const peerPresence = presenceMap[user._id?.toString()];
                       const peerState = peerPresence?.state || (onlineSet.has(user._id?.toString()) ? "online" : "offline");
-                      const statusText = peerPresence?.customText || user.lastMessage;
+                      const statusText = peerPresence?.customText || (peerState === "offline" ? peerPresence?.lastSeen : null) || user.lastMessage;
                       
                       if (user.isTyping) {
                         return (

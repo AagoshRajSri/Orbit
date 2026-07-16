@@ -22,6 +22,7 @@ export const searchContacts = async (req, res, next) => {
     const myBlocked = currentUser.blockedContacts || [];
 
     const queryStr = q.toLowerCase();
+    const escapedQueryStr = queryStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const users = await User.find({
       $and: [
         { _id: { $ne: currentUserId } },
@@ -29,7 +30,7 @@ export const searchContacts = async (req, res, next) => {
         { blockedContacts: { $ne: currentUserId } },
         {
           $or: [
-            { username: { $regex: `^${queryStr}`, $options: "i" } },
+            { username: { $regex: `^${escapedQueryStr}`, $options: "i" } },
             { orbitId: queryStr },
           ],
         },

@@ -573,8 +573,8 @@ function MsgBubble({msg,t,onReact,isMe}) {
           {isMe && (
             <div style={{ position: "absolute", bottom: 6, right: 10, zIndex: 1 }}>
               <MessageStatusRing 
-                status={msg.status||'delivered'} 
-                colorOverride={msg.status==='read' ? t.acc : (msg.status==='failed' ? '#FF5252' : undefined)} 
+                status={msg.seenAt ? 'read' : (msg.status||'delivered')} 
+                colorOverride={msg.seenAt || msg.status==='read' ? t.acc : (msg.status==='failed' ? '#FF5252' : undefined)} 
               />
             </div>
           )}

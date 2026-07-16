@@ -291,7 +291,7 @@ export const OrbitMsgBubble = memo(function OrbitMsgBubble({
             {/* Delivery Status (Sent only) */}
             {mine && isGroupEnd && (
               <MessageStatusRing
-                status={msg.status || "delivered"}
+                status={msg.seenAt ? "read" : msg.status || "delivered"}
               />
             )}
           </div>

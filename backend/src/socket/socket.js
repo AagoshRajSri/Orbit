@@ -709,9 +709,11 @@ export const emitToNexus = async (nexusId, event, data) => {
   if (!ioInstance) return;
   const nexusIdStr = nexusId.toString();
   
-  // For critical events like "newNexusMessage", use reliable per-user delivery
-  // This ensures everyone gets it even if they're in a polling cycle or offline
-  if (event === "newNexusMessage") {
+  // 1. Broadcast IMMEDIATELY to all online/active members in the room
+  ioInstance.to(nexusIdStr).emit(event, data);
+
+  // 2. Queue for offline members in Redis if it's a critical message and Redis is available
+  if (event === "newNexusMessage" && isRedisAvailable) {
     try {
       let members = null;
       const cached = nexusMembersCache.get(nexusIdStr);
@@ -729,18 +731,26 @@ export const emitToNexus = async (nexusId, event, data) => {
         }
       }
 
-      if (members) {
-        const promises = members.map(memberId => emitToUser(memberId, event, data));
-        await Promise.allSettled(promises);
-        return;
+      if (members && members.length > 0) {
+        // Query global online users
+        const onlineUsers = new Set(await redisClient.smembers("global:online_users"));
+        
+        // Find members who are offline
+        const offlineMembers = members.filter(memberId => !onlineUsers.has(memberId));
+        
+        if (offlineMembers.length > 0) {
+          const pipeline = redisClient.pipeline();
+          for (const memberId of offlineMembers) {
+            pipeline.lpush(`offline_queue:${memberId}`, JSON.stringify({ ...data, _event: event }));
+          }
+          await pipeline.exec();
+          console.debug(`[Socket] Nexus message queued via pipeline for ${offlineMembers.length} offline users`);
+        }
       }
     } catch (e) {
-      console.error("[Socket] Reliable Nexus emit failed:", e.message);
+      console.error("[Socket] Reliable Nexus offline queue emit failed:", e.message);
     }
   }
-
-  // Fallback for non-critical events (typing indicators, etc)
-  ioInstance.to(nexusIdStr).emit(event, data);
 };
 
 export const getIO = () => {

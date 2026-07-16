@@ -12,10 +12,11 @@ export const getUsers = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const query = {};
-    if (search) {
+    if (search && typeof search === "string" && search.trim()) {
+      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { username: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
+        { username: { $regex: sanitizedSearch, $options: "i" } },
+        { email: { $regex: sanitizedSearch, $options: "i" } },
       ];
     }
 
