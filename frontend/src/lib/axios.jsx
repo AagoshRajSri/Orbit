@@ -103,21 +103,26 @@ axiosInstance.interceptors.response.use(
 
         _isRefreshing = false;
         
-        const newAuthToken = refreshRes.data.authToken;
-        const newSessionId = refreshRes.data.sessionId;
+        const newAuthToken = refreshRes.data.authToken || refreshRes.data.data?.authToken;
+        const newSessionId = refreshRes.data.sessionId || refreshRes.data.data?.sessionId;
 
-        useAuthStore.setState({
-          socketToken: newAuthToken,
-          sessionId: newSessionId || authState.sessionId
-        });
-        
-        if (typeof authState.refreshSocketToken === "function") {
-          authState.refreshSocketToken().catch(console.error);
+        if (newAuthToken) {
+          useAuthStore.setState({
+            socketToken: newAuthToken,
+            sessionId: newSessionId || authState.sessionId
+          });
+          
+          axiosInstance.defaults.headers.common["X-Auth-Token"] = newAuthToken;
+          originalRequest.headers["X-Auth-Token"] = newAuthToken;
+          
+          if (typeof authState.refreshSocketToken === "function") {
+            authState.refreshSocketToken().catch(console.error);
+          }
+
+          import("./socket.js").then(({ updateSocketToken }) => {
+            if (updateSocketToken) updateSocketToken(newAuthToken);
+          }).catch(console.error);
         }
-
-        import("./socket.js").then(({ updateSocketToken }) => {
-          if (updateSocketToken) updateSocketToken(newAuthToken);
-        }).catch(console.error);
 
         processQueue(null);
         return axiosInstance(originalRequest);

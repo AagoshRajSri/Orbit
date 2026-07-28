@@ -8,7 +8,23 @@ import { e2eeService } from "../lib/E2EEService";
 
 const decryptMessagesList = async (messages) => {
   if (!messages || !messages.length) return messages;
-  return Promise.all(messages.map((m) => e2eeService.decryptIncoming(m)));
+  const authUser = useAuthStore.getState().authUser;
+  const myId = authUser?._id?.toString() || authUser?.id?.toString();
+
+  return Promise.all(
+    messages.map((m) =>
+      e2eeService.decryptIncoming(m).catch((err) => {
+        console.warn("[E2EE] Message decrypt warning:", err.message);
+        const senderId = (m.senderId?._id || m.senderId?.id || m.senderId)?.toString();
+        const isMe = myId && senderId === myId;
+        return {
+          ...m,
+          text: m.text || "🔒 [Decryption unavailable]",
+          isMe,
+        };
+      })
+    )
+  );
 };
 
 const prefetchCache = new Set();

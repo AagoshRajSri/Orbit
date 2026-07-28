@@ -60,18 +60,26 @@ export const generateToken = async (userId, req, res) => {
 };
 
 export const refreshAccessToken = async (req, res) => {
-  const refreshToken = req.cookies?.refresh_jwt;
-
-  if (!refreshToken) {
-    return res.status(401).json({ code: "INVALID_SESSION", message: "No refresh token provided" });
-  }
+  let refreshToken = req.cookies?.refresh_jwt;
+  let session = null;
 
   try {
-    const hashedToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
-    const session = await Session.findOne({ refreshTokenHash: hashedToken });
+    if (refreshToken) {
+      const hashedToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
+      session = await Session.findOne({ refreshTokenHash: hashedToken });
+    }
 
-    if (!session) {
-      return res.status(401).json({ code: "INVALID_SESSION" });
+    // Fallback for mobile devices / cross-origin setups where httpOnly cookies are stripped by browser
+    if (!session && req.body?.sessionId) {
+      const reqSessionId = req.body.sessionId;
+      const existingSession = await Session.findOne({ _id: reqSessionId, isValid: true });
+      if (existingSession && (Date.now() - existingSession.lastActive.getTime() < 7 * 24 * 60 * 60 * 1000)) {
+        session = existingSession;
+      }
+    }
+
+    if (!session || !session.isValid) {
+      return res.status(401).json({ code: "INVALID_SESSION", message: "Session invalid or expired" });
     }
 
     if (session.usedAt) {
@@ -97,8 +105,8 @@ export const refreshAccessToken = async (req, res) => {
     await session.save();
 
     const user = await User.findById(session.userId).select("-password");
-    if (!user) {
-      return res.status(401).json({ code: "INVALID_SESSION", message: "User not found" });
+    if (!user || user.isLocked) {
+      return res.status(401).json({ code: "INVALID_SESSION", message: "User not found or locked" });
     }
 
     // Generate new tokens for rotation
@@ -134,7 +142,16 @@ export const refreshAccessToken = async (req, res) => {
       path: "/api/auth/refresh",
     });
 
-    return res.status(200).json({ success: true, message: "Token refreshed" });
+    return res.status(200).json({
+      success: true,
+      message: "Token refreshed",
+      authToken: newAccessToken,
+      sessionId: session._id.toString(),
+      data: {
+        authToken: newAccessToken,
+        sessionId: session._id.toString()
+      }
+    });
   } catch (error) {
     console.error("[refreshAccessToken] Error:", error.message);
     return res.status(401).json({ code: "INVALID_SESSION" });
