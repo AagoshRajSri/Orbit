@@ -34,7 +34,9 @@ jobs:
         run: cd backend && npm audit --audit-level=high
 
       - name: NPM Audit (Frontend)
-        run: cd frontend && npx audit-ci@^7.1.0 --high --allowlist GHSA-qwww-vcr4-c8h2
+        # GHSA-qwww-vcr4-c8h2: react-router RSC CSRF — not applicable (Orbit is a pure SPA, no SSR/RSC)
+        # GHSA-mh99-v99m-4gvg: brace-expansion DoS — dev-only, lives in eslint dep chain, never reaches production
+        run: cd frontend && npx audit-ci@^7.1.0 --high --allowlist GHSA-qwww-vcr4-c8h2 GHSA-mh99-v99m-4gvg
 
       - name: Run ESLint Security Rules
         run: |
