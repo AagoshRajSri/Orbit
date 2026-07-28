@@ -52,7 +52,7 @@ export const generateToken = async (userId, req, res) => {
       path: "/api/auth/refresh",
     });
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, sessionId: session._id.toString() };
   } catch (error) {
     console.error("Error generating dual tokens:", error.message);
     throw error;
