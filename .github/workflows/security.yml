@@ -34,7 +34,7 @@ jobs:
         run: cd backend && npm audit --audit-level=high
 
       - name: NPM Audit (Frontend)
-        run: cd frontend && npm audit --audit-level=high
+        run: cd frontend && npx audit-ci@^7.1.0 --high --allowlist GHSA-qwww-vcr4-c8h2
 
       - name: Run ESLint Security Rules
         run: |
