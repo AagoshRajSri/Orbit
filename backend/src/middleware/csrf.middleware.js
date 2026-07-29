@@ -20,6 +20,7 @@ const CSRF_EXEMPT_PATHS = new Set([
   "/api/auth/refresh",      // Token rotation — requires its own cookie-based auth
   "/api/auth/login",        // Credentials-based, not session-riding
   "/api/auth/signup",
+  "/api/auth/logout",       // Session destruction is safe to exempt
   "/api/auth/constellation/login",
   "/api/auth/constellation/signup",
   "/api/auth/constellation/challenge",

@@ -86,7 +86,13 @@ axiosInstance.interceptors.response.use(
         return new Promise((resolve, reject) => {
           _refreshQueue.push({ resolve, reject });
         })
-          .then(() => axiosInstance(originalRequest))
+          .then((token) => {
+            if (token) {
+              originalRequest.headers["X-Auth-Token"] = token;
+            }
+            originalRequest._retry = true;
+            return axiosInstance(originalRequest);
+          })
           .catch((err) => Promise.reject(err));
       }
 
@@ -124,7 +130,7 @@ axiosInstance.interceptors.response.use(
           }).catch(console.error);
         }
 
-        processQueue(null);
+        processQueue(null, newAuthToken);
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         _isRefreshing = false;
