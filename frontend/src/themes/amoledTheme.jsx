@@ -1040,9 +1040,9 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                 <div className="oa-orbitron" style={{ fontSize:10, color:'#9B59B6', letterSpacing:2, marginBottom:6 }}>⚙ ATELIER</div>
                 <div className="oa-raj" style={{ fontSize:12, color:'rgba(198,160,110,0.55)' }}>Fine-tune your workspace aesthetic and behavior.</div>
               </div>
-              <div className="oa-card oa-bracket" style={{ padding:'16px 20px', opacity:0.6 }}>
-                <div className="oa-orbitron" style={{ fontSize:10, color:'#C6A06E', letterSpacing:2, marginBottom:6 }}>🎮 ORBIT GAMES 🔒</div>
-                <div className="oa-raj" style={{ fontSize:12, color:'rgba(198,160,110,0.45)' }}>Coming soon — a new way to play together.</div>
+              <div className="oa-card oa-bracket" style={{ padding:'16px 20px', cursor:'pointer' }} onClick={() => navigate('/feed')}>
+                <div className="oa-orbitron" style={{ fontSize:10, color:'#FF4500', letterSpacing:2, marginBottom:6 }}>🔥 COMMUNITY FEED [LIVE]</div>
+                <div className="oa-raj" style={{ fontSize:12, color:'rgba(198,160,110,0.85)' }}>Explore discussions, nested threads, and realtime votes.</div>
               </div>
             </div>
           </div>
@@ -1170,12 +1170,13 @@ export default function OrbitApp({ children, title = "SECURE TERMINAL" }) {
                   <div style={{ ...fade(.2), height: "100%", display: "flex" }}>
                     <SpotifyCard />
                   </div>
-                  <div style={{ ...fade(.3), height: "100%", display: "flex", opacity: 0.7 }}>
+                  <div style={{ ...fade(.3), height: "100%", display: "flex", cursor: "pointer" }} onClick={() => navigate('/feed')}>
                     <ActionCard
-                      icon="🎮"
-                      title="ORBIT GAMES 🔒"
-                      subtitle="Coming soon. A new way to play together across the elite grid."
-                      color="#4ECDC4"
+                      icon="🔥"
+                      title="COMMUNITY FEED"
+                      subtitle="Explore discussions, nested threads, and realtime votes."
+                      color="#FF4500"
+                      badge="LIVE"
                     />
                   </div>
                   <div style={{ ...fade(.4), height: "100%", display: "flex" }}>

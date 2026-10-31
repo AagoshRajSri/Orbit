@@ -5,7 +5,7 @@ import toast from "../lib/toast";
 import { 
   Globe, Settings, User, LogOut, Music, Bell, Shield, Layers, 
   Coffee, Play, SkipForward, SkipBack, MessageCircle, Maximize2, 
-  Compass, CheckCircle2, ArrowLeft, Gamepad2, Lock,
+  Compass, CheckCircle2, ArrowLeft, Gamepad2, Lock, Flame,
   Target, Users, SlidersHorizontal, UserCircle, ChevronRight,
   Edit, Calendar, BadgeCheck, Palette, Waves, Pin
 } from "lucide-react";
@@ -509,6 +509,9 @@ const TopNav = memo(({ handleLogout, hiddenNexuses, onReveal }) => {
       </div>
 
       <div style={{ display: 'flex', gap: '12px' }}>
+        <button onClick={() => navigate('/feed')} className="luxury-button btn-pill-pink" style={{ padding: '8px 16px' }}>
+          <Flame size={14} style={{ color: '#E05338' }} /> Feed
+        </button>
         <button onClick={() => navigate('/settings')} className="luxury-button btn-pill-pink" style={{ padding: '8px 16px' }}>
           <Settings size={14} /> Settings
         </button>
@@ -1573,20 +1576,20 @@ export default function LightTheme({ children }) {
                  )}
                </div>
 
-               {/* ORBIT GAMES */}
-               <div className="luxury-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', cursor: 'not-allowed', opacity: 0.6 }}>
+               {/* COMMUNITY FEED */}
+               <div className="luxury-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', cursor: 'pointer', border: '1px solid rgba(224, 83, 56, 0.25)' }} onClick={() => navigate('/feed')}>
                   <div className="luxury-card-overlay" />
-                  <div className="rich-icon-wrapper" style={{ width: 48, height: 48, borderRadius: 16, background: 'linear-gradient(135deg, #DEBBBC, #A36B6D)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', marginBottom: 'auto', position: 'relative' }}>
-                     <Gamepad2 size={20} />
+                  <div className="rich-icon-wrapper" style={{ width: 48, height: 48, borderRadius: 16, background: 'linear-gradient(135deg, #FF6B4A, #E05338)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', marginBottom: 'auto', position: 'relative', boxShadow: '0 4px 12px rgba(224, 83, 56, 0.3)' }}>
+                     <Flame size={22} />
                   </div>
                   <div style={{ position: 'relative' }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, marginTop: 16, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      ORBIT GAMES <Lock size={14} />
+                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, marginTop: 16, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 8, color: '#1A1816' }}>
+                      COMMUNITY FEED <span style={{ fontSize: 10, background: '#E05338', color: '#fff', padding: '2px 6px', borderRadius: 10, fontWeight: 800 }}>LIVE</span>
                     </h3>
-                    <p style={{ fontSize: 12, color: LUXURY_COLORS.textSecondary }}>Coming soon. A new way to play together in our curated spaces.</p>
+                    <p style={{ fontSize: 12, color: LUXURY_COLORS.textSecondary }}>Explore discussions, nested comment threads, and cast realtime votes.</p>
                   </div>
-                  <div style={{ position: 'absolute', right: 20, bottom: 20, color: '#E0E0E0' }}>
-                    <Lock size={16} />
+                  <div style={{ position: 'absolute', right: 20, bottom: 20, color: '#E05338' }}>
+                    <Maximize2 size={16} />
                   </div>
                </div>
 

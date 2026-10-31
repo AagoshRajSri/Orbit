@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell, Zap, MessageCircle, Settings, Music,
   Disc, Pause, Play, SkipBack, SkipForward, Volume2, Gamepad2, Lock,
-  Hash, ChevronRight, Plus, UserPlus
+  Hash, ChevronRight, Plus, UserPlus, Flame
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSpotifyStore } from "../../store/useSpotifyStore";
@@ -560,11 +560,11 @@ const NoChatSelected = () => {
   const infoBoxes = useMemo(() => [
     {
       id: 2,
-      icon: Gamepad2,
-      title: "Orbit Games",
-      description: "Coming soon. A new way to play together.",
-      locked: true,
-      colors: { gamer: "#ff2bd6", pastel: "rgba(255,142,200,0.2)", default: "#a855f7" }
+      icon: Flame,
+      title: "Community Feed",
+      description: "Explore discussions, nested threads, and realtime votes.",
+      action: () => navigate("/feed"),
+      colors: { gamer: "#ff4500", pastel: "rgba(255,107,74,0.2)", default: "#e05338" }
     },
     {
       id: 3,

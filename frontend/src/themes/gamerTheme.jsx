@@ -1309,20 +1309,21 @@ function AudioCard() {
    CHAT CARD
 ───────────────────────────────────────────── */
 function ChatCard() {
+  const navigate = useNavigate();
   return (
-    <NeonCard color="#ff2d78" style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6, height: "100%", position: "relative" }}>
+    <NeonCard color="#ff4500" onClick={() => navigate('/feed')} style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6, height: "100%", position: "relative", cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 7, border: "1.5px solid rgba(255,45,120,0.6)", background: "rgba(255,45,120,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: "0 0 8px rgba(255,45,120,0.3)", marginBottom: 8 }}>🎮</div>
-          <div style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: "0.15em", color: "#ff2d78", textTransform: "uppercase", textShadow: "0 0 8px #ff2d78", fontFamily: "'Orbitron',monospace", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-            ORBIT GAMES <span style={{ fontSize: 10 }}>🔒</span>
+          <div style={{ width: 30, height: 30, borderRadius: 7, border: "1.5px solid rgba(255,69,0,0.6)", background: "rgba(255,69,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: "0 0 8px rgba(255,69,0,0.3)", marginBottom: 8 }}>🔥</div>
+          <div style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: "0.15em", color: "#ff4500", textTransform: "uppercase", textShadow: "0 0 8px #ff4500", fontFamily: "'Orbitron',monospace", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+            COMMUNITY FEED <span style={{ fontSize: 9, background: "#ff4500", color: "#000", padding: "1px 4px", borderRadius: 4 }}>LIVE</span>
           </div>
-          <div style={{ fontSize: 9.5, color: "rgba(200,140,170,0.7)", lineHeight: 1.5 }}>Coming soon. A new way to play together.</div>
+          <div style={{ fontSize: 9.5, color: "rgba(255,180,140,0.8)", lineHeight: 1.5 }}>Explore discussions, nested threads, and realtime votes.</div>
         </div>
         <div style={{ flexShrink: 0 }}><HoloGlobe /></div>
       </div>
-      <div style={{ position: "absolute", bottom: 26, left: 14, right: 14, height: "0.5px", background: "rgba(255,45,120,0.2)" }} />
-      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: "rgba(255,45,120,0.4)", fontWeight: "bold" }}>⚡</div>
+      <div style={{ position: "absolute", bottom: 26, left: 14, right: 14, height: "0.5px", background: "rgba(255,69,0,0.2)" }} />
+      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: "rgba(255,69,0,0.8)", fontWeight: "bold" }}>→</div>
     </NeonCard>
   );
 }

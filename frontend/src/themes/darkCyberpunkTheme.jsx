@@ -1023,21 +1023,22 @@ const AudioCard = memo(() => {
    CHAT CARD
  */
 function ChatCard() {
+  const navigate = useNavigate();
   return (
-    <NeonCard color={M} style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6, height: "100%", position: "relative" }}>
+    <NeonCard color={M} onClick={() => navigate('/feed')} style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6, height: "100%", position: "relative", cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 7, border: `1.5px solid ${M}88`, background: `${M}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: `0 0 8px ${M}44`, marginBottom: 8 }}></div>
+          <div style={{ width: 30, height: 30, borderRadius: 7, border: `1.5px solid ${M}88`, background: `${M}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: `0 0 8px ${M}44`, marginBottom: 8 }}>🔥</div>
           <div style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: "0.15em", color: M, textTransform: "uppercase", textShadow: `0 0 8px ${M}`, fontFamily: "'Orbitron',monospace", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-            ORBIT GAMES <span style={{ fontSize: 10 }}></span>
+            COMMUNITY FEED <span style={{ fontSize: 9, background: M, color: '#000', padding: '1px 4px', borderRadius: 4 }}>LIVE</span>
           </div>
-          <div style={{ fontSize: 9.5, color: "rgba(200,140,200,0.65)", lineHeight: 1.5 }}>Coming soon. A new way to play together.</div>
+          <div style={{ fontSize: 9.5, color: "rgba(200,140,200,0.85)", lineHeight: 1.5 }}>Explore discussions, nested threads, and realtime votes.</div>
         </div>
         <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <ConstellationGrid />
         </div>
       </div>
-      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: `${M}55`, fontWeight: "bold" }}></div>
+      <div style={{ position: "absolute", bottom: 9, right: 12, fontSize: 10, color: `${M}`, fontWeight: "bold" }}>→</div>
     </NeonCard>
   );
 }
@@ -1353,9 +1354,9 @@ export default function OrbitNeonCyberpunk({ children }) {
                   <div style={{ fontSize: 10, fontWeight: 900, color: P, fontFamily: "'Orbitron',monospace", letterSpacing: '0.12em', marginBottom: 6 }}> CUSTOMIZE</div>
                   <div style={{ fontSize: 12, color: 'rgba(200,150,220,0.6)' }}>Configure themes, sounds, and orbit behavior.</div>
                 </NeonCard>
-                <NeonCard color={M} style={{ padding: '16px 14px' }}>
-                  <div style={{ fontSize: 10, fontWeight: 900, color: M, fontFamily: "'Orbitron',monospace", letterSpacing: '0.12em', marginBottom: 6 }}> ORBIT GAMES</div>
-                  <div style={{ fontSize: 12, color: 'rgba(200,140,180,0.6)' }}>Coming soon  a new way to play together.</div>
+                <NeonCard color={M} style={{ padding: '16px 14px', cursor: 'pointer' }} onClick={() => navigate('/feed')}>
+                  <div style={{ fontSize: 10, fontWeight: 900, color: M, fontFamily: "'Orbitron',monospace", letterSpacing: '0.12em', marginBottom: 6 }}>🔥 COMMUNITY FEED [LIVE]</div>
+                  <div style={{ fontSize: 12, color: 'rgba(200,140,180,0.8)' }}>Explore discussions, nested threads, and realtime votes.</div>
                 </NeonCard>
               </div>
             </div>

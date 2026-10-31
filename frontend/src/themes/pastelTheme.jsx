@@ -1379,13 +1379,14 @@ const SpotifyCard = memo(function SpotifyCard({ cardRef }) {
 
 const CARDS = [
   {
-    bg: "linear-gradient(135deg, rgba(252,210,235,0.85) 0%, rgba(255,225,245,0.78) 100%)",
-    border: "1px solid rgba(235,175,215,0.55)",
-    iconBg: "rgba(220,140,195,0.2)", accent: "#c060a8",
-    icon: "🎮", title: "ORBIT GAMES 🔒",
-    desc: "Coming soon. A new way to play together in our dreamscape.",
-    bottomIcon: "🔒", line: "rgba(215,165,200,0.38)",
-    badge: "soon", badgeColor: "linear-gradient(90deg,#e070b8,#c090e8)",
+    bg: "linear-gradient(135deg, rgba(255,200,180,0.85) 0%, rgba(255,220,200,0.78) 100%)",
+    border: "1px solid rgba(255,160,130,0.55)",
+    iconBg: "rgba(255,107,74,0.2)", accent: "#e05338",
+    icon: "🔥", title: "COMMUNITY FEED",
+    desc: "Explore discussions, nested threads, and realtime votes.",
+    bottomIcon: "→", line: "rgba(255,160,130,0.38)",
+    badge: "live", badgeColor: "linear-gradient(90deg,#ff6b4a,#e05338)",
+    path: "/feed",
   },
   {
     bg: "linear-gradient(135deg, rgba(255,225,198,0.85) 0%, rgba(255,238,215,0.78) 100%)",
@@ -1408,8 +1409,9 @@ const CARDS = [
 ];
 
 const FeatureCard = memo(function FeatureCard({ cfg, cardRef }) {
+  const navigate = useNavigate();
   return (
-    <div onClick={() => window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))} ref={cardRef} style={{
+    <div onClick={() => cfg.path ? navigate(cfg.path) : window.dispatchEvent(new CustomEvent("toggle-orbit-mode"))} ref={cardRef} style={{
       background: cfg.bg, border: cfg.border, borderRadius: 20,
       backdropFilter: "blur(12px)", padding: "16px 18px",
       display: "flex", flexDirection: "column", gap: 8,

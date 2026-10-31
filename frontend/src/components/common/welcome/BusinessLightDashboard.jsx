@@ -340,12 +340,12 @@ export function BusinessLightDashboard() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:24, position:"relative", zIndex:2, flex:1 }}>
             <ElegantSpotifyCard onClick={() => navigate("/spotify")} />
             <ElegantActionCard 
-              title="Orbit Games" 
-              subtitle="Coming soon. A new way to play together." 
-              icon="🎮" 
-              iconBg="linear-gradient(135deg, #1a1512, #3d2b2b)" 
-              badge="🔒" 
-              onClick={() => {}}
+              title="Community Feed" 
+              subtitle="Explore discussions, nested threads, and realtime votes." 
+              icon="🔥" 
+              iconBg="linear-gradient(135deg, #FF6B4A, #E05338)" 
+              badge="LIVE" 
+              onClick={() => navigate("/feed")}
             />
             <ElegantActionCard 
               title="Priority Alerts" 

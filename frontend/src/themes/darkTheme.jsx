@@ -1901,16 +1901,16 @@ export default function OrbitVampire({ children }) {
                                     navigate={navigate}
                                 />
 
-                                {/* Orbit Games */}
-                                <div className="card" ref={el => addCardRef(el, 1)} style={{ cursor: 'not-allowed', opacity: 0.8 }}>
-                                    <div className="card-icon icon-chat">🎮</div>
+                                {/* Community Feed */}
+                                <div className="card" ref={el => addCardRef(el, 1)} onClick={() => navigate("/feed")} style={{ cursor: 'pointer' }}>
+                                    <div className="card-icon" style={{ background: 'rgba(255, 69, 0, 0.15)', color: '#ff4500' }}>🔥</div>
                                     <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        Orbit Games <span style={{ fontSize: 12 }}>🔒</span>
+                                        Community Feed <span style={{ fontSize: 9, background: '#ff4500', color: '#fff', padding: '1px 5px', borderRadius: 4 }}>LIVE</span>
                                     </div>
                                     <div className="card-desc">
-                                        Coming soon. A new way to play together in the dark beyond.
+                                        Explore discussions, nested threads, and cast realtime votes.
                                     </div>
-                                    <span className="card-arrow">🔒</span>
+                                    <span className="card-arrow">↗</span>
                                 </div>
 
                                 {/* Get Notifications */}
