@@ -293,8 +293,8 @@ const io = new Server(httpServer, {
   // Enable standard Socket.IO transports (polling -> websocket upgrade)
   transports: ["polling", "websocket"],
   allowUpgrades: true,
-  pingInterval: 5000, 
-  pingTimeout: 2500,
+  pingInterval: 25000, 
+  pingTimeout: 20000,
 });
 
 async function initApp() {

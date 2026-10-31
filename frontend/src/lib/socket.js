@@ -36,11 +36,11 @@ export const getSocket = () => {
   const authState = useAuthStore.getState();
   const token = authState.socketToken;
 
-  console.log("[Socket.IO] Initializing client v2.0 - Polling Forced");
+  console.log("[Socket.IO] Initializing client v2.0");
 
   const socketConfig = {
     withCredentials: true,
-    transports: ["websocket", "polling"],
+    transports: ["polling", "websocket"],
     upgrade: true,
     reconnectionAttempts: 20,
     reconnectionDelay: 2000,
@@ -89,12 +89,32 @@ export const getSocket = () => {
       return;
     }
 
-    if (error.message.includes("Authentication") || error.message.includes("Token expired") || error.message.includes("rejected")) {
-      console.log("[Socket.IO] Auth error detected. Attempting to trigger token refresh...");
+    if (error.message.includes("Token expired")) {
+      console.log("[Socket.IO] Auth token expired. Triggering token refresh...");
+      try {
+        const auth = useAuthStore.getState();
+        const refreshRes = await axiosInstance.post(
+          "/auth/refresh",
+          { sessionId: auth.sessionId },
+          { withCredentials: true }
+        );
+        const newToken = refreshRes.data?.authToken || refreshRes.data?.data?.authToken;
+        if (newToken) {
+          useAuthStore.setState({ socketToken: newToken });
+          updateSocketToken(newToken);
+        }
+      } catch (err) {
+        console.warn("[Socket.IO] Token refresh failed:", err?.message);
+      }
+      return;
+    }
+
+    if (error.message.includes("Authentication") || error.message.includes("rejected")) {
+      console.log("[Socket.IO] Auth error detected. Attempting to verify auth state...");
       try {
         await axiosInstance.get("/auth/check");
       } catch (err) {
-        console.warn("[Socket.IO] Token refresh triggered by socket failed.");
+        console.warn("[Socket.IO] Auth check failed:", err?.message);
       }
     }
   });
