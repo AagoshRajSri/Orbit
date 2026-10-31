@@ -217,7 +217,7 @@ export const warmPostCache = async (postId, post) => {
  *
  * @returns {object} { resultVote, newScore, upvotes, downvotes, delta }
  */
-export const castVote = async ({ userId, targetType, targetId, intent }) => {
+export const castVote = async ({ userId, targetType, targetId, intent, postId }) => {
   if (!["post", "comment"].includes(targetType)) {
     throw new Error("targetType must be 'post' or 'comment'");
   }
@@ -227,15 +227,15 @@ export const castVote = async ({ userId, targetType, targetId, intent }) => {
 
   // ── Redis path (fast) ───────────────────────────────────────────────────────
   if (isRedisAvailable) {
-    return await _castVoteRedis({ userId, targetType, targetId, intent });
+    return await _castVoteRedis({ userId, targetType, targetId, intent, postId });
   }
 
   // ── MongoDB fallback (slower but safe for dev) ─────────────────────────────
-  return await _castVoteMongo({ userId, targetType, targetId, intent });
+  return await _castVoteMongo({ userId, targetType, targetId, intent, postId });
 };
 
 // ── Redis Implementation ──────────────────────────────────────────────────────
-const _castVoteRedis = async ({ userId, targetType, targetId, intent }) => {
+const _castVoteRedis = async ({ userId, targetType, targetId, intent, postId }) => {
   const ledgerKey = keys.userLedger(targetType, targetId);
   const statsKey = keys.stats(targetType, targetId);
   const dirtyKey = keys.feedDirty;
@@ -310,14 +310,14 @@ const _castVoteRedis = async ({ userId, targetType, targetId, intent }) => {
       upvotes: newUpvotes,
       downvotes: newDownvotes,
       delta,
-    });
+    }, postId || (targetType === "post" ? targetId : null));
   });
 
   return { resultVote, newScore, upvotes: newUpvotes, downvotes: newDownvotes, delta };
 };
 
 // ── MongoDB Fallback Implementation ──────────────────────────────────────────
-const _castVoteMongo = async ({ userId, targetType, targetId, intent }) => {
+const _castVoteMongo = async ({ userId, targetType, targetId, intent, postId }) => {
   const Model = targetType === "post" ? Post : Comment;
   const doc = await Model.findById(targetId).lean();
   if (!doc) throw new Error(`${targetType} not found`);
@@ -362,20 +362,33 @@ const _castVoteMongo = async ({ userId, targetType, targetId, intent }) => {
 };
 
 // ── Socket Broadcast ──────────────────────────────────────────────────────────
-const _broadcastVoteUpdate = (targetType, targetId, metrics) => {
+const _broadcastVoteUpdate = (targetType, targetId, metrics, postId) => {
   try {
     const io = getIO();
     if (!io) return;
 
-    // For comments, the room is still the parent post's thread room.
-    // The postId is expected to be embedded in the targetId for comments
-    // (see feed-events.js for room management).
-    const room = `thread:${targetId}`;
-    io.to(room).emit("feed:metrics_sync", {
-      targetType,
-      targetId,
-      ...metrics,
-    });
+    if (targetType === "post") {
+      const payload = {
+        postId: targetId,
+        targetType: "post",
+        targetId,
+        score: metrics.newScore,
+        upvotes: metrics.upvotes,
+        downvotes: metrics.downvotes,
+        netDelta: metrics.delta,
+      };
+      io.to(`thread:${targetId}`).emit("feed:metrics_sync", payload);
+      io.to("feed:global").emit("feed:metrics_sync", payload);
+    } else if (targetType === "comment" && postId) {
+      io.to(`thread:${postId}`).emit("feed:comment_metrics_sync", {
+        commentId: targetId,
+        postId,
+        score: metrics.newScore,
+        upvotes: metrics.upvotes,
+        downvotes: metrics.downvotes,
+        netDelta: metrics.delta,
+      });
+    }
   } catch (_) {
     // Socket may not be initialized during tests — silently skip
   }

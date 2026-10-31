@@ -28,6 +28,7 @@ import {
   Loader2,
   Send,
   AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 import { useThreadStore, flattenCommentTree } from "../../store/useThreadStore";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -252,6 +253,7 @@ const VirtualizedThread = ({ postId, onBack }) => {
   const clearThread = useThreadStore((s) => s.clearThread);
   const toggleCollapse = useThreadStore((s) => s.toggleCollapse);
   const voteComment = useThreadStore((s) => s.voteComment);
+  const votePost = useThreadStore((s) => s.votePost);
   const submitComment = useThreadStore((s) => s.submitComment);
   const getCollapsedReplyCount = useThreadStore((s) => s.getCollapsedReplyCount);
   const { useFeedStore: _feedStore } = { useFeedStore: null }; // avoid circular
@@ -348,19 +350,133 @@ const VirtualizedThread = ({ postId, onBack }) => {
         </div>
       </div>
 
-      {/* ── Post Body ───────────────────────────────────────────────────────── */}
+      {/* ── Post Header & Body with Voting ───────────────────────────────────── */}
       {post && (
-        <div className="px-4 py-3 border-b border-base-content/8 flex-shrink-0">
-          {post.body && (
-            <p className="text-sm text-base-content/70 leading-relaxed line-clamp-4 mb-2">
-              {post.body}
-            </p>
-          )}
-          <div className="flex items-center gap-4 text-xs text-base-content/40">
-            <span className="font-bold text-base-content/60">
-              {post.score > 0 ? "+" : ""}{post.score} points
-            </span>
-            <span>{post.authorId?.username}</span>
+        <div className="px-4 py-3.5 border-b border-base-content/8 flex-shrink-0 bg-base-100/50">
+          <div className="flex gap-3">
+            {/* Post Vote Column */}
+            <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-0.5">
+              <button
+                onClick={() => votePost(postId, 1)}
+                className={`p-1 rounded-lg transition-all duration-150 ${
+                  post.userVote === 1
+                    ? "text-orange-400 bg-orange-500/15 scale-110"
+                    : "text-base-content/30 hover:text-orange-400 hover:bg-orange-500/10"
+                }`}
+                aria-label="Upvote Post"
+              >
+                <ChevronUp className="size-4" strokeWidth={2.5} />
+              </button>
+
+              <span
+                className={`text-xs font-bold tabular-nums leading-none ${
+                  post.score > 0
+                    ? "text-orange-400"
+                    : post.score < 0
+                    ? "text-blue-400"
+                    : "text-base-content/40"
+                }`}
+              >
+                {post.score > 0 ? "+" : ""}
+                {post.score ?? 0}
+              </span>
+
+              <button
+                onClick={() => votePost(postId, -1)}
+                className={`p-1 rounded-lg transition-all duration-150 ${
+                  post.userVote === -1
+                    ? "text-blue-400 bg-blue-500/15 scale-110"
+                    : "text-base-content/30 hover:text-blue-400 hover:bg-blue-500/10"
+                }`}
+                aria-label="Downvote Post"
+              >
+                <ChevronDown className="size-4" strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Post Details */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-1">
+                {post.authorId?.profilePic ? (
+                  <img
+                    src={post.authorId.profilePic}
+                    alt={post.authorId.username}
+                    className="size-4 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="size-4 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-[8px] font-bold text-primary">
+                      {(post.authorId?.username || "?").charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <span className="text-xs font-medium text-base-content/70">
+                  {post.authorId?.username || "Anonymous"}
+                </span>
+                <span className="text-xs text-base-content/25">·</span>
+                <span className="text-xs text-base-content/35">
+                  {post.createdAt
+                    ? new Date(post.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : ""}
+                </span>
+                {post.tags?.length > 0 && (
+                  <>
+                    <span className="text-xs text-base-content/25">·</span>
+                    {post.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary/70 font-medium"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              <h2 className="text-base font-bold text-base-content leading-snug mb-1.5">
+                {post.title}
+              </h2>
+
+              {post.body && (
+                <p className="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap mb-2">
+                  {post.body}
+                </p>
+              )}
+
+              {post.linkUrl && (
+                <a
+                  href={post.linkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-primary/80 hover:text-primary transition-colors mb-2"
+                >
+                  <ExternalLink className="size-3" />
+                  <span className="truncate max-w-[280px]">{post.linkUrl}</span>
+                </a>
+              )}
+
+              {/* Count Bar */}
+              <div className="flex items-center gap-4 text-xs text-base-content/40 pt-1.5 border-t border-base-content/5 mt-2">
+                <span className="flex items-center gap-1 font-medium text-base-content/70">
+                  <MessageSquare className="size-3.5" />
+                  <span>{post.commentCount ?? 0} comment{post.commentCount !== 1 ? "s" : ""}</span>
+                </span>
+                <span className="flex items-center gap-1 text-orange-400/80">
+                  <ChevronUp className="size-3.5" />
+                  <span>{post.upvotes ?? 0} upvotes</span>
+                </span>
+                <span className="flex items-center gap-1 text-blue-400/80">
+                  <ChevronDown className="size-3.5" />
+                  <span>{post.downvotes ?? 0} downvotes</span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}

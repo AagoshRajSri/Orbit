@@ -35,7 +35,17 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.jsx";
 import toast from "../lib/toast";
 
-// ── Tree Flattening Utility ───────────────────────────────────────────────────
+/**
+ * sortCommentsTree — Sorts comments by materialized path ASC, then createdAt ASC.
+ * Guarantees that children always appear immediately nested beneath their parent.
+ */
+export const sortCommentsTree = (comments) => {
+  return [...comments].sort((a, b) => {
+    const pathCompare = (a.path || "").localeCompare(b.path || "");
+    if (pathCompare !== 0) return pathCompare;
+    return new Date(a.createdAt) - new Date(b.createdAt);
+  });
+};
 
 /**
  * flattenCommentTree — Converts server comment array to a virtualization-ready 1D array.
@@ -133,7 +143,7 @@ export const useThreadStore = create((set, get) => ({
       ]);
 
       const post = postRes.data.data;
-      const rawComments = commentsRes.data.data.comments;
+      const rawComments = sortCommentsTree(commentsRes.data.data.comments || []);
 
       const flat = flattenCommentTree(rawComments, new Set());
 
@@ -255,14 +265,27 @@ export const useThreadStore = create((set, get) => ({
     newOptimisticIds.add(optimisticId);
 
     set((state) => {
-      const newRaw = [...state.rawComments, optimisticComment];
+      const newRaw = sortCommentsTree([...state.rawComments, optimisticComment]);
       return {
         rawComments: newRaw,
         flatComments: flattenCommentTree(newRaw, state.collapsedSet),
         isSendingComment: true,
         _optimisticIds: newOptimisticIds,
+        post: state.post
+          ? { ...state.post, commentCount: (state.post.commentCount || 0) + 1 }
+          : state.post,
       };
     });
+
+    // Notify feed store immediately for count bar sync
+    try {
+      import("./useFeedStore").then(({ useFeedStore }) => {
+        useFeedStore.getState().handleCommentCountUpdate({
+          postId,
+          commentCount: (get().post?.commentCount || 0),
+        });
+      });
+    } catch (_) {}
 
     try {
       const res = await axiosInstance.post(`/feed/posts/${postId}/comments`, {
@@ -273,9 +296,10 @@ export const useThreadStore = create((set, get) => ({
 
       // Replace optimistic comment with server-confirmed one
       set((state) => {
-        const newRaw = state.rawComments.map((c) =>
+        const replaced = state.rawComments.map((c) =>
           c._id === optimisticId ? serverComment : c
         );
+        const newRaw = sortCommentsTree(replaced);
         const updatedOptimisticIds = new Set(state._optimisticIds);
         updatedOptimisticIds.delete(optimisticId);
         return {
@@ -283,9 +307,6 @@ export const useThreadStore = create((set, get) => ({
           flatComments: flattenCommentTree(newRaw, state.collapsedSet),
           isSendingComment: false,
           _optimisticIds: updatedOptimisticIds,
-          post: state.post
-            ? { ...state.post, commentCount: (state.post.commentCount || 0) + 1 }
-            : state.post,
         };
       });
 
@@ -301,6 +322,9 @@ export const useThreadStore = create((set, get) => ({
           flatComments: flattenCommentTree(newRaw, state.collapsedSet),
           isSendingComment: false,
           _optimisticIds: updatedOptimisticIds,
+          post: state.post
+            ? { ...state.post, commentCount: Math.max((state.post.commentCount || 1) - 1, 0) }
+            : state.post,
         };
       });
 
@@ -308,6 +332,81 @@ export const useThreadStore = create((set, get) => ({
       toast.error(msg);
       console.error("[ThreadStore] submitComment error:", err);
       return null;
+    }
+  },
+
+  /**
+   * votePost — Upvote or downvote the post directly from inside the thread view.
+   * Updates post state optimistically and synchronizes with useFeedStore.
+   */
+  votePost: async (postId, intent) => {
+    const { post } = get();
+    if (!post) return;
+
+    const prev = post.userVote || 0;
+    const effective = prev === intent ? 0 : intent;
+    let upvotes = post.upvotes || 0;
+    let downvotes = post.downvotes || 0;
+    if (prev === 1) upvotes -= 1;
+    if (prev === -1) downvotes -= 1;
+    if (effective === 1) upvotes += 1;
+    if (effective === -1) downvotes += 1;
+
+    const snapshot = {
+      score: post.score,
+      upvotes: post.upvotes,
+      downvotes: post.downvotes,
+      userVote: post.userVote,
+    };
+
+    const optimistic = {
+      score: upvotes - downvotes,
+      upvotes: Math.max(upvotes, 0),
+      downvotes: Math.max(downvotes, 0),
+      userVote: effective,
+    };
+
+    set((state) => ({
+      post: state.post ? { ...state.post, ...optimistic } : null,
+    }));
+
+    try {
+      import("./useFeedStore").then(({ useFeedStore }) => {
+        useFeedStore.getState().syncPostVote(postId, optimistic);
+      });
+    } catch (_) {}
+
+    try {
+      const res = await axiosInstance.post(`/feed/posts/${postId}/vote`, {
+        intent: intent.toString(),
+      });
+      const { resultVote, newScore, upvotes: sv, downvotes: sd } = res.data.data;
+      const confirmed = {
+        score: newScore,
+        upvotes: sv,
+        downvotes: sd,
+        userVote: resultVote,
+      };
+
+      set((state) => ({
+        post: state.post ? { ...state.post, ...confirmed } : null,
+      }));
+
+      try {
+        import("./useFeedStore").then(({ useFeedStore }) => {
+          useFeedStore.getState().syncPostVote(postId, confirmed);
+        });
+      } catch (_) {}
+    } catch (err) {
+      set((state) => ({
+        post: state.post ? { ...state.post, ...snapshot } : null,
+      }));
+      try {
+        import("./useFeedStore").then(({ useFeedStore }) => {
+          useFeedStore.getState().syncPostVote(postId, snapshot);
+        });
+      } catch (_) {}
+      toast.error("Vote failed");
     }
   },
 
@@ -319,7 +418,7 @@ export const useThreadStore = create((set, get) => ({
    * @param {number} intent — 1 | -1
    */
   voteComment: async (commentId, intent) => {
-    const { rawComments, collapsedSet } = get();
+    const { rawComments, collapsedSet, postId } = get();
     const idx = rawComments.findIndex(
       (c) => (c._id?.toString() || c._id) === commentId
     );
@@ -366,6 +465,7 @@ export const useThreadStore = create((set, get) => ({
     try {
       const res = await axiosInstance.post(`/feed/comments/${commentId}/vote`, {
         intent: intent.toString(),
+        postId,
       });
       const { resultVote, newScore, upvotes: sv, downvotes: sd } = res.data.data;
 
@@ -404,6 +504,49 @@ export const useThreadStore = create((set, get) => ({
   // ── Socket Event Handlers ─────────────────────────────────────────────────
 
   /**
+   * handleMetricsSync — Real-time update for post score/votes while inside the thread.
+   */
+  handleMetricsSync: (data) => {
+    const currentPostId = get().postId;
+    const targetPostId = data?.postId || (data?.targetType === "post" ? data?.targetId : null);
+    if (!currentPostId || currentPostId !== targetPostId) return;
+    set((state) => ({
+      post: state.post
+        ? {
+            ...state.post,
+            score: data.score !== undefined ? data.score : state.post.score,
+            upvotes: data.upvotes !== undefined ? data.upvotes : state.post.upvotes,
+            downvotes: data.downvotes !== undefined ? data.downvotes : state.post.downvotes,
+          }
+        : null,
+    }));
+  },
+
+  /**
+   * handleCommentMetricsSync — Real-time update for comment scores within this thread.
+   */
+  handleCommentMetricsSync: (data) => {
+    const { commentId, score, upvotes, downvotes } = data;
+    if (!commentId) return;
+    set((state) => {
+      const newRaw = state.rawComments.map((c) => {
+        const id = c._id?.toString() || c._id;
+        if (id !== commentId) return c;
+        return {
+          ...c,
+          score: score !== undefined ? score : c.score,
+          upvotes: upvotes !== undefined ? upvotes : c.upvotes,
+          downvotes: downvotes !== undefined ? downvotes : c.downvotes,
+        };
+      });
+      return {
+        rawComments: newRaw,
+        flatComments: flattenCommentTree(newRaw, state.collapsedSet),
+      };
+    });
+  },
+
+  /**
    * handleNewComment — Inserts a socket-pushed comment into the thread.
    * Deduplicates against optimistic comments using _optimisticIds tracking.
    */
@@ -420,15 +563,7 @@ export const useThreadStore = create((set, get) => ({
     if (existing) return;
 
     set((state) => {
-      const newRaw = [...state.rawComments, comment];
-      // Re-sort by path to maintain tree order (socket-pushed comments may arrive
-      // out of order if multiple users comment simultaneously)
-      newRaw.sort((a, b) => {
-        const pathCompare = (a.path || "").localeCompare(b.path || "");
-        if (pathCompare !== 0) return pathCompare;
-        return new Date(a.createdAt) - new Date(b.createdAt);
-      });
-
+      const newRaw = sortCommentsTree([...state.rawComments, comment]);
       return {
         rawComments: newRaw,
         flatComments: flattenCommentTree(newRaw, state.collapsedSet),

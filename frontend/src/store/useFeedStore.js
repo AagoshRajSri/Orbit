@@ -254,13 +254,53 @@ export const useFeedStore = create((set, get) => ({
    * @param {object} data — { postId, score, upvotes, downvotes, netDelta }
    */
   handleMetricsSync: (data) => {
-    const { postId, score, upvotes, downvotes } = data;
+    const targetPostId = data?.postId || (data?.targetType === "post" ? data?.targetId : null);
+    if (!targetPostId) return;
+    const { score, upvotes, downvotes } = data;
+    set((state) => ({
+      posts: state.posts.map((p) => {
+        const id = p._id?.toString() || p._id;
+        if (id !== targetPostId) return p;
+        // Only update metric fields — preserve userVote (user's own vote state)
+        return {
+          ...p,
+          score: score !== undefined ? score : p.score,
+          upvotes: upvotes !== undefined ? upvotes : p.upvotes,
+          downvotes: downvotes !== undefined ? downvotes : p.downvotes,
+        };
+      }),
+    }));
+  },
+
+  /**
+   * handleCommentCountUpdate — Pushed when a new comment is added.
+   * Updates the comment count in the feed card in real-time.
+   */
+  handleCommentCountUpdate: (data) => {
+    const { postId, commentCount } = data;
+    if (!postId) return;
     set((state) => ({
       posts: state.posts.map((p) => {
         const id = p._id?.toString() || p._id;
         if (id !== postId) return p;
-        // Only update metric fields — preserve userVote (user's own vote state)
-        return { ...p, score, upvotes, downvotes };
+        return {
+          ...p,
+          commentCount: commentCount !== undefined ? commentCount : (p.commentCount || 0) + 1,
+        };
+      }),
+    }));
+  },
+
+  /**
+   * syncPostVote — Syncs post vote state from thread view to feed list.
+   */
+  syncPostVote: (postId, voteData) => {
+    if (!postId) return;
+    set((state) => ({
+      posts: state.posts.map((p) => {
+        const id = p._id?.toString() || p._id;
+        if (id !== postId) return p;
+        return { ...p, ...voteData };
       }),
     }));
   },

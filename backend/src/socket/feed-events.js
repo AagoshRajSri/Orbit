@@ -68,13 +68,16 @@ const coalesceBroadcast = (io, postId, metrics) => {
       const snapshot = pendingBroadcasts.get(postId);
       if (!snapshot) return;
 
-      io.to(`thread:${postId}`).emit("feed:metrics_sync", {
+      const payload = {
         postId,
         score: snapshot.score,
         upvotes: snapshot.upvotes,
         downvotes: snapshot.downvotes,
         netDelta: snapshot.netDelta,
-      });
+      };
+
+      io.to(`thread:${postId}`).emit("feed:metrics_sync", payload);
+      io.to("feed:global").emit("feed:metrics_sync", payload);
 
       pendingBroadcasts.delete(postId);
     }, COALESCE_WINDOW_MS);

@@ -248,19 +248,25 @@ const PostCard = ({ post, onVote, onOpenThread }) => {
             </a>
           )}
 
-          {/* Stats row */}
-          <div className="flex items-center gap-3 text-[11px] text-base-content/35">
-            <span className="flex items-center gap-1">
-              <MessageSquare className="size-3" />
-              {post.commentCount ?? 0} comment{post.commentCount !== 1 ? "s" : ""}
+          {/* Count bar */}
+          <div className="flex items-center gap-4 text-[11px] text-base-content/40 pt-1.5 border-t border-base-content/5 mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenThread(postId);
+              }}
+              className="flex items-center gap-1.5 hover:text-primary transition-colors font-medium text-base-content/60"
+            >
+              <MessageSquare className="size-3.5" />
+              <span>{post.commentCount ?? 0} comment{post.commentCount !== 1 ? "s" : ""}</span>
+            </button>
+            <span className="flex items-center gap-1 text-orange-400/80">
+              <ChevronUp className="size-3.5" />
+              <span>{post.upvotes ?? 0} upvotes</span>
             </span>
-            <span className="flex items-center gap-1 text-orange-400/60">
-              <ChevronUp className="size-3" />
-              {post.upvotes ?? 0}
-            </span>
-            <span className="flex items-center gap-1 text-blue-400/60">
-              <ChevronDown className="size-3" />
-              {post.downvotes ?? 0}
+            <span className="flex items-center gap-1 text-blue-400/80">
+              <ChevronDown className="size-3.5" />
+              <span>{post.downvotes ?? 0} downvotes</span>
             </span>
           </div>
         </div>
@@ -288,9 +294,12 @@ const FeedPage = () => {
   const createPost = useFeedStore((s) => s.createPost);
   const handleMetricsSync = useFeedStore((s) => s.handleMetricsSync);
   const handleNewPost = useFeedStore((s) => s.handleNewPost);
+  const handleCommentCountUpdate = useFeedStore((s) => s.handleCommentCountUpdate);
 
-  // Thread store socket handler
+  // Thread store socket handlers
   const handleNewComment = useThreadStore((s) => s.handleNewComment);
+  const handleThreadMetricsSync = useThreadStore((s) => s.handleMetricsSync);
+  const handleCommentMetricsSync = useThreadStore((s) => s.handleCommentMetricsSync);
 
   // Infinite scroll sentinel
   const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
@@ -307,14 +316,16 @@ const FeedPage = () => {
     socket.on("feed:metrics_sync", handleMetricsSync);
     socket.on("feed:new_post", handleNewPost);
     socket.on("feed:new_comment", handleNewComment);
+    socket.on("feed:comment_count_update", handleCommentCountUpdate);
 
     return () => {
       socket.emit("feed:leave_feed", {});
       socket.off("feed:metrics_sync", handleMetricsSync);
       socket.off("feed:new_post", handleNewPost);
       socket.off("feed:new_comment", handleNewComment);
+      socket.off("feed:comment_count_update", handleCommentCountUpdate);
     };
-  }, [handleMetricsSync, handleNewPost, handleNewComment]);
+  }, [handleMetricsSync, handleNewPost, handleNewComment, handleCommentCountUpdate]);
 
   // ── Thread socket room subscription ──────────────────────────────────────
   useEffect(() => {
@@ -323,13 +334,17 @@ const FeedPage = () => {
 
     if (activeThreadId) {
       socket.emit("feed:join_thread", { postId: activeThreadId });
+      socket.on("feed:metrics_sync", handleThreadMetricsSync);
+      socket.on("feed:comment_metrics_sync", handleCommentMetricsSync);
     }
     return () => {
       if (activeThreadId && socket) {
         socket.emit("feed:leave_thread", { postId: activeThreadId });
+        socket.off("feed:metrics_sync", handleThreadMetricsSync);
+        socket.off("feed:comment_metrics_sync", handleCommentMetricsSync);
       }
     };
-  }, [activeThreadId]);
+  }, [activeThreadId, handleThreadMetricsSync, handleCommentMetricsSync]);
 
   // ── Initial feed load ─────────────────────────────────────────────────────
   useEffect(() => {

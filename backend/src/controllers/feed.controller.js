@@ -579,11 +579,15 @@ export const createComment = async (req, res) => {
     });
 
     // Increment post's comment count
-    await Post.findByIdAndUpdate(postId, { $inc: { commentCount: 1 } });
+    const updatedPost = await Post.findByIdAndUpdate(
+      postId,
+      { $inc: { commentCount: 1 } },
+      { new: true }
+    );
 
     const populated = await comment.populate("authorId", "username profilePic orbitId");
 
-    // Broadcast new comment to thread room
+    // Broadcast new comment to thread room AND comment count update to global feed
     try {
       const { getIO } = await import("../socket/socket.js");
       const io = getIO();
@@ -591,6 +595,10 @@ export const createComment = async (req, res) => {
         io.to(`thread:${postId}`).emit("feed:new_comment", {
           postId,
           comment: { ...populated.toObject(), userVote: 0 },
+        });
+        io.to("feed:global").emit("feed:comment_count_update", {
+          postId,
+          commentCount: updatedPost?.commentCount || (post.commentCount || 0) + 1,
         });
       }
     } catch (_) {}
@@ -624,11 +632,19 @@ export const voteComment = async (req, res) => {
 
     const { intent } = parseResult.data;
 
+    // Fetch comment to get postId for socket thread room targeting
+    const commentDoc = await Comment.findById(commentId).select("postId").lean();
+    if (!commentDoc) {
+      return res.status(404).json({ success: false, error: { message: "Comment not found" } });
+    }
+    const postId = commentDoc.postId?.toString();
+
     const result = await castVote({
       userId,
       targetType: "comment",
       targetId: commentId,
       intent,
+      postId,
     });
 
     return res.json({ success: true, data: result });
