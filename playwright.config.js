@@ -1,0 +1,28 @@
+import { defineConfig, devices } from "@playwright/test";
+
+export default defineConfig({
+  testDir: "./frontend/tests/e2e",
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: 0,
+  workers: 4,
+  reporter: [["list"], ["html", { open: "never" }]],
+  use: {
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173",
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
+  },
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
+  webServer: {
+    command: "npm --prefix frontend run dev",
+    url: "http://localhost:5173",
+    reuseExistingServer: true,
+    timeout: 60000,
+  },
+});

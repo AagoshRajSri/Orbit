@@ -36,7 +36,10 @@ export default function MobileSidebarDrawer({ isOpen, onClose, initialTab }) {
   const isLight  = theme === "light";
 
   return (
-    <div className={`orbit-mobile-drawer ${isOpen ? "open" : ""}`}>
+    <div
+      className={`orbit-mobile-drawer ${isOpen ? "open" : ""}`}
+      aria-hidden={!isOpen}
+    >
       {/* Backdrop */}
       <div
         className="orbit-mobile-drawer__backdrop"
@@ -55,9 +58,9 @@ export default function MobileSidebarDrawer({ isOpen, onClose, initialTab }) {
             ? { background: "linear-gradient(180deg, #faf7f0 0%, #f0ebd8 100%)" }
             : { background: "var(--color-base-100)" }
         }
-        role="dialog"
+        role={isOpen ? "dialog" : undefined}
         aria-label="Navigation drawer"
-        aria-modal="true"
+        aria-modal={isOpen ? "true" : undefined}
       >
         {/* Close button row */}
         <div

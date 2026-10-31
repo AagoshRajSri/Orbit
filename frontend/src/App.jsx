@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 
 const HomePage = lazy(() => import("./pages/HomePage"));
-import SignUpPage from "./pages/SignUpPage";
-import LoginPage from "./pages/LoginPage";
+const SignUpPage = lazy(() => import("./pages/SignUpPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -17,9 +17,9 @@ const TetherApproval = lazy(() => import("./pages/TetherApproval"));
 
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 
-import FaceLock from "./components/auth/FaceLock";
-import AmbientPresence from "./components/avatar/AmbientPresence";
-import OrbitAuth from "./pages/OrbitAuth";
+const FaceLock = lazy(() => import("./components/auth/FaceLock"));
+const AmbientPresence = lazy(() => import("./components/avatar/AmbientPresence"));
+const OrbitAuth = lazy(() => import("./pages/OrbitAuth"));
 
 // Admin Imports
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -64,7 +64,7 @@ import { normalizeId } from "./lib/idUtils";
 
 import { resolveTheme, injectOrbitChatVars } from "./components/chat/OrbitChatTheme.js";
 
-import OrbitChatApp from "./components/layout/OrbitChatApp";
+const OrbitChatApp = lazy(() => import("./components/layout/OrbitChatApp"));
 import { useAnimationContext } from "./components/effects/AnimLayer";
 import { AvatarProvider } from "./context/AvatarContext.jsx";
 
@@ -762,6 +762,8 @@ const AppContent = () => {
                               isPastel={isPastel}
                               HomePage={HomePage}
                             />
+                          ) : isCheckingAuth ? (
+                            <div className="flex-1 auth-loading-placeholder" />
                           ) : (
                             <Navigate to="/login" />
                           )
@@ -781,6 +783,8 @@ const AppContent = () => {
                               isPastel={isPastel}
                               HomePage={HomePage}
                             />
+                          ) : isCheckingAuth ? (
+                            <div className="flex-1 auth-loading-placeholder" />
                           ) : (
                             <Navigate to="/login" />
                           )
@@ -800,6 +804,8 @@ const AppContent = () => {
                               isPastel={isPastel}
                               HomePage={HomePage}
                             />
+                          ) : isCheckingAuth ? (
+                            <div className="flex-1 auth-loading-placeholder" />
                           ) : (
                             <Navigate to="/login" />
                           )
@@ -808,25 +814,25 @@ const AppContent = () => {
                       <Route
                         path="/spotify"
                         element={
-                          authUser ? <SpotifyPage /> : <Navigate to="/login" />
+                          authUser ? <SpotifyPage /> : isCheckingAuth ? <div className="flex-1 auth-loading-placeholder" /> : <Navigate to="/login" />
                         }
                       />
                       <Route
                         path="/feed"
                         element={
-                          authUser ? <FeedPage /> : <Navigate to="/login" />
+                          authUser ? <FeedPage /> : isCheckingAuth ? <div className="flex-1 auth-loading-placeholder" /> : <Navigate to="/login" />
                         }
                       />
                       <Route
                         path="/settings/*"
                         element={
-                          authUser ? <SettingsPage /> : <Navigate to="/login" />
+                          authUser ? <SettingsPage /> : isCheckingAuth ? <div className="flex-1 auth-loading-placeholder" /> : <Navigate to="/login" />
                         }
                       />
                       <Route
                         path="/profile/:userId?"
                         element={
-                          authUser ? <ProfilePage /> : <Navigate to="/login" />
+                          authUser ? <ProfilePage /> : isCheckingAuth ? <div className="flex-1 auth-loading-placeholder" /> : <Navigate to="/login" />
                         }
                       />
                       <Route path="/tether/approve" element={<TetherApproval />} />
@@ -851,9 +857,11 @@ const AppContent = () => {
             )}
             {isOrbitMode && (
               <div className="fixed inset-0 z-[9999]">
-                <OrbitChatApp onClose={() => {
-                  window.dispatchEvent(new CustomEvent("orbit-mode-closed"));
-                }} />
+                <Suspense fallback={<div className="fixed inset-0 bg-base-300 flex items-center justify-center" />}>
+                  <OrbitChatApp onClose={() => {
+                    window.dispatchEvent(new CustomEvent("orbit-mode-closed"));
+                  }} />
+                </Suspense>
               </div>
             )}
           </main>

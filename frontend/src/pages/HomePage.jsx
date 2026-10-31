@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useNexusStore } from "../store/useNexusStore";
 import { useChatStore as useChat } from "../store/useChatStore";
@@ -7,7 +7,8 @@ import Sidebar from "../components/layout/Sidebar";
 import NoChatSelected from "../components/common/NoChatSelected";
 import MobileBottomNav from "../components/layout/MobileBottomNav";
 import MobileSidebarDrawer from "../components/layout/MobileSidebarDrawer";
-import UniversalChatContainer from "../components/chat/UniversalChatContainer";
+import ChatLoader from "../components/chat/ChatLoader";
+const UniversalChatContainer = lazy(() => import("../components/chat/UniversalChatContainer"));
 
 import OrbitalPageWrapper from "../components/layout/OrbitalPageWrapper";
 
@@ -67,16 +68,18 @@ const HomePage = () => {
                 <Sidebar />
 
                 {/* Chat panel or empty state */}
-                {selectedConversationId && selectedConversationType === "direct" && (
-                  <div className="hidden md:flex flex-1 min-h-0 min-w-0 flex-col">
-                    <UniversalChatContainer type="dm" />
-                  </div>
-                )}
-                {selectedNexusId && (
-                  <div className="hidden md:flex flex-1 min-h-0 min-w-0 flex-col">
-                    <UniversalChatContainer type="nexus" />
-                  </div>
-                )}
+                <Suspense fallback={<ChatLoader />}>
+                  {selectedConversationId && selectedConversationType === "direct" && (
+                    <div className="hidden md:flex flex-1 min-h-0 min-w-0 flex-col">
+                      <UniversalChatContainer type="dm" />
+                    </div>
+                  )}
+                  {selectedNexusId && (
+                    <div className="hidden md:flex flex-1 min-h-0 min-w-0 flex-col">
+                      <UniversalChatContainer type="nexus" />
+                    </div>
+                  )}
+                </Suspense>
                 {!selectedConversationId && !selectedNexusId && <NoChatSelected />}
               </div>
             </div>
@@ -94,12 +97,14 @@ const HomePage = () => {
         {hasActiveChat && !isLgUp && (
           <div className="mobile-chat-fullscreen bg-base-300 animate-slide-up">
             <div className="h-full w-full orbital-glass-lg flex flex-col overflow-hidden">
-              {selectedConversationType === "direct" && selectedConversationId && (
-                <UniversalChatContainer type="dm" onMobileBack={handleMobileBack} onOpenSidebar={handleOpenSidebar} />
-              )}
-              {selectedNexusId && (
-                <UniversalChatContainer type="nexus" onMobileBack={handleMobileBack} onOpenSidebar={handleOpenSidebar} />
-              )}
+              <Suspense fallback={<ChatLoader />}>
+                {selectedConversationType === "direct" && selectedConversationId && (
+                  <UniversalChatContainer type="dm" onMobileBack={handleMobileBack} onOpenSidebar={handleOpenSidebar} />
+                )}
+                {selectedNexusId && (
+                  <UniversalChatContainer type="nexus" onMobileBack={handleMobileBack} onOpenSidebar={handleOpenSidebar} />
+                )}
+              </Suspense>
             </div>
           </div>
         )}

@@ -16,7 +16,7 @@
  *  Nexus and Chat socket rooms in App.jsx.
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import {
@@ -38,7 +38,7 @@ import {
 import { useFeedStore } from "../store/useFeedStore";
 import { useThreadStore } from "../store/useThreadStore";
 import { useAuthStore } from "../store/useAuthStore";
-import VirtualizedThread from "../components/feed/VirtualizedThread";
+const VirtualizedThread = lazy(() => import("../components/feed/VirtualizedThread"));
 import { getSocket } from "../lib/socket";
 
 // ── Sort Tabs ─────────────────────────────────────────────────────────────────
@@ -369,10 +369,16 @@ const FeedPage = () => {
   if (activeThreadId) {
     return (
       <div className="flex-1 overflow-hidden">
-        <VirtualizedThread
-          postId={activeThreadId}
-          onBack={() => setActiveThreadId(null)}
-        />
+        <Suspense fallback={
+          <div className="flex-1 h-full flex items-center justify-center">
+            <Loader2 className="size-6 animate-spin text-primary" />
+          </div>
+        }>
+          <VirtualizedThread
+            postId={activeThreadId}
+            onBack={() => setActiveThreadId(null)}
+          />
+        </Suspense>
       </div>
     );
   }
