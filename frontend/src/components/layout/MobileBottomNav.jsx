@@ -3,7 +3,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useChatStore } from "../../store/useChatStore";
 import { useNexusStore } from "../../store/useNexusStore";
-import { MessageSquare, Hash, User, Settings, LogOut } from "lucide-react";
+import { MessageSquare, Hash, User, Settings, LogOut, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
@@ -52,6 +52,12 @@ export default function MobileBottomNav({ onOpenSidebar }) {
       label: "Nexus",
       action: () => onOpenSidebar?.("nexus"),
       badge: totalNexusUnread,
+    },
+    {
+      id: "feed",
+      icon: Flame,
+      label: "Feed",
+      href: "/feed",
     },
     {
       id: "profile",

@@ -17,6 +17,7 @@ import {
   UserX,
   Clock,
   ChevronDown,
+  Flame,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSoundManager } from "../../hooks/useSoundManager";
@@ -339,6 +340,28 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
             </span>
           )}
         </button>
+
+        {/* Feed Shortcut */}
+        <Link
+          to="/feed"
+          className="relative p-2 rounded-xl transition-all border shadow-sm flex items-center justify-center hover:scale-105 active:scale-95"
+          title="Feed & Discussion Threads"
+          style={isPastel ? {
+            background: "rgba(255,220,240,0.55)",
+            borderColor: "rgba(255,160,210,0.3)",
+            color: "#ff9248"
+          } : isLight ? {
+            background: "rgba(240,235,216,0.5)",
+            borderColor: "rgba(176,141,87,0.2)",
+            color: "#b08d57"
+          } : {
+            background: "rgba(var(--b3), 0.4)",
+            borderColor: "var(--chat-border)",
+            color: "var(--chat-text)"
+          }}
+        >
+          <Flame className="size-4 text-orange-400" />
+        </Link>
       </div>
       </div>
 

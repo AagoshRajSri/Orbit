@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
-import { LogOut, Settings, User, Menu } from "lucide-react";
+import { LogOut, Settings, User, Menu, Flame } from "lucide-react";
 import { useThemeStore } from "../../store/useThemeStore";
 import Saturn from "../effects/Saturn";
 
@@ -203,6 +203,29 @@ const Navbar = ({ onHamburger }) => {
 
           {authUser && (
             <>
+              <Link
+                to={"/feed"}
+                onMouseEnter={() => import("../../pages/FeedPage").catch(()=>{})}
+                className={`h-10 px-4 rounded-[1.2rem] border transition-all duration-300 text-xs flex items-center gap-2.5 font-bold group/btn ${isPastel 
+                  ? "border-amber-300/40 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-600 hover:border-amber-400/60 shadow-sm hover:shadow-amber-200/60 hover:shadow-md hover:scale-[1.04] active:scale-95" 
+                  : isCyber
+                    ? "border-[rgba(0,245,212,0.4)] bg-[rgba(0,245,212,0.08)] hover:bg-[rgba(0,245,212,0.15)] text-[#a0f0e8] rounded-none font-orbitron uppercase tracking-widest"
+                  : isGamer 
+                    ? "border-[var(--chat-primary)]/40 bg-[var(--chat-primary)]/10 hover:bg-[var(--chat-primary)]/20 text-[var(--chat-primary)] rounded-none"
+                  : isAmoled
+                    ? "border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white hover:border-white/[0.18] rounded-xl"
+                  : isLight
+                    ? "border-[#b08d57]/30 bg-[rgba(176,141,87,0.06)] hover:bg-[rgba(176,141,87,0.12)] text-[#8c7055] hover:text-[#6b5340] hover:border-[#b08d57]/50 rounded-xl tracking-widest uppercase"
+                    : "border-base-300/70 bg-base-100/30 hover:bg-base-200/40"}`}
+              >
+                {isPastel ? (
+                  <span className="text-sm group-hover/btn:scale-125 transition-transform duration-300">🔥</span>
+                ) : (
+                  <Flame className={`w-4 h-4 ${isCyber ? "text-[#ff9248]" : isAmoled ? "text-orange-400" : "text-orange-400"}`} />
+                )}
+                <span className={`hidden sm:inline uppercase tracking-widest font-black text-[10px] ${isCyber ? "text-[8.5px]" : ""}`}>Feed</span>
+              </Link>
+
               <Link
                 to={"/profile"}
                 onMouseEnter={() => import("../../pages/ProfilePage").catch(()=>{})}
