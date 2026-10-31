@@ -186,7 +186,7 @@ Tested Post ID:            6ae62db950e5fdfc90c24acb
 | **Cursor Feed Read Latency (Median)** | `< 1500ms` | **1.08 s** (Min: **2.69 ms**) | ✅ Stable |
 | **Artillery WebSocket Connections** | 1,000 concurrent | **1,000 / 1,000 connected** (100% completion) | ✅ Zero Drops |
 | **Artillery Socket Errors** | Zero errors | **0 errors** (`0` `EMFILE`, `0` `EADDRNOTAVAIL`) | ✅ Clean |
-| **Socket.IO Emit Latency ($p95$)** | `< 10ms` | **0.9 ms** (Mean: **0.5 ms**, Max: **16.0 ms**) | ✅ Sub-ms Fan-out |
+| **Socket.IO Handshake & Emit ($p95$)** | `< 10ms` | **0.9 ms** (Mean: **0.5 ms**, Max: **16.0 ms**) | ✅ Sub-ms Fan-out |
 | **Cluster Worker Heap Profile** | Flat / No leaks | **157 MB – 194 MB** flat across all 16 workers | ✅ Zero Leak |
 | **Multi-Core CPU Distribution** | Even distribution | **~62s – 65s CPU time** per worker (100% balanced) | ✅ No Hot Cores |
 
