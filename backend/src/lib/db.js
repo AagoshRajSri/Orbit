@@ -1,4 +1,12 @@
 import mongoose from "mongoose";
+import dns from "dns";
+
+// Ensure reliable SRV resolution on Windows / ISP networks
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch {
+  // Ignore in environments where setting servers is restricted
+}
 
 export const connectDB = async () => {
   try {
@@ -7,13 +15,22 @@ export const connectDB = async () => {
       throw new Error("DB_URI environment variable is missing");
     }
 
-    const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 15000, // Increase if slow or DNS check issues
-      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-      retryWrites: true, // Automatic retry on transient failures
-      maxPoolSize: 10, // Connection pool size
-      minPoolSize: 5, // Minimum connections in pool
-      maxIdleTimeMS: 45000, // Close idle connections after 45s
+    let connectionUri = uri;
+    if (uri.startsWith("mongodb+srv://") && uri.includes("cluster0.dcgsl04.mongodb.net")) {
+      const match = uri.match(/mongodb\+srv:\/\/([^:]+):([^@]+)@cluster0\.dcgsl04\.mongodb\.net\/([^?]+)?(\?.*)?/);
+      if (match) {
+        const [, user, pass, dbName] = match;
+        connectionUri = `mongodb://${user}:${pass}@ac-sv2un3k-shard-00-00.dcgsl04.mongodb.net:27017,ac-sv2un3k-shard-00-01.dcgsl04.mongodb.net:27017,ac-sv2un3k-shard-00-02.dcgsl04.mongodb.net:27017/${dbName || ""}?ssl=true&replicaSet=atlas-g3qzsy-shard-0&authSource=admin&retryWrites=true&w=majority`;
+      }
+    }
+
+    const conn = await mongoose.connect(connectionUri, {
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
+      retryWrites: true,
+      maxPoolSize: 200,
+      minPoolSize: 20,
+      maxIdleTimeMS: 45000,
     });
 
     console.log(`MongoDB connected: ${conn.connection.host}`);

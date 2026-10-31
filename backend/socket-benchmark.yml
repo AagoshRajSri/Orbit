@@ -1,0 +1,157 @@
+# ============================================================
+#  socket-benchmark.yml — Orbit Socket.IO Fan-out Stress Test
+#  Artillery v2  |  Engine: socket.io
+#
+#  WHAT THIS TESTS:
+#    Phase 1 — Ramp: 50 new connections/sec -> 2,000 concurrent
+#    Phase 2 — Hold: 2,000 idle open connections for 60 seconds
+#    Phase 3 — Stress: Each socket joins "feed:global" and a
+#               thread room, then sits idle while k6 fires HTTP
+#               votes concurrently -> validates the full pub/sub
+#               fan-out pipeline under maximum system pressure.
+#
+#  PREREQUISITES:
+#    npm install -g artillery
+#    npm install -g artillery-plugin-expect   (optional: assertion support)
+#
+#  ─────────────────────────────────────────────────────────────
+#  STEP 1: Get a BENCH_POST_ID from your DB (run from backend/):
+#
+#    node -e "
+#      import('./src/lib/db.js').then(async m => {
+#        await m.connectDB();
+#        const { default: Post } = await import('./src/models/post.model.js');
+#        const p = await Post.findOne();
+#        console.log(p ? p._id.toString() : 'NO POSTS FOUND');
+#        process.exit(0);
+#      });
+#    "
+#
+#  STEP 2: Generate auth token (run from backend/):
+#    node scripts/generate-bench-token.js --token-only
+#
+#  STEP 3: OS SOCKET EXHAUSTION GUARD (Windows-specific)
+#  ─────────────────────────────────────────────────────────────
+#  If Artillery throws EMFILE, EADDRNOTAVAIL, or ECONNRESET around ~1,000
+#  connections, your OS blocked the ports — NOT your Node.js app.
+#
+#  Windows ephemeral port limit fix:
+#    If connections flatline and error out around 1,000, drop arrivalRate
+#    to 25 (1,000 max sockets) in the phases block below to stay safe.
+#    Alternatively, expand the ephemeral port range in PowerShell (Admin):
+#
+#    netsh int ipv4 set dynamicport tcp start=1025 num=64510
+#
+#  ─────────────────────────────────────────────────────────────
+#  STEP 4: Run the full dual-tool stress test (PowerShell):
+#  ─────────────────────────────────────────────────────────────
+#
+#  Terminal 1 (Artillery — establishes 2,000 idle sockets):
+#
+#    # Set PowerShell env vars BEFORE running — Artillery reads them via $processEnvironment
+#    $env:AUTH_TOKEN    = node scripts/generate-bench-token.js --token-only
+#    $env:BENCH_POST_ID = "<24-char-hex-ObjectId-from-step-1>"
+#
+#    artillery run socket-benchmark.yml
+#
+#  Terminal 2 (k6 — fires HTTP votes while sockets are held):
+#  Start this AFTER Artillery's ramp phase completes (~40s).
+#
+#    k6 run -e AUTH_TOKEN=$env:AUTH_TOKEN load-test-feed.js
+#
+#  WHAT TO WATCH (after the run):
+#    artillery report report.json
+#
+#    Key metrics:
+#      vusers.completed           -> should equal 2,000 (or >= 1,900)
+#      errors.*                   -> must be 0 (especially transport error)
+#      response_time.p95          -> WebSocket connect latency < 500ms
+#      engine.socketio.emit.*     -> all feed:join_feed/feed:join_thread OK
+# ============================================================
+
+config:
+  target: "http://localhost:5001"
+
+  # ── Socket.IO engine ──────────────────────────────────────
+  engines:
+    socketio: {}
+
+  # ── Auth: inject token via handshake.auth.token ──────────
+  # Matches socket.js line 140: let token = socket.handshake.auth?.token
+  socketio:
+    auth:
+      token: "{{ $processEnvironment.AUTH_TOKEN }}"
+    transports:
+      - websocket       # Force WebSocket — skip long-polling upgrade round-trip
+    path: /socket.io    # Default Socket.IO path (confirm in backend/src/index.js)
+
+  # ── Workload Phases ──────────────────────────────────────
+  phases:
+    # Phase 1: Ramp — 25 new connections/second for 40 seconds
+    # Targets 1,000 concurrent sockets (Windows ephemeral port safe threshold)
+    - name: "Ramp — 25 connections/sec to 1,000"
+      duration: 40
+      arrivalRate: 25
+
+    # Phase 2: Hold — 1,000 sockets idle for 60 seconds
+    # This is the fan-out stress window: run k6 concurrently during this phase
+    # Monitor memory flatness with: pm2 monit
+    - name: "Hold — 1,000 idle connections (concurrent k6 window)"
+      pause: 60
+
+  # ── Thresholds — fail the benchmark if these are violated ──
+  ensure:
+    # >= 95% of all sockets must complete their full scenario cleanly
+    thresholds:
+      - "vusers.completed": { min: 950 }
+
+  # ── Output report ─────────────────────────────────────────
+  output: report.json
+
+# ── Scenario ─────────────────────────────────────────────────
+scenarios:
+  - name: "Socket Fan-out Stress — Join Feed + Thread, Hold 60s Idle"
+    engine: socketio
+    flow:
+
+      # Step 1: Join the global feed room
+      # Artillery automatically connects socket using config.socketio options on first emit.
+      # feed-events.js line 113-115:
+      #   socket.on("feed:join_feed", ({ nexusId }) => {
+      #     const room = nexusId ? `feed:nexus:${nexusId}` : "feed:global";
+      #     socket.join(room);
+      #   });
+      # Omitting nexusId -> joins "feed:global"
+      - emit:
+          channel: "feed:join_feed"
+          data: {}
+
+      # Step 3: Join a specific thread room
+      # feed-events.js line 96-102:
+      #   socket.on("feed:join_thread", ({ postId }) => {
+      #     socket.join(`thread:${postId}`);
+      #   });
+      # The server validates: /^[a-f0-9]{24}$/ — must be a real MongoDB ObjectId
+      - emit:
+          channel: "feed:join_thread"
+          data:
+            postId: "{{ $processEnvironment.BENCH_POST_ID }}"
+
+      # Step 4: Hold open for 60 seconds
+      # This is the critical idle window. During these 60 seconds, run k6
+      # concurrently to fire HTTP votes. Every vote triggers the Redis Lua
+      # atomic script, which publishes via the Redis adapter, and Socket.IO
+      # fans out "feed:metrics_sync" events to all clients in thread:<postId>.
+      # A healthy system will fan out 2,000 messages within the 250ms
+      # coalescing window defined in feed-events.js.
+      - think: 60
+
+      # Step 5: Clean teardown — leave rooms before disconnect
+      - emit:
+          channel: "feed:leave_thread"
+          data:
+            postId: "{{ $processEnvironment.BENCH_POST_ID }}"
+
+      - emit:
+          channel: "feed:leave_feed"
+          data: {}

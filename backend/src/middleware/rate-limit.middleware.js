@@ -16,7 +16,7 @@ const createLimiter = (inputOptions) => {
   const { name, ...options } = inputOptions;
 
   if (isDev) {
-    options.max = 10000;
+    options.max = 100000;
   }
 
   options.handler = (req, res, next, rateLimitOptions) => {
@@ -27,21 +27,34 @@ const createLimiter = (inputOptions) => {
     });
   };
 
+  options.validate = { xForwardedForHeader: false, default: false };
+  const memoryLimiter = rateLimit(options);
+
   let redisLimiter = null;
-  const memoryLimiter = rateLimit(options); // Default in-memory fallback
+  const getRedisLimiter = () => {
+    if (!redisLimiter) {
+      redisLimiter = rateLimit({
+        ...options,
+        store: new RedisStore({
+          sendCommand: (...args) => redisClient.call(...args),
+          prefix: `rl:${name}:`,
+        }),
+      });
+    }
+    return redisLimiter;
+  };
 
   return (req, res, next) => {
+    const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
+    if (isDev && (ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1" || ip === "localhost")) {
+      return next();
+    }
     if (isRedisAvailable) {
-      if (!redisLimiter) {
-        redisLimiter = rateLimit({
-          ...options,
-          store: new RedisStore({
-            sendCommand: (...args) => redisClient.call(...args),
-            prefix: `rl:${name}:`
-          })
-        });
+      try {
+        return getRedisLimiter()(req, res, next);
+      } catch {
+        return memoryLimiter(req, res, next);
       }
-      return redisLimiter(req, res, next);
     }
     return memoryLimiter(req, res, next);
   };

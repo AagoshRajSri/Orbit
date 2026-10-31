@@ -8,6 +8,12 @@ import rateLimit from "express-rate-limit";
 import hpp from "hpp";
 import net from "net";
 import compression from "compression";
+import cluster from "node:cluster";
+
+// Ensure Round-Robin socket distribution across all OS threads (specifically Windows)
+if (cluster.isPrimary || cluster.isMaster) {
+  cluster.schedulingPolicy = cluster.SCHED_RR;
+}
 
 import { threatDetectionMiddleware } from "./middleware/threat-detection.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
@@ -26,13 +32,17 @@ import prekeyRoutes from "./routes/prekey.route.js";
 import deviceRoutes from "./routes/device.route.js";
 import keyVaultRoutes from "./routes/keyVault.route.js";
 import contactsRoutes from "./routes/contacts.route.js";
+import feedRoutes from "./routes/feed.route.js";
 import { connectDB } from "./lib/db.js";
 import { initializeConfig } from "./lib/config.init.js";
 import { initializeSocketIO } from "./socket/socket.js";
 import "./services/insights.service.js"; // Initialize rule engine on startup
 import { registerSpotifyEvents } from "./socket/spotify-events.js";
+import { registerFeedEvents } from "./socket/feed-events.js";
 import { pubClient, subClient, connectRedis, isRedisAvailable } from "./lib/redis.js";
 import { createAdapter } from "@socket.io/redis-adapter";
+import { loadVoteScripts } from "./services/vote.service.js";
+import { startVoteWorker } from "./services/voteWorker.service.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -212,6 +222,7 @@ app.use("/api/config", configRoutes);
 app.use("/api/prekeys", prekeyRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/keyvault", keyVaultRoutes);
+app.use("/api/feed", feedRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Orbit API is running", version: "1.0.0", security: "zero-trust-v3" });
 });
@@ -293,11 +304,20 @@ async function initApp() {
   if (isRedisAvailable) {
     io.adapter(createAdapter(pubClient, subClient));
     console.log("[Socket.IO] Redis adapter attached.");
+    // Preload Lua vote scripts into Redis script cache
+    await loadVoteScripts();
+    // Start background vote persistence worker only on worker 0/primary
+    const isPrimaryWorker = !process.env.pm_id || process.env.pm_id === "0" || process.env.NODE_APP_INSTANCE === "0" || cluster.worker?.id === 1;
+    if (isPrimaryWorker) {
+      startVoteWorker();
+    }
   } else {
     console.log("[Socket.IO] Using default in-memory adapter (single-node).");
   }
   initializeSocketIO(io);
   registerSpotifyEvents(io);
+  // Register feed socket events (additive — does not touch existing handlers)
+  registerFeedEvents(io);
   global.io = io;
 }
 
@@ -354,9 +374,17 @@ const startServer = async () => {
 
     // We don't call connectDB() here because initApp() handles it.
 
-    const port = process.env.NODE_ENV === "production"
-      ? parseInt(process.env.PORT || "3000", 10)
-      : await findAvailablePort(parseInt(process.env.PORT || "3000", 10));
+    const isClusterWorker = Boolean(
+      process.env.pm_id !== undefined ||
+      process.env.NODE_APP_INSTANCE !== undefined ||
+      process.env.instances !== undefined ||
+      process.env.NODE_ENV === "production" ||
+      cluster.isWorker
+    );
+
+    const port = isClusterWorker
+      ? parseInt(process.env.PORT || "5001", 10)
+      : await findAvailablePort(parseInt(process.env.PORT || "5001", 10));
 
     httpServer.listen(port, "0.0.0.0", () => {
       console.log(`✓ Server is running on port ${port}`);

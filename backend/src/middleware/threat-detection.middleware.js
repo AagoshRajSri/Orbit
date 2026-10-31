@@ -15,7 +15,13 @@ setInterval(() => {
 
 export const threatDetectionMiddleware = async (req, res, next) => {
   const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
-  
+  const isLoopback = ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1" || ip === "localhost";
+
+  // Skip artificial tarpits and database lookups for localhost in dev/benchmarks
+  if (isLoopback && process.env.NODE_ENV !== "production") {
+    return next();
+  }
+
   // 1. Isolate permanently blocked IPs immediately
   const isBlocked = await securityService.isIpBlocked(ip);
   if (isBlocked) {

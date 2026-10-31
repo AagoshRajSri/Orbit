@@ -12,6 +12,7 @@ const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SpotifyPage = lazy(() => import("./pages/SpotifyPage"));
+const FeedPage = lazy(() => import("./pages/FeedPage"));
 const TetherApproval = lazy(() => import("./pages/TetherApproval"));
 
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
@@ -808,6 +809,12 @@ const AppContent = () => {
                         path="/spotify"
                         element={
                           authUser ? <SpotifyPage /> : <Navigate to="/login" />
+                        }
+                      />
+                      <Route
+                        path="/feed"
+                        element={
+                          authUser ? <FeedPage /> : <Navigate to="/login" />
                         }
                       />
                       <Route

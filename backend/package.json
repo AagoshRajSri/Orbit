@@ -5,7 +5,9 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "cluster": "node src/cluster.js",
+    "verify": "node strict-orbit-verify.js"
   },
   "keywords": [],
   "author": "",

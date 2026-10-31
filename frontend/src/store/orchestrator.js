@@ -1,6 +1,8 @@
 import { useAuthStore } from "./useAuthStore.js";
 import { useChatStore } from "./useChatStore.js";
 import { useNexusStore } from "./useNexusStore.js";
+import { useFeedStore } from "./useFeedStore.js";
+import { useThreadStore } from "./useThreadStore.js";
 
 /**
  * Initializes global store subscriptions to handle cross-store dependencies
@@ -42,7 +44,12 @@ export const initStoreSubscriptions = () => {
           isMessagesLoading: false,
           nexusActionView: null,
         });
+
+        // Clear feed and thread state on logout
+        useFeedStore.getState().clearFeed?.();
+        useThreadStore.getState().clearThread?.();
       }
     }
   );
 };
+
