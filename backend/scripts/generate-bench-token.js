@@ -55,6 +55,13 @@ async function main() {
     };
 
     const tokens = await generateToken(user._id, mockReq, mockRes);
+    const jwt = (await import("jsonwebtoken")).default;
+    const benchAccessToken = jwt.sign(
+      { userId: user._id, sessionId: tokens.sessionId },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+    tokens.accessToken = benchAccessToken;
 
     if (tokenOnly) {
       process.stdout.write(tokens.accessToken);
