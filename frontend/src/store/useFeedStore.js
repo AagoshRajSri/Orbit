@@ -54,6 +54,9 @@ const computeOptimisticVote = (post, intent) => {
   };
 };
 
+// ── Active Vote Locks ────────────────────────────────────────────────────────
+const _activeVoteLocks = new Set();
+
 // ── Store ─────────────────────────────────────────────────────────────────────
 export const useFeedStore = create((set, get) => ({
   // ── State ───────────────────────────────────────────────────────────────────
@@ -147,9 +150,15 @@ export const useFeedStore = create((set, get) => ({
    * @param {number} intent  — 1 (upvote) | -1 (downvote)
    */
   votePost: async (postId, intent) => {
+    if (_activeVoteLocks.has(postId)) return;
+    _activeVoteLocks.add(postId);
+
     const { posts } = get();
     const idx = posts.findIndex((p) => p._id === postId || p._id?.toString() === postId);
-    if (idx === -1) return;
+    if (idx === -1) {
+      _activeVoteLocks.delete(postId);
+      return;
+    }
 
     const post = posts[idx];
 
@@ -197,6 +206,8 @@ export const useFeedStore = create((set, get) => ({
         toast.error("Vote failed. Please try again.");
       }
       console.error("[FeedStore] votePost error:", err);
+    } finally {
+      _activeVoteLocks.delete(postId);
     }
   },
 

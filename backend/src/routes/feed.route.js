@@ -10,7 +10,7 @@
 
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { protectRoute } from "../middleware/auth.middleware.js";
+import { protectRoute, optionalAuth } from "../middleware/auth.middleware.js";
 import {
   getFeed,
   createPost,
@@ -70,31 +70,28 @@ const voteLimiter = rateLimit({
     res.status(429).json({ message: options.message?.error?.message }),
 });
 
-// ── Apply Auth ────────────────────────────────────────────────────────────────
-router.use(protectRoute);
-
 // ── Feed Endpoints ────────────────────────────────────────────────────────────
 // GET  /api/feed               — Paginated feed (trending|recent|top)
-router.get("/", feedReadLimiter, getFeed);
+router.get("/", optionalAuth, feedReadLimiter, getFeed);
 
 // ── Post Endpoints ────────────────────────────────────────────────────────────
 // POST   /api/feed/posts                — Create a new post
-router.post("/posts", postWriteLimiter, createPost);
+router.post("/posts", protectRoute, postWriteLimiter, createPost);
 // GET    /api/feed/posts/:postId        — Get single post
-router.get("/posts/:postId", feedReadLimiter, getPost);
+router.get("/posts/:postId", optionalAuth, feedReadLimiter, getPost);
 // DELETE /api/feed/posts/:postId        — Soft-delete a post (author only)
-router.delete("/posts/:postId", postWriteLimiter, deletePost);
+router.delete("/posts/:postId", protectRoute, postWriteLimiter, deletePost);
 // POST   /api/feed/posts/:postId/vote   — Vote on a post
-router.post("/posts/:postId/vote", voteLimiter, votePost);
+router.post("/posts/:postId/vote", protectRoute, voteLimiter, votePost);
 
 // ── Comment Endpoints ─────────────────────────────────────────────────────────
 // GET    /api/feed/posts/:postId/comments         — Get all comments for a post
-router.get("/posts/:postId/comments", feedReadLimiter, getComments);
+router.get("/posts/:postId/comments", optionalAuth, feedReadLimiter, getComments);
 // POST   /api/feed/posts/:postId/comments         — Create a comment or reply
-router.post("/posts/:postId/comments", commentWriteLimiter, createComment);
+router.post("/posts/:postId/comments", protectRoute, commentWriteLimiter, createComment);
 // POST   /api/feed/comments/:commentId/vote       — Vote on a comment
-router.post("/comments/:commentId/vote", voteLimiter, voteComment);
+router.post("/comments/:commentId/vote", protectRoute, voteLimiter, voteComment);
 // DELETE /api/feed/comments/:commentId            — Soft-delete a comment
-router.delete("/comments/:commentId", commentWriteLimiter, deleteComment);
+router.delete("/comments/:commentId", protectRoute, commentWriteLimiter, deleteComment);
 
 export default router;

@@ -100,6 +100,9 @@ const countVisibleReplies = (commentId, comments) => {
   ).length;
 };
 
+// ── Active Thread Vote Locks ──────────────────────────────────────────────────
+const _activeThreadVoteLocks = new Set();
+
 // ── Store ─────────────────────────────────────────────────────────────────────
 export const useThreadStore = create((set, get) => ({
   // ── State ───────────────────────────────────────────────────────────────────
@@ -340,73 +343,80 @@ export const useThreadStore = create((set, get) => ({
    * Updates post state optimistically and synchronizes with useFeedStore.
    */
   votePost: async (postId, intent) => {
-    const { post } = get();
-    if (!post) return;
-
-    const prev = post.userVote || 0;
-    const effective = prev === intent ? 0 : intent;
-    let upvotes = post.upvotes || 0;
-    let downvotes = post.downvotes || 0;
-    if (prev === 1) upvotes -= 1;
-    if (prev === -1) downvotes -= 1;
-    if (effective === 1) upvotes += 1;
-    if (effective === -1) downvotes += 1;
-
-    const snapshot = {
-      score: post.score,
-      upvotes: post.upvotes,
-      downvotes: post.downvotes,
-      userVote: post.userVote,
-    };
-
-    const optimistic = {
-      score: upvotes - downvotes,
-      upvotes: Math.max(upvotes, 0),
-      downvotes: Math.max(downvotes, 0),
-      userVote: effective,
-    };
-
-    set((state) => ({
-      post: state.post ? { ...state.post, ...optimistic } : null,
-    }));
+    if (_activeThreadVoteLocks.has(postId)) return;
+    _activeThreadVoteLocks.add(postId);
 
     try {
-      import("./useFeedStore").then(({ useFeedStore }) => {
-        useFeedStore.getState().syncPostVote(postId, optimistic);
-      });
-    } catch (_) {}
+      const { post } = get();
+      if (!post) return;
 
-    try {
-      const res = await axiosInstance.post(`/feed/posts/${postId}/vote`, {
-        intent: intent.toString(),
-      });
-      const { resultVote, newScore, upvotes: sv, downvotes: sd } = res.data.data;
-      const confirmed = {
-        score: newScore,
-        upvotes: sv,
-        downvotes: sd,
-        userVote: resultVote,
+      const prev = post.userVote || 0;
+      const effective = prev === intent ? 0 : intent;
+      let upvotes = post.upvotes || 0;
+      let downvotes = post.downvotes || 0;
+      if (prev === 1) upvotes -= 1;
+      if (prev === -1) downvotes -= 1;
+      if (effective === 1) upvotes += 1;
+      if (effective === -1) downvotes += 1;
+
+      const snapshot = {
+        score: post.score,
+        upvotes: post.upvotes,
+        downvotes: post.downvotes,
+        userVote: post.userVote,
+      };
+
+      const optimistic = {
+        score: upvotes - downvotes,
+        upvotes: Math.max(upvotes, 0),
+        downvotes: Math.max(downvotes, 0),
+        userVote: effective,
       };
 
       set((state) => ({
-        post: state.post ? { ...state.post, ...confirmed } : null,
+        post: state.post ? { ...state.post, ...optimistic } : null,
       }));
 
       try {
         import("./useFeedStore").then(({ useFeedStore }) => {
-          useFeedStore.getState().syncPostVote(postId, confirmed);
+          useFeedStore.getState().syncPostVote(postId, optimistic);
         });
       } catch (_) {}
-    } catch (err) {
-      set((state) => ({
-        post: state.post ? { ...state.post, ...snapshot } : null,
-      }));
+
       try {
-        import("./useFeedStore").then(({ useFeedStore }) => {
-          useFeedStore.getState().syncPostVote(postId, snapshot);
+        const res = await axiosInstance.post(`/feed/posts/${postId}/vote`, {
+          intent: intent.toString(),
         });
-      } catch (_) {}
-      toast.error("Vote failed");
+        const { resultVote, newScore, upvotes: sv, downvotes: sd } = res.data.data;
+        const confirmed = {
+          score: newScore,
+          upvotes: sv,
+          downvotes: sd,
+          userVote: resultVote,
+        };
+
+        set((state) => ({
+          post: state.post ? { ...state.post, ...confirmed } : null,
+        }));
+
+        try {
+          import("./useFeedStore").then(({ useFeedStore }) => {
+            useFeedStore.getState().syncPostVote(postId, confirmed);
+          });
+        } catch (_) {}
+      } catch (err) {
+        set((state) => ({
+          post: state.post ? { ...state.post, ...snapshot } : null,
+        }));
+        try {
+          import("./useFeedStore").then(({ useFeedStore }) => {
+            useFeedStore.getState().syncPostVote(postId, snapshot);
+          });
+        } catch (_) {}
+        toast.error("Vote failed");
+      }
+    } finally {
+      _activeThreadVoteLocks.delete(postId);
     }
   },
 
@@ -418,86 +428,93 @@ export const useThreadStore = create((set, get) => ({
    * @param {number} intent — 1 | -1
    */
   voteComment: async (commentId, intent) => {
-    const { rawComments, collapsedSet, postId } = get();
-    const idx = rawComments.findIndex(
-      (c) => (c._id?.toString() || c._id) === commentId
-    );
-    if (idx === -1) return;
-
-    const comment = rawComments[idx];
-
-    // Snapshot for rollback
-    const snapshot = {
-      score: comment.score,
-      upvotes: comment.upvotes,
-      downvotes: comment.downvotes,
-      userVote: comment.userVote,
-    };
-
-    // Compute optimistic values
-    const prev = comment.userVote || 0;
-    const effective = prev === intent ? 0 : intent;
-    let upvotes = comment.upvotes;
-    let downvotes = comment.downvotes;
-    if (prev === 1) upvotes -= 1;
-    if (prev === -1) downvotes -= 1;
-    if (effective === 1) upvotes += 1;
-    if (effective === -1) downvotes += 1;
-
-    const optimistic = {
-      score: upvotes - downvotes,
-      upvotes: Math.max(upvotes, 0),
-      downvotes: Math.max(downvotes, 0),
-      userVote: effective,
-    };
-
-    // Apply optimistic update
-    set((state) => {
-      const newRaw = state.rawComments.map((c, i) =>
-        i === idx ? { ...c, ...optimistic } : c
-      );
-      return {
-        rawComments: newRaw,
-        flatComments: flattenCommentTree(newRaw, state.collapsedSet),
-      };
-    });
+    if (_activeThreadVoteLocks.has(commentId)) return;
+    _activeThreadVoteLocks.add(commentId);
 
     try {
-      const res = await axiosInstance.post(`/feed/comments/${commentId}/vote`, {
-        intent: intent.toString(),
-        postId,
-      });
-      const { resultVote, newScore, upvotes: sv, downvotes: sd } = res.data.data;
+      const { rawComments, collapsedSet, postId } = get();
+      const idx = rawComments.findIndex(
+        (c) => (c._id?.toString() || c._id) === commentId
+      );
+      if (idx === -1) return;
 
+      const comment = rawComments[idx];
+
+      // Snapshot for rollback
+      const snapshot = {
+        score: comment.score,
+        upvotes: comment.upvotes,
+        downvotes: comment.downvotes,
+        userVote: comment.userVote,
+      };
+
+      // Compute optimistic values
+      const prev = comment.userVote || 0;
+      const effective = prev === intent ? 0 : intent;
+      let upvotes = comment.upvotes;
+      let downvotes = comment.downvotes;
+      if (prev === 1) upvotes -= 1;
+      if (prev === -1) downvotes -= 1;
+      if (effective === 1) upvotes += 1;
+      if (effective === -1) downvotes += 1;
+
+      const optimistic = {
+        score: upvotes - downvotes,
+        upvotes: Math.max(upvotes, 0),
+        downvotes: Math.max(downvotes, 0),
+        userVote: effective,
+      };
+
+      // Apply optimistic update
       set((state) => {
         const newRaw = state.rawComments.map((c, i) =>
-          i === idx
-            ? { ...c, score: newScore, upvotes: sv, downvotes: sd, userVote: resultVote }
-            : c
+          i === idx ? { ...c, ...optimistic } : c
         );
         return {
           rawComments: newRaw,
           flatComments: flattenCommentTree(newRaw, state.collapsedSet),
         };
       });
-    } catch (err) {
-      // Rollback
-      set((state) => {
-        const newRaw = state.rawComments.map((c, i) =>
-          i === idx ? { ...c, ...snapshot } : c
-        );
-        return {
-          rawComments: newRaw,
-          flatComments: flattenCommentTree(newRaw, state.collapsedSet),
-        };
-      });
 
-      const code = err.response?.data?.error?.code;
-      if (code === "RATE_LIMIT") {
-        toast.warning("Voting too fast!");
-      } else {
-        toast.error("Vote failed. Please try again.");
+      try {
+        const res = await axiosInstance.post(`/feed/comments/${commentId}/vote`, {
+          intent: intent.toString(),
+          postId,
+        });
+        const { resultVote, newScore, upvotes: sv, downvotes: sd } = res.data.data;
+
+        set((state) => {
+          const newRaw = state.rawComments.map((c, i) =>
+            i === idx
+              ? { ...c, score: newScore, upvotes: sv, downvotes: sd, userVote: resultVote }
+              : c
+          );
+          return {
+            rawComments: newRaw,
+            flatComments: flattenCommentTree(newRaw, state.collapsedSet),
+          };
+        });
+      } catch (err) {
+        // Rollback
+        set((state) => {
+          const newRaw = state.rawComments.map((c, i) =>
+            i === idx ? { ...c, ...snapshot } : c
+          );
+          return {
+            rawComments: newRaw,
+            flatComments: flattenCommentTree(newRaw, state.collapsedSet),
+          };
+        });
+
+        const code = err.response?.data?.error?.code;
+        if (code === "RATE_LIMIT") {
+          toast.warning("Voting too fast!");
+        } else {
+          toast.error("Vote failed. Please try again.");
+        }
       }
+    } finally {
+      _activeThreadVoteLocks.delete(commentId);
     }
   },
 

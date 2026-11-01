@@ -15,6 +15,7 @@
 import Post from "../models/post.model.js";
 import Comment from "../models/comment.model.js";
 import User from "../models/user.model.js";
+import Vote from "../models/vote.model.js";
 import {
   castVote,
   getUserVote,
@@ -147,7 +148,7 @@ export const getFeed = async (req, res) => {
     const limit = Math.min(Math.max(parseInt(rawLimit, 10) || 20, 1), 50);
     const validSorts = ["trending", "recent", "top"];
     const sortKey = validSorts.includes(sort) ? sort : "trending";
-    const userId = req.user._id.toString();
+    const userId = req.user ? req.user._id.toString() : null;
 
     // ── Try Redis first ─────────────────────────────────────────────────────
     let feedResult = null;
@@ -260,9 +261,23 @@ export const getFeed = async (req, res) => {
         }));
       }
     } else {
+      let voteMap = new Map();
+      if (userId && feedResult.posts.length > 0) {
+        try {
+          const postIds = feedResult.posts.map((p) => p._id);
+          const votes = await Vote.find({
+            userId,
+            targetType: "post",
+            targetId: { $in: postIds },
+          }).lean();
+          votes.forEach((v) => voteMap.set(v.targetId.toString(), v.vote));
+        } catch (vErr) {
+          console.warn("[FeedController] Vote lookup failed:", vErr.message);
+        }
+      }
       enriched = feedResult.posts.map((post) => ({
         ...post,
-        userVote: 0,
+        userVote: voteMap.get(post._id.toString()) || 0,
       }));
     }
 
@@ -332,7 +347,7 @@ export const createPost = async (req, res) => {
 export const getPost = async (req, res) => {
   try {
     const { postId } = req.params;
-    const userId = req.user._id.toString();
+    const userId = req.user ? req.user._id.toString() : null;
 
     const post = await Post.findOne({ _id: postId, isDeleted: false })
       .populate("authorId", "username profilePic orbitId")
@@ -447,7 +462,7 @@ export const votePost = async (req, res) => {
 export const getComments = async (req, res) => {
   try {
     const { postId } = req.params;
-    const userId = req.user._id.toString();
+    const userId = req.user ? req.user._id.toString() : null;
 
     // Verify post exists
     const postExists = await Post.countDocuments({ _id: postId, isDeleted: false });
@@ -487,6 +502,31 @@ export const getComments = async (req, res) => {
           }
           return { ...c, userVote };
         });
+      } catch {
+        enriched = comments.map((c) => ({
+          ...c,
+          body: c.isDeleted ? "[deleted]" : c.body,
+          authorId: c.isDeleted ? null : c.authorId,
+          userVote: 0,
+        }));
+      }
+    } else if (userId && comments.length > 0) {
+      try {
+        const commentIds = comments.map((c) => c._id);
+        const userVotes = await Vote.find({
+          userId,
+          targetType: "comment",
+          targetId: { $in: commentIds },
+        }).lean();
+        const voteMap = new Map();
+        userVotes.forEach((v) => voteMap.set(v.targetId.toString(), v.vote));
+
+        enriched = comments.map((c) => ({
+          ...c,
+          body: c.isDeleted ? "[deleted]" : c.body,
+          authorId: c.isDeleted ? null : c.authorId,
+          userVote: voteMap.get(c._id.toString()) || 0,
+        }));
       } catch {
         enriched = comments.map((c) => ({
           ...c,

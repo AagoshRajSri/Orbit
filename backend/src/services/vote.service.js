@@ -35,6 +35,7 @@
 import { redisClient, isRedisAvailable } from "../lib/redis.js";
 import Post from "../models/post.model.js";
 import Comment from "../models/comment.model.js";
+import Vote from "../models/vote.model.js";
 import { getIO } from "../socket/socket.js";
 
 // ── Redis Key Builders ────────────────────────────────────────────────────────
@@ -303,7 +304,19 @@ const _castVoteRedis = async ({ userId, targetType, targetId, intent, postId }) 
   const delta = resultVote === 0 ? -intent : intent;
 
   // Broadcast asynchronously via setImmediate so HTTP response is returned immediately
-  setImmediate(() => {
+  setImmediate(async () => {
+    try {
+      if (resultVote === 0) {
+        await Vote.deleteOne({ userId, targetType, targetId });
+      } else {
+        await Vote.findOneAndUpdate(
+          { userId, targetType, targetId },
+          { vote: resultVote },
+          { upsert: true }
+        );
+      }
+    } catch (_) {}
+
     _broadcastVoteUpdate(targetType, targetId, {
       resultVote,
       newScore,
@@ -322,13 +335,49 @@ const _castVoteMongo = async ({ userId, targetType, targetId, intent, postId }) 
   const doc = await Model.findById(targetId).lean();
   if (!doc) throw new Error(`${targetType} not found`);
 
-  // In-memory vote simulation (no race protection in fallback mode — dev only)
-  const existing = 0; // No ledger in Mongo fallback; treat as fresh vote
-  const effectiveVote = intent; // Always apply in fallback
+  // Query persistent user vote ledger from MongoDB
+  const existingVoteDoc = await Vote.findOne({
+    userId,
+    targetType,
+    targetId,
+  });
 
-  const upDelta = effectiveVote === 1 ? 1 : existing === 1 ? -1 : 0;
-  const downDelta = effectiveVote === -1 ? 1 : existing === -1 ? -1 : 0;
-  const scoreDelta = effectiveVote - existing;
+  const existing = existingVoteDoc ? existingVoteDoc.vote : 0;
+  // Precise toggle-off logic: clicking the same intent cancels the vote (returns to 0)
+  const effectiveVote = existing === intent ? 0 : intent;
+
+  // If already at effective vote, return current state without mutating
+  if (effectiveVote === existing) {
+    return {
+      resultVote: effectiveVote,
+      newScore: doc.score,
+      upvotes: doc.upvotes,
+      downvotes: doc.downvotes,
+      delta: 0,
+    };
+  }
+
+  // Update persistent vote record
+  if (effectiveVote === 0) {
+    if (existingVoteDoc) {
+      await Vote.deleteOne({ _id: existingVoteDoc._id });
+    }
+  } else {
+    await Vote.findOneAndUpdate(
+      { userId, targetType, targetId },
+      { vote: effectiveVote },
+      { upsert: true, new: true }
+    );
+  }
+
+  // Compute exact delta
+  let upDelta = 0;
+  let downDelta = 0;
+  if (existing === 1) upDelta -= 1;
+  if (existing === -1) downDelta -= 1;
+  if (effectiveVote === 1) upDelta += 1;
+  if (effectiveVote === -1) downDelta += 1;
+  const scoreDelta = (effectiveVote === 1 ? 1 : effectiveVote === -1 ? -1 : 0) - (existing === 1 ? 1 : existing === -1 ? -1 : 0);
 
   const updated = await Model.findByIdAndUpdate(
     targetId,
@@ -342,6 +391,21 @@ const _castVoteMongo = async ({ userId, targetType, targetId, intent, postId }) 
     { new: true, select: "upvotes downvotes score createdAt" }
   ).lean();
 
+  // Clamp counters to non-negative
+  if (updated.upvotes < 0 || updated.downvotes < 0) {
+    const fixedUp = Math.max(0, updated.upvotes);
+    const fixedDown = Math.max(0, updated.downvotes);
+    const fixedScore = fixedUp - fixedDown;
+    await Model.findByIdAndUpdate(targetId, {
+      upvotes: fixedUp,
+      downvotes: fixedDown,
+      score: fixedScore,
+    });
+    updated.upvotes = fixedUp;
+    updated.downvotes = fixedDown;
+    updated.score = fixedScore;
+  }
+
   // Update hot rank in Mongo
   if (targetType === "post") {
     const newHotRank = Post.computeHotRank(
@@ -352,12 +416,23 @@ const _castVoteMongo = async ({ userId, targetType, targetId, intent, postId }) 
     await Post.findByIdAndUpdate(targetId, { hotRank: newHotRank });
   }
 
+  // Broadcast asynchronously via setImmediate
+  setImmediate(() => {
+    _broadcastVoteUpdate(targetType, targetId, {
+      resultVote: effectiveVote,
+      newScore: updated.score,
+      upvotes: updated.upvotes,
+      downvotes: updated.downvotes,
+      delta: scoreDelta,
+    }, postId || (targetType === "post" ? targetId : null));
+  });
+
   return {
     resultVote: effectiveVote,
     newScore: updated.score,
     upvotes: updated.upvotes,
     downvotes: updated.downvotes,
-    delta: effectiveVote,
+    delta: scoreDelta,
   };
 };
 
@@ -402,13 +477,19 @@ const _broadcastVoteUpdate = (targetType, targetId, metrics, postId) => {
  * @returns {number} 1 | -1 | 0
  */
 export const getUserVote = async (userId, targetType, targetId) => {
-  if (!isRedisAvailable) return 0;
+  if (isRedisAvailable) {
+    try {
+      const raw = await redisClient.hget(
+        keys.userLedger(targetType, targetId),
+        userId
+      );
+      if (raw !== null && raw !== undefined) return Number(raw);
+    } catch {}
+  }
+  // Fallback to persistent MongoDB Vote collection
   try {
-    const raw = await redisClient.hget(
-      keys.userLedger(targetType, targetId),
-      userId
-    );
-    return raw ? Number(raw) : 0;
+    const v = await Vote.findOne({ userId, targetType, targetId }).select("vote").lean();
+    return v ? v.vote : 0;
   } catch {
     return 0;
   }

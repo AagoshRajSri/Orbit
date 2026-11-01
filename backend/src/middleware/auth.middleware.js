@@ -139,3 +139,51 @@ export const protectRoute = async (req, res, next) => {
     return res.status(401).json({ success: false, error: { code: "AUTH_ERROR", message: "Authentication failed" } });
   }
 };
+
+/**
+ * optionalAuth — Attaches user identity if a valid token is present,
+ * but safely passes through as guest (req.user = null) if unauthenticated or expired.
+ */
+export const optionalAuth = async (req, res, next) => {
+  try {
+    let token;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (req.headers["x-auth-token"]) {
+      token = req.headers["x-auth-token"];
+    } else if (req.cookies?.jwt) {
+      token = req.cookies.jwt;
+    }
+
+    if (!token) {
+      req.user = null;
+      req.sessionId = null;
+      return next();
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      req.user = null;
+      req.sessionId = null;
+      return next();
+    }
+
+    if (!decoded || !decoded.userId) {
+      req.user = null;
+      req.sessionId = null;
+      return next();
+    }
+
+    req.user = { _id: decoded.userId };
+    req.sessionId = decoded.sessionId || null;
+    return next();
+  } catch {
+    req.user = null;
+    req.sessionId = null;
+    return next();
+  }
+};
+
