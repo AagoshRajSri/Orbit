@@ -121,10 +121,6 @@ axiosInstance.interceptors.response.use(
           axiosInstance.defaults.headers.common["X-Auth-Token"] = newAuthToken;
           originalRequest.headers["X-Auth-Token"] = newAuthToken;
           
-          if (typeof authState.refreshSocketToken === "function") {
-            authState.refreshSocketToken().catch(console.error);
-          }
-
           import("./socket.js").then(({ updateSocketToken }) => {
             if (updateSocketToken) updateSocketToken(newAuthToken);
           }).catch(console.error);

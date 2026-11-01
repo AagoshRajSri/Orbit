@@ -105,6 +105,15 @@ export const getSocket = () => {
         }
       } catch (err) {
         console.warn("[Socket.IO] Token refresh failed:", err?.message);
+        isConnectionBlockedByGate = true;
+        disconnectSocket();
+        useAuthStore.setState({ socketToken: null, sessionId: null, authUser: null });
+        try {
+          localStorage.removeItem("orbit-auth-storage");
+        } catch {}
+        if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+          window.location.href = "/login";
+        }
       }
       return;
     }
@@ -149,7 +158,12 @@ export const updateSocketToken = (newToken) => {
     console.warn("[Socket.IO] updateSocketToken ignored because connection is blocked by gate.");
     return;
   }
-  if (!socket) return;
+  if (!socket || !newToken) return;
+
+  // Prevent redundant reconnect loops if the socket is already connected with this exact token
+  if (socket.auth?.token === newToken && (socket.connected || connectionState === "connecting")) {
+    return;
+  }
 
   socket.auth = { token: newToken };
 
@@ -169,7 +183,12 @@ export const reconnectSocket = () => {
   const token = authState.socketToken;
 
   if (socket) {
-    if (token) socket.auth = { token };
+    if (token) {
+      if (socket.auth?.token === token && socket.connected) {
+        return socket;
+      }
+      socket.auth = { token };
+    }
     socket.disconnect().connect();
     return socket;
   }
