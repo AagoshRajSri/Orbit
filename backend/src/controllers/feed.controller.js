@@ -455,10 +455,12 @@ export const getComments = async (req, res) => {
       return res.status(404).json({ success: false, error: { message: "Post not found" } });
     }
 
-    // Fetch all non-deleted comments, sorted by path (preserves tree order)
+    // Fetch comments sorted strictly by path (matching compound index { postId: 1, path: 1 })
     // Soft-deleted comments are included with body redacted so tree traversal works
+    const limit = Math.min(Number(req.query.limit) || 1000, 5000);
     const comments = await Comment.find({ postId })
-      .sort({ path: 1, createdAt: 1 })
+      .sort({ path: 1 })
+      .limit(limit)
       .populate("authorId", "username profilePic orbitId")
       .lean();
 
