@@ -18,23 +18,38 @@ useAuthStore.subscribe((state) => {
   }
 });
 
+const createSocketProxy = () => {
+  return new Proxy({}, {
+    get: (target, prop) => {
+      if (prop === "on" || prop === "off" || prop === "emit") {
+        return () => {};
+      }
+      return undefined;
+    }
+  });
+};
+
+const isPublicRoute = () => {
+  return ["/feed", "/posts", "/login", "/signup", "/verify-email"].some(
+    (p) => window.location.pathname.startsWith(p)
+  );
+};
+
 export const getSocket = () => {
   if (isConnectionBlockedByGate) {
-    console.warn("[Socket.IO] Connection blocked by listener gate. Awaiting successful authentication...");
-    return new Proxy({}, {
-      get: (target, prop) => {
-        if (prop === "on" || prop === "off" || prop === "emit") {
-          return () => {};
-        }
-        return undefined;
-      }
-    });
+    return createSocketProxy();
   }
-
-  if (socket) return socket;
 
   const authState = useAuthStore.getState();
   const token = authState.socketToken;
+  const user = authState.authUser;
+
+  // Do not initiate authenticated socket connection for unauthenticated guests
+  if (!user && (!token || token === "null" || token === "undefined")) {
+    return createSocketProxy();
+  }
+
+  if (socket) return socket;
 
   console.log("[Socket.IO] Initializing client v2.0");
 
@@ -42,10 +57,10 @@ export const getSocket = () => {
     withCredentials: true,
     transports: ["polling", "websocket"],
     upgrade: true,
-    reconnectionAttempts: 20,
+    reconnectionAttempts: 10,
     reconnectionDelay: 2000,
     reconnectionDelayMax: 10000,
-    timeout: 45000,
+    timeout: 30000,
   };
 
   if (token && token !== "null" && token !== "undefined") {
@@ -73,7 +88,6 @@ export const getSocket = () => {
       const auth = useAuthStore.getState();
       
       if (auth.isCheckingAuth) {
-        console.warn("[Socket.IO] Identity missing but auth check in progress - waiting...");
         return;
       }
 
@@ -83,7 +97,7 @@ export const getSocket = () => {
       
       useAuthStore.setState({ socketToken: null, sessionId: null, authUser: null });
       
-      if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+      if (!isPublicRoute() && window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
         window.location.href = "/login";
       }
       return;
@@ -111,7 +125,7 @@ export const getSocket = () => {
         try {
           localStorage.removeItem("orbit-auth-storage");
         } catch {}
-        if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+        if (!isPublicRoute() && window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
           window.location.href = "/login";
         }
       }
@@ -119,7 +133,6 @@ export const getSocket = () => {
     }
 
     if (error.message.includes("Authentication") || error.message.includes("rejected")) {
-      console.log("[Socket.IO] Auth error detected. Attempting to verify auth state...");
       try {
         await axiosInstance.get("/auth/check");
       } catch (err) {
@@ -133,7 +146,7 @@ export const getSocket = () => {
     isConnectionBlockedByGate = true;
     disconnectSocket();
     useAuthStore.setState({ socketToken: null, sessionId: null, authUser: null });
-    if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+    if (!isPublicRoute() && window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
       window.location.href = "/login";
     }
   });

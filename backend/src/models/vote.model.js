@@ -15,7 +15,6 @@ const voteSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     targetType: {
       type: String,
@@ -25,7 +24,6 @@ const voteSchema = new mongoose.Schema(
     targetId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      index: true,
     },
     vote: {
       type: Number,

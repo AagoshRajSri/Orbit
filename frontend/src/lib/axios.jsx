@@ -61,12 +61,14 @@ const processQueue = (error, token = null) => {
 };
 
 const AUTH_ENDPOINTS = [
+  "/auth/check",
   "/auth/refresh",
   "/auth/login",
   "/auth/signup",
   "/auth/logout",
   "/starweave/login",
-  "/starweave/enroll"
+  "/starweave/enroll",
+  "/feed",
 ];
 
 axiosInstance.interceptors.response.use(
@@ -80,7 +82,7 @@ axiosInstance.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !AUTH_ENDPOINTS.some((url) => originalRequest.url.includes(url))
+      !AUTH_ENDPOINTS.some((url) => originalRequest.url?.includes(url))
     ) {
       if (_isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -134,9 +136,14 @@ axiosInstance.interceptors.response.use(
         
         console.warn("[Axios Interceptor] Refresh failed. Wiping session.", refreshError.response?.data || refreshError.message);
         useAuthStore.setState({ authUser: null, sessionId: null, socketToken: null });
-        localStorage.removeItem("orbit-auth-storage");
+        try {
+          localStorage.removeItem("orbit-auth-storage");
+        } catch (_) {}
         
-        if (window.location.pathname !== "/login") {
+        const isPublicPage = ["/feed", "/posts", "/login", "/signup", "/verify-email"].some(
+          (p) => window.location.pathname.startsWith(p)
+        );
+        if (!isPublicPage && window.location.pathname !== "/login") {
           window.location.href = "/login";
         }
         return Promise.reject(refreshError);

@@ -170,13 +170,13 @@ const Sidebar = ({ mobileInitialTab, onMobileSelect }) => {
   }, [contactRequests.length]);
 
   useEffect(() => {
-    // Prevent multiple fetches
-    if (!fetchedRef.current) {
+    // Only fetch when user is authenticated
+    if (!fetchedRef.current && authUser) {
       fetchedRef.current = true;
       if (!users.length) getUsers();
       if (!nexuses.length) getNexuses();
     }
-  }, []); // Empty dependency array - fetch only once on mount
+  }, [authUser, users.length, nexuses.length, getUsers, getNexuses]);
 
   // FIX 10: Memoize derived user lists — prevent recomputation on every render
   const contactSet = useMemo(() => new Set(contactList || []), [contactList]);

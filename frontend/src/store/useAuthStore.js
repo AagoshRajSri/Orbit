@@ -186,8 +186,10 @@ export const useAuthStore = create(
           // Ensure E2EE prekey bundle is initialized/replenished (non-blocking)
           get().checkAndReplenishPrekeys().catch(console.error);
         } catch (error) {
-          console.error("[checkAuth] Server error status:", error.response?.status);
-          console.error("[checkAuth] Server error details:", error.response?.data);
+          if (error.response?.status !== 401) {
+            console.warn("[checkAuth] Server error status:", error.response?.status);
+            console.warn("[checkAuth] Server error details:", error.response?.data);
+          }
           
           const isRateLimit = error.response?.status === 429;
           if (isRateLimit) {
