@@ -36,6 +36,7 @@ const CSRF_EXEMPT_PATHS = new Set([
   "/api/prekeys/bundle",
   "/api/prekeys/replenish",
   "/api/prekeys/hybrid-bundle",
+  "/graphql",               // GraphQL API endpoint
 ]);
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);

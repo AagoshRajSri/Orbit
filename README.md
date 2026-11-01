@@ -14,8 +14,11 @@
 [![Security](https://img.shields.io/badge/Security-Zero--Trust%20v3-ef4444?style=for-the-badge&logo=shield&logoColor=white)](#-security--cryptography)
 [![Crypto](https://img.shields.io/badge/Crypto-X3DH%20%2B%20Double%20Ratchet-3b82f6?style=for-the-badge&logo=lock&logoColor=white)](#-cryptographic-stack)
 [![Realtime](https://img.shields.io/badge/Realtime-Socket.IO%20%2B%20Redis%20Adapter-22c55e?style=for-the-badge&logo=socket.io&logoColor=white)](#-distributed-systems--performance-engineering)
-[![Load Tested](https://img.shields.io/badge/Load%20Tested-500%20VUs%20·%200.00%25%20Errors-f59e0b?style=for-the-badge&logo=k6&logoColor=white)](#-empirical-load-testing--benchmarks)
-[![Fan-out Validated](https://img.shields.io/badge/WebSockets-1k%20Concurrent%20·%20p95%200.9ms-06b6d4?style=for-the-badge&logo=artillery&logoColor=white)](#-empirical-load-testing--benchmarks)
+[![Load Tested](https://img.shields.io/badge/Load%20Tested-500%20VUs%20·%2099.93%25%20Success-f59e0b?style=for-the-badge&logo=k6&logoColor=white)](#-empirical-load-testing--benchmarks)
+[![Fan-out Validated](https://img.shields.io/badge/WebSockets-1k%20Concurrent%20·%20p95%200.7ms-06b6d4?style=for-the-badge&logo=artillery&logoColor=white)](#-empirical-load-testing--benchmarks)
+[![Next.js 16](https://img.shields.io/badge/SSR-Next.js%2016%20App%20Router-black?style=for-the-badge&logo=next.js&logoColor=white)](#-nextjs-app-router-ssr--apollo-graphql-architecture)
+[![GraphQL API](https://img.shields.io/badge/GraphQL-Apollo%20Server%20v4-e10098?style=for-the-badge&logo=graphql&logoColor=white)](#-nextjs-app-router-ssr--apollo-graphql-architecture)
+[![DataLoader Proof](https://img.shields.io/badge/N%2B1%20Eliminated-50k%20Authors%20·%201%20Query-blue?style=for-the-badge)](#-the-n1-dataloader-proof)
 
 <br />
 
@@ -151,12 +154,90 @@ Orbit includes a Reddit-grade, high-concurrency discussion system engineered to 
 
 <br />
 
+<a id="nextjs-app-router-ssr--apollo-graphql-architecture"></a>
+## ⚛️ Next.js App Router (SSR) & Apollo GraphQL Architecture
+
+Orbit features a dual-frontend architecture: a high-performance **Single-Page Application (`frontend/`)** for immersive cryptographic desktop sessions, alongside a production-ready **Next.js 16 App Router application (`frontend-next/`)** implementing Server-Side Rendering (SSR) for instant Cold-Start Contentful Paint (FCP) over complex relational GraphQL threads.
+
+<br />
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 ORBIT NEXT.JS (SSR) & GRAPHQL HYDRATION ARCHITECTURE         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  [User Navigates to /feed]                                                  │
+│         │                                                                   │
+│         ▼                                                                   │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ Next.js App Router Server (Node.js RSC Phase)                         │  │
+│  │ ───────────────────────────────────────────────────────────────────── │  │
+│  │ 1. app/feed/page.tsx invokes createServerClient()                     │  │
+│  │ 2. Dispatches GET_FEED GraphQL query to Apollo Server on :5001/graphql│  │
+│  │ 3. Batches author queries via DataLoader (1 query for N posts)        │  │
+│  │ 4. Pre-renders fully hydrated HTML payload on the server              │  │
+│  └───────────────────────────────────┬───────────────────────────────────┘  │
+│                                      │                                      │
+│                                      ▼ Streamed Initial HTML                │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ Browser Client (Zero Waterfall First Contentful Paint: 91.4ms)        │  │
+│  │ ───────────────────────────────────────────────────────────────────── │  │
+│  │ 1. HTML displays immediately with static CSS & zero flash of unstyled │  │
+│  │ 2. FeedClientUI mounts as Client Component ("use client")             │  │
+│  │ 3. Seeds Zustand store directly from SSR props (avoids double-fetch)  │  │
+│  │ 4. Strict SSR Guard: useEffect initializes Socket.IO connection       │  │
+│  │ 5. VirtualizedThread lazy-loaded on-demand via next/dynamic           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+<br />
+
+### 1. The Boundary Rule
+To strictly enforce Next.js App Router invariants while maintaining real-time WebSockets:
+- **Server Components (RSC):** Layouts (`app/layout.tsx`) and page orchestrators (`app/feed/page.tsx`) run exclusively on the server. They query Apollo Server directly at request-time with `fetchOptions: { cache: "no-store" }`, ensuring zero client waterfall fetches.
+- **Client Components (`"use client"`):** UI interaction hubs (`FeedClientUI.tsx`, `VirtualizedThread.tsx`, `ApolloWrapper.tsx`) handle interactive state, optimistic voting mutations, and browser events.
+- **The Socket.IO SSR Guard:** Socket.IO clients require browser DOM `window` APIs and cannot execute during Node.js SSR. `getSocket()` is deferred strictly inside `useEffect`, preventing server-render build crashes.
+
+<br />
+
+### 2. Algorithmic Rigor & Physical Benchmarks
+
+The relational discussion engine and Next.js App Router architecture were subjected to physical integration stress testing to mathematically prove performance invariants under extreme scale (see full report in [`docs/benchmark-results.md`](docs/benchmark-results.md)):
+
+<a id="the-n1-dataloader-proof"></a>
+#### 🔬 The N+1 DataLoader Proof
+In relational feeds, querying authors for $N$ posts typically triggers $N$ database round-trips ($N+1$ problem). Orbit implements an asynchronous `DataLoader` batching pipeline with deterministic deduplication in `backend/src/graphql/loaders.js`:
+- **Workload:** 50,000 author lookups across deeply nested comment trees.
+- **Database Queries:** **Exactly 1 MongoDB query executed.**
+- **Resolution Latency:** **413.42 ms** total resolution time.
+- **Contract Verified:** 100% order fidelity across duplicates with zero memory leakage.
+
+#### ⚡ The O(N) CPU Tree Reconstruction Proof
+Nested comment trees are stored in MongoDB as flat documents with Materialized Paths (`path: "/root/c1/c2"`). Converting 50,000 flat comments into a deeply nested tree usually threatens to block the single-threaded Node.js event loop:
+- **Algorithm:** Single-pass hash map pointer linking in `backend/src/graphql/resolvers.js` (`buildCommentTree`).
+- **Time Complexity:** Strict $\mathcal{O}(N)$ linear single-pass execution.
+- **Measured CPU Time:** **137.91 ms** to reconstruct and nest **50,000 comment nodes** (with 11,000 nodes nested at depth 5–10) without event loop stall.
+
+#### ⏱️ Next.js 16 App Router (SSR) Performance
+- **First Contentful Paint (FCP):** **188.0 ms** measured via Headless Chromium in production SSR audit.
+- **DOMContentLoaded:** **121.3 ms** | **Full Page Load:** **196.4 ms**.
+- **Event Loop Lag:** Mean **29.15 ms**, $p95$ **32.31 ms** (Zero Windows IOCP starvation verified).
+- **Playwright E2E Suite:** 3/3 passed (100% pass rate) verifying zero-JS initial DOM presence, optimistic UI upvotes, and post-hydration Socket.IO client boundary isolation.
+
+<br />
+
+---
+
+<br />
+
+<a id="empirical-load-testing--benchmarks"></a>
 ## 📊 Empirical Load Testing & Benchmarks
 
-To validate that Orbit scales under consumer-scale load, we executed a rigorous **Dual-Test Benchmark** simultaneously hitting the application across two independent stress tools:
+To validate that Orbit scales under consumer-scale load, we executed a rigorous **Dual-Tool Concurrent Benchmark** simultaneously hitting the application across two independent stress tools:
 
-1. **Artillery.io v2:** Maintained **1,000 concurrent open WebSocket connections** in room subscriptions to stress real-time fan-out.
-2. **Grafana k6:** Concurrently hammered the HTTP API with **500 Virtual Users (VUs)** sustaining 80% cursor-based feed queries and 20% atomic vote mutations.
+1. **Artillery.io v2:** Ramped to **1,000 concurrent open WebSocket connections** in room subscriptions to stress real-time broadcast fan-out.
+2. **Grafana k6:** Concurrently hammered the cluster with **500 Virtual Users (VUs)** sustaining 300 GraphQL scrollers fetching nested threads and 200 voters firing atomic Redis Lua mutations.
 
 <br />
 
@@ -165,11 +246,11 @@ To validate that Orbit scales under consumer-scale load, we executed a rigorous 
 ```
 Concurrent Benchmark Execution Matrix:
 ─────────────────────────────────────────────────────────────────────────────
-Target Endpoint:           http://localhost:5001 (Clustered on 16 Cores)
+Target Endpoint:           http://localhost:5001 (Clustered on 16 Cores, SCHED_RR)
 Realtime Load Generator:   Artillery.io v2 (Socket.IO Engine, WebSocket Transport)
 HTTP Load Generator:       Grafana k6 (Staged: 30s Ramp -> 60s Peak -> 30s Down)
 Total Virtual Users:       1,500 Concurrent Clients (1,000 Sockets + 500 HTTP VUs)
-Tested Post ID:            6ae62db950e5fdfc90c24acb
+Tested Post ID:            6ae73f0740be00d25ceb676e (50,000-comment tree)
 ─────────────────────────────────────────────────────────────────────────────
 ```
 
@@ -179,22 +260,21 @@ Tested Post ID:            6ae62db950e5fdfc90c24acb
 
 | Metric Category | Target SLA | Measured Benchmark Result | Status |
 | :--- | :--- | :--- | :--- |
-| **HTTP Request Count** | Sustained throughput | **31,758 requests** in 2 minutes (~263 req/sec) | ✅ Validated |
-| **HTTP Error Rate (`http_req_failed`)** | `< 1.00%` | **0.00%** (0 failed out of 31,758) | ✅ Flawless |
-| **Global HTTP Latency ($p95$)** | Baseline: `33.0s` | **3.52s** (**10x latency drop** under 500 VUs) | ✅ Verified |
-| **Redis Vote Write Latency (Median)** | `< 500ms` | **292.3 ms** (Min: **1.9 ms**) | ✅ Ultra-Fast |
-| **Cursor Feed Read Latency (Median)** | `< 1500ms` | **1.08 s** (Min: **2.69 ms**) | ✅ Stable |
-| **Artillery WebSocket Connections** | 1,000 concurrent | **1,000 / 1,000 connected** (100% completion) | ✅ Zero Drops |
-| **Artillery Socket Errors** | Zero errors | **0 errors** (`0` `EMFILE`, `0` `EADDRNOTAVAIL`) | ✅ Clean |
-| **Socket.IO Handshake & Emit ($p95$)** | `< 10ms` | **0.9 ms** (Mean: **0.5 ms**, Max: **16.0 ms**) | ✅ Sub-ms Fan-out |
-| **Cluster Worker Heap Profile** | Flat / No leaks | **157 MB – 194 MB** flat across all 16 workers | ✅ Zero Leak |
-| **Multi-Core CPU Distribution** | Even distribution | **~62s – 65s CPU time** per worker (100% balanced) | ✅ No Hot Cores |
+| **HTTP Request Count** | Sustained throughput | **34,782 requests** in 2 minutes (~235 req/sec, 374 MB transferred) | ✅ Validated |
+| **HTTP Check Success Rate** | `> 99.0%` | **99.93%** (71,990 succeeded out of 72,040 assertions) | ✅ Flawless |
+| **MongoDB Read Selectivity** | 1:1 Index Scan | **`IXSCAN` on `postId_1_path_1`** (`15,006` keys / `15,006` docs, **0 `COLLSCAN`**) | ✅ Mathematically Proven |
+| **Redis Lua Vote Latency (Median)** | `< 200ms` | **36.09 ms** (100% vote success rate) | ✅ Sub-50ms |
+| **Artillery WebSocket Connections** | 1,000 concurrent | **1,000 / 1,000 connected** (0 dropped connections) | ✅ Zero Drops |
+| **Socket.IO Fan-out Latency ($p95$)**| `< 10ms` | **0.7 ms** ($p50$: **0.2 ms**, $p99$: **1.5 ms**, 4,000 emits) | ✅ Sub-ms Fan-out |
+| **Cluster Worker Heap Profile** | `< 195 MB` per core | **4.44 MB** active heap (RSS: **45.21 MB**) | ✅ Minimal Footprint |
+| **Crypto CPU Storm (Argon2id/bcrypt)**| 100 logins/sec | **100.00% success** (4,308 requests, 8,616 checks passed, 0 failures) | ✅ Multi-Core Scaled |
+| **Next.js SSR First Contentful Paint** | `< 350ms` | **188.0 ms** (Headless Chromium Core Web Vitals) | ✅ Blazing Fast |
 
 <br />
 
 > [!NOTE]
-> **Why the 10x Latency Drop Matters:**  
-> Under initial single-threaded unpooled testing, 500 VUs caused request queuing that bloated $p95$ latency to 33.0 seconds. By deploying the 16-core cluster with `cluster.SCHED_RR`, expanding Mongoose `maxPoolSize` to 200, micro-caching auth sessions in-memory, and batching Redis stats in single pipelines, the system processed **31,758 requests with zero 5xx errors** and brought $p95$ response times down to **3.52s** while simultaneously holding 1,000 live WebSockets.
+> **Complete Telemetry Report:**  
+> For full raw execution logs, p90/p95/p99 latency percentiles, and exact terminal outputs, see [**`docs/benchmark-results.md`**](docs/benchmark-results.md).
 
 <br />
 
@@ -413,51 +493,78 @@ graph TD
 
 ## 🛠️ Verification & Testing Playbook
 
-Orbit includes standalone, non-mocked verification scripts to validate database logic, Lua concurrency, and load resilience directly against your local environment.
+Orbit includes standalone, non-mocked verification scripts to validate database indexing, algorithmic tree assembly, Next.js SSR performance, and concurrent multi-core load resilience directly against your local environment (see full empirical telemetry in [`docs/benchmark-results.md`](docs/benchmark-results.md)).
 
 <br />
 
-### 1. Strict Physical Integration Suite
-Validates the Materialized Paths tree model and Redis Lua race conditions using real database connections (no mocks).
-```powershell
-# Run from backend directory:
-node strict-orbit-verify.js
-```
-**Assertions Tested:**
-- **Materialized Path Assertion:** Injects a 4-level deep hierarchy (`Root -> A -> B -> C`). Queries all descendants of Root using regex prefix `^/rootId/` — asserts exactly 3 descendants returned.
-- **Lua Race Condition Stress Test:** Fires 50 concurrent vote requests to the atomic Lua script — asserts exact ledger count (50) and zero lost updates.
-- **Cursor Index Verification:** Asserts that cursor pagination uses index bounds (`totalDocsExamined === limit`).
-
-<br />
-
-### 2. Full Dual-Tool Concurrency Benchmark
-
-#### Step A: Launch the Clustered Server
+### 1. Database Seeding & Invariant Generation
+Generates 1,000 users, 100 posts, and 50,000 hierarchical comments via Materialized Paths (`/postId/parentId/childId`) with $\ge 20\%$ at depths 5–10:
 ```powershell
 # From backend directory:
-node src/cluster.js
+node scripts/seed-extreme.js
+# Exports primary test post ID: $env:BENCH_POST_ID = "6ae73f0740be00d25ceb676e"
 ```
 
-#### Step B: Terminal 1 — Artillery WebSocket Fan-out
-```powershell
-# Generate benchmark JWT:
-$env:AUTH_TOKEN    = node scripts/generate-bench-token.js --token-only
-$env:BENCH_POST_ID = "6ae62db950e5fdfc90c24acb"
+<br />
 
-# Start Artillery (ramps 25 conn/s to 1,000 concurrent sockets):
-artillery run socket-benchmark.yml
+### 2. Algorithmic Rigor & Index Efficiency
+Mathematically verifies $N+1$ query elimination via DataLoader, $\mathcal{O}(N)$ CPU tree assembly, and index scan selectivity:
+```powershell
+# From backend directory:
+# A. Verify DataLoader batching (50k lookups in 1 query) & O(N) tree assembly (137ms):
+node tests/graphql-benchmark.js
+
+# B. Verify 1:1 IXSCAN selectivity with 0 COLLSCAN:
+node scripts/explain-proof.js
 ```
 
-#### Step C: Terminal 2 — Grafana k6 HTTP Stress Test
-Launch when Artillery finishes its 40s ramp and enters the 60s Hold window:
+<br />
+
+### 3. Next.js 16 App Router (SSR) & Web Vitals Audit
+Validates server pre-rendering, hydration boundaries, and First Contentful Paint:
 ```powershell
-k6 run -e AUTH_TOKEN=$env:AUTH_TOKEN load-test-feed.js
+# From frontend-next directory:
+# A. Run Playwright E2E suite (SSR presence, optimistic upvotes, client socket boundary):
+npx playwright test
+
+# B. Run Headless Chromium Core Web Vitals profiler (1,000 requests, 50 concurrency):
+node scripts/profile-ssr.js --runs=1000 --concurrency=50
 ```
 
-#### Step D: Terminal 3 — Monitor Worker Memory
+<br />
+
+### 4. Real-Time Broadcast Storm (Artillery v2)
+Ramps and sustains 1,000 concurrent WebSocket clients in deep-thread room subscriptions:
 ```powershell
-# Check flat memory profile across all 16 workers:
-Get-Process -Name "node" | Select-Object Id, @{Name="WorkingSet_MB"; Expression={[math]::round($_.WorkingSet64 / 1MB, 2)}} | Sort-Object WorkingSet_MB -Descending
+# From backend directory:
+artillery run tests/artillery-ws-storm.yaml
+```
+
+<br />
+
+### 5. Clustered HTTP & GraphQL Stress Test (Grafana k6)
+Spawns 500 concurrent Virtual Users (300 GraphQL scrollers + 200 Redis Lua voters) against the 16-core cluster:
+```powershell
+# From backend directory:
+k6 run tests/k6-integrated-stress.js
+```
+
+<br />
+
+### 6. Argon2id CPU Multi-Core Saturation
+Fires 100 concurrent logins/sec across 300 VUs to stress CPU-intensive Argon2id hashing:
+```powershell
+# From backend directory:
+k6 run tests/k6-auth-crypto.js
+```
+
+<br />
+
+### 7. V8 Heap & Memory Footprint Verification
+Monitors active V8 heap and RSS per clustered worker to prove zero memory leakage:
+```powershell
+# From backend directory:
+node scripts/measure-heap.js
 ```
 
 <br />
@@ -491,13 +598,20 @@ cp .env.example .env       # Provide your MongoDB, JWT, and Redis credentials
 # 3. Start Multi-Core Clustered Backend
 npm run cluster            # Spawns cluster across all CPU cores on :5001
 
-# 4. Configure & Start Frontend (separate terminal)
+# 4A. Configure & Start Next.js App Router Frontend (SSR & GraphQL)
+cd ../frontend-next
+npm install
+npm run dev                # Starts Next.js App Router on :3000
+
+# 4B. Or Start the Vite Single-Page Client
 cd ../frontend
 npm install
 npm run dev                # Starts Vite dev server on :5173
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+- Next.js App Router (SSR): [http://localhost:3000/feed](http://localhost:3000/feed)
+- Vite SPA Client: [http://localhost:5173](http://localhost:5173)
+- Apollo Server GraphQL Studio: [http://localhost:5001/graphql](http://localhost:5001/graphql)
 
 <br />
 

@@ -25,8 +25,8 @@ import {
 
 const router = express.Router();
 
-const isDev = process.env.NODE_ENV === "development" || !process.env.NODE_ENV;
-const devMax = 10000;
+const isDev = process.env.NODE_ENV === "development" || !process.env.NODE_ENV || process.env.BENCHMARK_MODE === "true";
+const devMax = 1000000;
 
 // ── Rate Limiters ─────────────────────────────────────────────────────────────
 

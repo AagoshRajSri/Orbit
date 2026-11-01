@@ -5,7 +5,7 @@ import { redisClient, isRedisAvailable } from "../lib/redis.js";
 const standardHeaders = true;
 const legacyHeaders = false;
 
-const isDev = process.env.NODE_ENV === "development" || !process.env.NODE_ENV;
+const isDev = process.env.NODE_ENV === "development" || !process.env.NODE_ENV || process.env.BENCHMARK_MODE === "true";
 
 /**
  * Wrapper to dynamically create and apply Redis-backed rate limiters

@@ -33,6 +33,7 @@ import deviceRoutes from "./routes/device.route.js";
 import keyVaultRoutes from "./routes/keyVault.route.js";
 import contactsRoutes from "./routes/contacts.route.js";
 import feedRoutes from "./routes/feed.route.js";
+import { setupGraphQL } from "./graphql/index.js";
 import { connectDB } from "./lib/db.js";
 import { initializeConfig } from "./lib/config.init.js";
 import { initializeSocketIO } from "./socket/socket.js";
@@ -223,6 +224,10 @@ app.use("/api/prekeys", prekeyRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/keyvault", keyVaultRoutes);
 app.use("/api/feed", feedRoutes);
+
+// ── GraphQL API Layer ─────────────────────────────────────────────────────────
+await setupGraphQL(app);
+
 app.get("/", (req, res) => {
   res.json({ message: "Orbit API is running", version: "1.0.0", security: "zero-trust-v3" });
 });
